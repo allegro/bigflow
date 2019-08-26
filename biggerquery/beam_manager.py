@@ -122,20 +122,19 @@ class DataflowManager:
         return self.beam_manager.run_datetime
 
     def write_truncate_to_big_query(self, table_name, schema):
-        bigquery.TableFieldSchema
         fields = [bigquery.TableFieldSchema(name=row['name'], type=row['type'].upper(), mode=row['mode'].upper()) for row in schema]
         schema = bigquery.TableSchema(fields=fields)
         return self.beam_manager.write_truncate_to_big_query(table_name, schema)
 
     def create_dataflow_pipeline(self,
-                                 table_prefix=None,
+                                 job_name,
                                  local_runner=None):
         options = PipelineOptions()
 
         if not local_runner:
             google_cloud_options = options.view_as(GoogleCloudOptions)
             google_cloud_options.project = self.project_id
-            google_cloud_options.job_name = self._job_name(self.run_datetime, table_prefix)
+            google_cloud_options.job_name = self._job_name(self.run_datetime, job_name)
             google_cloud_options.staging_location = 'gs://{dataflow_bucket}/beam_runner/staging'.format(
                 dataflow_bucket=self.dataflow_bucket)
             google_cloud_options.temp_location = 'gs://{dataflow_bucket}/beam_runner/temp'.format(
@@ -150,13 +149,13 @@ class DataflowManager:
         self.beam_manager.beam_manager.pipeline = beam.Pipeline(options=options)
         return self.beam_manager.beam_manager.pipeline
 
-    def _job_name(self, day, table_prefix=None):
-        if table_prefix:
+    def _job_name(self, day, job_name):
+        if 'job_suffix' in self.beam_manager.extras:
             import re
-            table_prefix_slug = re.sub(r'[^a-z0-9]+', '-', table_prefix).strip('-')
-            return 'stats-{day}-{prefix}'.format(day=day, prefix=("" if table_prefix_slug is None else table_prefix_slug))
+            table_prefix_slug = re.sub(r'[^a-z0-9]+', '-', self.beam_manager.extras['job_suffix']).strip('-')
+            return '{job_name}-{day}-{job_suffix}'.format(job_name=job_name, day=day, job_suffix=("" if table_prefix_slug is None else table_prefix_slug))
         else:
-            return 'stats-{day}'.format(day=day)
+            return '{job_name}-{day}'.format(job_name=job_name, day=day)
 
 
 def _throw_on_none(param, param_name):
@@ -204,26 +203,3 @@ def create_dataflow_manager(
     beam_manager = BeamManager()
     templated_dataflow_manager = TemplatedBeamManager(beam_manager, internal_tables, external_tables, runtime, extras)
     return DataflowManager(project_id, templated_dataflow_manager, dataset_name, dataflow_bucket, requirements_file_path, region, machine_type)
-
-
-EXAMPLE_SAMPLE_SCHEMA = '''
-{"namespace": "example.avro",
- "type": "record",
- "name": "exampleSample",
- "fields": [
-     {"name": "id", "type": "string", "mode": "required"},
-     {"name": "name", "type": "string", "mode": "required"}
- ]
-}
-'''
-
-EXAMPLE_OUTPUT_SCHEMA = '''
-{"namespace": "example.avro",
- "type": "record",
- "name": "exampleSample",
- "fields": [
-     {"name": "id", "type": "string", "mode": "required"},
-     {"name": "name", "type": "string", "mode": "required"}
- ]
-}
-'''

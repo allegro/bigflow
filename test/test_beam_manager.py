@@ -77,14 +77,30 @@ class DataFlowManagerTest(BeamTestCase):
 
     def test_should_create_dataflow_runner_pipeline(self):
         # when
-        dataflow_pipeline = self.data_flow_manager.create_dataflow_pipeline('job')
+        dataflow_pipeline = self.data_flow_manager.create_dataflow_pipeline('fancy-job-name')
         pipeline_options = dataflow_pipeline.options.display_data()
 
         # then
         self.assertEqual(pipeline_options['machine_type'], "super fast machine")
         self.assertEqual(pipeline_options['runner'], "DataflowRunner")
         self.assertEqual(pipeline_options['requirements_file'], "/file_path")
-        self.assertEqual(pipeline_options['job_name'], "stats-2019-01-01-job")
+        self.assertEqual(pipeline_options['job_name'], "fancy-job-name-2019-01-01")
+        self.assertEqual(pipeline_options['temp_location'], "gs://bucket/beam_runner/temp")
+        self.assertEqual(pipeline_options['region'], "europe")
+        self.assertEqual(pipeline_options['staging_location'], "gs://bucket/beam_runner/staging")
+        self.assertEqual(pipeline_options['project'], "project")
+
+    def test_should_create_dataflow_runner_pipeline_with(self):
+        # when
+        self.data_flow_manager.beam_manager.extras = {"job_suffix": '-fancy-suffix'}
+        dataflow_pipeline = self.data_flow_manager.create_dataflow_pipeline('fancy-job-name')
+        pipeline_options = dataflow_pipeline.options.display_data()
+
+        # then
+        self.assertEqual(pipeline_options['machine_type'], "super fast machine")
+        self.assertEqual(pipeline_options['runner'], "DataflowRunner")
+        self.assertEqual(pipeline_options['requirements_file'], "/file_path")
+        self.assertEqual(pipeline_options['job_name'], "fancy-job-name-2019-01-01-fancy-suffix")
         self.assertEqual(pipeline_options['temp_location'], "gs://bucket/beam_runner/temp")
         self.assertEqual(pipeline_options['region'], "europe")
         self.assertEqual(pipeline_options['staging_location'], "gs://bucket/beam_runner/staging")
