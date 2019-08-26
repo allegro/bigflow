@@ -114,7 +114,7 @@ class PartitionedDatasetManager(object):
         return self._dataset_manager.create_table(create_query)
 
     @property
-    def run_datetime_str(self):
+    def runtime_str(self):
         return self._dataset_manager.run_datetime
 
     def remove_dataset(self):

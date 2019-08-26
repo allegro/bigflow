@@ -40,16 +40,16 @@ class TemplatedBeamManager:
     Decorator that resolves table names/all kind of variables.
     """
 
-    def __init__(self, beam_manager, internal_tables, external_tables, run_datetime, extras):
+    def __init__(self, beam_manager, internal_tables, external_tables, runtime, extras):
         self.beam_manager = beam_manager
         self.extras = extras
         self.internal_tables = internal_tables
         self.external_tables = external_tables
-        self.run_datetime = run_datetime
+        self.runtime = runtime
 
-    def read_from_big_query(self, dataset, project_id, standard_sql, query):
+    def read_from_big_query(self, dataset, project_id, sql, query):
         query = query.format(**self._template_variables())
-        return self.beam_manager.read_from_big_query(dataset, project_id, standard_sql, query)
+        return self.beam_manager.read_from_big_query(dataset, project_id, sql, query)
 
     def read_from_avro(self, file_source_path):
         return self.beam_manager.read_from_avro(file_source_path)
@@ -58,7 +58,7 @@ class TemplatedBeamManager:
         return self.beam_manager.write_to_avro(file_output_path, schema)
 
     def write_truncate_to_big_query(self, table_name, schema):
-        table_name = self._legacy_table_name(self._template_variables()[table_name]) + '$' + self.run_datetime.replace('-', '')
+        table_name = self._legacy_table_name(self._template_variables()[table_name]) + '$' + self.runtime.replace('-', '')
         return beam.io.WriteToBigQuery(
             table_name,
             schema=schema,
@@ -69,14 +69,14 @@ class TemplatedBeamManager:
         return spl[0] + ':' + '.'.join(spl[1:len(spl)])
 
     @property
-    def run_datetime(self):
-        return self.run_datetime
+    def runtime_str(self):
+        return self.runtime
 
     def _template_variables(self):
         result = {}
         result.update(self.internal_tables)
         result.update(self.external_tables)
-        result['dt'] = self.run_datetime
+        result['dt'] = self.runtime
         result.update(self.extras)
         return result
 
@@ -118,8 +118,8 @@ class DataflowManager:
         return self.beam_manager.write_to_avro(file_output_path, schema)
 
     @property
-    def run_datetime(self):
-        return self.beam_manager.run_datetime
+    def runtime_str(self):
+        return self.beam_manager.runtime
 
     def write_truncate_to_big_query(self, table_name, schema):
         fields = [bigquery.TableFieldSchema(name=row['name'], type=row['type'].upper(), mode=row['mode'].upper()) for row in schema]
@@ -134,7 +134,7 @@ class DataflowManager:
         if not local_runner:
             google_cloud_options = options.view_as(GoogleCloudOptions)
             google_cloud_options.project = self.project_id
-            google_cloud_options.job_name = self._job_name(self.run_datetime, job_name)
+            google_cloud_options.job_name = job_name
             google_cloud_options.staging_location = 'gs://{dataflow_bucket}/beam_runner/staging'.format(
                 dataflow_bucket=self.dataflow_bucket)
             google_cloud_options.temp_location = 'gs://{dataflow_bucket}/beam_runner/temp'.format(
@@ -149,14 +149,6 @@ class DataflowManager:
         self.beam_manager.beam_manager.pipeline = beam.Pipeline(options=options)
         return self.beam_manager.beam_manager.pipeline
 
-    def _job_name(self, day, job_name):
-        if 'job_suffix' in self.beam_manager.extras:
-            import re
-            table_prefix_slug = re.sub(r'[^a-z0-9]+', '-', self.beam_manager.extras['job_suffix']).strip('-')
-            return '{job_name}-{day}-{job_suffix}'.format(job_name=job_name, day=day, job_suffix=("" if table_prefix_slug is None else table_prefix_slug))
-        else:
-            return '{job_name}-{day}'.format(job_name=job_name, day=day)
-
 
 def _throw_on_none(param, param_name):
     if param is None:
@@ -169,10 +161,10 @@ def create_dataflow_manager(
         dataset_name,
         dataflow_bucket,
         internal_tables,
-        external_tables,
         requirements_file_path,
         region,
-        machine_type,
+        machine_type='n1-standard-1',
+        external_tables={},
         extras=None):
     """
     Dataflow manager factory.
@@ -189,8 +181,7 @@ def create_dataflow_manager(
     :param extras: dict with custom parameters that will be available inside templates
     :return: DataflowManager
     """
-    internal_tables = internal_tables or {}
-    external_tables = external_tables or {}
+    internal_tables = {t: project_id + '.' + dataset_name + '.' + t for t in internal_tables} if internal_tables else {}
     extras = extras or {}
     _throw_on_none(project_id, "project_id")
     _throw_on_none(dataset_name, "dataset_name")

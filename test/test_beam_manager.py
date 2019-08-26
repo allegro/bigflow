@@ -53,7 +53,7 @@ class DataFlowManagerTest(BeamTestCase):
             runtime="2019-01-01",
             dataset_name='test_dataset',
             dataflow_bucket="bucket",
-            internal_tables={"internal_table": "project.dataset.internal_table"},
+            internal_tables=["internal_table"],
             external_tables={"external_table": "not_internal_but_external_table"},
             requirements_file_path="/file_path",
             region="europe",
@@ -71,13 +71,13 @@ class DataFlowManagerTest(BeamTestCase):
         self.assertEqual(self.data_flow_manager.region, 'europe')
         self.assertEqual(self.data_flow_manager.machine_type, 'super fast machine')
 
-        self.assertEqual(self.data_flow_manager.beam_manager.internal_tables, {'internal_table': 'project.dataset.internal_table'})
+        self.assertEqual(self.data_flow_manager.beam_manager.internal_tables, {'internal_table': 'project.test_dataset.internal_table'})
         self.assertEqual(self.data_flow_manager.beam_manager.external_tables, {"external_table": "not_internal_but_external_table"})
-        self.assertEqual(self.data_flow_manager.beam_manager.run_datetime, "2019-01-01")
+        self.assertEqual(self.data_flow_manager.beam_manager.runtime_str, "2019-01-01")
 
     def test_should_create_dataflow_runner_pipeline(self):
         # when
-        dataflow_pipeline = self.data_flow_manager.create_dataflow_pipeline('fancy-job-name')
+        dataflow_pipeline = self.data_flow_manager.create_dataflow_pipeline('fancy-job-name-2019-01-01')
         pipeline_options = dataflow_pipeline.options.display_data()
 
         # then
@@ -85,22 +85,6 @@ class DataFlowManagerTest(BeamTestCase):
         self.assertEqual(pipeline_options['runner'], "DataflowRunner")
         self.assertEqual(pipeline_options['requirements_file'], "/file_path")
         self.assertEqual(pipeline_options['job_name'], "fancy-job-name-2019-01-01")
-        self.assertEqual(pipeline_options['temp_location'], "gs://bucket/beam_runner/temp")
-        self.assertEqual(pipeline_options['region'], "europe")
-        self.assertEqual(pipeline_options['staging_location'], "gs://bucket/beam_runner/staging")
-        self.assertEqual(pipeline_options['project'], "project")
-
-    def test_should_create_dataflow_runner_pipeline_with(self):
-        # when
-        self.data_flow_manager.beam_manager.extras = {"job_suffix": '-fancy-suffix'}
-        dataflow_pipeline = self.data_flow_manager.create_dataflow_pipeline('fancy-job-name')
-        pipeline_options = dataflow_pipeline.options.display_data()
-
-        # then
-        self.assertEqual(pipeline_options['machine_type'], "super fast machine")
-        self.assertEqual(pipeline_options['runner'], "DataflowRunner")
-        self.assertEqual(pipeline_options['requirements_file'], "/file_path")
-        self.assertEqual(pipeline_options['job_name'], "fancy-job-name-2019-01-01-fancy-suffix")
         self.assertEqual(pipeline_options['temp_location'], "gs://bucket/beam_runner/temp")
         self.assertEqual(pipeline_options['region'], "europe")
         self.assertEqual(pipeline_options['staging_location'], "gs://bucket/beam_runner/staging")
@@ -126,7 +110,7 @@ class DataFlowManagerTest(BeamTestCase):
         self.data_flow_manager.write_truncate_to_big_query(table_name, json.loads(EXAMPLE_SAMPLE_SCHEMA)['fields'])
 
         # then
-        self.assertEqual(write_to_big_query.call_args[0][0], 'project:dataset.internal_table$20190101')
+        self.assertEqual(write_to_big_query.call_args[0][0], 'project:test_dataset.internal_table$20190101')
         self.assertEqual(write_to_big_query.call_args[1]['write_disposition'], 'WRITE_TRUNCATE')
 
         # and
@@ -143,7 +127,7 @@ class DataFlowManagerTest(BeamTestCase):
         self.assertEqual(self.data_flow_manager.project_id, 'project')
 
     def test_run_datetime(self):
-        self.assertEqual(self.data_flow_manager.run_datetime, '2019-01-01')
+        self.assertEqual(self.data_flow_manager.runtime_str, '2019-01-01')
 
     @patch('apache_beam.io.Read')
     @patch('apache_beam.io.BigQuerySource')
@@ -159,7 +143,7 @@ class DataFlowManagerTest(BeamTestCase):
 
         # then
         self.assertEqual(big_query_source.call_args[1]['query'], '''
-        SELECT * FROM 'project.dataset.internal_table' (
+        SELECT * FROM 'project.test_dataset.internal_table' (
             first_name STRING,
             last_name STRING
         where batch_date = \'2019-01-01\')
@@ -212,10 +196,10 @@ class BeamManagerTest(BeamTestCase):
             'test_data_set',
             'test_bucket',
             None,
-            None,
             'requirements_file_path',
             'EU',
             'highmem-1',
+            None,
             None)
         options = PipelineOptions()
         options.view_as(StandardOptions).runner = 'DirectRunner'
