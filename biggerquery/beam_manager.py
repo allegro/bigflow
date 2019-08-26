@@ -160,10 +160,10 @@ def create_dataflow_manager(
         runtime,
         dataset_name,
         dataflow_bucket,
-        internal_tables,
         requirements_file_path,
         region,
         machine_type='n1-standard-1',
+        internal_tables={},
         external_tables={},
         extras=None):
     """

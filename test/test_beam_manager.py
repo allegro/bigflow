@@ -195,10 +195,10 @@ class BeamManagerTest(BeamTestCase):
             '2019-01-01',
             'test_data_set',
             'test_bucket',
-            None,
             'requirements_file_path',
             'EU',
             'highmem-1',
+            None,
             None,
             None)
         options = PipelineOptions()
