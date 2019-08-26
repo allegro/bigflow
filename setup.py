@@ -7,7 +7,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="biggerquery",
-    version="0.1.0",
+    version="0.2.0rc1",
     author=u"Chi",
     author_email="chibox-team@allegrogroup.com",
     description="BigQuery client wrapper with clean API",
@@ -20,7 +20,11 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     install_requires=[
-        "google-cloud-bigquery>=1.16.0",
-        "pandas>=0.24.2"
+        "google-cloud-bigquery>=1.12.0, <1.18.0",
+        "pandas>=0.23.0, <0.24",
+        "apache-beam[gcp,test]>=2.12, <=2.15",
+        "google-cloud-core>=1.0.0, <=1.0.3",
+        "numpy>=1.14.0, <1.17",
+        "avro>=1.8.2, <=1.9.0"
     ]
 )
