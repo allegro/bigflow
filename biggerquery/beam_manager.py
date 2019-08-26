@@ -7,6 +7,8 @@ from apache_beam.io.gcp.internal.clients import bigquery
 from apache_beam.options.pipeline_options import \
     PipelineOptions, SetupOptions, StandardOptions, GoogleCloudOptions, WorkerOptions
 
+DEFAULT_REGION = 'europe-west1'
+
 
 class BeamManager:
     """
@@ -161,7 +163,7 @@ def create_dataflow_manager(
         dataset_name,
         dataflow_bucket,
         requirements_file_path,
-        region,
+        region=DEFAULT_REGION,
         machine_type='n1-standard-1',
         internal_tables={},
         external_tables={},
@@ -188,8 +190,6 @@ def create_dataflow_manager(
     _throw_on_none(dataflow_bucket, "dataflow_bucket")
     _throw_on_none(runtime, "runtime")
     _throw_on_none(requirements_file_path, "requirements_file_path")
-    _throw_on_none(region, "region")
-    _throw_on_none(machine_type, "machine_type")
 
     beam_manager = BeamManager()
     templated_dataflow_manager = TemplatedBeamManager(beam_manager, internal_tables, external_tables, runtime, extras)
