@@ -1,4 +1,7 @@
+import importlib
 import json
+import runpy
+import inspect
 
 from biggerquery.beam_manager import create_dataflow_manager, DataflowManager, TemplatedBeamManager, BeamManager
 from test.beam_test_case import BeamTestCase
@@ -59,6 +62,20 @@ class DataFlowManagerTest(BeamTestCase):
             region="europe",
             machine_type="super fast machine")
 
+    def test_pipeline(self):
+        dm = create_dataflow_manager('sc-8227-chianalyticsgcp-dev',
+                                     '2019-01-01',
+                                     'biggerquery_tests_user_metrics',
+                                     'chibox',
+                                     '/Users/iwo.czerniawski/projects/biggerquery/biggerquery/statistics.txt',
+                                     internal_tables=['user_transaction_metrics'])
+        c = importlib.import_module('test_pipeline')
+        runpy.run_path(
+            inspect.getmodule(c).__file__,
+            init_globals={
+                'dm': dm
+            },
+            run_name='__main__')
     def test_should_create_dataflow_manager(self):
         self.assertIsInstance(self.data_flow_manager, DataflowManager)
         self.assertIsInstance(self.data_flow_manager.beam_manager, TemplatedBeamManager)

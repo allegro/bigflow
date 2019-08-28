@@ -128,9 +128,7 @@ class DataflowManager:
         schema = bigquery.TableSchema(fields=fields)
         return self.beam_manager.write_truncate_to_big_query(table_name, schema)
 
-    def create_dataflow_pipeline(self,
-                                 job_name,
-                                 local_runner=None):
+    def create_dataflow_pipeline(self, job_name, local_runner=None):
         options = PipelineOptions()
 
         if not local_runner:

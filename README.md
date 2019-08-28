@@ -13,6 +13,8 @@ BiggerQuery is compatible with Python 2.7.
 
 ## Tutorial
 
+BiggerQuery provides two modules beam_manager and dataset_manager. Dataset manager is responsible for handling bigquery tasks.
+Beam manager us responsible for handling dataflow tasks.
 ### Task definition
 
 To guide you through all features that BiggerQuery provides, we prepared a simple task. There is a table **transactions**, which looks like this:
@@ -468,4 +470,49 @@ class CalculateUserTransactionMetricsTestCase(TestCase):
 
 if __name__ == '__main__':
     main()
+```
+
+### Creating beam manager and dataflow pipeline
+Beam manager is an object that allows you to create dataflow pipelines using `create_dataflow_pipeline` method and 
+read/write data from bigquery and avro files using methods: `write_truncate_to_big_query`, `write_to_avro`, 
+`read_from_big_query` `read_from_avro`.
+Let's get through a few examples to illustrate each of thos operations.
+
+Start with creation beam manager object. Parameters `project_id` and `dataset_name` defines dataset you want to work with.
+Parameter `internal_tables` specifies tables that are **inside** dataset specified by `project_id` and `dataset_name`.
+Parameter `external_tables` specifies tables that are **outside** dataset specified by `project_id` and `dataset_name`. 
+External tables have to be described by full table id, for example:
+
+```python
+external_tables = {
+    'transactions': 'dataset.id.transactions',
+    'some_external_table': 'dataset.id2.external_table'
+}
+```
+
+Parameter `runtime` is used to determine partition being processed.
+Parameter `dataflow_bucket` is  GCS bucket used for temp and staging locations.
+Parameter `requirements_file_path` provides informations about dependencies of your dataflow.
+Parameter `region` is location of machine used in dataflow. By default is set to europe-west1.
+Parameter `machine_type` is type of used machine. By default n1-standard-1.
+
+```python
+dataflow_manager = create_dataflow_manager(
+            project_id=PROJECT_ID,
+            runtime="2019-01-01",
+            dataset_name=DATASET_NAME,
+            dataflow_bucket=BUCKET_NAME,
+            internal_tables=["internal_table"],
+            external_tables={"external_table": "not_internal_but_external_table"},
+            requirements_file_path="/file_path",
+            region="europe-west2",
+            machine_type="n1-standard-2")
+            
+dataflow_pipeline = data_flow_manager.create_dataflow_pipeline('job-name-2019-01-01')
+```
+
+### Example pipeline using methods above
+
+```python
+dataflow_pipeline
 ```
