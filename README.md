@@ -1,8 +1,8 @@
 # BiggerQuery &mdash; Python library for BigQuery
 
 BiggerQuery is a Python library which simplifies working with BigQuery datasets. It wraps BigQuery client, providing elegant
- API for most common use cases. It also provides beam_manager class, providing API to creating dataflow pipelines and reading/writing
- from BigQuery
+ API for most common use cases. It also provides API for creating dataflow pipelines and reading/writing
+ from BigQuery in pipeline
 
 ## Installation
 
