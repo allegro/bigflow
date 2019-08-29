@@ -512,7 +512,8 @@ dataflow_manager = create_dataflow_manager(
 ```
 
 ### Create pipeline
-For this example you have to do steps from https://github.com/allegro/biggerquery#setting-up-test-environment 
+For this example you have to do steps from https://github.com/allegro/biggerquery#setting-up-test-environment and
+https://github.com/allegro/biggerquery#create-table
 Now in same file as we created dataflow_manager we need to create some code to create our pipeline as module.
 ```python
 import importlib
