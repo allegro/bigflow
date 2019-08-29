@@ -1,7 +1,8 @@
 # BiggerQuery &mdash; Python library for BigQuery
 
 BiggerQuery is a Python library which simplifies working with BigQuery datasets. It wraps BigQuery client, providing elegant
- API for most common use cases.
+ API for most common use cases. It also provides beam_manager class, providing API to creating dataflow pipelines and reading/writing
+ from BigQuery
 
 ## Installation
 
@@ -13,8 +14,6 @@ BiggerQuery is compatible with Python 2.7.
 
 ## Tutorial
 
-BiggerQuery provides two modules beam_manager and dataset_manager. Dataset manager is responsible for handling bigquery tasks.
-Beam manager us responsible for handling dataflow tasks.
 ### Task definition
 
 To guide you through all features that BiggerQuery provides, we prepared a simple task. There is a table **transactions**, which looks like this:
@@ -472,11 +471,11 @@ if __name__ == '__main__':
     main()
 ```
 
-### Creating beam manager and dataflow pipeline
+### Creating beam manager
 Beam manager is an object that allows you to create dataflow pipelines using `create_dataflow_pipeline` method and 
 read/write data from bigquery and avro files using methods: `write_truncate_to_big_query`, `write_to_avro`, 
 `read_from_big_query` `read_from_avro`.
-Let's get through a few examples to illustrate each of thos operations.
+Let's get through a few examples to illustrate each of those operations.
 
 Start with creation beam manager object. Parameters `project_id` and `dataset_name` defines dataset you want to work with.
 Parameter `internal_tables` specifies tables that are **inside** dataset specified by `project_id` and `dataset_name`.
@@ -491,7 +490,7 @@ external_tables = {
 ```
 
 Parameter `runtime` is used to determine partition being processed.
-Parameter `dataflow_bucket` is  GCS bucket used for temp and staging locations.
+Parameter `dataflow_bucket` is  GCS bucket used for temporary and staging locations.
 Parameter `requirements_file_path` provides informations about dependencies of your dataflow.
 Parameter `region` is location of machine used in dataflow. By default is set to europe-west1.
 Parameter `machine_type` is type of used machine. By default n1-standard-1.
@@ -502,17 +501,105 @@ dataflow_manager = create_dataflow_manager(
             runtime="2019-01-01",
             dataset_name=DATASET_NAME,
             dataflow_bucket=BUCKET_NAME,
-            internal_tables=["internal_table"],
-            external_tables={"external_table": "not_internal_but_external_table"},
+            internal_tables=["user_transaction_metrics"],
+            external_tables={
+                'transactions': TRANSACTIONS_TABLE_ID},
             requirements_file_path="/file_path",
             region="europe-west2",
             machine_type="n1-standard-2")
             
-dataflow_pipeline = data_flow_manager.create_dataflow_pipeline('job-name-2019-01-01')
+
 ```
 
-### Example pipeline using methods above
+### Create pipeline
+For this example you have to do steps from https://github.com/allegro/biggerquery#setting-up-test-environment 
+Now in same file as we created dataflow_manager we need to create some code to create our pipeline as module.
+```python
+import importlib
+import runpy
+import inspect
+        module_path = importlib.import_module('pipeline')
+        runpy.run_path(
+            inspect.getmodule(module_path).__file__,
+            init_globals={
+                'dm': dataflow_manager
+            },
+            run_name='__main__')
+```
+            
+After creating dataflow_manager we can create pipeline. For this we need to create a new file
+pipeline.py. Inside this file we need to put code below. 
 
 ```python
-dataflow_pipeline
+import json
+
+import apache_beam as beam
+
+TRANSACTIONS_SCHEMA = '''
+{
+   "fields": [
+     {"name": "user_id", "type": "string", "mode": "required"},
+     {"name": "transaction_value", "type": "float", "mode": "required"},
+     {"name": "partition_timestamp", "type": "timestamp", "mode": "required"}
+ ]
+}
+'''
+
+def run(dm):
+    p = dm.create_dataflow_pipeline('save-transactions-pipeline')
+    p | 'write' >> beam.Create([
+        ['john123', 800.0, '2019-01-01 00:00:00'],
+        ['smith99', 10000.0, '2019-01-01 00:00:00'],
+        ['smith99', 30000.0, '2019-01-01 00:00:00']
+    ]) | "map" >> beam.Map(lambda element: {'user_id': element[0], 'transaction_value': element[1],
+                                            'partition_timestamp': element[
+                                                2]}) | 'write2' >> dm.write_truncate_to_big_query(
+        'transactions', json.loads(TRANSACTIONS_SCHEMA)[
+            'fields'])
+
+    p.run().wait_until_finish()
+    
+if __name__ == '__main__' \
+        and 'dm' in globals():
+    run(globals()['dm'])
 ```
+
+This code will put rows inside **transactions** table using `write_truncate_to_big_query` method. Now run your dataflow manager. After a few minutes in our **transactions**
+table should be visible three records. Now update your `pipeline.py` file to look like this:
+
+```python
+import json
+
+import apache_beam as beam
+
+USER_TRANSACTION_METRICS_SCHEMA = '''
+{
+   "fields": [
+     {"name": "user_id", "type": "string", "mode": "required"},
+     {"name": "metric_type", "type": "string", "mode": "required"},
+     {"name": "metric_value", "type": "float", "mode": "required"},
+     {"name": "partition_timestamp", "type": "timestamp", "mode": "required"}
+ ]
+}
+'''
+
+def run(dm):
+    p = dm.create_dataflow_pipeline('save-user-transaction-metrics-pipeline')
+    p |dm.read_from_big_query("""
+        SELECT user_id,
+            sum(transaction_value) as metric_value,
+            'USER_TRANSACTION_VALUE' as metric_type,
+            TIMESTAMP('{dt}') as partition_timestamp
+        FROM `{transactions}`
+        WHERE DATE(partition_timestamp) = '{dt}'
+        GROUP BY user_id
+    """) | 'write' >> dm.write_truncate_to_big_query('user_transaction_metrics',
+                                                  json.loads(USER_TRANSACTION_METRICS_SCHEMA)["fields"])
+    
+if __name__ == '__main__' \
+        and 'dm' in globals():
+    run(globals()['dm'])
+```
+After a few minutes in **user_transaction_metrics** table results of executed query will be visible.
+
+Example code of `beam_manager` you can find in /examples/_example_beam_manager.py
