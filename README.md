@@ -1,7 +1,7 @@
 # BiggerQuery &mdash; Python library for BigQuery
 
-BiggerQuery is a Python library which simplifies working with BigQuery datasets. It wraps BigQuery client, providing elegant
- API for most common use cases.
+BiggerQuery is a Python library that simplifies working with BigQuery datasets. It wraps BigQuery client, providing elegant
+ API for most common use cases. It also provides API that simplifies creating a dataflow pipelines.
 
 ## Installation
 
@@ -15,7 +15,7 @@ BiggerQuery is compatible with Python 2.7.
 
 ### Task definition
 
-To guide you through all features that BiggerQuery provides, we prepared a simple task. There is a table **transactions**, which looks like this:
+To guide you through all the features that BiggerQuery provides, we prepared a simple task. There is a table **transactions**, which looks like this:
 
 | user_id | transaction_value | partition_timestamp |
 |---------|-------------------|---------------------|
@@ -23,7 +23,7 @@ To guide you through all features that BiggerQuery provides, we prepared a simpl
 | smith99 | 10000             | 2019-01-01 00:00:00 |
 | smith99 | 30000             | 2019-01-01 00:00:00 |
 
-Table contains all transactions that users make in a specific day. Your task is to calculate two metrics for each user:
+The table contains all transactions that users make on a specific day. Your task is to calculate two metrics for each user:
  daily user transaction value and daily user transaction count.
 
 Final result should be table **user_transaction_metrics**:
@@ -58,7 +58,7 @@ Then, prepare datasets. Start by creating a new Python module:
 
 `touch user_transaction_metrics.py`
 
-Edit created module with your favourite editor and add following lines:
+Edit created the module with your favorite editor and add the following lines:
 
 ```python
 from biggerquery import create_dataset_manager
@@ -116,7 +116,7 @@ This code creates 2 datasets:
 Dataset manager is an object that allows you to manipulate tables present in a given dataset, using basic operations: `write_truncate`, 
 `write_append`, `create_table`, `collect`, `write_tmp`. Let's go through a few examples to illustrate each of those operations.
 
-Start with creating dataset manager object. Parameters `project_id` and `dataset_name` defines dataset you want to work with.
+Start with creating a dataset manager object. Parameters `project_id` and `dataset_name` define the dataset you want to work with.
 Parameter `internal_tables` specifies tables that are **inside** dataset specified by `project_id` and `dataset_name`.
 Parameter `external_tables` specifies tables that are **outside** dataset specified by `project_id` and `dataset_name`.
 External tables have to be described by full table id, for example:
@@ -143,7 +143,7 @@ user_transaction_dataset_id, user_transaction_metrics_dataset_manager = create_d
 
 ### Create table
 
-Now, create a table that you can use to store your metrics. You can use plain SQL to create this table. Add following lines to `user_transaction_metrics.py`:
+Now, create a table that you can use to store your metrics. You can use plain SQL to create this table. Add the following lines to `user_transaction_metrics.py`:
 
 ```python
 user_transaction_metrics_dataset_manager.create_table("""
@@ -179,10 +179,10 @@ Result:
 | john123 | 800          | USER_TRANSACTION_VALUE | 2019-01-01 00:00:00 |
 | smith99 | 40000        | USER_TRANSACTION_VALUE | 2019-01-01 00:00:00 |
 
-The `write_truncate` function writes result of provided query to a specified table, in this case `user_transaction_metrics`.
+The `write_truncate` function writes the result of the provided query to a specified table, in this case `user_transaction_metrics`.
 This function removes all data from a given table before writing new data.
 
-Inside query, you don't have to write full table ids. You can use names provided in parameters `internal_tables` and `external_tables`.
+Inside the query, you don't have to write full table ids. You can use the names provided in the parameters `internal_tables` and `external_tables`.
 Parameter `runtime` is also available inside queries as `{dt}`.
  
 ### Write append
@@ -214,8 +214,8 @@ The difference between `write_truncate` and `write_append` is that write append 
  
 ### Write temporary
 
-Sometimes it's useful to create additional table that stores some intermediate results.
-The `write_tmp` function allows creating tables from query results (`write_truncate` and `write_append` can write only to tables that already exists).
+Sometimes it's useful to create an additional table that stores some intermediate results.
+The `write_tmp` function allows creating tables from query results (`write_truncate` and `write_append` can write only to tables that already exist).
 
 You can refactor existing code using `write_tmp` function:
 
@@ -308,7 +308,7 @@ def calculate_user_transaction_metrics(dataset_manager):
 calculate_user_transaction_metrics(user_transaction_metrics_dataset_manager)
 ```
 
-It's the good practice to put series of related queries into a single function that you can schedule, test or run with specified dataset manager.
+It's the good practice to put a series of related queries into a single function that you can schedule, test or run with specified dataset manager.
 In this case it's `user_transaction_metrics` function. Temporary tables are useful for debugging your code by checking the results step
 by step. Splitting a big query into smaller chunks also makes it easier to read.
 
@@ -354,7 +354,7 @@ user_transaction_dataset_id, user_transaction_metrics_dataset_manager = create_d
 # Testing
 
 Unfortunately, there is no way to run BigQuery locally for testing. But you can still write automated E2E tests for your
-queries as shown below. Remember to set test project id before running the test.
+queries as shown below. Remember to set a test project id before running the test.
 
 ```python
 from datetime import date
@@ -469,3 +469,139 @@ class CalculateUserTransactionMetricsTestCase(TestCase):
 if __name__ == '__main__':
     main()
 ```
+
+### Creating beam manager
+Beam manager is an object that allows you to create dataflow pipelines. The `create_dataflow_pipeline` method allows you to create
+the beam manager object. The beam manager provides utility methods, wrapping raw beam API:`write_truncate_to_big_query`,
+ `write_to_avro`, 
+`read_from_big_query` `read_from_avro`.
+Let's get through a few examples to illustrate each of those operations.
+
+Start with the creation beam manager object. Parameters `project_id` and `dataset_name` define the dataset you want to work with.
+Parameter `internal_tables` specifies tables that are **inside** dataset specified by `project_id` and `dataset_name`.
+Parameter `external_tables` specifies tables that are **outside** dataset specified by `project_id` and `dataset_name`. 
+External tables have to be described by full table id, for example:
+
+```python
+external_tables = {
+    'transactions': 'dataset.id.transactions',
+    'some_external_table': 'dataset.id2.external_table'
+}
+```
+
+Parameter `runtime` is used to determine partition being processed.
+Parameter `dataflow_bucket` is  GCS bucket used for temporary and staging locations.
+Parameter `requirements_file_path` provides pieces of information about the dependencies of your dataflow.
+Parameter `region` is the location of the data center used to process your pipelines. By default is set to europe-west1.
+Parameter `machine_type` is a type of used machine. By default n1-standard-1. More about machine types in GCP: 
+https://cloud.google.com/compute/docs/machine-types
+
+```python
+dataflow_manager = create_dataflow_manager(
+            project_id=PROJECT_ID,
+            runtime="2019-01-01",
+            dataset_name=DATASET_NAME,
+            dataflow_bucket=BUCKET_NAME,
+            internal_tables=["user_transaction_metrics"],
+            external_tables={
+                'transactions': TRANSACTIONS_TABLE_ID},
+            requirements_file_path="/file_path",
+            region="europe-west2",
+            machine_type="n1-standard-2")
+            
+
+```
+
+### Create pipeline
+For this example, you have to do steps from https://github.com/allegro/biggerquery#setting-up-test-environment and
+https://github.com/allegro/biggerquery#create-table
+Now in the same file as we created dataflow_manager we need to create some code to create our pipeline as a module.
+```python
+import importlib
+import runpy
+import inspect
+        module_path = importlib.import_module('pipeline')
+        runpy.run_path(
+            inspect.getmodule(module_path).__file__,
+            init_globals={
+                'dm': dataflow_manager
+            },
+            run_name='__main__')
+```
+            
+After creating dataflow_manager we can create the pipeline. For this, we need to create a new file
+pipeline.py. Inside this file, we need to put code below. 
+
+```python
+import json
+
+import apache_beam as beam
+
+TRANSACTIONS_SCHEMA = '''
+{
+   "fields": [
+     {"name": "user_id", "type": "string", "mode": "required"},
+     {"name": "transaction_value", "type": "float", "mode": "required"},
+     {"name": "partition_timestamp", "type": "timestamp", "mode": "required"}
+ ]
+}
+'''
+
+def run(dm):
+    p = dm.create_dataflow_pipeline('save-transactions-pipeline')
+    p | 'write' >> beam.Create([
+        ['john123', 800.0, '2019-01-01 00:00:00'],
+        ['smith99', 10000.0, '2019-01-01 00:00:00'],
+        ['smith99', 30000.0, '2019-01-01 00:00:00']
+    ]) | "map" >> beam.Map(lambda element: {'user_id': element[0], 'transaction_value': element[1],
+                                            'partition_timestamp': element[
+                                                2]}) | 'write2' >> dm.write_truncate_to_big_query(
+        'transactions', json.loads(TRANSACTIONS_SCHEMA)[
+            'fields'])
+
+    p.run().wait_until_finish()
+    
+if __name__ == '__main__' \
+        and 'dm' in globals():
+    run(globals()['dm'])
+```
+
+This code will put rows inside **transactions** table using `write_truncate_to_big_query` method. Now run your dataflow manager. After a few minutes in our **transactions**
+table should be visible three records. Now update your `pipeline.py` file to look like this:
+
+```python
+import json
+
+import apache_beam as beam
+
+USER_TRANSACTION_METRICS_SCHEMA = '''
+{
+   "fields": [
+     {"name": "user_id", "type": "string", "mode": "required"},
+     {"name": "metric_type", "type": "string", "mode": "required"},
+     {"name": "metric_value", "type": "float", "mode": "required"},
+     {"name": "partition_timestamp", "type": "timestamp", "mode": "required"}
+ ]
+}
+'''
+
+def run(dm):
+    p = dm.create_dataflow_pipeline('save-user-transaction-metrics-pipeline')
+    p |dm.read_from_big_query("""
+        SELECT user_id,
+            sum(transaction_value) as metric_value,
+            'USER_TRANSACTION_VALUE' as metric_type,
+            TIMESTAMP('{dt}') as partition_timestamp
+        FROM `{transactions}`
+        WHERE DATE(partition_timestamp) = '{dt}'
+        GROUP BY user_id
+    """) | 'write' >> dm.write_truncate_to_big_query('user_transaction_metrics',
+                                                  json.loads(USER_TRANSACTION_METRICS_SCHEMA)["fields"])
+    
+if __name__ == '__main__' \
+        and 'dm' in globals():
+    run(globals()['dm'])
+```
+After a few minutes in **user_transaction_metrics** table results of executed query will be visible.
+
+Example code of `beam_manager` you can find in /examples/_example_beam_manager.py

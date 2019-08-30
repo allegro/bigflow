@@ -9,6 +9,8 @@ from apache_beam.options.pipeline_options import \
 
 DEFAULT_REGION = 'europe-west1'
 
+DEFAULT_MACHINE_TYPE = 'n1-standard-1'
+
 
 class BeamManager:
     """
@@ -128,9 +130,7 @@ class DataflowManager:
         schema = bigquery.TableSchema(fields=fields)
         return self.beam_manager.write_truncate_to_big_query(table_name, schema)
 
-    def create_dataflow_pipeline(self,
-                                 job_name,
-                                 local_runner=None):
+    def create_dataflow_pipeline(self, job_name, local_runner=None):
         options = PipelineOptions()
 
         if not local_runner:
@@ -164,9 +164,9 @@ def create_dataflow_manager(
         dataflow_bucket,
         requirements_file_path,
         region=DEFAULT_REGION,
-        machine_type='n1-standard-1',
-        internal_tables={},
-        external_tables={},
+        machine_type=DEFAULT_MACHINE_TYPE,
+        internal_tables=None,
+        external_tables=None,
         extras=None):
     """
     Dataflow manager factory.
@@ -183,6 +183,8 @@ def create_dataflow_manager(
     :param extras: dict with custom parameters that will be available inside templates
     :return: DataflowManager
     """
+    internal_tables = internal_tables or {}
+    external_tables = external_tables or {}
     internal_tables = {t: project_id + '.' + dataset_name + '.' + t for t in internal_tables} if internal_tables else {}
     extras = extras or {}
     _throw_on_none(project_id, "project_id")
