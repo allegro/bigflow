@@ -1,8 +1,8 @@
 # BiggerQuery &mdash; Python library for BigQuery
 
-BiggerQuery is a Python library which simplifies working with BigQuery datasets. It wraps BigQuery client, providing elegant
+BiggerQuery is a Python library that simplifies working with BigQuery datasets. It wraps BigQuery client, providing elegant
  API for most common use cases. It also provides API for creating dataflow pipelines and reading/writing
- from BigQuery in pipeline
+ from BigQuery in the pipeline
 
 ## Installation
 
@@ -16,7 +16,7 @@ BiggerQuery is compatible with Python 2.7.
 
 ### Task definition
 
-To guide you through all features that BiggerQuery provides, we prepared a simple task. There is a table **transactions**, which looks like this:
+To guide you through all the features that BiggerQuery provides, we prepared a simple task. There is a table **transactions**, which looks like this:
 
 | user_id | transaction_value | partition_timestamp |
 |---------|-------------------|---------------------|
@@ -24,7 +24,7 @@ To guide you through all features that BiggerQuery provides, we prepared a simpl
 | smith99 | 10000             | 2019-01-01 00:00:00 |
 | smith99 | 30000             | 2019-01-01 00:00:00 |
 
-Table contains all transactions that users make in a specific day. Your task is to calculate two metrics for each user:
+The table contains all transactions that users make on a specific day. Your task is to calculate two metrics for each user:
  daily user transaction value and daily user transaction count.
 
 Final result should be table **user_transaction_metrics**:
@@ -59,7 +59,7 @@ Then, prepare datasets. Start by creating a new Python module:
 
 `touch user_transaction_metrics.py`
 
-Edit created module with your favourite editor and add following lines:
+Edit created the module with your favorite editor and add the following lines:
 
 ```python
 from biggerquery import create_dataset_manager
@@ -117,7 +117,7 @@ This code creates 2 datasets:
 Dataset manager is an object that allows you to manipulate tables present in a given dataset, using basic operations: `write_truncate`, 
 `write_append`, `create_table`, `collect`, `write_tmp`. Let's go through a few examples to illustrate each of those operations.
 
-Start with creating dataset manager object. Parameters `project_id` and `dataset_name` defines dataset you want to work with.
+Start with creating a dataset manager object. Parameters `project_id` and `dataset_name` define the dataset you want to work with.
 Parameter `internal_tables` specifies tables that are **inside** dataset specified by `project_id` and `dataset_name`.
 Parameter `external_tables` specifies tables that are **outside** dataset specified by `project_id` and `dataset_name`.
 External tables have to be described by full table id, for example:
@@ -144,7 +144,7 @@ user_transaction_dataset_id, user_transaction_metrics_dataset_manager = create_d
 
 ### Create table
 
-Now, create a table that you can use to store your metrics. You can use plain SQL to create this table. Add following lines to `user_transaction_metrics.py`:
+Now, create a table that you can use to store your metrics. You can use plain SQL to create this table. Add the following lines to `user_transaction_metrics.py`:
 
 ```python
 user_transaction_metrics_dataset_manager.create_table("""
@@ -180,10 +180,10 @@ Result:
 | john123 | 800          | USER_TRANSACTION_VALUE | 2019-01-01 00:00:00 |
 | smith99 | 40000        | USER_TRANSACTION_VALUE | 2019-01-01 00:00:00 |
 
-The `write_truncate` function writes result of provided query to a specified table, in this case `user_transaction_metrics`.
+The `write_truncate` function writes the result of the provided query to a specified table, in this case `user_transaction_metrics`.
 This function removes all data from a given table before writing new data.
 
-Inside query, you don't have to write full table ids. You can use names provided in parameters `internal_tables` and `external_tables`.
+Inside the query, you don't have to write full table ids. You can use the names provided in the parameters `internal_tables` and `external_tables`.
 Parameter `runtime` is also available inside queries as `{dt}`.
  
 ### Write append
@@ -215,8 +215,8 @@ The difference between `write_truncate` and `write_append` is that write append 
  
 ### Write temporary
 
-Sometimes it's useful to create additional table that stores some intermediate results.
-The `write_tmp` function allows creating tables from query results (`write_truncate` and `write_append` can write only to tables that already exists).
+Sometimes it's useful to create an additional table that stores some intermediate results.
+The `write_tmp` function allows creating tables from query results (`write_truncate` and `write_append` can write only to tables that already exist).
 
 You can refactor existing code using `write_tmp` function:
 
@@ -309,7 +309,7 @@ def calculate_user_transaction_metrics(dataset_manager):
 calculate_user_transaction_metrics(user_transaction_metrics_dataset_manager)
 ```
 
-It's the good practice to put series of related queries into a single function that you can schedule, test or run with specified dataset manager.
+It's the good practice to put a series of related queries into a single function that you can schedule, test or run with specified dataset manager.
 In this case it's `user_transaction_metrics` function. Temporary tables are useful for debugging your code by checking the results step
 by step. Splitting a big query into smaller chunks also makes it easier to read.
 
@@ -355,7 +355,7 @@ user_transaction_dataset_id, user_transaction_metrics_dataset_manager = create_d
 # Testing
 
 Unfortunately, there is no way to run BigQuery locally for testing. But you can still write automated E2E tests for your
-queries as shown below. Remember to set test project id before running the test.
+queries as shown below. Remember to set a test project id before running the test.
 
 ```python
 from datetime import date
@@ -472,12 +472,13 @@ if __name__ == '__main__':
 ```
 
 ### Creating beam manager
-Beam manager is an object that allows you to create dataflow pipelines using `create_dataflow_pipeline` method and 
-read/write data from bigquery and avro files using methods: `write_truncate_to_big_query`, `write_to_avro`, 
+Beam manager is an object that allows you to create dataflow pipelines. The `create_dataflow_pipeline` method allows you to create
+the beam manager object. The beam manager provides utility methods, wrapping raw beam API:`write_truncate_to_big_query`,
+ `write_to_avro`, 
 `read_from_big_query` `read_from_avro`.
 Let's get through a few examples to illustrate each of those operations.
 
-Start with creation beam manager object. Parameters `project_id` and `dataset_name` defines dataset you want to work with.
+Start with the creation beam manager object. Parameters `project_id` and `dataset_name` define the dataset you want to work with.
 Parameter `internal_tables` specifies tables that are **inside** dataset specified by `project_id` and `dataset_name`.
 Parameter `external_tables` specifies tables that are **outside** dataset specified by `project_id` and `dataset_name`. 
 External tables have to be described by full table id, for example:
@@ -491,9 +492,10 @@ external_tables = {
 
 Parameter `runtime` is used to determine partition being processed.
 Parameter `dataflow_bucket` is  GCS bucket used for temporary and staging locations.
-Parameter `requirements_file_path` provides informations about dependencies of your dataflow.
-Parameter `region` is location of machine used in dataflow. By default is set to europe-west1.
-Parameter `machine_type` is type of used machine. By default n1-standard-1.
+Parameter `requirements_file_path` provides pieces of information about the dependencies of your dataflow.
+Parameter `region` is the location of the data center used to process your pipelines. By default is set to europe-west1.
+Parameter `machine_type` is a type of used machine. By default n1-standard-1. More about machine types in GCP: 
+https://cloud.google.com/compute/docs/machine-types
 
 ```python
 dataflow_manager = create_dataflow_manager(
@@ -512,9 +514,9 @@ dataflow_manager = create_dataflow_manager(
 ```
 
 ### Create pipeline
-For this example you have to do steps from https://github.com/allegro/biggerquery#setting-up-test-environment and
+For this example, you have to do steps from https://github.com/allegro/biggerquery#setting-up-test-environment and
 https://github.com/allegro/biggerquery#create-table
-Now in same file as we created dataflow_manager we need to create some code to create our pipeline as module.
+Now in the same file as we created dataflow_manager we need to create some code to create our pipeline as a module.
 ```python
 import importlib
 import runpy
@@ -528,8 +530,8 @@ import inspect
             run_name='__main__')
 ```
             
-After creating dataflow_manager we can create pipeline. For this we need to create a new file
-pipeline.py. Inside this file we need to put code below. 
+After creating dataflow_manager we can create the pipeline. For this, we need to create a new file
+pipeline.py. Inside this file, we need to put code below. 
 
 ```python
 import json

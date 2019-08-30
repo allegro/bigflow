@@ -166,7 +166,7 @@ def create_dataflow_manager(
         region=DEFAULT_REGION,
         machine_type=DEFAULT_MACHINE_TYPE,
         internal_tables=None,
-        external_tables={},
+        external_tables=None,
         extras=None):
     """
     Dataflow manager factory.
