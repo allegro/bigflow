@@ -2,7 +2,7 @@ import uuid
 import logging
 from google.cloud import bigquery
 
-DEFAULT_LOCATION = 'EU'
+from .gcp_defaults import DEFAULT_LOCATION
 
 
 def get_partition_from_run_datetime_or_none(run_datetime):
@@ -55,6 +55,10 @@ class TemplatedDatasetManager(object):
 
     def remove_dataset(self):
         return self.dataset_manager.remove_dataset()
+
+    def load_table_from_dataframe(self, table_name, df):
+        table_id = self.create_table_id(table_name)
+        return self.dataset_manager.load_table_from_dataframe(table_id, df)
 
     def create_table(self, create_query):
         return self.dataset_manager.create_table(create_query)
@@ -117,14 +121,30 @@ class PartitionedDatasetManager(object):
     def runtime_str(self):
         return self._dataset_manager.run_datetime
 
+    @property
+    def extras(self):
+        return self._dataset_manager.extras
+
+    @property
+    def client(self):
+        return self._dataset_manager.dataset_manager.bigquery_client
+
     def remove_dataset(self):
         return self._dataset_manager.remove_dataset()
 
+    def load_table_from_dataframe(self, table_name, df, partitioned=True, custom_run_datetime=None):
+        table_id = self._create_table_id(custom_run_datetime, table_name, partitioned)
+        return self._dataset_manager.load_table_from_dataframe(table_id, df)
+
     def _write(self, write_callable, table_name, sql, partitioned, custom_run_datetime=None):
+        table_id = self._create_table_id(custom_run_datetime, table_name, partitioned)
+        return write_callable(table_id, sql, custom_run_datetime)
+
+    def _create_table_id(self, custom_run_datetime, table_name, partitioned):
         custom_partition = get_partition_from_run_datetime_or_none(custom_run_datetime)
         if partitioned:
             table_name = table_name + '${partition}'.format(partition=custom_partition or self.partition)
-        return write_callable(table_name, sql, custom_run_datetime)
+        return table_name
 
     def _table_exists(self, table_name):
         return self._dataset_manager.table_exists(table_name)
@@ -144,7 +164,7 @@ class DatasetManager(object):
         self.logger = logger
 
     def write_tmp(self, table_id, sql):
-        self.write(table_id, sql, 'WRITE_TRUNCATE')
+        return self.write(table_id, sql, 'WRITE_TRUNCATE')
 
     def write(self, table_id, sql, mode):
         self.logger.info('%s to %s', mode, table_id)
@@ -156,15 +176,15 @@ class DatasetManager(object):
         job_config.write_disposition = mode
 
         job = self.bigquery_client.query(sql, job_config=job_config)
-        job.result()
+        return job.result()
 
     def write_truncate(self, table_id, sql):
         self.table_exists_or_error(table_id)
-        self.write(table_id, sql, 'WRITE_TRUNCATE')
+        return self.write(table_id, sql, 'WRITE_TRUNCATE')
 
     def write_append(self, table_id, sql):
         self.table_exists_or_error(table_id)
-        self.write(table_id, sql, 'WRITE_APPEND')
+        return self.write(table_id, sql, 'WRITE_APPEND')
 
     def table_exists_or_error(self, table_id):
         table_name = table_id.split('$')[0].split('.')[2]
@@ -180,15 +200,17 @@ class DatasetManager(object):
         job = self.bigquery_client.query(
             create_query,
             job_config=job_config)
-        job.result()
+        return job.result()
 
     def collect(self, sql):
         self.logger.info('COLLECTING DATA: %s', sql)
-        q_result = self.bigquery_client.query(sql)
-        return list(q_result.result())
+        return self.bigquery_client.query(sql).to_dataframe()
 
     def remove_dataset(self):
-        self.bigquery_client.delete_dataset(self.dataset, delete_contents=True, not_found_ok=True)
+        return self.bigquery_client.delete_dataset(self.dataset, delete_contents=True, not_found_ok=True)
+
+    def load_table_from_dataframe(self, table_id, df):
+        return self.bigquery_client.load_table_from_dataframe(df, table_id).result()
 
     def table_exists(self, table_name):
         return self.bigquery_client.query('''

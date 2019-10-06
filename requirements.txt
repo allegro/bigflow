@@ -1,0 +1,7 @@
+-r requirements/base.txt
+-r requirements/beam_extras.txt
+jupyter
+setuptools
+wheel
+twine
+tqdm

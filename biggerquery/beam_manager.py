@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 import avro.schema
 from apache_beam.io import BigQueryDisposition
 
@@ -7,9 +9,8 @@ from apache_beam.io.gcp.internal.clients import bigquery
 from apache_beam.options.pipeline_options import \
     PipelineOptions, SetupOptions, StandardOptions, GoogleCloudOptions, WorkerOptions
 
-DEFAULT_REGION = 'europe-west1'
-
-DEFAULT_MACHINE_TYPE = 'n1-standard-1'
+from .gcp_defaults import DEFAULT_REGION
+from .gcp_defaults import DEFAULT_MACHINE_TYPE
 
 
 class BeamManager:
@@ -33,8 +34,9 @@ class BeamManager:
     def write_to_avro(self, file_output_path, schema):
         return beam.io.WriteToAvro(
             file_output_path,
-            avro.schema.parse(schema),
+            avro.schema.Parse(schema),
             num_shards=1,
+            use_fastavro=False,
             shard_name_template='S_N',
             file_name_suffix='.avro')
 
