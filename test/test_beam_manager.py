@@ -171,14 +171,14 @@ class DataFlowManagerTest(BeamTestCase):
 
         # then
         self.assertEqual(write_to_avro.call_args[0][0], "/file_output_path")
-        self.assertEqual(write_to_avro.call_args[0][1].fields_dict[u'id'].props['name'], u'id')
-        self.assertEqual(write_to_avro.call_args[0][1].fields_dict[u'id'].props[u'mode'], u'required')
-        self.assertEqual(write_to_avro.call_args[0][1].fields_dict[u'id'].props['type'].fullname, u'string')
+        self.assertEqual(write_to_avro.call_args[0][1].field_map[u'id'].props['name'], u'id')
+        self.assertEqual(write_to_avro.call_args[0][1].field_map[u'id'].props[u'mode'], u'required')
+        self.assertEqual(write_to_avro.call_args[0][1].field_map[u'id'].props['type'].fullname, u'string')
 
         # and
-        self.assertEqual(write_to_avro.call_args[0][1].fields_dict[u'name'].props['name'], u'name')
-        self.assertEqual(write_to_avro.call_args[0][1].fields_dict[u'name'].props[u'mode'], u'required')
-        self.assertEqual(write_to_avro.call_args[0][1].fields_dict[u'name'].props['type'].fullname, u'string')
+        self.assertEqual(write_to_avro.call_args[0][1].field_map[u'name'].props['name'], u'name')
+        self.assertEqual(write_to_avro.call_args[0][1].field_map[u'name'].props[u'mode'], u'required')
+        self.assertEqual(write_to_avro.call_args[0][1].field_map[u'name'].props['type'].fullname, u'string')
 
         # and
         self.assertEqual(write_to_avro.call_args[1]['num_shards'], 1)
@@ -220,8 +220,7 @@ class DataFlowManagerIntegrationTest(BeamManagerTest):
         write_to = self.dataflow_manager.write_to_avro(output_file_path, EXAMPLE_OUTPUT_SCHEMA)
 
         # when
-        self.dataflow_manager.beam_manager.beam_manager.pipeline | self.samples(
-            read_from) | "write to avro" >> write_to
+        self.dataflow_manager.beam_manager.beam_manager.pipeline | self.samples(read_from) | write_to
         self.dataflow_manager.beam_manager.beam_manager.pipeline.run().wait_until_finish()
         data = self.extract_data_from_avro(output_file_path)
 

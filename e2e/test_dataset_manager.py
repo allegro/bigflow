@@ -3,8 +3,14 @@ from __future__ import absolute_import
 from unittest import TestCase
 from unittest import main
 
+import pandas as pd
+
 from biggerquery import create_dataset_manager
 from . import config
+
+
+def df_to_collections(df):
+    return [r for _, r in df.iterrows()]
 
 
 class DatasetManagerTestCase(TestCase):
@@ -15,7 +21,7 @@ class DatasetManagerTestCase(TestCase):
         self.test_dataset_id, self.dataset_manager = create_dataset_manager(
             config.PROJECT_ID,
             self.TEST_PARTITION,
-            internal_tables=['fake_target_table', 'partitioned_fake_target_table'])
+            internal_tables=['fake_target_table', 'partitioned_fake_target_table', 'loaded_table'])
 
         self.dataset_manager.create_table('''
         CREATE TABLE IF NOT EXISTS fake_target_table (
@@ -45,9 +51,9 @@ class WriteTruncateTestCase(DatasetManagerTestCase):
         ''', partitioned=False)
 
         # then
-        self.assertTrue(self.dataset_manager.collect('''
+        self.assertTrue(df_to_collections(self.dataset_manager.collect('''
         SELECT * FROM `{fake_target_table}`
-        '''))
+        ''')))
 
     def test_should_override_old_records_in_non_partitioned_table(self):
 
@@ -61,7 +67,7 @@ class WriteTruncateTestCase(DatasetManagerTestCase):
         SELECT 'Neo' AS first_name, 'Neo' AS last_name
         ''', partitioned=False)
 
-        final_rows = list(self.dataset_manager.collect('''
+        final_rows = df_to_collections(self.dataset_manager.collect('''
         SELECT * FROM `{fake_target_table}`
         '''))
 
@@ -78,10 +84,10 @@ class WriteTruncateTestCase(DatasetManagerTestCase):
         ''')
 
         # then
-        self.assertTrue(self.dataset_manager.collect('''
+        self.assertTrue(df_to_collections(self.dataset_manager.collect('''
         SELECT * FROM `{partitioned_fake_target_table}`
         WHERE DATE(batch_date) = '{dt}'
-        '''))
+        ''')))
 
     def test_should_override_old_records_in_partitioned_table(self):
 
@@ -95,7 +101,7 @@ class WriteTruncateTestCase(DatasetManagerTestCase):
         SELECT TIMESTAMP('{dt}') AS batch_date, 'Neo' AS first_name, 'Neo' AS last_name
         ''')
 
-        final_rows = list(self.dataset_manager.collect('''
+        final_rows = df_to_collections(self.dataset_manager.collect('''
         SELECT * FROM `{partitioned_fake_target_table}`
         WHERE DATE(batch_date) = '{dt}'
         '''))
@@ -113,11 +119,11 @@ class WriteTruncateTestCase(DatasetManagerTestCase):
         ''', custom_run_datetime=self.TEST_PARTITION_PLUS_ONE)
 
         # then
-        self.assertTrue(self.dataset_manager.collect('''
+        self.assertTrue(df_to_collections(self.dataset_manager.collect('''
         SELECT *
         FROM `{partitioned_fake_target_table}`
         WHERE DATE(batch_date) = '{dt}'
-        ''', custom_run_datetime=self.TEST_PARTITION_PLUS_ONE))
+        ''', custom_run_datetime=self.TEST_PARTITION_PLUS_ONE)))
 
     def test_should_return_error_when_trying_to_write_to_nonexistent_table(self):
         with self.assertRaises(ValueError):
@@ -153,9 +159,9 @@ class WriteAppendTestCase(DatasetManagerTestCase):
         ''', partitioned=False)
 
         # then
-        self.assertTrue(self.dataset_manager.collect('''
+        self.assertTrue(df_to_collections(self.dataset_manager.collect('''
         SELECT * FROM `{fake_target_table}`
-        '''))
+        ''')))
 
         # when
         self.dataset_manager.write_append('fake_target_table', '''
@@ -163,7 +169,7 @@ class WriteAppendTestCase(DatasetManagerTestCase):
         ''', partitioned=False)
 
         # then
-        results = list(self.dataset_manager.collect('SELECT * FROM `{fake_target_table}`'))
+        results = df_to_collections(self.dataset_manager.collect('SELECT * FROM `{fake_target_table}`'))
         for r in results:
             self.assertEqual(r['first_name'], 'John')
             self.assertEqual(r['last_name'], 'Smith')
@@ -177,10 +183,10 @@ class WriteAppendTestCase(DatasetManagerTestCase):
         ''')
 
         # then
-        self.assertTrue(self.dataset_manager.collect('''
+        self.assertTrue(df_to_collections(self.dataset_manager.collect('''
         SELECT * FROM `{partitioned_fake_target_table}`
         WHERE DATE(batch_date) = '{dt}'
-        '''))
+        ''')))
 
         # when
         self.dataset_manager.write_append('partitioned_fake_target_table', '''
@@ -188,7 +194,7 @@ class WriteAppendTestCase(DatasetManagerTestCase):
         ''')
 
         # then
-        results = list(self.dataset_manager.collect('SELECT * FROM `{partitioned_fake_target_table}`'))
+        results = df_to_collections(self.dataset_manager.collect('SELECT * FROM `{partitioned_fake_target_table}`'))
         for r in results:
             self.assertEqual(r['first_name'], 'John')
             self.assertEqual(r['last_name'], 'Smith')
@@ -210,11 +216,11 @@ class WriteAppendTestCase(DatasetManagerTestCase):
         ''', custom_run_datetime=self.TEST_PARTITION_PLUS_ONE)
 
         # then
-        self.assertTrue(self.dataset_manager.collect('''
+        self.assertTrue(df_to_collections(self.dataset_manager.collect('''
         SELECT *
         FROM `{partitioned_fake_target_table}`
         WHERE DATE(batch_date) = '{dt}'
-        ''', custom_run_datetime=self.TEST_PARTITION_PLUS_ONE))
+        ''', custom_run_datetime=self.TEST_PARTITION_PLUS_ONE)))
 
 
 class WriteToTemporaryTableTestCase(DatasetManagerTestCase):
@@ -227,9 +233,9 @@ class WriteToTemporaryTableTestCase(DatasetManagerTestCase):
         ''')
 
         # then
-        self.assertTrue(self.dataset_manager.collect('''
+        self.assertTrue(df_to_collections(self.dataset_manager.collect('''
         SELECT * FROM `{tmp_table}`
-        '''))
+        ''')))
 
     def test_should_override_existing_temporary_table_content(self):
 
@@ -244,7 +250,7 @@ class WriteToTemporaryTableTestCase(DatasetManagerTestCase):
         ''')
 
         # then
-        results = list(self.dataset_manager.collect('SELECT * FROM `{tmp_table}`'))
+        results = df_to_collections(self.dataset_manager.collect('SELECT * FROM `{tmp_table}`'))
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0]['first_name'], 'Neo')
         self.assertEqual(results[0]['last_name'], 'Neo')
@@ -257,11 +263,11 @@ class WriteToTemporaryTableTestCase(DatasetManagerTestCase):
         ''', custom_run_datetime=self.TEST_PARTITION_PLUS_ONE)
 
         # then
-        self.assertTrue(self.dataset_manager.collect('''
+        self.assertTrue(df_to_collections(self.dataset_manager.collect('''
         SELECT *
         FROM `{tmp_table}`
         WHERE DATE(batch_date) = '{dt}'
-        ''', custom_run_datetime=self.TEST_PARTITION_PLUS_ONE))
+        ''', custom_run_datetime=self.TEST_PARTITION_PLUS_ONE)))
 
 
 class QueryTemplatingTestCase(DatasetManagerTestCase):
@@ -345,10 +351,10 @@ class QueryTemplatingTestCase(DatasetManagerTestCase):
         ''', partitioned=False)
 
         # then
-        self.assertTrue(self.dataset_manager.collect('''
+        self.assertTrue(df_to_collections(self.dataset_manager.collect('''
         SELECT * FROM `{fake_target_table}`
         '''.format(
-            fake_target_table=self.test_dataset_id + '.' + 'fake_target_table')))
+            fake_target_table=self.test_dataset_id + '.' + 'fake_target_table'))))
 
     def test_should_resolve_external_table_name(self):
 
@@ -358,9 +364,9 @@ class QueryTemplatingTestCase(DatasetManagerTestCase):
         ''', partitioned=False)
 
         # then
-        self.assertTrue(self.dataset_manager.collect('''
+        self.assertTrue(df_to_collections(self.dataset_manager.collect('''
         SELECT * FROM `{fake_target_table}`
-        '''))
+        ''')))
 
     def test_should_resolve_partition(self):
 
@@ -371,9 +377,9 @@ class QueryTemplatingTestCase(DatasetManagerTestCase):
         ''', partitioned=False)
 
         # then
-        self.assertTrue(self.dataset_manager.collect('''
+        self.assertTrue(df_to_collections(self.dataset_manager.collect('''
         SELECT * FROM `{fake_target_table}`
-        '''))
+        ''')))
 
     def test_should_resolve_tmp_table_name(self):
 
@@ -388,9 +394,9 @@ class QueryTemplatingTestCase(DatasetManagerTestCase):
         ''', partitioned=False)
 
         # then
-        self.assertTrue(self.dataset_manager.collect('''
+        self.assertTrue(df_to_collections(self.dataset_manager.collect('''
         SELECT * FROM `{fake_target_table}`
-        '''))
+        ''')))
 
     def test_should_resolve_extras(self):
 
@@ -402,9 +408,9 @@ class QueryTemplatingTestCase(DatasetManagerTestCase):
         ''', partitioned=False)
 
         # then
-        self.assertTrue(self.dataset_manager.collect('''
+        self.assertTrue(df_to_collections(self.dataset_manager.collect('''
         SELECT * FROM `{fake_target_table}`
-        '''))
+        ''')))
 
     def test_should_resolve_custom_partition(self):
 
@@ -415,9 +421,9 @@ class QueryTemplatingTestCase(DatasetManagerTestCase):
         ''', custom_run_datetime=self.TEST_PARTITION_PLUS_ONE)
 
         # then
-        self.assertTrue(self.dataset_manager.collect('''
+        self.assertTrue(df_to_collections(self.dataset_manager.collect('''
         SELECT * FROM `{fake_partitioned_target_table}`
-        ''', custom_run_datetime=self.TEST_PARTITION_PLUS_ONE))
+        ''', custom_run_datetime=self.TEST_PARTITION_PLUS_ONE)))
 
 
 class CollectTestCase(DatasetManagerTestCase):
@@ -430,11 +436,11 @@ class CollectTestCase(DatasetManagerTestCase):
         ''')
 
         # when
-        records = self.dataset_manager.collect('''
+        records = df_to_collections(self.dataset_manager.collect('''
         SELECT *
         FROM `{tmp_table}`
         WHERE DATE(batch_date) = '{dt}'
-        ''')
+        '''))
 
         # then
         self.assertEqual(len(records), 1)
@@ -453,16 +459,91 @@ class CollectTestCase(DatasetManagerTestCase):
         ''', partitioned=False)
 
         # when
-        records = self.dataset_manager.collect('''
+        records = df_to_collections(self.dataset_manager.collect('''
         SELECT *
         FROM `{tmp_table}`
         WHERE DATE(batch_date) = '{dt}'
-        ''', custom_run_datetime=self.TEST_PARTITION_PLUS_ONE)
+        ''', custom_run_datetime=self.TEST_PARTITION_PLUS_ONE))
 
         # then
         self.assertEqual(len(records), 1)
         self.assertEqual(records[0]['first_name'], 'John')
         self.assertEqual(records[0]['last_name'], 'Smith')
+
+
+class LoadTableFromDataFrameTestCase(DatasetManagerTestCase):
+
+    def test_should_load_df_to_non_partitioned_table(self):
+        # given
+        df = pd.DataFrame([['John', 'Smith']], columns=['first_name', 'last_name'])
+
+        # when
+        self.dataset_manager.load_table_from_dataframe('fake_target_table', df, partitioned=False)
+
+        # then
+        self.assertTrue(df_to_collections(self.dataset_manager.collect('''
+        SELECT * FROM `{fake_target_table}`
+        ''')))
+
+        # when
+        self.dataset_manager.load_table_from_dataframe('fake_target_table', df, partitioned=False)
+
+        # then
+        results = df_to_collections(self.dataset_manager.collect('SELECT * FROM `{fake_target_table}`'))
+        for r in results:
+            self.assertEqual(r['first_name'], 'John')
+            self.assertEqual(r['last_name'], 'Smith')
+        self.assertEqual(len(results), 2)
+
+    def test_should_load_df_to_partitioned_table(self):
+        # given
+        df = pd.DataFrame([['John', 'Smith', pd.Timestamp(self.TEST_PARTITION, tz='utc')]], columns=['first_name', 'last_name', 'batch_date'])
+
+        # when
+        self.dataset_manager.load_table_from_dataframe('partitioned_fake_target_table', df)
+
+        # then
+        self.assertTrue(df_to_collections(self.dataset_manager.collect('''
+        SELECT * FROM `{partitioned_fake_target_table}`
+        WHERE DATE(batch_date) = '{dt}'
+        ''')))
+
+        # when
+        self.dataset_manager.load_table_from_dataframe('partitioned_fake_target_table', df)
+
+        # then
+        results = df_to_collections(self.dataset_manager.collect('SELECT * FROM `{partitioned_fake_target_table}`'))
+        for r in results:
+            self.assertEqual(r['first_name'], 'John')
+            self.assertEqual(r['last_name'], 'Smith')
+        self.assertEqual(len(results), 2)
+
+    def test_should_create_table_when_loading_df_to_nonexistent_table(self):
+        # given
+        df = pd.DataFrame([['John', 'Smith']], columns=['first_name', 'last_name'])
+
+        # when
+        self.dataset_manager.load_table_from_dataframe('loaded_table', df, partitioned=False)
+
+        # then
+        self.assertTrue(df_to_collections(self.dataset_manager.collect('''
+        SELECT * FROM `{loaded_table}`
+        ''')))
+
+    def test_should_load_df_to_custom_partition(self):
+        # given
+        df = pd.DataFrame([['John', 'Smith', pd.Timestamp(self.TEST_PARTITION_PLUS_ONE, tz='utc')]],
+                          columns=['first_name', 'last_name', 'batch_date'])
+
+        # when
+        self.dataset_manager.load_table_from_dataframe(
+            'partitioned_fake_target_table', df, custom_run_datetime=self.TEST_PARTITION_PLUS_ONE)
+
+        # then
+        self.assertTrue(df_to_collections(self.dataset_manager.collect('''
+        SELECT * FROM `{partitioned_fake_target_table}`
+        WHERE DATE(batch_date) = '{dt}'
+        ''', custom_run_datetime=self.TEST_PARTITION_PLUS_ONE)))
 
 
 if __name__ == '__main__':
