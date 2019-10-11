@@ -1,9 +1,9 @@
-# BiggerQuery &mdash; The Python framework for the BigQuery
+# BiggerQuery &mdash; The Python framework for BigQuery
 
-Tired of the limiting BigQuery console? Open your Jupyter notebook and start working with the BigQuery using Python!
+Tired of the limiting BigQuery console? Open your Jupyter notebook and start working with BigQuery using Python!
 
 BiggerQuery lets you:
-* Work with the BigQuery using a Python code.
+* Work with BigQuery using Python code.
 * Create a workflow that you can automatically convert to an Airflow DAG.
 * Implement a configurable environment for your workflows.
 * Organize your data processing.
@@ -13,7 +13,7 @@ BiggerQuery lets you:
 * Mix BigQuery, Python and Apache-Beam in your workflows.
 
 BiggerQuery scales to your needs. It's very easy to start making queries and creating workflows. If needed, 
-BiggerQuery lets you implement complex stuff(the Allegro experimentation platform was created using the BiggerQuery framework).
+BiggerQuery lets you implement complex stuff (the Allegro experimentation platform was created using the BiggerQuery framework).
 
 ## Installation
 
