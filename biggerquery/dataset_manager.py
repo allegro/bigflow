@@ -53,6 +53,9 @@ class TemplatedDatasetManager(object):
     def collect(self, sql, custom_run_datetime=None):
         return self.dataset_manager.collect(sql.format(**self.template_variables(custom_run_datetime)))
 
+    def dry_run(self, sql, custom_run_datetime=None):
+        return self.dataset_manager.dry_run(sql.format(**self.template_variables(custom_run_datetime)))
+
     def remove_dataset(self):
         return self.dataset_manager.remove_dataset()
 
@@ -113,6 +116,9 @@ class PartitionedDatasetManager(object):
 
     def collect(self, sql, custom_run_datetime=None):
         return self._dataset_manager.collect(sql, custom_run_datetime)
+
+    def dry_run(self, sql, custom_run_datetime=None):
+        return self._dataset_manager.dry_run(sql, custom_run_datetime)
 
     def create_table(self, create_query):
         return self._dataset_manager.create_table(create_query)
@@ -203,8 +209,16 @@ class DatasetManager(object):
         return job.result()
 
     def collect(self, sql):
-        self.logger.info('COLLECTING DATA: %s', sql)
-        return self.bigquery_client.query(sql).to_dataframe()
+        return self._query(sql).to_dataframe()
+
+    def dry_run(self, sql):
+        job_config = bigquery.QueryJobConfig()
+        job_config.dry_run = True
+        query_job = self._query(sql, job_config=job_config)
+        billed = self._convert_to_humanbytes(query_job.total_bytes_processed)
+        return "This query will process {} and cost {}.".format(
+          billed['size'],
+          billed['cost'])
 
     def remove_dataset(self):
         return self.bigquery_client.delete_dataset(self.dataset, delete_contents=True, not_found_ok=True)
@@ -223,6 +237,28 @@ class DatasetManager(object):
             .result() \
             .to_dataframe()['table_exists'] \
             .iloc[0] > 0
+
+    def _query(self, sql, job_config=None):
+        self.logger.info('COLLECTING DATA: %s', sql)
+        if job_config:
+            return self.bigquery_client.query(sql, job_config=job_config)
+        else:
+            return self.bigquery_client.query(sql)
+
+    @staticmethod
+    def _convert_to_humanbytes(size_in_bytes):
+        size = float(size_in_bytes)
+        power = 2 ** 10
+        tera = 2 ** 40
+        tb_cost = 5
+        n = 0
+        power_labels = {0: ' B', 1: ' KB', 2: ' MB', 3: ' GB', 4: ' TB', 5: ' PB'}
+        cost = str(round(size / tera * tb_cost, 2)) + ' USD'
+        while size > power:
+            size /= power
+            n += 1
+        return {'size': str(round(size, 2)) + power_labels[n],
+                'cost': cost}
 
 
 def create_dataset(dataset_name, bigquery_client, location=DEFAULT_LOCATION):

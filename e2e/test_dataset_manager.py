@@ -471,6 +471,40 @@ class CollectTestCase(DatasetManagerTestCase):
         self.assertEqual(records[0]['last_name'], 'Smith')
 
 
+class RunDryTestCase(DatasetManagerTestCase):
+    def test_should_dry_run(self):
+        # given
+        self.dataset_manager.write_tmp('tmp_table', '''
+        SELECT TIMESTAMP('{dt}') AS batch_date, 'John' AS first_name, 'Smith' AS last_name
+        ''')
+
+        # when
+        costs = self.dataset_manager.dry_run('''
+        SELECT *
+        FROM `{tmp_table}`
+        WHERE DATE(batch_date) = '{dt}'
+        ''')
+
+        # then
+        self.assertTrue(costs, 'This query will process 21.0 B and cost 0.0 USD.')
+
+    def test_should_dry_run_with_custom_partition(self):
+        # given
+        self.dataset_manager.write_tmp('tmp_table', '''
+        SELECT TIMESTAMP('{dt}') AS batch_date, 'John' AS first_name, 'Smith' AS last_name
+        ''')
+
+        # when
+        costs = self.dataset_manager.dry_run('''
+        SELECT *
+        FROM `{tmp_table}`
+        WHERE DATE(batch_date) = '{dt}'
+        ''', custom_run_datetime=self.TEST_PARTITION_PLUS_ONE)
+
+        # then
+        self.assertTrue(costs, 'This query will process 21.0 B and cost 0.0 USD.')
+
+
 class LoadTableFromDataFrameTestCase(DatasetManagerTestCase):
 
     def test_should_load_df_to_non_partitioned_table(self):
