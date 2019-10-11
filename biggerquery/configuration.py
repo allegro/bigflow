@@ -12,12 +12,14 @@ class DatasetConfig(object):
                  dataset_name,
                  internal_tables=None,
                  external_tables=None,
+                 credentials=None,
                  extras=None,
                  dataflow_config=None):
         self.project_id = project_id
         self.dataset_name = dataset_name
         self.internal_tables = internal_tables or []
         self.external_tables = external_tables or {}
+        self.credentials = credentials or None
         self.extras = extras or {}
         self.dataflow_config = dataflow_config
 
@@ -27,6 +29,7 @@ class DatasetConfig(object):
             'dataset_name': self.dataset_name,
             'internal_tables': self.internal_tables,
             'external_tables': self.external_tables,
+            'credentials': self.credentials,
             'extras': self.extras
         }
         if self.dataflow_config and with_dataflow_config:

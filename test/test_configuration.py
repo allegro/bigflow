@@ -32,6 +32,7 @@ class DatasetConfigTestCase(TestCase):
             'dataset_name': 'some_dataset',
             'internal_tables': [],
             'external_tables': {},
+            'credentials': None,
             'extras': {}
         })
 
@@ -50,6 +51,7 @@ class DatasetConfigTestCase(TestCase):
             'dataset_name': 'some_dataset',
             'internal_tables': [],
             'external_tables': {},
+            'credentials': None,
             'extras': {},
             'dataflow_bucket': 'some_bucket',
             'machine_type': 'standard',

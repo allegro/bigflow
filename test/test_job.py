@@ -26,7 +26,8 @@ class JobTestCase(TestCase):
                 'internal_tables': ['some_internal_table'],
                 'external_tables': {'some_external_table': 'some.external.table'},
                 'extras': {'extra_param': 'some-extra-param'},
-                'runtime': '2019-01-01'
+                'runtime': '2019-01-01',
+                'credentials': 'credentials'
             })
 
             # and
@@ -36,6 +37,7 @@ class JobTestCase(TestCase):
                 'internal_tables': ['some_internal_table'],
                 'external_tables': {'some_external_table': 'some.external.table'},
                 'extras': {'extra_param': 'some-extra-param'},
+                'credentials': 'credentials',
                 'runtime': '2019-01-01'
             })
 
@@ -45,6 +47,7 @@ class JobTestCase(TestCase):
                       dataset_name='some-dataset',
                       internal_tables=['some_internal_table'],
                       external_tables={'some_external_table': 'some.external.table'},
+                      credentials='credentials',
                       extras={'extra_param': 'some-extra-param'}),
                   bigquery_dependency2=DatasetConfig(
                       project_id='some-project-id-2',
@@ -57,6 +60,7 @@ class JobTestCase(TestCase):
                       ),
                       internal_tables=['some_internal_table'],
                       external_tables={'some_external_table': 'some.external.table'},
+                      credentials='credentials',
                       extras={'extra_param': 'some-extra-param'}))
 
         # when
@@ -101,7 +105,8 @@ def run(dependency_beam_manager):
         'dataflow_bucket': 'dataflow_bucket',
         'region': 'europe-west',
         'machine_type': 'standard',
-        'runtime': '2019-01-01'
+        'runtime': '2019-01-01',
+        'credentials': None
     })
 
 if __name__ == '__main__':
