@@ -78,6 +78,14 @@ class InteractiveDatasetManager(object):
             sql,
             operation_name=DEFAULT_OPERATION_NAME)
 
+    def dry_run(self, sql):
+        method = 'dry_run'
+        return self._tmp_interactive_component_factory(
+            generate_component_name(method=method, table_name='', sql=sql),
+            method,
+            sql,
+            operation_name=DEFAULT_OPERATION_NAME)
+
     def create_table(self, create_query):
         method = 'create_table'
         return self._tmp_interactive_component_factory(
@@ -245,6 +253,13 @@ class OperationLevelDatasetManager(object):
         return self._run_operation(
             operation_name=operation_name,
             method=self._dataset_manager.collect,
+            sql=sql,
+            custom_run_datetime=custom_run_datetime)
+
+    def dry_run(self, sql, custom_run_datetime=None, operation_name=None):
+        return self._run_operation(
+            operation_name=operation_name,
+            method=self._dataset_manager.dry_run,
             sql=sql,
             custom_run_datetime=custom_run_datetime)
 

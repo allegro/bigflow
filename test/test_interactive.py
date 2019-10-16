@@ -51,6 +51,7 @@ class OperationLevelDatasetManagerTestCase(TestCase):
             ds.write_append('some table', 'some sql', partitioned=False, custom_run_datetime='2019-12-12')
             ds.write_tmp('some table', 'some sql', custom_run_datetime='2019-12-12')
             ds.collect('some sql', custom_run_datetime='2019-12-12')
+            ds.dry_run('some sql', custom_run_datetime='2019-12-12')
             ds.create_table('some sql')
             ds.load_table_from_dataframe(
                 'some table', 'some dataframe', partitioned=False, custom_run_datetime='2019-12-12')
@@ -68,6 +69,8 @@ class OperationLevelDatasetManagerTestCase(TestCase):
             mock.call.write_tmp(
                 table_name='some table', sql='some sql', custom_run_datetime='2019-12-12'),
             mock.call.collect(
+                sql='some sql', custom_run_datetime='2019-12-12'),
+            mock.call.dry_run(
                 sql='some sql', custom_run_datetime='2019-12-12'),
             mock.call.create_table(create_query='some sql'),
             mock.call.load_table_from_dataframe(
@@ -448,6 +451,7 @@ class InteractiveDatasetManagerTestCase(TestCase):
         write_append_component = dataset.write_append('table', 'some sql')
         write_tmp_component = dataset.write_tmp('table', 'some sql')
         collect_component = dataset.collect('some sql')
+        dry_run_component = dataset.dry_run('some sql')
         load_table_from_dataframe_component = dataset.load_table_from_dataframe('table', 'df')
 
         # when
@@ -455,6 +459,7 @@ class InteractiveDatasetManagerTestCase(TestCase):
         write_append_component.run()
         write_tmp_component.run()
         collect_component.run()
+        dry_run_component.run()
         load_table_from_dataframe_component.run()
 
         # then
@@ -474,6 +479,9 @@ class InteractiveDatasetManagerTestCase(TestCase):
                 sql='some sql',
                 custom_run_datetime=None),
             mock.call.collect(
+                sql='some sql',
+                custom_run_datetime=None),
+            mock.call.dry_run(
                 sql='some sql',
                 custom_run_datetime=None),
             mock.call.load_table_from_dataframe(
