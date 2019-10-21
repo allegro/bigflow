@@ -17,9 +17,14 @@ __all__ = [
     'Workflow',
 
     'Job',
+
+    'fastai_tabular_prediction_component',
+    'sensor_component',
 ]
 
 from .utils import secure_create_dataflow_manager_import
+from .utils import secure_fastai_tabular_prediction_component_import
+
 from .dataset_manager import create_dataset_manager
 create_dataflow_manager = secure_create_dataflow_manager_import()
 
@@ -37,3 +42,5 @@ from .workflow import Workflow
 
 from .job import Job
 
+fastai_tabular_prediction_component = secure_fastai_tabular_prediction_component_import()
+from .user_commons.sensor import sensor_component

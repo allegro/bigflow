@@ -51,7 +51,7 @@ class Job(object):
     def _run_beam_component(self, dependencies):
         component_file_path = os.path.abspath(getmodule(self.component).__file__)
         return runpy.run_path(
-            path_name=unzip_file_and_save_outside_zip_as_tmp_file(component_file_path, suffix='.py').name
+            path_name=unzip_file_and_save_outside_zip_as_tmp_file(component_file_path).name
                 if '.zip' in component_file_path else component_file_path,
             init_globals={'dependencies': dependencies},
             run_name='__main__')

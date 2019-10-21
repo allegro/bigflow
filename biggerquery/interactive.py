@@ -10,6 +10,8 @@ from .job import Job
 from .job import DEFAULT_RETRY_COUNT
 from .job import DEFAULT_RETRY_PAUSE_SEC
 from .utils import not_none_or_error
+from .utils import log_syntax_error
+from .gcp_defaults import DEFAULT_LOCATION
 
 
 DEFAULT_OPERATION_NAME = '__auto'
@@ -34,14 +36,18 @@ class InteractiveDatasetManager(object):
                  internal_tables=None,
                  external_tables=None,
                  credentials=None,
-                 extras=None):
+                 extras=None,
+                 dataflow_config=None,
+                 location=DEFAULT_LOCATION):
         self.config = DatasetConfig(
             project_id=project_id,
             dataset_name=dataset_name,
             internal_tables=internal_tables,
             external_tables=external_tables,
             credentials=credentials,
-            extras=extras)
+            extras=extras,
+            dataflow_config=dataflow_config,
+            location=location)
 
     def write_truncate(self, table_name, sql, partitioned=True):
         method = 'write_truncate'
@@ -152,11 +158,13 @@ class InteractiveComponent(object):
             retry_pause_sec=retry_pause_sec,
             **dependency_config)
 
+    @log_syntax_error
     def run(self, runtime=DEFAULT_RUNTIME, operation_name=None):
          _, component_callable = decorate_component_dependencies_with_operation_level_dataset_manager(
              self._standard_component, operation_name=operation_name)
          return Job(component_callable, **self._dependency_config).run(runtime)
 
+    @log_syntax_error
     def peek(self, runtime, operation_name=DEFAULT_OPERATION_NAME, limit=DEFAULT_PEEK_LIMIT):
         """Returns the result of the specified operation in the form of the pandas.DataFrame, without really running the
         operation and affecting the table."""

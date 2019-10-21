@@ -1,8 +1,28 @@
 import uuid
 import logging
+import functools
+
 from google.cloud import bigquery
 
 from .gcp_defaults import DEFAULT_LOCATION
+
+
+class AliasNotFoundError(ValueError):
+    pass
+
+
+def handle_key_error(method):
+
+    @functools.wraps(method)
+    def decorated(*args, **kwargs):
+        try:
+            return method(*args, **kwargs)
+        except KeyError as e:
+            missing_variable = e.args[0]
+            raise AliasNotFoundError(
+                f"'{missing_variable}' is missing in internal_tables or external_tables or extras.")
+
+    return decorated
 
 
 def get_partition_from_run_datetime_or_none(run_datetime):
@@ -40,6 +60,7 @@ class TemplatedDatasetManager(object):
         self.internal_tables[table_name] = self.create_table_id(table_name)
         return self.write(self.dataset_manager.write_tmp, table_name, sql, custom_run_datetime)
 
+    @handle_key_error
     def write(self, write_callable, table_name, sql, custom_run_datetime=None):
         table_id = self.create_table_id(table_name)
         return write_callable(table_id, sql.format(**self.template_variables(custom_run_datetime)))
@@ -50,6 +71,7 @@ class TemplatedDatasetManager(object):
             table_name_without_partition,
             self.create_full_table_id(table_name_without_partition))
 
+    @handle_key_error
     def collect(self, sql, custom_run_datetime=None):
         return self.dataset_manager.collect(sql.format(**self.template_variables(custom_run_datetime)))
 

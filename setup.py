@@ -15,15 +15,17 @@ with open(os.path.join('requirements', 'beam_extras.txt'), 'r') as beam_extras_r
 
 setuptools.setup(
     name="biggerquery",
-    version="0.4.0",
+    version="0.5.rc1",
     author=u"Chi",
     author_email="chibox-team@allegrogroup.com",
     description="BigQuery client wrapper with clean API",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/allegro/biggerquery",
-    packages=["biggerquery"],
-    data_files=[('requirements', ['requirements/base.txt', 'requirements/beam_extras.txt'])],
+    packages=setuptools.find_packages(exclude=('test', 'e2e')),
+    data_files=[
+        ('requirements', ['requirements/base.txt', 'requirements/beam_extras.txt']),
+    ],
     classifiers=[
         "Programming Language :: Python :: 3",
         "Operating System :: OS Independent",

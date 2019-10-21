@@ -33,7 +33,8 @@ class DatasetConfigTestCase(TestCase):
             'internal_tables': [],
             'external_tables': {},
             'credentials': None,
-            'extras': {}
+            'extras': {},
+            'location': 'EU'
         })
 
         # given
@@ -56,7 +57,8 @@ class DatasetConfigTestCase(TestCase):
             'dataflow_bucket': 'some_bucket',
             'machine_type': 'standard',
             'region': 'europe-west1',
-            'requirements_file_path': '/'
+            'requirements_file_path': '/',
+            'location': 'EU'
         })
 
 

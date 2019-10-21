@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 from .gcp_defaults import DEFAULT_REGION
+from .gcp_defaults import DEFAULT_LOCATION
 from .gcp_defaults import DEFAULT_MACHINE_TYPE
 from .utils import unzip_file_and_save_outside_zip_as_tmp_file
 
@@ -14,7 +15,8 @@ class DatasetConfig(object):
                  external_tables=None,
                  credentials=None,
                  extras=None,
-                 dataflow_config=None):
+                 dataflow_config=None,
+                 location=DEFAULT_LOCATION):
         self.project_id = project_id
         self.dataset_name = dataset_name
         self.internal_tables = internal_tables or []
@@ -22,6 +24,7 @@ class DatasetConfig(object):
         self.credentials = credentials or None
         self.extras = extras or {}
         self.dataflow_config = dataflow_config
+        self.location = location
 
     def _as_dict(self, with_dataflow_config=False):
         config = {
@@ -30,7 +33,8 @@ class DatasetConfig(object):
             'internal_tables': self.internal_tables,
             'external_tables': self.external_tables,
             'credentials': self.credentials,
-            'extras': self.extras
+            'extras': self.extras,
+            'location': self.location
         }
         if self.dataflow_config and with_dataflow_config:
             config.update(self.dataflow_config._as_dict())
