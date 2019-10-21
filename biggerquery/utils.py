@@ -37,6 +37,10 @@ def zip_dir(path, target_zip, prefix_to_cut_from_filename):
 
 
 def unzip_file_and_save_outside_zip_as_tmp_file(file_path, suffix=''):
+    if '.zip' not in file_path:
+        from collections import namedtuple
+        File = namedtuple('File', ['name'])
+        return File(file_path)
     path_parts = file_path.split(os.sep)
     zip_part_index = path_parts.index(next(p for p in path_parts if '.zip' in p))
     zip_path = os.path.join(os.sep, *path_parts[:zip_part_index + 1])
