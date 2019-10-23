@@ -171,6 +171,10 @@ class TestPredictE2E(BeamTestCase):
             output_table_name=None,
             dataset=None,
             partition_column=None,
+            fastai_package_path=str(
+                Path(__file__).parent.parent.parent.parent / 'fastai_dependencies' / 'fastai-1.0.58-py3-none-any.whl'),
+            torch_package_path=str(Path(
+                __file__).parent.parent.parent.parent / 'fastai_dependencies' / 'torch-1.1.0-cp37-cp37m-linux_x86_64.whl'),
             custom_input_collection=avro_input(example_input_avro),
             custom_output=avro_output(output_avro, OUTPUT_SCHEMA),
             custom_pipeline=local_pipeline(),
@@ -193,6 +197,10 @@ class TestPredictE2E(BeamTestCase):
             output_table_name=None,
             dataset=None,
             partition_column=None,
+            fastai_package_path=str(
+                Path(__file__).parent.parent.parent.parent / 'fastai_dependencies' / 'fastai-1.0.58-py3-none-any.whl'),
+            torch_package_path=str(Path(
+                __file__).parent.parent.parent.parent / 'fastai_dependencies' / 'torch-1.1.0-cp37-cp37m-linux_x86_64.whl'),
             custom_input_collection=avro_input(example_input_avro),
             custom_output=avro_output(output_avro, OUTPUT_SCHEMA),
             custom_pipeline=local_pipeline(),

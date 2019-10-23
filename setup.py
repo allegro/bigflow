@@ -15,7 +15,7 @@ with open(os.path.join('requirements', 'beam_extras.txt'), 'r') as beam_extras_r
 
 setuptools.setup(
     name="biggerquery",
-    version="0.5.dev3",
+    version="0.5.dev4",
     author=u"Chi",
     author_email="chibox-team@allegrogroup.com",
     description="BigQuery client wrapper with clean API",
@@ -25,8 +25,6 @@ setuptools.setup(
     packages=setuptools.find_packages(exclude=('test', 'e2e')),
     data_files=[
         ('requirements', ['requirements/base.txt', 'requirements/beam_extras.txt']),
-        ('fastai_dependencies', ['biggerquery/user_commons/fastai/dependencies/fastai-1.0.58-py3-none-any.whl',
-                                 'biggerquery/user_commons/fastai/dependencies/torch-1.1.0-cp37-cp37m-linux_x86_64.whl'])
     ],
     classifiers=[
         "Programming Language :: Python :: 3",

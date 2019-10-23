@@ -1,10 +1,10 @@
-from pathlib import Path
 import apache_beam as beam
 from apache_beam.io import BigQueryDisposition
 from apache_beam.options.pipeline_options import PipelineOptions, \
     GoogleCloudOptions, WorkerOptions, StandardOptions, SetupOptions
 
 from ...configuration import DatasetConfig
+from ...utils import unzip_file_and_save_outside_zip_as_tmp_file
 
 
 def bigquery_input(project_id, dataset_name, table_name, dt, partition_column):
@@ -25,7 +25,7 @@ def bigquery_output(project_id, dataset_name, table_name, dt):
         write_disposition=BigQueryDisposition.WRITE_TRUNCATE)
 
 
-def dataflow_pipeline(dataset_config: DatasetConfig, dataflow_job_name):
+def dataflow_pipeline(dataset_config: DatasetConfig, dataflow_job_name, torch_package_path, fastai_package_path):
     options = PipelineOptions()
 
     google_cloud_options = options.view_as(GoogleCloudOptions)
@@ -35,14 +35,12 @@ def dataflow_pipeline(dataset_config: DatasetConfig, dataflow_job_name):
     google_cloud_options.temp_location = f'gs://{dataset_config.dataflow_config.dataflow_bucket_id}/beam_runner/temp'
 
     google_cloud_options.region = dataset_config.dataflow_config.region
-    options.view_as(WorkerOptions).machine_type = 'n1-standard-4'
-    options.view_as(WorkerOptions).num_workers = 5
-    options.view_as(WorkerOptions).autoscaling_algorithm = None
+    options.view_as(WorkerOptions).machine_type = dataset_config.dataflow_config.machine_type
     options.view_as(StandardOptions).runner = 'DataflowRunner'
 
     options.view_as(SetupOptions).extra_packages = [
-        str((Path(__file__).parent/'dependencies'/'torch-1.1.0-cp37-cp37m-linux_x86_64.whl').absolute()),
-        str((Path(__file__).parent/'dependencies'/'fastai-1.0.58-py3-none-any.whl').absolute())
+        unzip_file_and_save_outside_zip_as_tmp_file(torch_package_path).name,
+        unzip_file_and_save_outside_zip_as_tmp_file(fastai_package_path).name
     ]
 
     return beam.Pipeline(options=options)

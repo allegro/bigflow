@@ -12,6 +12,8 @@ class FastaiTabularPredictionJob(object):
                  partition_column,
                  model_file_path,
                  dataset,
+                 torch_package_path,
+                 fastai_package_path,
                  dataflow_job_name=None,
                  custom_input_collection=None,
                  custom_output=None,
@@ -21,6 +23,8 @@ class FastaiTabularPredictionJob(object):
         self.partition_column = partition_column
         self.model_file_path = model_file_path
         self.config = dataset.config if dataset is not None else None
+        self.torch_package_path = torch_package_path
+        self.fastai_package_path = fastai_package_path
         self.dataflow_job_name = dataflow_job_name or f'prediction-on-{input_table_name}-{uuid.uuid4()}'
 
         self.custom_input_collection = custom_input_collection
@@ -35,7 +39,11 @@ class FastaiTabularPredictionJob(object):
         return runpy.run_path(
             path_name=unzip_file_and_save_outside_zip_as_tmp_file(predict_path, suffix='.py').name,
             init_globals={'run_kwargs': {
-                'p': self.custom_pipeline or predict_io.dataflow_pipeline(self.config, self.dataflow_job_name),
+                'p': self.custom_pipeline or predict_io.dataflow_pipeline(
+                    self.config,
+                    self.dataflow_job_name,
+                    self.torch_package_path,
+                    self.fastai_package_path),
                 'input_collection': self.custom_input_collection or predict_io.bigquery_input(
                     self.config.project_id,
                     self.config.dataset_name,
