@@ -15,7 +15,7 @@ with open(os.path.join('requirements', 'beam_extras.txt'), 'r') as beam_extras_r
 
 setuptools.setup(
     name="biggerquery",
-    version="0.5.dev2",
+    version="0.5.dev3",
     author=u"Chi",
     author_email="chibox-team@allegrogroup.com",
     description="BigQuery client wrapper with clean API",
