@@ -32,6 +32,7 @@ class FastaiTabularPredictionJob(object):
         self.custom_pipeline = custom_pipeline
 
     def run(self, runtime):
+        runtime = runtime[:10]
         predict_path = str((Path(__file__).parent / 'predict.py').absolute())
         with open(unzip_file_and_save_outside_zip_as_tmp_file(self.model_file_path).name, 'rb') as model:
             model_bytes = model.read()
