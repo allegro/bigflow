@@ -22,8 +22,12 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/allegro/biggerquery",
-    packages=["biggerquery"],
-    data_files=[('requirements', ['requirements/base.txt', 'requirements/beam_extras.txt'])],
+    packages=setuptools.find_packages(exclude=('test', 'e2e')),
+    data_files=[
+        ('requirements', ['requirements/base.txt', 'requirements/beam_extras.txt']),
+        ('fastai_dependencies', ['biggerquery/user_commons/fastai/dependencies/fastai-1.0.58-py3-none-any.whl',
+                                 'biggerquery/user_commons/fastai/dependencies/torch-1.1.0-cp37-cp37m-linux_x86_64.whl'])
+    ],
     classifiers=[
         "Programming Language :: Python :: 3",
         "Operating System :: OS Independent",
