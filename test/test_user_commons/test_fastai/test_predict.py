@@ -7,7 +7,7 @@ from apache_beam.options.pipeline_options import \
 import avro
 from pathlib import Path
 from biggerquery.test_utils import BeamTestCase
-from biggerquery.user_commons.fastai import predict_component
+from biggerquery.user_commons.fastai import predict_job
 
 
 def example_input_and_expected_output():
@@ -64,7 +64,7 @@ def example_input_and_expected_output():
             'capital-loss': 0,
             'hours-per-week': 45,
             'native-country': 'United-States',
-            'prediction': True
+            'prediction': 1
         },
         {
             'pk': '2',
@@ -82,7 +82,7 @@ def example_input_and_expected_output():
             'capital-loss': 0,
             'hours-per-week': 40,
             'native-country': 'United-States',
-            'prediction': False
+            'prediction': 0
         },
     ]
     return example_input, expected_output
@@ -152,7 +152,7 @@ OUTPUT_SCHEMA = '''
      {"name": "capital-loss", "type": "float"},
      {"name": "hours-per-week", "type": "float"},
      {"name": "native-country", "type": "string"},
-     {"name": "prediction", "type": "boolean"}
+     {"name": "prediction", "type": "int"}
  ]
 }
 '''
@@ -166,16 +166,18 @@ class TestPredictE2E(BeamTestCase):
         example_input_avro = self.create_avro_file(INPUT_SCHEMA, example_input, 'test_should_make_prediction')
         output_avro = self.empty_file('test_should_make_prediction')
 
-        component = predict_component.FastaiTabularPredictionComponent(
+        job = predict_job.FastaiTabularPredictionJob(
             input_table_name=None,
             output_table_name=None,
+            dataset=None,
+            partition_column=None,
             custom_input_collection=avro_input(example_input_avro),
             custom_output=avro_output(output_avro, OUTPUT_SCHEMA),
             custom_pipeline=local_pipeline(),
             model_file_path=str((Path(__file__).parent / 'model.pkl').absolute()))
 
         # when
-        component('2019-01-01')
+        job.run('2019-01-01')
 
         # then
         self.assertEqual(self.read_from_avro(output_avro), expected_output)
@@ -186,17 +188,18 @@ class TestPredictE2E(BeamTestCase):
         example_input_avro = self.create_avro_file(INPUT_SCHEMA, example_input, 'test_should_accept_empty_collection')
         output_avro = self.empty_file('test_should_accept_empty_collection')
 
-        component = predict_component.FastaiTabularPredictionComponent(
+        job = predict_job.FastaiTabularPredictionJob(
             input_table_name=None,
             output_table_name=None,
+            dataset=None,
+            partition_column=None,
             custom_input_collection=avro_input(example_input_avro),
             custom_output=avro_output(output_avro, OUTPUT_SCHEMA),
             custom_pipeline=local_pipeline(),
             model_file_path=str((Path(__file__).parent / 'model.pkl').absolute()))
 
         # when
-        component('2019-01-01')
+        job.run('2019-01-01')
 
         # then
         self.assertEqual(self.read_from_avro(output_avro), expected_output)
-

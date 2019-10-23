@@ -34,14 +34,16 @@ class InteractiveDatasetManager(object):
                  internal_tables=None,
                  external_tables=None,
                  credentials=None,
-                 extras=None):
+                 extras=None,
+                 dataflow_config=None):
         self.config = DatasetConfig(
             project_id=project_id,
             dataset_name=dataset_name,
             internal_tables=internal_tables,
             external_tables=external_tables,
             credentials=credentials,
-            extras=extras)
+            extras=extras,
+            dataflow_config=dataflow_config)
 
     def write_truncate(self, table_name, sql, partitioned=True):
         method = 'write_truncate'
