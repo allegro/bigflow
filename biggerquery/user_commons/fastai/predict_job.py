@@ -31,7 +31,7 @@ class FastaiTabularPredictionJob(object):
         self.custom_output = custom_output
         self.custom_pipeline = custom_pipeline
 
-    def run(self, dt):
+    def run(self, runtime):
         predict_path = str((Path(__file__).parent / 'predict.py').absolute())
         with open(unzip_file_and_save_outside_zip_as_tmp_file(self.model_file_path).name, 'rb') as model:
             model_bytes = model.read()
@@ -48,13 +48,13 @@ class FastaiTabularPredictionJob(object):
                     self.config.project_id,
                     self.config.dataset_name,
                     self.input_table_name,
-                    dt,
+                    runtime,
                     self.partition_column),
                 'output': self.custom_output or predict_io.bigquery_output(
                     self.config.project_id,
                     self.config.dataset_name,
                     self.output_table_name,
-                    dt),
+                    runtime),
                 'model_bytes': model_bytes,
             }},
             run_name='__main__')
