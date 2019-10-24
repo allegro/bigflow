@@ -40,8 +40,8 @@ def dataflow_pipeline(dataset_config: DatasetConfig, dataflow_job_name, torch_pa
     options.view_as(WorkerOptions).machine_type = dataset_config.dataflow_config.machine_type
     options.view_as(StandardOptions).runner = 'DataflowRunner'
 
-    torch_package = unzip_file_and_save_outside_zip_as_tmp_file(torch_package_path)
-    fastai_package = unzip_file_and_save_outside_zip_as_tmp_file(fastai_package_path)
+    torch_package = unzip_file_and_save_outside_zip_as_tmp_file(torch_package_path, suffix='.whl')
+    fastai_package = unzip_file_and_save_outside_zip_as_tmp_file(fastai_package_path, suffix='.whl')
 
     options.view_as(SetupOptions).extra_packages = [
         torch_package.name,
