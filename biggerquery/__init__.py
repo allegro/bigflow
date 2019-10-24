@@ -18,7 +18,7 @@ __all__ = [
 
     'Job',
 
-    'FastaiTabularPredictionJob'
+    'fastai_tabular_prediction_component'
 ]
 
 from .utils import secure_create_dataflow_manager_import
@@ -39,4 +39,4 @@ from .workflow import Workflow
 
 from .job import Job
 
-from .user_commons.fastai.predict_job import FastaiTabularPredictionJob
+from .user_commons.fastai.predict_component import fastai_tabular_prediction_component

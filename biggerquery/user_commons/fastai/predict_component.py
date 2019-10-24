@@ -5,7 +5,40 @@ from ...utils import unzip_file_and_save_outside_zip_as_tmp_file
 from . import predict_io
 
 
-class FastaiTabularPredictionJob(object):
+def fastai_tabular_prediction_component(
+        input_table_name,
+        output_table_name,
+        partition_column,
+        model_file_path,
+        dataset,
+        torch_package_path,
+        fastai_package_path,
+        dataflow_job_name=None,
+        custom_input_collection=None,
+        custom_output=None,
+        custom_pipeline=None):
+
+    component = FastaiTabularPredictionComponent(
+        input_table_name,
+        output_table_name,
+        partition_column,
+        model_file_path,
+        dataset,
+        torch_package_path,
+        fastai_package_path,
+        dataflow_job_name,
+        custom_input_collection,
+        custom_output,
+        custom_pipeline
+    )
+
+    def component_callable(ds):
+        return component.run_component(ds.runtime_str)
+
+    return component_callable
+
+
+class FastaiTabularPredictionComponent(object):
     def __init__(self,
                  input_table_name,
                  output_table_name,
@@ -31,7 +64,7 @@ class FastaiTabularPredictionJob(object):
         self.custom_output = custom_output
         self.custom_pipeline = custom_pipeline
 
-    def run(self, runtime):
+    def run_component(self, runtime):
         runtime = runtime[:10]
         predict_path = str((Path(__file__).parent / 'predict.py').absolute())
         with open(unzip_file_and_save_outside_zip_as_tmp_file(self.model_file_path).name, 'rb') as model:

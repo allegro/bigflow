@@ -1,5 +1,6 @@
 import avro.schema
-
+import types
+import mock
 import avro.schema
 import apache_beam as beam
 from apache_beam.options.pipeline_options import \
@@ -7,7 +8,9 @@ from apache_beam.options.pipeline_options import \
 import avro
 from pathlib import Path
 from biggerquery.test_utils import BeamTestCase
-from biggerquery.user_commons.fastai import predict_job
+from biggerquery.user_commons.fastai import predict_component
+from biggerquery.job import Job
+from biggerquery.configuration import DatasetConfig
 
 
 def example_input_and_expected_output():
@@ -157,16 +160,26 @@ OUTPUT_SCHEMA = '''
 }
 '''
 
+EXAMPLE_CONFIG = DatasetConfig(
+    project_id='fake_project',
+    dataset_name='fake_dataset'
+)
+
 
 class TestPredictE2E(BeamTestCase):
 
-    def test_should_make_prediction(self):
+    @mock.patch('biggerquery.job.create_dataset_manager')
+    def test_should_make_prediction(self, create_dataset_manager_mock):
         # given
+        fake_dataset_manager = types.SimpleNamespace()
+        setattr(fake_dataset_manager, 'runtime_str', '2019-01-01')
+        create_dataset_manager_mock.side_effect = lambda **kwargs: (None, fake_dataset_manager)
+
         example_input, expected_output = example_input_and_expected_output()
         example_input_avro = self.create_avro_file(INPUT_SCHEMA, example_input, 'test_should_make_prediction')
         output_avro = self.empty_file('test_should_make_prediction')
 
-        job = predict_job.FastaiTabularPredictionJob(
+        component = predict_component.fastai_tabular_prediction_component(
             input_table_name=None,
             output_table_name=None,
             dataset=None,
@@ -179,6 +192,8 @@ class TestPredictE2E(BeamTestCase):
             custom_output=avro_output(output_avro, OUTPUT_SCHEMA),
             custom_pipeline=local_pipeline(),
             model_file_path=str((Path(__file__).parent / 'model.pkl').absolute()))
+
+        job = Job(component, id='test_should_make_prediction', ds=EXAMPLE_CONFIG)
 
         # when
         job.run('2019-01-01')
@@ -186,13 +201,18 @@ class TestPredictE2E(BeamTestCase):
         # then
         self.assertEqual(self.read_from_avro(output_avro), expected_output)
 
-    def test_should_accept_empty_collection(self):
+    @mock.patch('biggerquery.job.create_dataset_manager')
+    def test_should_accept_empty_collection(self, create_dataset_manager_mock):
         # given
+        fake_dataset_manager = types.SimpleNamespace()
+        setattr(fake_dataset_manager, 'runtime_str', '2019-01-01')
+        create_dataset_manager_mock.side_effect = lambda **kwargs: (None, fake_dataset_manager)
+
         example_input, expected_output = [], []
         example_input_avro = self.create_avro_file(INPUT_SCHEMA, example_input, 'test_should_accept_empty_collection')
         output_avro = self.empty_file('test_should_accept_empty_collection')
 
-        job = predict_job.FastaiTabularPredictionJob(
+        component = predict_component.fastai_tabular_prediction_component(
             input_table_name=None,
             output_table_name=None,
             dataset=None,
@@ -205,6 +225,8 @@ class TestPredictE2E(BeamTestCase):
             custom_output=avro_output(output_avro, OUTPUT_SCHEMA),
             custom_pipeline=local_pipeline(),
             model_file_path=str((Path(__file__).parent / 'model.pkl').absolute()))
+
+        job = Job(component, id='test_should_make_prediction', ds=EXAMPLE_CONFIG)
 
         # when
         job.run('2019-01-01')
