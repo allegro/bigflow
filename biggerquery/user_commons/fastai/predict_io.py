@@ -1,3 +1,4 @@
+import logging
 import apache_beam as beam
 from apache_beam.io import BigQueryDisposition
 from apache_beam.options.pipeline_options import PipelineOptions, \
@@ -28,6 +29,7 @@ def bigquery_output(project_id, dataset_name, table_name, dt):
 def dataflow_pipeline(dataset_config: DatasetConfig, dataflow_job_name, torch_package_path, fastai_package_path):
     options = PipelineOptions()
 
+    logging.info('Setting up fastai prediction')
     google_cloud_options = options.view_as(GoogleCloudOptions)
     google_cloud_options.project = dataset_config.project_id
     google_cloud_options.job_name = dataflow_job_name
@@ -42,5 +44,6 @@ def dataflow_pipeline(dataset_config: DatasetConfig, dataflow_job_name, torch_pa
         unzip_file_and_save_outside_zip_as_tmp_file(torch_package_path).name,
         unzip_file_and_save_outside_zip_as_tmp_file(fastai_package_path).name
     ]
+    logging.info('Fastai prediction pipeline is ready')
 
     return beam.Pipeline(options=options)

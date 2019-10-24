@@ -1,5 +1,6 @@
 import runpy
 import uuid
+import logging
 from pathlib import Path
 from ...utils import unzip_file_and_save_outside_zip_as_tmp_file
 from . import predict_io
@@ -65,6 +66,7 @@ class FastaiTabularPredictionComponent(object):
         self.custom_pipeline = custom_pipeline
 
     def run_component(self, runtime):
+        logging.info('Running fastai prediction component')
         runtime = runtime[:10]
         predict_path = str((Path(__file__).parent / 'predict.py').absolute())
         with open(unzip_file_and_save_outside_zip_as_tmp_file(self.model_file_path).name, 'rb') as model:
