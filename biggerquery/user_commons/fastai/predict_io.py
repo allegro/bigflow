@@ -40,10 +40,13 @@ def dataflow_pipeline(dataset_config: DatasetConfig, dataflow_job_name, torch_pa
     options.view_as(WorkerOptions).machine_type = dataset_config.dataflow_config.machine_type
     options.view_as(StandardOptions).runner = 'DataflowRunner'
 
+    torch_package = unzip_file_and_save_outside_zip_as_tmp_file(torch_package_path)
+    fastai_package = unzip_file_and_save_outside_zip_as_tmp_file(fastai_package_path)
+
     options.view_as(SetupOptions).extra_packages = [
-        unzip_file_and_save_outside_zip_as_tmp_file(torch_package_path).name,
-        unzip_file_and_save_outside_zip_as_tmp_file(fastai_package_path).name
+        torch_package.name,
+        fastai_package.name
     ]
     logging.info('Fastai prediction pipeline is ready')
 
-    return beam.Pipeline(options=options)
+    return torch_package, fastai_package, beam.Pipeline(options=options)

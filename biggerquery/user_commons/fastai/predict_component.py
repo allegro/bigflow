@@ -69,17 +69,23 @@ class FastaiTabularPredictionComponent(object):
         logging.info('Running fastai prediction component')
         runtime = runtime[:10]
         predict_path = str((Path(__file__).parent / 'predict.py').absolute())
-        with open(unzip_file_and_save_outside_zip_as_tmp_file(self.model_file_path).name, 'rb') as model:
+
+        model_file = unzip_file_and_save_outside_zip_as_tmp_file(self.model_file_path)
+        predict_module = unzip_file_and_save_outside_zip_as_tmp_file(predict_path, suffix='.py')
+        with open(model_file.name, 'rb') as model:
             model_bytes = model.read()
 
+        if self.custom_pipeline is None:
+            torch_whl_handle, fastai_whl_handle, p = predict_io.dataflow_pipeline(
+                self.config,
+                self.dataflow_job_name,
+                self.torch_package_path,
+                self.fastai_package_path)
+
         return runpy.run_path(
-            path_name=unzip_file_and_save_outside_zip_as_tmp_file(predict_path, suffix='.py').name,
+            path_name=predict_module.name,
             init_globals={'run_kwargs': {
-                'p': self.custom_pipeline or predict_io.dataflow_pipeline(
-                    self.config,
-                    self.dataflow_job_name,
-                    self.torch_package_path,
-                    self.fastai_package_path),
+                'p': self.custom_pipeline or p,
                 'input_collection': self.custom_input_collection or predict_io.bigquery_input(
                     self.config.project_id,
                     self.config.dataset_name,
