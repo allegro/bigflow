@@ -18,6 +18,18 @@ def secure_create_dataflow_manager_import():
         return lambda *args, **kwargs: None
 
 
+def fake_fastai_tabular_prediction_component():
+    raise ImportError('To use fastai_tabular_prediction_component you need to install beam extras: pip install biggerquery[beam]')
+
+
+def secure_fastai_tabular_prediction_component_import():
+    try:
+        from .user_commons.fastai.predict_component import fastai_tabular_prediction_component
+        return fastai_tabular_prediction_component
+    except ImportError:
+        return fake_fastai_tabular_prediction_component
+
+
 class AutoDeletedTmpFile(object):
     def __init__(self, tmp_file_path, tmp_dir_path=None):
         self.tmp_file_path = tmp_file_path

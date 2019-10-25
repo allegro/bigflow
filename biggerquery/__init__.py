@@ -22,6 +22,8 @@ __all__ = [
 ]
 
 from .utils import secure_create_dataflow_manager_import
+from .utils import secure_fastai_tabular_prediction_component_import
+
 from .dataset_manager import create_dataset_manager
 create_dataflow_manager = secure_create_dataflow_manager_import()
 
@@ -39,4 +41,4 @@ from .workflow import Workflow
 
 from .job import Job
 
-from .user_commons.fastai.predict_component import fastai_tabular_prediction_component
+fastai_tabular_prediction_component = secure_fastai_tabular_prediction_component_import()

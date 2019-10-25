@@ -8,7 +8,7 @@ from apache_beam.options.pipeline_options import \
 import avro
 from pathlib import Path
 from biggerquery.test_utils import BeamTestCase
-from biggerquery.user_commons.fastai import predict_component
+from biggerquery import fastai_tabular_prediction_component
 from biggerquery.job import Job
 from biggerquery.configuration import DatasetConfig
 
@@ -179,7 +179,7 @@ class TestPredictE2E(BeamTestCase):
         example_input_avro = self.create_avro_file(INPUT_SCHEMA, example_input, 'test_should_make_prediction')
         output_avro = self.empty_file('test_should_make_prediction')
 
-        component = predict_component.fastai_tabular_prediction_component(
+        component = fastai_tabular_prediction_component(
             input_table_name=None,
             output_table_name=None,
             dataset=None,
@@ -212,7 +212,7 @@ class TestPredictE2E(BeamTestCase):
         example_input_avro = self.create_avro_file(INPUT_SCHEMA, example_input, 'test_should_accept_empty_collection')
         output_avro = self.empty_file('test_should_accept_empty_collection')
 
-        component = predict_component.fastai_tabular_prediction_component(
+        component = fastai_tabular_prediction_component(
             input_table_name=None,
             output_table_name=None,
             dataset=None,
