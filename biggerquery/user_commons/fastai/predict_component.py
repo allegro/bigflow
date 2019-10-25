@@ -71,7 +71,7 @@ class FastaiTabularPredictionComponent(object):
         predict_path = str((Path(__file__).parent / 'predict.py').absolute())
 
         model_file = unzip_file_and_save_outside_zip_as_tmp_file(self.model_file_path)
-        predict_module = unzip_file_and_save_outside_zip_as_tmp_file(predict_path, suffix='.py')
+        predict_module = unzip_file_and_save_outside_zip_as_tmp_file(predict_path)
         with open(model_file.name, 'rb') as model:
             model_bytes = model.read()
 
