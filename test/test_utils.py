@@ -8,6 +8,9 @@ from biggerquery.utils import unzip_file_and_save_outside_zip_as_tmp_file
 from biggerquery.utils import secure_create_dataflow_manager_import
 from biggerquery.utils import secure_fastai_tabular_prediction_component_import
 from biggerquery.utils import ExtrasRequiredError
+from biggerquery.utils import AutoDeletedTmpFile
+from biggerquery.beam_manager import create_dataflow_manager
+from biggerquery.user_commons.fastai.predict_component import fastai_tabular_prediction_component
 
 
 class UnzipFileAndSaveOutsideZipAsTmpFileTestCase(TestCase):
@@ -32,14 +35,8 @@ class UnzipFileAndSaveOutsideZipAsTmpFileTestCase(TestCase):
         # then
         with open(unzipped_file.name) as f:
             self.assertEqual(f.read(), 'chi')
-
-        # when
-        unzipped_file_path = unzipped_file.name
-        unzipped_file = None
-        gc.collect()
-
-        # then
-        self.assertFalse(os.path.exists(unzipped_file_path))
+        # and
+        self.assertIsInstance(unzipped_file, AutoDeletedTmpFile)
 
 
 def raise_import_error():
@@ -48,8 +45,16 @@ def raise_import_error():
 
 class SecureImportTestCase(TestCase):
 
+    def test_should_return_create_dataflow_manager(self):
+        # expect
+        self.assertEqual(secure_create_dataflow_manager_import(), create_dataflow_manager)
+
+    def test_should_return_fastai_tabular_prediction_component(self):
+        # expect
+        self.assertEqual(secure_fastai_tabular_prediction_component_import(), fastai_tabular_prediction_component)
+
     @mock.patch('biggerquery.utils.import_module')
-    def test_should_return_fake_dataflow_manager_when_no_extras_installed(self, import_module_mock):
+    def test_should_return_fake_create_dataflow_manager_when_no_extras_installed(self, import_module_mock):
         # given
         import_module_mock.side_effect = ImportError()
         create_dataflow_manager = secure_create_dataflow_manager_import()
@@ -70,5 +75,51 @@ class SecureImportTestCase(TestCase):
 
 
 class AutoDeletedTmpFileTestCase(TestCase):
+
+    def test_should_return_file_path(self):
+        # expect
+        self.assertEqual(AutoDeletedTmpFile('example_path').name, 'example_path')
+
+    def test_should_auto_delete_file_inside_dir(self):
+        # given
+        dir_path = tempfile.mkdtemp()
+        file_path = os.path.join(dir_path, 'tmp_file')
+        with open(file_path, 'w+') as f:
+            f.write('content')
+
+        # when
+        reference = AutoDeletedTmpFile(file_path, dir_path)
+
+        # then
+        self.assertTrue(os.path.exists(file_path))
+        self.assertTrue(os.path.exists(dir_path))
+
+        # when
+        reference = None
+        gc.collect()
+
+        # then
+        self.assertFalse(os.path.exists(file_path))
+        self.assertFalse(os.path.exists(dir_path))
+
     def test_should_auto_delete_file(self):
-        pass
+        # given
+        dir_path = tempfile.mkdtemp()
+        file_path = os.path.join(dir_path, 'tmp_file')
+        with open(file_path, 'w+') as f:
+            f.write('content')
+
+        # when
+        reference = AutoDeletedTmpFile(file_path)
+
+        # then
+        self.assertTrue(os.path.exists(file_path))
+        self.assertTrue(os.path.exists(dir_path))
+
+        # when
+        reference = None
+        gc.collect()
+
+        # then
+        self.assertFalse(os.path.exists(file_path))
+        self.assertTrue(os.path.exists(dir_path))
