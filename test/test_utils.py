@@ -2,8 +2,12 @@ import os
 import gc
 import zipfile
 import tempfile
+import mock
 from unittest import TestCase
 from biggerquery.utils import unzip_file_and_save_outside_zip_as_tmp_file
+from biggerquery.utils import secure_create_dataflow_manager_import
+from biggerquery.utils import secure_fastai_tabular_prediction_component_import
+from biggerquery.utils import ExtrasRequiredError
 
 
 class UnzipFileAndSaveOutsideZipAsTmpFileTestCase(TestCase):
@@ -38,12 +42,31 @@ class UnzipFileAndSaveOutsideZipAsTmpFileTestCase(TestCase):
         self.assertFalse(os.path.exists(unzipped_file_path))
 
 
-class SecureImportTestCase(TestCase):
-    def test_should_return_fake_dataflow_manager_when_no_extras_installed(self):
-        pass
+def raise_import_error():
+    raise ImportError()
 
-    def test_should_return_fake_fastai_tabular_prediction_component_when_no_extras_installed(self):
-        pass
+
+class SecureImportTestCase(TestCase):
+
+    @mock.patch('biggerquery.utils.import_module')
+    def test_should_return_fake_dataflow_manager_when_no_extras_installed(self, import_module_mock):
+        # given
+        import_module_mock.side_effect = ImportError()
+        create_dataflow_manager = secure_create_dataflow_manager_import()
+
+        # expect
+        with self.assertRaises(ExtrasRequiredError):
+            create_dataflow_manager()
+
+    @mock.patch('biggerquery.utils.import_module')
+    def test_should_return_fake_fastai_tabular_prediction_component_when_no_extras_installed(self, import_module_mock):
+        # given
+        import_module_mock.side_effect = ImportError()
+        fastai_tabular_prediction_component = secure_fastai_tabular_prediction_component_import()
+
+        # expect
+        with self.assertRaises(ExtrasRequiredError):
+            fastai_tabular_prediction_component()
 
 
 class AutoDeletedTmpFileTestCase(TestCase):

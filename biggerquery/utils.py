@@ -2,6 +2,7 @@ import os
 import zipfile
 import tempfile
 import shutil
+from importlib import import_module
 from collections import namedtuple
 
 
@@ -10,26 +11,30 @@ def not_none_or_error(arg_value, arg_name):
         raise ValueError("{} can't be None".format(arg_name))
 
 
-def fake_dataflow_manager(*args, **kwargs):
-    raise ImportError('To use the create_dataflow_manager you need to install the beam extras: pip install biggerquery[beam]')
+def fake_create_dataflow_manager(*args, **kwargs):
+    raise ExtrasRequiredError('To use the create_dataflow_manager you need to install the beam extras: pip install biggerquery[beam]')
+
+
+class ExtrasRequiredError(ImportError):
+    pass
 
 
 def secure_create_dataflow_manager_import():
     try:
-        from .beam_manager import create_dataflow_manager
-        return create_dataflow_manager
+        beam_manager_module = import_module('beam_manager', '.')
+        return beam_manager_module.create_dataflow_manager
     except ImportError:
-        return fake_dataflow_manager
+        return fake_create_dataflow_manager
 
 
 def fake_fastai_tabular_prediction_component():
-    raise ImportError('To use the fastai_tabular_prediction_component you need to install the beam extras: pip install biggerquery[beam]')
+    raise ExtrasRequiredError('To use the fastai_tabular_prediction_component you need to install the beam extras: pip install biggerquery[beam]')
 
 
 def secure_fastai_tabular_prediction_component_import():
     try:
-        from .user_commons.fastai.predict_component import fastai_tabular_prediction_component
-        return fastai_tabular_prediction_component
+        predict_component_module = import_module('.', 'user_commons.fastai')
+        return predict_component_module.fastai_tabular_prediction_component
     except ImportError:
         return fake_fastai_tabular_prediction_component
 
