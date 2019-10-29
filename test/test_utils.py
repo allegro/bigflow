@@ -36,3 +36,16 @@ class UnzipFileAndSaveOutsideZipAsTmpFileTestCase(TestCase):
 
         # then
         self.assertFalse(os.path.exists(unzipped_file_path))
+
+
+class SecureImportTestCase(TestCase):
+    def test_should_return_fake_dataflow_manager_when_no_extras_installed(self):
+        pass
+
+    def test_should_return_fake_fastai_tabular_prediction_component_when_no_extras_installed(self):
+        pass
+
+
+class AutoDeletedTmpFileTestCase(TestCase):
+    def test_should_auto_delete_file(self):
+        pass

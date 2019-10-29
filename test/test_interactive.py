@@ -214,7 +214,8 @@ class InteractiveComponentToJobTestCase(TestCase):
             dataset_name='default_dataset',
             internal_tables=['table1'],
             external_tables={'table': 'table1'},
-            extras={'param': 'param1'})
+            extras={'param': 'param1'},
+            dataflow_config='dataflow_config1')
 
         @interactive_component(ds1=default_dataset, ds2=default_dataset)
         def standard_component(ds1, ds2):
@@ -224,19 +225,22 @@ class InteractiveComponentToJobTestCase(TestCase):
             self.assertEqual(ds1._dataset_manager['dependency_kwargs']['internal_tables'], ['table1'])
             self.assertEqual(ds1._dataset_manager['dependency_kwargs']['external_tables'], {'table': 'table1'})
             self.assertEqual(ds1._dataset_manager['dependency_kwargs']['extras'], {'param': 'param1'})
+            self.assertEqual(ds1._dataset_manager['dependency_kwargs']['dataflow_config'], 'dataflow_config1')
 
             self.assertEqual(ds2._dataset_manager['dependency_kwargs']['project_id'], 'modified_project')
             self.assertEqual(ds2._dataset_manager['dependency_kwargs']['dataset_name'], 'modified_dataset')
             self.assertEqual(ds2._dataset_manager['dependency_kwargs']['internal_tables'], ['table2'])
             self.assertEqual(ds2._dataset_manager['dependency_kwargs']['external_tables'], {'table': 'table2'})
             self.assertEqual(ds2._dataset_manager['dependency_kwargs']['extras'], {'param': 'param2'})
+            self.assertEqual(ds2._dataset_manager['dependency_kwargs']['dataflow_config'], 'dataflow_config2')
 
         modified_dataset = InteractiveDatasetManager(
             project_id='modified_project',
             dataset_name='modified_dataset',
             internal_tables=['table2'],
             external_tables={'table': 'table2'},
-            extras={'param': 'param2'})
+            extras={'param': 'param2'},
+            dataflow_config='dataflow_config2')
 
         # when
         job = standard_component.to_job(dependencies_override={'ds2': modified_dataset})

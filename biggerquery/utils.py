@@ -10,16 +10,20 @@ def not_none_or_error(arg_value, arg_name):
         raise ValueError("{} can't be None".format(arg_name))
 
 
+def fake_dataflow_manager(*args, **kwargs):
+    raise ImportError('To use the create_dataflow_manager you need to install the beam extras: pip install biggerquery[beam]')
+
+
 def secure_create_dataflow_manager_import():
     try:
         from .beam_manager import create_dataflow_manager
         return create_dataflow_manager
     except ImportError:
-        return lambda *args, **kwargs: None
+        return fake_dataflow_manager
 
 
 def fake_fastai_tabular_prediction_component():
-    raise ImportError('To use fastai_tabular_prediction_component you need to install beam extras: pip install biggerquery[beam]')
+    raise ImportError('To use the fastai_tabular_prediction_component you need to install the beam extras: pip install biggerquery[beam]')
 
 
 def secure_fastai_tabular_prediction_component_import():

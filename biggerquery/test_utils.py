@@ -39,14 +39,6 @@ def _read_from_avro(avro_file_path):
     return result
 
 
-def avro_input():
-    pass
-
-
-def avro_output():
-    pass
-
-
 def _create_avro_file(schema, items, file_prefix):
     _, result_file_path = tempfile.mkstemp(prefix=file_prefix, suffix='.avro')
     parsed_schema = avro.schema.Parse(schema)
