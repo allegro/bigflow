@@ -233,15 +233,3 @@ class PredictTestCase(BeamTestCase):
 
         # then
         self.assertEqual(self.read_from_avro(output_avro), expected_output)
-
-
-class PredictComponentTestCase(BeamTestCase):
-
-    def test_should_build_pipeline(self):
-        pass
-
-    def test_should_build_pipeline_io(self):
-        pass
-
-    def test_should_load_model_as_bytes(self):
-        pass
