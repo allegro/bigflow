@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 from unittest import TestCase
 from unittest import main
+import uuid
 
 import pandas as pd
 
@@ -18,10 +19,16 @@ class DatasetManagerTestCase(TestCase):
     TEST_PARTITION_PLUS_ONE = '2019-01-02'
 
     def setUp(self):
+        self.dataset_uuid = str(uuid.uuid4()).replace('-', '')
+        self.internal_tables = ['fake_target_table', 'partitioned_fake_target_table', 'loaded_table']
+        self.external_tables = {'some_external': 'table'}
+
         self.test_dataset_id, self.dataset_manager = create_dataset_manager(
             config.PROJECT_ID,
             self.TEST_PARTITION,
-            internal_tables=['fake_target_table', 'partitioned_fake_target_table', 'loaded_table'])
+            dataset_name=self.dataset_uuid,
+            internal_tables=self.internal_tables,
+            external_tables=self.external_tables)
 
         self.dataset_manager.create_table('''
         CREATE TABLE IF NOT EXISTS fake_target_table (
@@ -39,6 +46,25 @@ class DatasetManagerTestCase(TestCase):
 
     def tearDown(self):
         self.dataset_manager.remove_dataset()
+
+
+class PartitionedDatasetManagerPropertiesTestCase(DatasetManagerTestCase):
+
+    def test_should_expose_project_id_as_property(self):
+        # expect
+        self.assertEqual(self.dataset_manager.project_id, config.PROJECT_ID)
+
+    def test_should_expose_dataset_name_as_property(self):
+        # expect
+        self.assertEqual(self.dataset_manager.dataset_name, self.dataset_uuid)
+
+    def test_should_expose_internal_tables_as_property(self):
+        # expect
+        self.assertEqual(self.dataset_manager.internal_tables, self.internal_tables)
+
+    def test_should_expose_external_tables_as_property(self):
+        # expect
+        self.assertEqual(self.dataset_manager.external_tables, self.external_tables)
 
 
 class WriteTruncateTestCase(DatasetManagerTestCase):

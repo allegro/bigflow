@@ -135,6 +135,22 @@ class PartitionedDatasetManager(object):
     def client(self):
         return self._dataset_manager.dataset_manager.bigquery_client
 
+    @property
+    def project_id(self):
+        return self._dataset_manager.dataset_manager.dataset.project
+
+    @property
+    def dataset_name(self):
+        return self._dataset_manager.dataset_manager.dataset.dataset_id
+
+    @property
+    def internal_tables(self):
+        return self._dataset_manager.internal_tables
+
+    @property
+    def external_tables(self):
+        return self._dataset_manager.external_tables
+
     def remove_dataset(self):
         return self._dataset_manager.remove_dataset()
 

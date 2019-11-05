@@ -297,6 +297,22 @@ class OperationLevelDatasetManager(object):
     def client(self):
         return self._dataset_manager.client
 
+    @property
+    def project_id(self):
+        return self._dataset_manager.project_id
+
+    @property
+    def dataset_name(self):
+        return self._dataset_manager.dataset_name
+
+    @property
+    def internal_tables(self):
+        return self._dataset_manager.internal_tables
+
+    @property
+    def external_tables(self):
+        return self._dataset_manager.external_tables
+
     def _collect_select_result_to_pandas(self, sql):
         sql = sql if 'limit' in sql.lower() else sql + '\nLIMIT {}'.format(str(self._peek_limit))
         return self._dataset_manager.collect(sql)
