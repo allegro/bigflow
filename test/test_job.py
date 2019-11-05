@@ -27,7 +27,8 @@ class JobTestCase(TestCase):
                 'external_tables': {'some_external_table': 'some.external.table'},
                 'extras': {'extra_param': 'some-extra-param'},
                 'runtime': '2019-01-01',
-                'credentials': 'credentials'
+                'credentials': 'credentials',
+                'location': 'EU'
             })
 
             # and
@@ -38,7 +39,8 @@ class JobTestCase(TestCase):
                 'external_tables': {'some_external_table': 'some.external.table'},
                 'extras': {'extra_param': 'some-extra-param'},
                 'credentials': 'credentials',
-                'runtime': '2019-01-01'
+                'runtime': '2019-01-01',
+                'location': 'EU'
             })
 
         job = Job(component=test_component,
@@ -106,7 +108,8 @@ def run(dependency_beam_manager):
         'region': 'europe-west',
         'machine_type': 'standard',
         'runtime': '2019-01-01',
-        'credentials': None
+        'credentials': None,
+        'location': 'EU'
     })
 
 if __name__ == '__main__':
