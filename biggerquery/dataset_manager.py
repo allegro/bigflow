@@ -20,7 +20,8 @@ def handle_key_error(method):
         except KeyError as e:
             missing_variable = e.args[0]
             raise AliasNotFoundError(
-                f"'{missing_variable}' is missing in internal_tables or external_tables or extras.")
+                "'{missing_variable}' is missing in internal_tables or external_tables or extras.".format(
+                    missing_variable=missing_variable))
 
     return decorated
 

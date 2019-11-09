@@ -59,7 +59,8 @@ class FastaiTabularPredictionComponent(object):
         self.config = dataset.config if dataset is not None else None
         self.torch_package_path = torch_package_path
         self.fastai_package_path = fastai_package_path
-        self.dataflow_job_name = dataflow_job_name or f'fastai-prediction-{uuid.uuid4()}'
+        self.dataflow_job_name = dataflow_job_name or 'fastai-prediction-{id}'.format(
+            id=str(uuid.uuid4()))
 
         self.custom_input_collection = custom_input_collection
         self.custom_output = custom_output
