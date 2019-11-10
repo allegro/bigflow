@@ -23,7 +23,7 @@ BiggerQuery lets you implement complex stuff (the Allegro experimentation platfo
 
 ## Compatibility
 
-BiggerQuery is compatible with Python >= 3.6.
+BiggerQuery is compatible with Python >= 3.5.
 
 ## Cheat sheet
 
@@ -111,7 +111,7 @@ dataset = bgq.Dataset(
     project_id=PROJECT_ID,
     dataset_name='biggerquery_cheatsheet',
     external_tables={
-        '311_requests': f'{PROJECT_ID}.external_data.311_requests'
+        '311_requests': '{}.external_data.311_requests'.format(PROJECT_ID)
     })
 
 select_requests = dataset.collect("""
@@ -136,7 +136,7 @@ dataset = bgq.Dataset(
     project_id=PROJECT_ID,
     dataset_name='biggerquery_cheatsheet',
     external_tables={
-        '311_requests': f'{PROJECT_ID}.external_data.311_requests'
+        '311_requests': '{}.external_data.311_requests'.format(PROJECT_ID)
     })
 
 dry_select = dataset.dry_run("""
@@ -160,7 +160,7 @@ dataset = bgq.Dataset(
     project_id=PROJECT_ID,
     dataset_name='biggerquery_cheatsheet',
     external_tables={
-        '311_requests': f'{PROJECT_ID}.external_data.311_requests'
+        '311_requests': '{}.external_data.311_requests'.format(PROJECT_ID)
     },
     internal_tables=['request_aggregate'])
 
@@ -201,7 +201,7 @@ dataset = bgq.Dataset(
     project_id=PROJECT_ID,
     dataset_name='biggerquery_cheatsheet',
     external_tables={
-        '311_requests': f'{PROJECT_ID}.external_data.311_requests'
+        '311_requests': '{}.external_data.311_requests'.format(PROJECT_ID)
     },
     internal_tables=['request_aggregate_tmp'])
 
@@ -237,7 +237,7 @@ dataset = bgq.Dataset(
     project_id=PROJECT_ID,
     dataset_name='biggerquery_cheatsheet',
     external_tables={
-        '311_requests': f'{PROJECT_ID}.external_data.311_requests'
+        '311_requests': '{}.external_data.311_requests'.format(PROJECT_ID)
     },
     internal_tables=['request_aggregate'])
 
@@ -257,7 +257,7 @@ load_df.run('2017-01-01')
 
 ### Generate DAG from notebook
 
-Create empty notebook and add the following processing logic:
+Create an empty notebook and add the following processing logic:
 
 ```python
 import biggerquery as bgq
@@ -268,7 +268,7 @@ dataset = bgq.Dataset(
     project_id=PROJECT_ID,
     dataset_name='biggerquery_cheatsheet',
     external_tables={
-        '311_requests': f'{PROJECT_ID}.external_data.311_requests'
+        '311_requests': '{}.external_data.311_requests'.format(PROJECT_ID)
     },
     internal_tables=['request_aggregate'])
 
@@ -309,7 +309,7 @@ import biggerquery as bgq
 bgq.build_dag_from_notebook('/path/to/your/notebook.ipynb', 'workflow_v1', start_date='2014-05-21')
 ```
 
-After you run the code above, you will get [zipped Airflow DAG](https://airflow.apache.org/concepts.html?highlight=zip#packaged-dags) that you can deploy.
+After you run the code above, you will get a [zipped Airflow DAG](https://airflow.apache.org/concepts.html?highlight=zip#packaged-dags) that you can deploy.
 The easiest way to deploy a DAG is by using the [Cloud Composer](https://cloud.google.com/composer/).
 
 ### Wait for tables
@@ -325,7 +325,7 @@ dataset = bgq.Dataset(
     project_id=PROJECT_ID,
     dataset_name='biggerquery_cheatsheet',
     external_tables={
-        '311_requests': f'{PROJECT_ID}.external_data.311_requests'
+        '311_requests': '{}.external_data.311_requests'.format(PROJECT_ID)
     },
     internal_tables=['request_aggregate'])
 
@@ -353,7 +353,7 @@ dataset = bgq.Dataset(
     project_id=PROJECT_ID,
     dataset_name='biggerquery_cheatsheet',
     external_tables={
-        '311_requests': f'{PROJECT_ID}.external_data.311_requests'
+        '311_requests': '{}.external_data.311_requests'.format(PROJECT_ID)
     },
     internal_tables=['request_aggregate'])
 
@@ -379,12 +379,10 @@ workflow_v2.run('2090-01-01')
 
 ### Reusable Apache Beam components
 
-You can write reusable Apache Beam components. Inside BiggerQuery you can find component for batch prediction on BigQuery table
-using fastai model:
+You can write reusable Apache Beam components. Inside the BiggerQuery you can find the component for batch prediction on the BigQuery table
+using the fastai model:
 
 ```python
-from pathlib import Path
-
 import biggerquery as bgq
 from biggerquery import fastai_tabular_prediction_component
 from biggerquery import Job
@@ -394,13 +392,13 @@ DATASET_NAME = 'my-dataset-name'
 BUCKED_ID = 'my-bucket-id' # GCS bucket ID
 
 VARIABLES_TABLE = 'my-variables-table-name' # table where the variables used in the model can be found
-PREDICTIONS_TABLE = 'my-predictions-table' # table same as the variables table, with additional column "prediction"
+PREDICTIONS_TABLE = 'my-predictions-table' # table same as the variables table, with the additional column "prediction"
 PARTITION_COLUMN = 'some-column-name'
 
-TORCH_WHL_PATH = str((Path(__file__).parent / 'fastai_dependencies' / 'torch-1.1.0-cp36-cp36m-linux_x86_64.whl').absolute())
-FASTAI_WHL_PATH = str((Path(__file__).parent / 'fastai_dependencies' / 'fastai-1.0.58-py3-none-any.whl').absolute())
+TORCH_WHL_PATH = '/path/to/torch-1.1.0-cp36-cp36m-linux_x86_64.whl' 
+FASTAI_WHL_PATH = '/path/to/fastai-1.0.58-py3-none-any.whl'
 
-MODEL_FILE_PATH = str((Path(__file__).parent / 'path' / 'to' / 'your' / 'fastai' / 'model.pkl').absolute())
+MODEL_FILE_PATH = '/path/to/model.pkl'
 
 dataset = bgq.Dataset(
     project_id=PROJECT_ID,
