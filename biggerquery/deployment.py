@@ -5,7 +5,7 @@ from zipfile import ZipFile
 import os
 import shutil
 
-from .utils import zip_dir
+from .utils import zip_dir, merge_dicts
 
 
 def callable_factory(job, dt_as_datetime):
@@ -19,7 +19,7 @@ def callable_factory(job, dt_as_datetime):
     return job_callable
 
 
-def workflow_to_dag(workflow, start_from, dag_id):
+def workflow_to_dag(workflow, start_from, dag_id, **dag_kwargs):
     operators = []
     for job in workflow:
         operators.append({
@@ -33,18 +33,18 @@ def workflow_to_dag(workflow, start_from, dag_id):
             }
         })
 
-    return {
-               'dag_id': dag_id,
-               'default_args': {
-                   'owner': 'airflow',
-                   'depends_on_past': True,
-                   'start_date': datetime.strptime(start_from, "%Y-%m-%d" if len(start_from) <= 10 else "%Y-%m-%d %H:%M:%S"),
-                   'email_on_failure': False,
-                   'email_on_retry': False
-               },
-               'schedule_interval': workflow.schedule_interval,
-               'max_active_runs': 1
-           }, operators
+    return merge_dicts({
+        'dag_id': dag_id,
+        'default_args': {
+            'owner': 'airflow',
+            'depends_on_past': True,
+            'start_date': datetime.strptime(start_from, "%Y-%m-%d" if len(start_from) <= 10 else "%Y-%m-%d %H:%M:%S"),
+            'email_on_failure': False,
+            'email_on_retry': False
+        },
+        'schedule_interval': workflow.schedule_interval,
+        'max_active_runs': 1
+    }, dag_kwargs), operators
 
 
 def build_dag_file(workflow_import_path,
