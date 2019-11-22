@@ -19,7 +19,7 @@ def callable_factory(job, dt_as_datetime):
     return job_callable
 
 
-def workflow_to_dag(workflow, start_from, dag_id, **dag_kwargs):
+def workflow_to_dag(workflow, start_from, dag_id):
     operators = []
     for job in workflow:
         operators.append({
@@ -44,7 +44,7 @@ def workflow_to_dag(workflow, start_from, dag_id, **dag_kwargs):
         },
         'schedule_interval': workflow.schedule_interval,
         'max_active_runs': 1
-    }, dag_kwargs), operators
+    }, workflow.kwargs), operators
 
 
 def build_dag_file(workflow_import_path,

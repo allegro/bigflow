@@ -139,10 +139,10 @@ class WorkflowToDagTestCase(TestCase):
             retry_count=100,
             retry_pause_sec=200
         )
-        workflow = Workflow(definition=[job], schedule_interval='@hourly')
+        workflow = Workflow(definition=[job], schedule_interval='@hourly', description='test_workflow')
 
         # when
-        dag_config, operators_config = workflow_to_dag(workflow, '2019-01-01', 'dag1', description='test_workflow')
+        dag_config, operators_config = workflow_to_dag(workflow, '2019-01-01', 'dag1')
 
         # then
         self.assertEqual(dag_config, {

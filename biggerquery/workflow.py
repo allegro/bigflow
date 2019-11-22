@@ -5,10 +5,12 @@ class Workflow(object):
     def __init__(self,
                  definition,
                  schedule_interval=DEFAULT_SCHEDULE_INTERVAL,
-                 dt_as_datetime=False):
+                 dt_as_datetime=False,
+                 **kwargs):
         self.definition = definition
         self.schedule_interval = schedule_interval
         self.dt_as_datetime = dt_as_datetime
+        self.kwargs = kwargs
 
     def run(self, runtime):
         for job in self:
