@@ -139,7 +139,7 @@ class WorkflowToDagTestCase(TestCase):
             retry_count=100,
             retry_pause_sec=200
         )
-        workflow = Workflow(definition=[job], schedule_interval='@hourly')
+        workflow = Workflow(definition=[job], schedule_interval='@hourly', description='test_workflow')
 
         # when
         dag_config, operators_config = workflow_to_dag(workflow, '2019-01-01', 'dag1')
@@ -155,7 +155,8 @@ class WorkflowToDagTestCase(TestCase):
                 'email_on_retry': False
             },
             'schedule_interval': '@hourly',
-            'max_active_runs': 1
+            'max_active_runs': 1,
+            'description': 'test_workflow'
         })
         self.assertEqual(len(operators_config), 1)
         self.assertEqual(operators_config[0], {

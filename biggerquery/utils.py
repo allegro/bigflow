@@ -107,3 +107,6 @@ def log_syntax_error(method):
                 raise e
 
     return decorated
+
+def merge_dicts(dict1, dict2):
+    return {**dict1, **dict2}
