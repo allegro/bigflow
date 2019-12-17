@@ -1,7 +1,7 @@
 import mock
 from unittest import TestCase
 
-from biggerquery.workflow import Workflow
+from biggerquery.workflow import Workflow, Definition, InvalidJobGraph
 
 
 class WorkflowTestCase(TestCase):
@@ -27,3 +27,58 @@ class WorkflowTestCase(TestCase):
         # expected
         self.assertEqual(workflow.schedule_interval, '@hourly')
         self.assertEqual(workflow.dt_as_datetime, True)
+
+    def test_should_throw_exception_when_circular_dependency_is_found(self):
+        # given
+        job1, job2, job3 = [mock.Mock(), mock.Mock(), mock.Mock()]
+
+        # job1 --- job2
+        #   |       |
+        #    \      |
+        #     \     |
+        #      \    |
+        #       \   |
+        #        \  |
+        #        job3
+
+        job_graph = {
+            job1: (job2,),
+            job2: (job3,),
+            job3: (job1,)
+        }
+
+
+        # expected
+        with self.assertRaises(InvalidJobGraph):
+            Definition(job_graph)
+
+    def test_should_run_jobs_in_order_accordingly_to_graph_schema(self):
+        # given
+        job1, job2, job3, job4, job5, job6, job7, job8 = [mock.Mock(), mock.Mock(), mock.Mock(), mock.Mock(),
+                                                          mock.Mock(), mock.Mock(), mock.Mock(), mock.Mock()]
+        job_graph = {
+            job1: (job5, job6),
+            job2: (job6,),
+            job3: (job6,),
+            job4: (job7,),
+            job6: (job8,),
+            job7: (job8,)
+        }
+
+        #   job1   job2  job3   job4
+        #    |  \    |    /      |
+        #    |   \   |   /       |
+        #    |    \  |  /        |
+        #    |     \ | /         |
+        #   job5    job6        job7
+        #            \           /
+        #             \         /
+        #              \       /
+        #               \     /
+        #                \   /
+        #                job8
+        definition = Definition(job_graph)
+        workflow = Workflow(definition, schedule_interval='@hourly', dt_as_datetime=True)
+
+        # expected
+        self.assertEqual(list(workflow), [job1, job2, job3, job4, job5, job6, job7, job8])
