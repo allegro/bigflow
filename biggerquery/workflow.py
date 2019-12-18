@@ -21,6 +21,21 @@ class Workflow(object):
             yield job
 
 
+class WorkflowJob:
+    def __init__(self, job, name):
+        self.job = job
+        self.name = name
+
+    def __hash__(self):
+        return hash(self.name)
+
+    def __eq__(self, other):
+        return self.name == other.name
+
+    def __str__(self):
+        return "JobGraphNode{job=..., name=%s}" % self.name
+
+
 class Definition:
     def __init__(self, job_graph):
         self.job_graph = job_graph

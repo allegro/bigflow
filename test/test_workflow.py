@@ -1,7 +1,7 @@
 import mock
 from unittest import TestCase
 
-from biggerquery.workflow import Workflow, Definition, InvalidJobGraph
+from biggerquery.workflow import Workflow, Definition, InvalidJobGraph, WorkflowJob
 
 
 class WorkflowTestCase(TestCase):
@@ -30,21 +30,23 @@ class WorkflowTestCase(TestCase):
 
     def test_should_throw_exception_when_circular_dependency_is_found(self):
         # given
-        job1, job2, job3 = [mock.Mock(), mock.Mock(), mock.Mock()]
+        job = mock.Mock()
+        w_job1, w_job2, w_job3 = [WorkflowJob(job, i) for i in range(3)]
 
-        # job1 --- job2
-        #   |       |
-        #    \      |
-        #     \     |
-        #      \    |
-        #       \   |
-        #        \  |
-        #        job3
+        # w_job1 --- w_job2
+        #   |          |
+        #    \         |
+        #     \        |
+        #      \       |
+        #       \      |
+        #        \     |
+        #         \    |
+        #         w_job3
 
         job_graph = {
-            job1: (job2,),
-            job2: (job3,),
-            job3: (job1,)
+            w_job1: (w_job2,),
+            w_job2: (w_job3,),
+            w_job3: (w_job1,)
         }
 
 
@@ -54,31 +56,31 @@ class WorkflowTestCase(TestCase):
 
     def test_should_run_jobs_in_order_accordingly_to_graph_schema(self):
         # given
-        job1, job2, job3, job4, job5, job6, job7, job8 = [mock.Mock(), mock.Mock(), mock.Mock(), mock.Mock(),
-                                                          mock.Mock(), mock.Mock(), mock.Mock(), mock.Mock()]
+        job = mock.Mock()
+        w_job1, w_job2, w_job3, w_job4, w_job5, w_job6, w_job7, w_job8 = [WorkflowJob(job, i) for i in range(8)]
         job_graph = {
-            job1: (job5, job6),
-            job2: (job6,),
-            job3: (job6,),
-            job4: (job7,),
-            job6: (job8,),
-            job7: (job8,)
+            w_job1: (w_job5, w_job6),
+            w_job2: (w_job6,),
+            w_job3: (w_job6,),
+            w_job4: (w_job7,),
+            w_job6: (w_job8,),
+            w_job7: (w_job8,)
         }
 
-        #   job1   job2  job3   job4
-        #    |  \    |    /      |
-        #    |   \   |   /       |
-        #    |    \  |  /        |
-        #    |     \ | /         |
-        #   job5    job6        job7
-        #            \           /
-        #             \         /
-        #              \       /
-        #               \     /
-        #                \   /
-        #                job8
+        #  w_job1  w_job2  w_job3  w_job4
+        #    |   \    |    /         |
+        #    |    \   |   /          |
+        #    |     \  |  /           |
+        #    |      \ | /            |
+        #  w_job5   w_job6         w_job7
+        #              \            /
+        #               \          /
+        #                \        /
+        #                 \      /
+        #                  \    /
+        #                  w_job8
         definition = Definition(job_graph)
         workflow = Workflow(definition, schedule_interval='@hourly', dt_as_datetime=True)
 
         # expected
-        self.assertEqual(list(workflow), [job1, job2, job3, job4, job5, job6, job7, job8])
+        self.assertEqual(list(workflow), [w_job1, w_job2, w_job3, w_job4, w_job5, w_job6, w_job7, w_job8])
