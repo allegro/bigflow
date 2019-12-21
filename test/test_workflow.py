@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 import mock
 from unittest import TestCase
 
@@ -30,10 +32,10 @@ class WorkflowTestCase(TestCase):
 
     def test_should_throw_exception_when_circular_dependency_is_found(self):
         # given
-        job = mock.Mock()
-        w_job1, w_job2, w_job3 = [WorkflowJob(job, i) for i in range(3)]
+        original_job = mock.Mock()
+        job1, job2, job3, job4 = [WorkflowJob(original_job, i) for i in range(4)]
 
-        # w_job1 --- w_job2
+        # job1 --- job2
         #   |          |
         #    \         |
         #     \        |
@@ -41,14 +43,32 @@ class WorkflowTestCase(TestCase):
         #       \      |
         #        \     |
         #         \    |
-        #         w_job3
+        #         job3
 
         job_graph = {
-            w_job1: (w_job2,),
-            w_job2: (w_job3,),
-            w_job3: (w_job1,)
+            job1: (job2,),
+            job2: (job3,),
+            job3: (job1,)
         }
 
+        # expected
+        with self.assertRaises(InvalidJobGraph):
+            Definition(job_graph)
+
+        # given
+
+        # job1        job4
+        #  |          | |
+        #  |          | |
+        #  |          | |
+        # job2 ------ job3
+
+        job_graph = {
+            job1: (job2,),
+            job2: (job3,),
+            job3: (job4,),
+            job4: (job3,)
+        }
 
         # expected
         with self.assertRaises(InvalidJobGraph):
@@ -56,31 +76,64 @@ class WorkflowTestCase(TestCase):
 
     def test_should_run_jobs_in_order_accordingly_to_graph_schema(self):
         # given
-        job = mock.Mock()
-        w_job1, w_job2, w_job3, w_job4, w_job5, w_job6, w_job7, w_job8 = [WorkflowJob(job, i) for i in range(8)]
-        job_graph = {
-            w_job1: (w_job5, w_job6),
-            w_job2: (w_job6,),
-            w_job3: (w_job6,),
-            w_job4: (w_job7,),
-            w_job6: (w_job8,),
-            w_job7: (w_job8,)
-        }
+        original_job = mock.Mock()
+        job1, job2, job3, job4, job5, job6, job7, job8, job9 = [WorkflowJob(original_job, i + 1) for i in range(9)]
+        job_graph = OrderedDict([
+            (job1, (job5, job6)),
+            (job2, (job6,)),
+            (job3, (job6,)),
+            (job4, (job7,)),
+            (job6, (job8,)),
+            (job7, (job8,)),
+            (job5, (job9,))
+        ])
 
-        #  w_job1  w_job2  w_job3  w_job4
-        #    |   \    |    /         |
-        #    |    \   |   /          |
-        #    |     \  |  /           |
-        #    |      \ | /            |
-        #  w_job5   w_job6         w_job7
-        #              \            /
-        #               \          /
-        #                \        /
-        #                 \      /
-        #                  \    /
-        #                  w_job8
+        #  job1     job2  job3  job4
+        #    |  \    |    /      |
+        #    |   \   |   /       |
+        #    |    \  |  /        |
+        #    |     \ | /         |
+        #  job5    job6        job7
+        #    |        \         /
+        #    |         \       /
+        #    |          \     /
+        #    |           \   /
+        #    |            \ /
+        #   job9         job8
+
         definition = Definition(job_graph)
         workflow = Workflow(definition, schedule_interval='@hourly', dt_as_datetime=True)
 
         # expected
-        self.assertEqual(list(workflow), [w_job1, w_job2, w_job3, w_job4, w_job5, w_job6, w_job7, w_job8])
+        self.assertEqual(list(workflow.build_sequential_order()), [job1, job5, job9, job2, job3, job6, job4, job7, job8])
+
+        # given
+        job_graph = OrderedDict([
+            (job1, (job5, job6, job7)),
+            (job2, (job6,)),
+            (job3, (job6,)),
+            (job4, (job7,)),
+            (job6, (job8,)),
+            (job7, (job8,)),
+            (job5, (job9,)),
+            (job6, (job9,))
+        ])
+
+        #  job1     job2  job3  job4
+        #    |  \    |    /      |
+        #    |   \   |   /       |
+        #    |    \  |  /        |
+        #    |     \ | /         |
+        #  job5    job6        job7
+        #    |      / \         /
+        #    |     /   \       /
+        #    |    /     \     /
+        #    |   /       \   /
+        #    |  /         \ /
+        #   job9         job8
+
+        definition = Definition(job_graph)
+        workflow = Workflow(definition, schedule_interval='@hourly', dt_as_datetime=True)
+
+        # expected
+        self.assertEqual(workflow.build_sequential_order(), [job1, job5, job2, job3, job6, job9, job4, job7, job8])

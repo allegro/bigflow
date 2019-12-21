@@ -21,7 +21,8 @@ def callable_factory(job, dt_as_datetime):
 
 def workflow_to_dag(workflow, start_from, dag_id):
     operators = []
-    for job in workflow:
+    for workflow_job in workflow.build_sequential_order():
+        job = workflow_job.job
         operators.append({
             'task_type': 'python_callable',
             'task_kwargs': {

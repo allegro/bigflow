@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 DEFAULT_SCHEDULE_INTERVAL = '@daily'
 
 
@@ -7,24 +9,40 @@ class Workflow(object):
                  schedule_interval=DEFAULT_SCHEDULE_INTERVAL,
                  dt_as_datetime=False,
                  **kwargs):
-        self.definition = definition
+        self.definition = self._parse_definition(definition)
         self.schedule_interval = schedule_interval
         self.dt_as_datetime = dt_as_datetime
         self.kwargs = kwargs
 
     def run(self, runtime):
-        for job in self:
+        for job in self.build_sequential_order():
             job.run(runtime=runtime)
 
-    def __iter__(self):
-        for job in self.definition:
-            yield job
+    def build_sequential_order(self):
+        return self.definition.sequential_order()
+
+    def build_dependency_graph(self):
+        return self.definition.dependency_graph()
+
+    def _parse_definition(self, definition):
+        if isinstance(definition, list):
+            return Definition(self._map_to_workflow_job(definition))
+        if isinstance(definition, Definition):
+            return definition
+        raise ValueError(f"Invalid argument {definition}")
+
+    @staticmethod
+    def _map_to_workflow_job(job_list):
+        return [WorkflowJob(job, i) for i, job in enumerate(job_list)]
 
 
 class WorkflowJob:
     def __init__(self, job, name):
         self.job = job
         self.name = name
+
+    def run(self, runtime):
+        self.job.run(runtime=runtime)
 
     def __hash__(self):
         return hash(self.name)
@@ -33,33 +51,82 @@ class WorkflowJob:
         return self.name == other.name
 
     def __str__(self):
-        return "JobGraphNode{job=..., name=%s}" % self.name
+        return "WorkflowJob{job=..., name=%s}" % self.name
 
 
 class Definition:
+    def __init__(self, jobs):
+        self.job_graph = self._build_graph(jobs)
+
+    def sequential_order(self):
+        return JobOrderResolver(self.job_graph).find_proper_run_order()
+
+    def dependency_graph(self):
+        return self.job_graph
+
+    def _build_graph(self, jobs):
+        if isinstance(jobs, list):
+            job_graph = self._convert_list_to_graph(jobs)
+        elif isinstance(jobs, dict):
+            job_graph = jobs
+        else:
+            raise ValueError("Job graph has to be dict or list")
+
+        JobGraphValidator(job_graph).validate()
+        return job_graph
+
+    @staticmethod
+    def _convert_list_to_graph(job_list):
+        graph_as_dict = OrderedDict()
+        if len(job_list) == 1:
+            graph_as_dict[job_list[0]] = []
+        else:
+            for i in range(1, len(job_list)):
+                graph_as_dict[job_list[i - 1]] = [job_list[i]]
+        return graph_as_dict
+
+
+class InvalidJobGraph(Exception):
+    def __init__(self, msg):
+        self.msg = msg
+
+    def __str__(self):
+        return self.msg
+
+
+class JobGraphValidator:
     def __init__(self, job_graph):
         self.job_graph = job_graph
+
+    def validate(self):
         self._validate_if_not_cyclic()
-        self.ordered_jobs = self._find_proper_run_order()
 
     def _validate_if_not_cyclic(self):
+        visited = set()
+        stack = set()
         for job in self.job_graph:
-            visited = set()
-            self._visit_job(job, visited)
+            self._validate_job(job, visited, stack)
 
-    def _visit_job(self, job, visited):
-        if job in visited:
+    def _validate_job(self, job, visited, stack):
+        if job in visited and job in stack:
             raise InvalidJobGraph(f"Found cyclic dependency on job {job}")
+        if job in visited:
+            return
+
         visited.add(job)
         if not job in self.job_graph:
             return
+        stack.add(job)
         for dep in self.job_graph[job]:
-            self._visit_job(dep, visited)
+            self._validate_job(dep, visited, stack)
+        stack.remove(job)
 
-    def __iter__(self):
-        return iter(self.ordered_jobs)
 
-    def _find_proper_run_order(self):
+class JobOrderResolver:
+    def __init__(self, job_graph):
+        self.job_graph = job_graph
+
+    def find_proper_run_order(self):
         parental_map = self._build_parental_map()
         ordered_jobs = []
         visited = set()
@@ -69,7 +136,7 @@ class Definition:
 
     def _build_parental_map(self):
         visited = set()
-        parental_map = {}
+        parental_map = OrderedDict()
         for job in self.job_graph:
             self._fill_parental_map(job, parental_map, visited)
         return parental_map
@@ -82,28 +149,17 @@ class Definition:
         if job not in parental_map:
             parental_map[job] = []
 
-        for dep in self.job_graph[job]:
-            if dep not in parental_map:
-                parental_map[dep] = []
-            parental_map[dep].append(job)
-            self._fill_parental_map(dep, parental_map, visited)
+        for dependency in self.job_graph[job]:
+            if dependency not in parental_map:
+                parental_map[dependency] = []
+            parental_map[dependency].append(job)
+            self._fill_parental_map(dependency, parental_map, visited)
 
     def _add_to_ordered_jobs(self, job, parental_map, visited, ordered_jobs):
         if job not in parental_map or job in visited:
             return
         visited.add(job)
 
-        if not parental_map[job]:
-            ordered_jobs.append(job)
-        else:
-            for parent in parental_map[job]:
-                self._add_to_ordered_jobs(parent, parental_map, visited, ordered_jobs)
-            ordered_jobs.append(job)
-
-
-class InvalidJobGraph(Exception):
-    def __init__(self, msg):
-        self.msg = msg
-
-    def __str__(self):
-        return self.msg
+        for parent in parental_map[job]:
+            self._add_to_ordered_jobs(parent, parental_map, visited, ordered_jobs)
+        ordered_jobs.append(job)
