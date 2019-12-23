@@ -19,6 +19,10 @@ def callable_factory(job, dt_as_datetime):
     return job_callable
 
 
+def build_dag_operator(job, dependencies):
+    pass
+
+
 def workflow_to_dag(workflow, start_from, dag_id):
     operators = []
     for workflow_job in workflow.build_sequential_order():

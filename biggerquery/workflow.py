@@ -24,6 +24,9 @@ class Workflow(object):
     def build_dependency_graph(self):
         return self.definition.dependency_graph()
 
+    def call_on_graph_node(self, consumer):
+        pass
+
     def _parse_definition(self, definition):
         if isinstance(definition, list):
             return Definition(self._map_to_workflow_job(definition))
@@ -57,12 +60,16 @@ class WorkflowJob:
 class Definition:
     def __init__(self, jobs):
         self.job_graph = self._build_graph(jobs)
+        self.job_order_resolver = JobOrderResolver(self.job_graph)
 
     def sequential_order(self):
-        return JobOrderResolver(self.job_graph).find_proper_run_order()
+        return self.job_order_resolver.find_proper_run_order()
 
     def dependency_graph(self):
         return self.job_graph
+
+    def call_on_graph_node(self, consumer):
+        return self.job_order_resolver.call_on_graph_node(consumer)
 
     def _build_graph(self, jobs):
         if isinstance(jobs, list):
@@ -125,14 +132,20 @@ class JobGraphValidator:
 class JobOrderResolver:
     def __init__(self, job_graph):
         self.job_graph = job_graph
+        self.parental_map = self._build_parental_map()
 
     def find_proper_run_order(self):
-        parental_map = self._build_parental_map()
         ordered_jobs = []
-        visited = set()
-        for job in parental_map:
-            self._add_to_ordered_jobs(job, parental_map, visited, ordered_jobs)
+        def add_to_ordered_job(job, dependencies):
+            ordered_jobs.append(job)
+
+        self.call_on_graph_node(add_to_ordered_job)
         return ordered_jobs
+
+    def call_on_graph_node(self, consumer):
+        visited = set()
+        for job in self.parental_map:
+            self._call_on_graph_node_helper(job, self.parental_map, visited, consumer)
 
     def _build_parental_map(self):
         visited = set()
@@ -155,11 +168,11 @@ class JobOrderResolver:
             parental_map[dependency].append(job)
             self._fill_parental_map(dependency, parental_map, visited)
 
-    def _add_to_ordered_jobs(self, job, parental_map, visited, ordered_jobs):
+    def _call_on_graph_node_helper(self, job, parental_map, visited, consumer):
         if job not in parental_map or job in visited:
             return
         visited.add(job)
 
         for parent in parental_map[job]:
-            self._add_to_ordered_jobs(parent, parental_map, visited, ordered_jobs)
-        ordered_jobs.append(job)
+            self._call_on_graph_node_helper(parent, parental_map, visited, consumer)
+        consumer(job, parental_map[job])
