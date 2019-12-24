@@ -61,9 +61,10 @@ def workflow_to_dag(workflow, start_from, dag_id):
                 dep_operator = workflow_job_to_dag_operator.get(dep)
             else:
                 dep_operator = create_python_operator(dag, workflow, dep.job)
+                workflow_job_to_dag_operator[dep] = dep_operator
             operator.set_upstream(dep_operator)
 
-    workflow.call_on_graph_node(build_dag_operator)
+    workflow.call_on_graph_nodes(build_dag_operator)
     return dag
 
 

@@ -21,21 +21,18 @@ class Workflow(object):
     def build_sequential_order(self):
         return self.definition.sequential_order()
 
-    def build_dependency_graph(self):
-        return self.definition.dependency_graph()
-
-    def call_on_graph_node(self, consumer):
-        self.definition.call_on_graph_node(consumer)
+    def call_on_graph_nodes(self, consumer):
+        self.definition.call_on_graph_nodes(consumer)
 
     def _parse_definition(self, definition):
         if isinstance(definition, list):
-            return Definition(self._map_to_workflow_job(definition))
+            return Definition(self._map_to_workflow_jobs(definition))
         if isinstance(definition, Definition):
             return definition
         raise ValueError(f"Invalid argument {definition}")
 
     @staticmethod
-    def _map_to_workflow_job(job_list):
+    def _map_to_workflow_jobs(job_list):
         return [WorkflowJob(job, i) for i, job in enumerate(job_list)]
 
 
@@ -63,13 +60,10 @@ class Definition:
         self.job_order_resolver = JobOrderResolver(self.job_graph)
 
     def sequential_order(self):
-        return self.job_order_resolver.find_proper_run_order()
+        return self.job_order_resolver.find_sequential_run_order()
 
-    def dependency_graph(self):
-        return self.job_graph
-
-    def call_on_graph_node(self, consumer):
-        return self.job_order_resolver.call_on_graph_node(consumer)
+    def call_on_graph_nodes(self, consumer):
+        return self.job_order_resolver.call_on_graph_nodes(consumer)
 
     def _build_graph(self, jobs):
         if isinstance(jobs, list):
@@ -115,7 +109,7 @@ class JobGraphValidator:
             self._validate_job(job, visited, stack)
 
     def _validate_job(self, job, visited, stack):
-        if job in visited and job in stack:
+        if job in stack:
             raise InvalidJobGraph(f"Found cyclic dependency on job {job}")
         if job in visited:
             return
@@ -134,15 +128,15 @@ class JobOrderResolver:
         self.job_graph = job_graph
         self.parental_map = self._build_parental_map()
 
-    def find_proper_run_order(self):
+    def find_sequential_run_order(self):
         ordered_jobs = []
         def add_to_ordered_job(job, dependencies):
             ordered_jobs.append(job)
 
-        self.call_on_graph_node(add_to_ordered_job)
+        self.call_on_graph_nodes(add_to_ordered_job)
         return ordered_jobs
 
-    def call_on_graph_node(self, consumer):
+    def call_on_graph_nodes(self, consumer):
         visited = set()
         for job in self.parental_map:
             self._call_on_graph_node_helper(job, self.parental_map, visited, consumer)
@@ -169,7 +163,7 @@ class JobOrderResolver:
             self._fill_parental_map(dependency, parental_map, visited)
 
     def _call_on_graph_node_helper(self, job, parental_map, visited, consumer):
-        if job not in parental_map or job in visited:
+        if job in visited:
             return
         visited.add(job)
 

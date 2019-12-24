@@ -36,13 +36,13 @@ class WorkflowTestCase(TestCase):
         job1, job2, job3, job4 = [WorkflowJob(original_job, i) for i in range(4)]
 
         # job1 --- job2
-        #   |          |
-        #    \         |
-        #     \        |
-        #      \       |
-        #       \      |
-        #        \     |
-        #         \    |
+        #   |        |
+        #    \       |
+        #     \      |
+        #      \     |
+        #       \    |
+        #        \   |
+        #         \  |
         #         job3
 
         job_graph = {
@@ -77,7 +77,7 @@ class WorkflowTestCase(TestCase):
     def test_should_run_jobs_in_order_accordingly_to_graph_schema(self):
         # given
         original_job = mock.Mock()
-        job1, job2, job3, job4, job5, job6, job7, job8, job9 = [WorkflowJob(original_job, i + 1) for i in range(9)]
+        job1, job2, job3, job4, job5, job6, job7, job8, job9 = [WorkflowJob(original_job, i) for i in range(9)]
         job_graph = OrderedDict([
             (job1, (job5, job6)),
             (job2, (job6,)),
