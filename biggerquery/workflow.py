@@ -25,7 +25,7 @@ class Workflow(object):
         return self.definition.dependency_graph()
 
     def call_on_graph_node(self, consumer):
-        pass
+        self.definition.call_on_graph_node(consumer)
 
     def _parse_definition(self, definition):
         if isinstance(definition, list):
