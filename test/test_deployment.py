@@ -201,6 +201,8 @@ from airflow.operators import python_operator
 import biggerquery as bgq
 from my.super import workflow as workflow
 
+#dag = models.DAG(**dag_args)
+
 dag = bgq.workflow_to_dag(workflow, '2019-01-01', 'dag1')
 
 globals()['dag1'] = dag''')

@@ -79,6 +79,8 @@ from airflow.operators import python_operator
 import biggerquery as bgq
 from {workflow_import_path} import {workflow_name} as workflow
 
+#dag = models.DAG(**dag_args)
+
 dag = bgq.workflow_to_dag(workflow, '{start_from}', '{dag_id}')
 
 globals()['{dag_id}'] = dag'''.format(
