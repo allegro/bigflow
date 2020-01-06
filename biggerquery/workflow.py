@@ -29,7 +29,7 @@ class Workflow(object):
             return Definition(self._map_to_workflow_jobs(definition))
         if isinstance(definition, Definition):
             return definition
-        raise ValueError(f"Invalid argument {definition}")
+        raise ValueError("Invalid argument %s" % definition)
 
     @staticmethod
     def _map_to_workflow_jobs(job_list):
@@ -50,7 +50,7 @@ class WorkflowJob:
     def __eq__(self, other):
         return self.name == other.name
 
-    def __str__(self):
+    def __repr__(self):
         return "WorkflowJob{job=..., name=%s}" % self.name
 
 
@@ -91,7 +91,7 @@ class InvalidJobGraph(Exception):
     def __init__(self, msg):
         self.msg = msg
 
-    def __str__(self):
+    def __repr__(self):
         return self.msg
 
 

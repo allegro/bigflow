@@ -5,9 +5,6 @@ from zipfile import ZipFile
 import os
 import shutil
 
-from airflow import models
-from airflow.operators import python_operator
-
 from .utils import zip_dir, merge_dicts
 
 
@@ -23,6 +20,8 @@ def callable_factory(job, dt_as_datetime):
 
 
 def create_python_operator(dag, workflow, job):
+    from airflow.operators import python_operator
+
     return python_operator.PythonOperator(
         dag=dag,
         task_id=job.id,
@@ -33,6 +32,8 @@ def create_python_operator(dag, workflow, job):
 
 
 def workflow_to_dag(workflow, start_from, dag_id):
+    from airflow import models
+
     dag_args = merge_dicts({
         'dag_id': dag_id,
         'default_args': {
