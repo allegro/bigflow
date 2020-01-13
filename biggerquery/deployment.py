@@ -19,21 +19,22 @@ def callable_factory(job, dt_as_datetime):
     return job_callable
 
 
-def workflow_to_dag(workflow, start_from, dag_id):
-    operators = []
-    for job in workflow:
-        operators.append({
-            'task_type': 'python_callable',
-            'task_kwargs': {
-                'task_id': job.id,
-                'python_callable': callable_factory(job, workflow.dt_as_datetime),
-                'retries': job.retry_count,
-                'retry_delay': timedelta(seconds=job.retry_pause_sec),
-                'provide_context': True
-            }
-        })
+def create_python_operator(dag, workflow, job):
+    from airflow.operators import python_operator
 
-    return merge_dicts({
+    return python_operator.PythonOperator(
+        dag=dag,
+        task_id=job.id,
+        python_callable=callable_factory(job, workflow.dt_as_datetime),
+        retries=job.retry_count,
+        retry_delay=timedelta(seconds=job.retry_pause_sec),
+        provide_context=True)
+
+
+def workflow_to_dag(workflow, start_from, dag_id):
+    from airflow import models
+
+    dag_args = merge_dicts({
         'dag_id': dag_id,
         'default_args': {
             'owner': 'airflow',
@@ -44,7 +45,28 @@ def workflow_to_dag(workflow, start_from, dag_id):
         },
         'schedule_interval': workflow.schedule_interval,
         'max_active_runs': 1
-    }, workflow.kwargs), operators
+    }, workflow.kwargs)
+    dag = models.DAG(**dag_args)
+
+    workflow_job_to_dag_operator = {}
+
+    def build_dag_operator(workflow_job, dependencies):
+        if workflow_job in workflow_job_to_dag_operator:
+            operator = workflow_job_to_dag_operator.get(workflow_job)
+        else:
+            operator = create_python_operator(dag, workflow, workflow_job.job)
+            workflow_job_to_dag_operator[workflow_job] = operator
+
+        for dep in dependencies:
+            if dep in workflow_job_to_dag_operator:
+                dep_operator = workflow_job_to_dag_operator.get(dep)
+            else:
+                dep_operator = create_python_operator(dag, workflow, dep.job)
+                workflow_job_to_dag_operator[dep] = dep_operator
+            operator.set_upstream(dep_operator)
+
+    workflow.call_on_graph_nodes(build_dag_operator)
+    return dag
 
 
 def build_dag_file(workflow_import_path,
@@ -58,12 +80,9 @@ from airflow.operators import python_operator
 import biggerquery as bgq
 from {workflow_import_path} import {workflow_name} as workflow
 
-dag_args, tasks = bgq.workflow_to_dag(workflow, '{start_from}', '{dag_id}')
+#dag = models.DAG(**dag_args)
 
-dag = models.DAG(**dag_args)
-final_task = python_operator.PythonOperator(dag=dag, **tasks[0]['task_kwargs'])
-for task in tasks[1:]:
-    final_task = final_task >> python_operator.PythonOperator(dag=dag, **task['task_kwargs'])
+dag = bgq.workflow_to_dag(workflow, '{start_from}', '{dag_id}')
 
 globals()['{dag_id}'] = dag'''.format(
         dag_package=dag_package_name,

@@ -9,7 +9,7 @@ import os
 import shutil
 from zipfile import ZipFile
 
-from biggerquery.workflow import Workflow
+from biggerquery.workflow import Workflow, WorkflowJob, Definition
 from biggerquery.job import Job
 from biggerquery.deployment import build_dag_from_notebook
 from biggerquery.deployment import build_dag
@@ -132,43 +132,61 @@ class WorkflowToDagTestCase(TestCase):
     @mock.patch('biggerquery.deployment.callable_factory')
     def test_should_turn_workflow_to_dag_configuration(self, callable_factory_mock):
         # given
-        callable_factory_mock.side_effect = lambda job, dt_as_datetime: (job, dt_as_datetime)
-        job = Job(
+        python_callable = lambda job, dt_as_datetime: (job, dt_as_datetime)
+        callable_factory_mock.return_value = python_callable
+        job1 = Job(
             id='job1',
             component=mock.Mock(),
             retry_count=100,
             retry_pause_sec=200
         )
-        workflow = Workflow(definition=[job], schedule_interval='@hourly', description='test_workflow')
+        job2 = Job(
+            id='job2',
+            component=mock.Mock(),
+            retry_count=100,
+            retry_pause_sec=200
+        )
+        job3 = Job(
+            id='job3',
+            component=mock.Mock(),
+            retry_count=100,
+            retry_pause_sec=200
+        )
+        w_job1 = WorkflowJob(job1, 1)
+        w_job2 = WorkflowJob(job2, 2)
+        w_job3 = WorkflowJob(job3, 3)
+        graph = {
+            w_job1: (w_job2, w_job3),
+            w_job2: (w_job3,)
+        }
+        workflow = Workflow(definition=Definition(graph), schedule_interval='@hourly', description='test_workflow')
 
         # when
-        dag_config, operators_config = workflow_to_dag(workflow, '2019-01-01', 'dag1')
+        dag = workflow_to_dag(workflow, '2019-01-01', 'dag1')
 
         # then
-        self.assertEqual(dag_config, {
-            'dag_id': 'dag1',
-            'default_args': {
-                'owner': 'airflow',
-                'depends_on_past': True,
-                'start_date': datetime.strptime('2019-01-01', "%Y-%m-%d"),
-                'email_on_failure': False,
-                'email_on_retry': False
-            },
-            'schedule_interval': '@hourly',
-            'max_active_runs': 1,
-            'description': 'test_workflow'
+        self.assertEqual(dag.dag_id, 'dag1')
+        self.assertEqual(dag.default_args, {
+            'owner': 'airflow',
+            'depends_on_past': True,
+            'start_date': datetime.strptime('2019-01-01', "%Y-%m-%d"),
+            'email_on_failure': False,
+            'email_on_retry': False
         })
-        self.assertEqual(len(operators_config), 1)
-        self.assertEqual(operators_config[0], {
-            'task_type': 'python_callable',
-            'task_kwargs': {
-                'task_id': 'job1',
-                'python_callable': (job, False),
-                'retries': 100,
-                'retry_delay': timedelta(seconds=200),
-                'provide_context': True
-            }
-        })
+        self.assertEqual(dag.schedule_interval, '@hourly')
+        self.assertEqual(dag.max_active_runs, 1)
+        self.assertEqual(dag.description, 'test_workflow')
+        self.assertEqual(dag.task_dict['job1'].upstream_task_ids, set())
+        self.assertEqual(dag.task_dict['job2'].upstream_task_ids, {'job1'})
+        self.assertEqual(dag.task_dict['job3'].upstream_task_ids, {'job1', 'job2'})
+
+        # and
+        self.assertEqual(dag.tasks[0].dag, dag)
+        self.assertEqual(dag.tasks[0].task_id, 'job1')
+        self.assertEqual(dag.tasks[0].python_callable, python_callable)
+        self.assertEqual(dag.tasks[0].retries, 100)
+        self.assertEqual(dag.tasks[0].retry_delay, timedelta(seconds=200))
+        self.assertEqual(dag.tasks[0].provide_context, True)
 
 
 class BuildDagFileTestCase(TestCase):
@@ -183,11 +201,8 @@ from airflow.operators import python_operator
 import biggerquery as bgq
 from my.super import workflow as workflow
 
-dag_args, tasks = bgq.workflow_to_dag(workflow, '2019-01-01', 'dag1')
+#dag = models.DAG(**dag_args)
 
-dag = models.DAG(**dag_args)
-final_task = python_operator.PythonOperator(dag=dag, **tasks[0]['task_kwargs'])
-for task in tasks[1:]:
-    final_task = final_task >> python_operator.PythonOperator(dag=dag, **task['task_kwargs'])
+dag = bgq.workflow_to_dag(workflow, '2019-01-01', 'dag1')
 
 globals()['dag1'] = dag''')
