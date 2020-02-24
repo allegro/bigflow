@@ -1,5 +1,6 @@
-google-cloud-bigquery>=1.12,<=1.24
+google-cloud-bigquery>=1.18,<=1.24
 pandas>=0.23,<=0.24
 mock==2.0.0
-pyarrow>=0.14
+pyarrow==0.15.1
+google-cloud-storage>=1.16,<=1.26
 pydata-google-auth>=0.1.3
