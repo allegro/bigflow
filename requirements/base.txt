@@ -1,6 +1,6 @@
-google-cloud-bigquery
-pandas
-google-cloud-storage
-mock
-pyarrow
-pydata-google-auth
+google-cloud-bigquery==1.8.1
+pandas==0.25.3
+google-cloud-storage==1.15.2
+mock==2.0.0
+pyarrow==0.14.1
+pydata-google-auth==0.2.1
