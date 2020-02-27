@@ -9,8 +9,6 @@ with open("README.md", "r") as fh:
 with open(os.path.join('requirements', 'base.txt'), 'r') as base_requirements:
     install_requires = [l.strip() for l in base_requirements.readlines()]
 
-with open(os.path.join('requirements', 'beam_extras.txt'), 'r') as beam_extras_requirements:
-    beam_extras_require = [l.strip() for l in beam_extras_requirements.readlines()]
 
 with open(os.path.join('requirements', 'stackdriver_extras.txt'), 'r') as stackdriver_extras_requirements:
     stackdriver_extras_require = [l.strip() for l in stackdriver_extras_requirements.readlines()]
@@ -35,7 +33,6 @@ setuptools.setup(
     ],
     install_requires=install_requires,
     extras_require={
-        'beam': beam_extras_require,
         'stackdriver': stackdriver_extras_require
     },
 )
