@@ -1,6 +1,4 @@
 pandas==0.25.3
-mock==2.0.0
-pydata-google-auth==0.2.1
 pyconfighelper>=0.0.7
 google-cloud-bigtable==1.2.1
 google-cloud-bigquery==1.24.0
