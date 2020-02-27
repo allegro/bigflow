@@ -8,5 +8,6 @@ google-cloud-bigquery==1.24.0
 google-cloud-spanner==1.14.0
 google-cloud-storage==1.26.0
 google-cloud-logging==1.14.0
+setuptools==45.2.0
 google-auth==1.11.2
 six==1.14.0
