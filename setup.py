@@ -25,7 +25,7 @@ setuptools.setup(
     url="https://github.com/allegro/biggerquery",
     packages=setuptools.find_packages(exclude=('test', 'e2e')),
     data_files=[
-        ('requirements', ['requirements/base.txt', 'requirements/beam_extras.txt', 'requirements/stackdriver_extras.txt']),
+        ('requirements', ['requirements/base.txt', 'requirements/stackdriver_extras.txt']),
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
