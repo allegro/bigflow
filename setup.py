@@ -18,7 +18,7 @@ with open(os.path.join('requirements', 'stackdriver_extras.txt'), 'r') as stackd
 
 setuptools.setup(
     name="biggerquery",
-    version="0.6.dev22",
+    version="0.6.dev23",
     author=u"Chi",
     author_email="chibox-team@allegrogroup.com",
     description="BigQuery client wrapper with clean API",
