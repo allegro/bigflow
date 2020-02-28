@@ -19,6 +19,8 @@ BiggerQuery lets you implement complex stuff (the Allegro experimentation platfo
 
 `pip install biggerquery`
 
+`pip install biggerquery[beam]`(if you want to use the Apache Beam)
+
 ## Compatibility
 
 BiggerQuery is compatible with Python >= 3.5.

@@ -1,7 +1,4 @@
 setuptools==45.2.0
-apache-beam[gcp]==2.17
-avro-python3==1.9.1
-nose
 dill==0.3.0
 pandas==0.25.3
 mock==2.0.0
