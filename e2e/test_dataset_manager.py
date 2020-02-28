@@ -473,6 +473,26 @@ class CollectTestCase(DatasetManagerTestCase):
         self.assertEqual(records[0]['first_name'], 'John')
         self.assertEqual(records[0]['last_name'], 'Smith')
 
+    def test_should_collect_list_records(self):
+
+        # given
+        self.dataset_manager.write_tmp('tmp_table', '''
+        SELECT TIMESTAMP('{dt}') AS batch_date, 'John' AS first_name, 'Smith' AS last_name
+        ''')
+
+        # when
+        records = self.dataset_manager.collect_list('''
+        SELECT *
+        FROM `{tmp_table}`
+        WHERE DATE(batch_date) = '{dt}'
+        ''')
+
+        # then
+        assert isinstance(records, list)
+        self.assertEqual(len(records), 1)
+        self.assertEqual(records[0]['first_name'], 'John')
+        self.assertEqual(records[0]['last_name'], 'Smith')
+
     def test_should_collect_records_from_custom_partition(self):
 
         # given
