@@ -2,7 +2,7 @@
 -r requirements/beam_extras.txt
 -r requirements/stackdriver_extras.txt
 jupyter
-setuptools
+setuptools==45.2.0
 wheel
 twine
 tqdm
