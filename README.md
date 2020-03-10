@@ -426,3 +426,8 @@ workflow_v3.run('2090-01-01')
 ## Tutorial
 
 Inside this repository, you can find the BiggerQuery tutorial. We recommend using the GCP Jupyter Lab to go through the tutorial. It takes a few clicks to set up.
+
+## Other resources
+
+* [BigQuery workflow from the Jupyter notebook](https://datacraftacademy.com/bigquery-workflow-from-the-jupyter-notebook/)
+* [Fastai batch prediction on a BigQuery table](https://datacraftacademy.com/fastai-batch-prediction-on-a-bigquery-table/)
