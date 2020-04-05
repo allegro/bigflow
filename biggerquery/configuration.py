@@ -6,8 +6,16 @@ from .gcp_defaults import DEFAULT_MACHINE_TYPE
 from .utils import unzip_file_and_save_outside_zip_as_tmp_file
 
 
-class DatasetConfig(object):
+class BiggerQueryConfig(object):
+    def __init__(self, name, properties=None):
+        self.name = name
+        self.properties = properties or {}
 
+    def override(self, properties):
+        self.properties.update(properties)
+
+
+class DatasetConfig(object):
     def __init__(self,
                  project_id,
                  dataset_name,
@@ -42,7 +50,6 @@ class DatasetConfig(object):
 
 
 class DataflowConfig(object):
-
     def __init__(self,
                  dataflow_bucket_id,
                  requirements_path,
