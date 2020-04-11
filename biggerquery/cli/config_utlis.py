@@ -1,22 +1,24 @@
-import importlib
-import os
-from glob import glob
-import importlib.util
+from importlib import import_module
 
 from biggerquery.configuration import BiggerQueryConfig
 
 
-def import_config(config_name, project_dir):
-    for python_file in glob(os.path.join(os.path.abspath(project_dir), '**/*.py'), recursive=True):
-        spec = importlib.util.spec_from_file_location("config", python_file)
-        python_module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(python_module)
-        for member_as_str in dir(python_module):
-            member = getattr(python_module, member_as_str)
-            if isinstance(member, BiggerQueryConfig) and member.name == config_name:
-                return member
-    raise BiggerQueryConfigNotFound("Config '%s' does not exist in dir '%s'" % (config_name, project_dir))
+def import_config(config_path):
+    object_name = config_path.split('.')[-1]
+    module_path = '.'.join(config_path.split('.')[:-1])
+    imported_module = import_module(module_path)
+
+    if not hasattr(imported_module, object_name):
+        raise BiggerQueryConfigNotFound("Object '%s' not found in module %s" % (object_name, module_path))
+    maybe_biggerquery_config = getattr(imported_module, object_name)
+    if not isinstance(maybe_biggerquery_config, BiggerQueryConfig):
+        raise InvalidConfig("Object '%s' is not BiggerQueryConfig" % config_path)
+    return maybe_biggerquery_config
 
 
 class BiggerQueryConfigNotFound(Exception):
-   pass
+    pass
+
+
+class InvalidConfig(Exception):
+    pass
