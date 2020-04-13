@@ -3,7 +3,7 @@ from unittest import TestCase
 
 import os
 
-from biggerquery.cli.config_utlis import import_config, BiggerQueryConfigNotFound, InvalidConfig
+from biggerquery.cli.config_utlis import import_config
 
 
 class ImportConfigTestCase(TestCase):
@@ -27,15 +27,12 @@ class ImportConfigTestCase(TestCase):
         # then
         self.assertEqual(config.name, 'example_test_configuration')
 
-    def test_should_throw_error_when_object_is_not_biggerquery_config(self):
-        # expect
-        with self.assertRaises(InvalidConfig):
-            import_config(self._path_relative_to_test_execution('config_for_testing.fake_config'))
-
     def test_should_throw_error_when_config_not_found(self):
         # expect
-        with self.assertRaises(BiggerQueryConfigNotFound):
+        with self.assertRaises(ValueError) as e:
             import_config(self._path_relative_to_test_execution('config_for_testing.not_existing_config'))
+
+        self.assertRegexpMatches(str(e.exception), "Object 'not_existing_config' not found*")
 
     def _path_relative_to_test_execution(self, import_path):
         return (self.configs_root_package + '.' + import_path).replace('/', '.')

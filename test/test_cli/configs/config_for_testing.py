@@ -1,4 +1,4 @@
-from biggerquery.configuration import BiggerQueryConfig
+# we can use relative imports too
+from .another_configs.config_for_testing import dev_config
 
-dev_config = BiggerQueryConfig('example_dev_configuration')
 fake_config = {}
