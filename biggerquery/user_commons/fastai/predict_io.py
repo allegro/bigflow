@@ -1,3 +1,4 @@
+# to delete
 import logging
 import apache_beam as beam
 from apache_beam.io import BigQueryDisposition

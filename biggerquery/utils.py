@@ -15,7 +15,7 @@ def not_none_or_error(arg_value, arg_name):
     if arg_value is None:
         raise ValueError("{} can't be None".format(arg_name))
 
-
+# to delete
 def fake_create_dataflow_manager(*args, **kwargs):
     raise ExtrasRequiredError('To use the create_dataflow_manager you need to install the beam extras: pip install biggerquery[beam]')
 
@@ -23,7 +23,7 @@ def fake_create_dataflow_manager(*args, **kwargs):
 class ExtrasRequiredError(ImportError):
     pass
 
-
+# to delete
 def secure_create_dataflow_manager_import():
     try:
         beam_manager_module = import_module('biggerquery.beam_manager')
@@ -31,11 +31,11 @@ def secure_create_dataflow_manager_import():
     except ImportError:
         return fake_create_dataflow_manager
 
-
+# to delete
 def fake_fastai_tabular_prediction_component(*args, **kwargs):
     raise ExtrasRequiredError('To use the fastai_tabular_prediction_component you need to install the beam extras: pip install biggerquery[beam]')
 
-
+# to delete
 def secure_fastai_tabular_prediction_component_import():
     try:
         predict_component_module = import_module('biggerquery.user_commons.fastai.predict_component')

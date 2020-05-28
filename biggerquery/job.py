@@ -45,6 +45,7 @@ class Job(object):
         else:
             return self._run_beam_component(dependencies)
 
+    # to delete
     def _run_beam_component(self, dependencies):
         component_file_path = os.path.abspath(getmodule(self.component).__file__)
         return runpy.run_path(
@@ -57,10 +58,12 @@ class Job(object):
     def _component_dependencies(self):
         return [dependency_name for dependency_name in getargspec(self._component).args]
 
+    # to delete
     @property
     def _component(self):
         return self.component if not self._is_dataflow_job else self.component.run
 
+    # to delete
     @property
     def _is_dataflow_job(self):
         return isinstance(self.component, ModuleType)
@@ -71,6 +74,7 @@ class Job(object):
                 return config
         raise ValueError("Can't find config for dependency: " + target_dependency_name)
 
+    # to delete
     def _build_dependency(self, dependency_config, runtime):
         if self._is_dataflow_job:
             return create_dataflow_manager(runtime=runtime,

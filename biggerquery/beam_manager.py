@@ -1,3 +1,4 @@
+# to delete
 from __future__ import absolute_import
 
 import avro.schema
