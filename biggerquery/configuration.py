@@ -30,61 +30,61 @@ class Config:
         return self.resolve(config_name)[property_name]
 
     def resolve(self, name: str = None) -> dict:
-        env_config = self.__get_env_config(name)
+        env_config = self._get_env_config(name)
 
-        properties_with_placeholders = {key: self.__resolve_property_with_os_env_fallback(key, value)
+        properties_with_placeholders = {key: self._resolve_property_with_os_env_fallback(key, value)
                 for (key, value) in env_config.properties.items()}
 
         string_properties = {k: v for (k, v) in properties_with_placeholders.items() if isinstance(v,str)}
 
-        return {key: self.__resolve_placeholders(value, string_properties)
+        return {key: self._resolve_placeholders(value, string_properties)
                 for (key, value) in properties_with_placeholders.items()}
 
 
     def add_configuration(self, name: str, properties: dict):
 
-        all_properties = self.__get_master_properties()
+        all_properties = self._get_master_properties()
         all_properties.update(properties)
 
         self.configs[name] = EnvConfig(name, all_properties)
 
         return self
 
-    def __get_master_properties(self) -> dict:
-        if not self.__has_master_config():
+    def _get_master_properties(self) -> dict:
+        if not self._has_master_config():
             return {}
 
-        return self.__get_env_config(self.master_config_name).properties.copy()
+        return self._get_env_config(self.master_config_name).properties.copy()
 
-    def __has_master_config(self) -> bool :
+    def _has_master_config(self) -> bool :
         return hasattr(self, 'master_config_name')
 
-    def __resolve_default_config_name(self):
-        return self.__resolve_property_from_os_env('env')
+    def _resolve_default_config_name(self):
+        return self._resolve_property_from_os_env('env')
 
-    def __get_env_config(self, name: str) -> EnvConfig:
+    def _get_env_config(self, name: str) -> EnvConfig:
 
-        used_name = name or self.__resolve_default_config_name()
+        used_name = name or self._resolve_default_config_name()
 
         if used_name not in self.configs:
             raise ValueError('no such config name: ' + used_name)
 
         return self.configs[used_name]
 
-    def __resolve_property_with_os_env_fallback(self, key, value):
+    def _resolve_property_with_os_env_fallback(self, key, value):
         if value is None:
-            return self.__resolve_property_from_os_env(key)
+            return self._resolve_property_from_os_env(key)
         else:
             return value
 
-    def __resolve_property_from_os_env(self, key):
+    def _resolve_property_from_os_env(self, key):
         env_var_name = self.environment_variables_prefix + key
         if env_var_name not in os.environ:
             raise ValueError(
                 "failed to load property value '" + key + "' from os.environment, no such env variable '" + env_var_name + "'")
         return os.environ[env_var_name]
 
-    def __resolve_placeholders(self, value, variables:dict):
+    def _resolve_placeholders(self, value, variables:dict):
         if isinstance(value, str):
             modified_value = value
             for k, v in variables.items():
@@ -147,7 +147,7 @@ class DatasetConfig:
             extras=self.resolve_extra_properties(env))
 
     def resolve_extra_properties(self, env: str = None):
-        return {k: v for (k, v) in self.resolve(env).items() if self.__is_extra_property(k)}
+        return {k: v for (k, v) in self.resolve(env).items() if self._is_extra_property(k)}
 
     def resolve(self, env: str = None) -> dict :
         return self.delegate.resolve(env)
@@ -167,6 +167,6 @@ class DatasetConfig:
     def resolve_external_tables(self, env: str = None) -> str:
         return self.resolve_property('external_tables', env)
 
-    def __is_extra_property(self, property_name) -> bool:
+    def _is_extra_property(self, property_name) -> bool:
         return property_name not in ['project_id','dataset_name','internal_tables','external_tables', 'env']
 
