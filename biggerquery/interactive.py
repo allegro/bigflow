@@ -5,7 +5,6 @@ import hashlib
 
 import pandas as pd
 
-from .configuration import DatasetConfig
 from .job import Job
 from .job import DEFAULT_RETRY_COUNT
 from .job import DEFAULT_RETRY_PAUSE_SEC
@@ -36,16 +35,14 @@ class InteractiveDatasetManager(object):
                  external_tables=None,
                  credentials=None,
                  extras=None,
-                 dataflow_config=None,  # to delete
                  location=DEFAULT_LOCATION):
-        self.config = DatasetConfig(
+        self.config = DatasetConfigInternal(
             project_id=project_id,
             dataset_name=dataset_name,
             internal_tables=internal_tables,
             external_tables=external_tables,
             credentials=credentials,
             extras=extras,
-            dataflow_config=dataflow_config,
             location=location)
 
     def write_truncate(self, table_name, sql, partitioned=True):
@@ -352,3 +349,34 @@ class OperationLevelDatasetManager(object):
 
     def _should_run_operation(self, operation_name):
         return self._operation_name == operation_name or self._operation_name is None
+
+
+class DatasetConfigInternal(object):
+
+    def __init__(self,
+                 project_id,
+                 dataset_name,
+                 internal_tables=None,
+                 external_tables=None,
+                 credentials=None,
+                 extras=None,
+                 location=DEFAULT_LOCATION):
+        self.project_id = project_id
+        self.dataset_name = dataset_name
+        self.internal_tables = internal_tables or []
+        self.external_tables = external_tables or {}
+        self.credentials = credentials or None
+        self.extras = extras or {}
+        self.location = location
+
+    def _as_dict(self):
+        return {
+            'project_id': self.project_id,
+            'dataset_name': self.dataset_name,
+            'internal_tables': self.internal_tables,
+            'external_tables': self.external_tables,
+            'credentials': self.credentials,
+            'extras': self.extras,
+            'location': self.location
+        }
+        return config
