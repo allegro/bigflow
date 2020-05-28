@@ -32,7 +32,6 @@ setuptools.setup(
     ],
     install_requires=install_requires,
     extras_require={
-        'beam': beam_extras_require,
         'stackdriver': stackdriver_extras_require
     },
 )
