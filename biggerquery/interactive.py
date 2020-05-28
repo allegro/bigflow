@@ -26,7 +26,6 @@ def interactive_component(**dependencies):
                                     {dep_name: dep.config for dep_name, dep in dependencies.items()})
     return decorator
 
-
 class InteractiveDatasetManager(object):
     """Let's you run operations on a dataset, without the need of creating a component."""
 
@@ -37,7 +36,7 @@ class InteractiveDatasetManager(object):
                  external_tables=None,
                  credentials=None,
                  extras=None,
-                 dataflow_config=None,
+                 dataflow_config=None,  # to delete
                  location=DEFAULT_LOCATION):
         self.config = DatasetConfig(
             project_id=project_id,
