@@ -8,13 +8,8 @@ from unittest import TestCase
 from google.api_core.exceptions import BadRequest
 
 from biggerquery.utils import unzip_file_and_save_outside_zip_as_tmp_file
-from biggerquery.utils import secure_create_dataflow_manager_import
-from biggerquery.utils import secure_fastai_tabular_prediction_component_import
-from biggerquery.utils import ExtrasRequiredError
 from biggerquery.utils import AutoDeletedTmpFile
 from biggerquery.utils import log_syntax_error
-from biggerquery.beam_manager import create_dataflow_manager
-from biggerquery.user_commons.fastai.predict_component import fastai_tabular_prediction_component
 
 
 class UnzipFileAndSaveOutsideZipAsTmpFileTestCase(TestCase):
@@ -45,37 +40,6 @@ class UnzipFileAndSaveOutsideZipAsTmpFileTestCase(TestCase):
 
 def raise_import_error():
     raise ImportError()
-
-
-class SecureImportTestCase(TestCase):
-
-    def test_should_return_create_dataflow_manager(self):
-        # expect
-        self.assertEqual(secure_create_dataflow_manager_import(), create_dataflow_manager)
-
-    def test_should_return_fastai_tabular_prediction_component(self):
-        # expect
-        self.assertEqual(secure_fastai_tabular_prediction_component_import(), fastai_tabular_prediction_component)
-
-    @mock.patch('biggerquery.utils.import_module')
-    def test_should_return_fake_create_dataflow_manager_when_no_extras_installed(self, import_module_mock):
-        # given
-        import_module_mock.side_effect = ImportError()
-        create_dataflow_manager = secure_create_dataflow_manager_import()
-
-        # expect
-        with self.assertRaises(ExtrasRequiredError):
-            create_dataflow_manager()
-
-    @mock.patch('biggerquery.utils.import_module')
-    def test_should_return_fake_fastai_tabular_prediction_component_when_no_extras_installed(self, import_module_mock):
-        # given
-        import_module_mock.side_effect = ImportError()
-        fastai_tabular_prediction_component = secure_fastai_tabular_prediction_component_import()
-
-        # expect
-        with self.assertRaises(ExtrasRequiredError):
-            fastai_tabular_prediction_component()
 
 
 class AutoDeletedTmpFileTestCase(TestCase):

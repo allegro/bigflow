@@ -4,8 +4,7 @@ import tempfile
 import imp
 
 from biggerquery.utils import AutoDeletedTmpFile
-from biggerquery.configuration import DatasetConfig
-from biggerquery.configuration import DataflowConfig
+from biggerquery.interactive import DatasetConfigInternal
 from biggerquery.job import Job
 
 
@@ -44,51 +43,20 @@ class JobTestCase(TestCase):
             })
 
         job = Job(component=test_component,
-                  bigquery_dependency1=DatasetConfig(
+                  bigquery_dependency1=DatasetConfigInternal(
                       project_id='some-project-id',
                       dataset_name='some-dataset',
                       internal_tables=['some_internal_table'],
                       external_tables={'some_external_table': 'some.external.table'},
                       credentials='credentials',
                       extras={'extra_param': 'some-extra-param'}),
-                  bigquery_dependency2=DatasetConfig(
+                  bigquery_dependency2=DatasetConfigInternal(
                       project_id='some-project-id-2',
                       dataset_name='some-dataset-2',
-                      dataflow_config=DataflowConfig(
-                          dataflow_bucket_id='dataflow-bucket-id',
-                          requirements_path='/requirements.txt',
-                          region='europe-west',
-                          machine_type='standard'
-                      ),
                       internal_tables=['some_internal_table'],
                       external_tables={'some_external_table': 'some.external.table'},
                       credentials='credentials',
                       extras={'extra_param': 'some-extra-param'}))
-
-        # when
-        job.run('2019-01-01')
-
-    @mock.patch('biggerquery.job.create_dataflow_manager')
-    def test_should_run_beam_component(self, create_dataflow_manager_mock):
-
-        # given
-        tmp_beam_component = self.setup_temporary_beam_component()
-
-        create_dataflow_manager_mock.side_effect = lambda **kwargs: kwargs
-
-        job = Job(component=tmp_beam_component,
-                  dependency_beam_manager=DatasetConfig(
-                      project_id='some_project_id',
-                      dataset_name='some_dataset',
-                      dataflow_config=DataflowConfig(
-                          dataflow_bucket_id='dataflow_bucket',
-                          requirements_path='/requirements.txt',
-                          region='europe-west',
-                          machine_type='standard'
-                      ),
-                      internal_tables=['some_internal_table'],
-                      external_tables={'some_external_table': 'some.external.table'},
-                      extras={'extra_param': 'some-extra-param', 'test_case': self}))
 
         # when
         job.run('2019-01-01')

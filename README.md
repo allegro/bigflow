@@ -377,52 +377,6 @@ workflow_v2 = bgq.Workflow(definition=[wait_for_requests.to_job()])
 workflow_v2.run('2090-01-01')
 ```
 
-### Reusable Apache Beam components
-
-You can write reusable Apache Beam components. Inside the BiggerQuery you can find the component for batch prediction on the BigQuery table
-using the fastai model:
-
-```python
-import biggerquery as bgq
-from biggerquery import fastai_tabular_prediction_component
-from biggerquery import Job
-
-PROJECT_ID = 'put-you-project-id-here'
-DATASET_NAME = 'my-dataset-name'
-BUCKED_ID = 'my-bucket-id' # GCS bucket ID
-
-VARIABLES_TABLE = 'my-variables-table-name' # table where the variables used in the model can be found
-PREDICTIONS_TABLE = 'my-predictions-table' # table same as the variables table, with the additional column "prediction"
-PARTITION_COLUMN = 'some-column-name'
-
-TORCH_WHL_PATH = '/path/to/torch-1.1.0-cp36-cp36m-linux_x86_64.whl' 
-FASTAI_WHL_PATH = '/path/to/fastai-1.0.58-py3-none-any.whl'
-
-MODEL_FILE_PATH = '/path/to/model.pkl'
-
-dataset = bgq.Dataset(
-    project_id=PROJECT_ID,
-    dataset_name=DATASET_NAME,
-    dataflow_config=bgq.DataflowConfig(
-        dataflow_bucket_id=BUCKED_ID,
-        requirements_path=None))
-
-prediction_job = Job(fastai_tabular_prediction_component(
-        input_table_name=VARIABLES_TABLE,
-        output_table_name=PREDICTIONS_TABLE,
-        partition_column=PARTITION_COLUMN,
-        torch_package_path=TORCH_WHL_PATH,
-        fastai_package_path=FASTAI_WHL_PATH,
-        model_file_path=MODEL_FILE_PATH,
-        dataset=dataset),
-    id='my-awesome-prediction',
-    ds=dataset.config)
-
-workflow_v3 = bgq.Workflow(definition=[prediction_job])
-
-workflow_v3.run('2090-01-01')
-```
-
 ## Tutorial
 
 Inside this repository, you can find the BiggerQuery tutorial. We recommend using the GCP Jupyter Lab to go through the tutorial. It takes a few clicks to set up.

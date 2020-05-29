@@ -1,5 +1,4 @@
 -r requirements/base.txt
--r requirements/beam_extras.txt
 -r requirements/stackdriver_extras.txt
 jupyter
 setuptools==45.2.0
