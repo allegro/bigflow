@@ -5,6 +5,8 @@ from biggerquery.configuration import Config, DatasetConfig
 
 
 class TestConfig(TestCase):
+    def setUp(self):
+        self._set_os_env()
 
     def test_should_resolve_explicit_properties_in_simple_config(self):
         # when
@@ -16,7 +18,7 @@ class TestConfig(TestCase):
 
     def test_should_resolve_to_os_env_variable_when_property_value_is_None(self):
         # when
-        os.environ['b'] = 'x'
+        os.environ['bgq_b'] = 'x'
         config = Config('dev', {'a': 1, 'b': None})
 
         # then
@@ -52,52 +54,45 @@ class TestConfig(TestCase):
             Config('dev', {}).resolve('prod')
 
 
-    def test_should_raise_Error_when_default_config_requested_but_os_env_variable_not_defined(self):
-        #when
-        if 'env' in os.environ:
-            del os.environ['env']
-
-        with self.assertRaises(ValueError):
-            Config('dev', {}, is_master=False).resolve()
-
-
     def test_should_raise_Error_when_default_config_requested_but_not_exists(self):
         # when
-        os.environ['env'] = 'prod'
+        self._set_os_env('prod')
 
         with self.assertRaises(ValueError):
             Config('dev', {}, is_master=False).resolve()
 
 
-    def test_should_resolve_from_default_config_given_by_os_env_variable(self):
+    def test_should_resolve_config_given_by_os_env_variable(self):
         # when
-        os.environ['env'] = 'prod'
+        self._set_os_env('dev')
 
         config = Config('prod', {'bb': 1}).add_configuration('dev', {'bb': 2})
 
         # then
-        self.assertEqual(config.resolve(), {'bb': 1})
+        self.assertEqual(config.resolve(), {'bb': 2})
 
 
-    def test_should_resolve_from_config_given_by_os_env_variable_with_prefix(self):
+    def test_should_resolve_config_given_by_os_env_variable_with_prefix(self):
         # when
-        os.environ['bq_env'] = 'prod'
+        self._set_os_env('test', 'my_namespace_env')
 
-        config = Config('prod', {'bb': 1}, environment_variables_prefix='bq_')
+        config = Config('prod', {'bb': 'prod'}, environment_variables_prefix='my_namespace_')\
+            .add_configuration('test', {'bb': 'test'})
 
         # then
-        self.assertEqual(config.resolve(), {'bb': 1})
+        self.assertEqual(config.resolve(), {'bb': 'test'})
 
 
     def test_should_give_priority_to_explicit_properties_rather_than_os_env_variables(self):
         # when
-        os.environ['bb'] = 'x'
-        config = Config('dev', {'bb': 1,
-                                'cc': 1})
+        os.environ['bgq_bb'] = 'x'
+        config = Config('dev', {'bb': 1})
 
         # then
-        self.assertEqual(config.resolve('dev'), {'bb': 1,
-                                                 'cc': 1})
+        self.assertEqual(config.resolve('dev'), {'bb': 1})
+        self.assertEqual(config.resolve(), {'bb': 1})
+        self.assertEqual(config.resolve_property('bb', 'dev'), 1)
+        self.assertEqual(config.resolve_property('bb'), 1)
 
 
     def test_should_raise_Error_when_required_os_env_variable_is_not_found(self):
@@ -116,16 +111,138 @@ class TestConfig(TestCase):
 
 
     def test_should_resolve_from_master_config_when_property_is_missing(self):
-        #when
+        # when
         config = Config('dev', {'a': 1})\
             .add_configuration('prod', {})
 
-        # then
+        # expect
         self.assertEqual(config.resolve('dev'),  {'a': 1})
         self.assertEqual(config.resolve('prod'), {'a': 1})
 
 
-    # E2E test
+    def test_should_resolve_env_variables_laizyly_when_calling_resolve_property(self):
+        # when
+        config = Config('dev', {'a': 'dev1'})
+
+        #then
+        self.assertEqual(config.resolve(), {'a': 'dev1'})
+        self.assertEqual(config.resolve_property('a'), 'dev1')
+        self.assertEqual(config.resolve_property('a', 'dev'), 'dev1')
+        with self.assertRaises(ValueError):
+            config.resolve_property('b')
+
+        # when
+        os.environ['bgq_b'] = 'b_from_env'
+
+        # then
+        self.assertEqual(config.resolve(), {'a': 'dev1'})
+        self.assertEqual(config.resolve_property('b'), 'b_from_env')
+        self.assertEqual(config.resolve_property('b', 'dev'), 'b_from_env')
+        with self.assertRaises(ValueError):
+            config.resolve_property('c')
+
+
+    def test_should_use_bg_as_the_default_environment_variables_prefix(self):
+        self._set_os_env('prod', 'bgq_env')
+        # when
+        config = Config('dev', {'a': 'dev1'})\
+            .add_configuration('prod', {'a': 'prod2'})
+
+        #expect
+        self.assertEqual(config.resolve(), {'a': 'prod2'})
+
+
+    def test_should_raise_Error_no_explicit_env_is_given_nor_default_env_is_defined(self):
+        with self.assertRaises(ValueError):
+            Config('dev', {'a': 1}, is_default=False).resolve()
+
+
+    def test_should_raise_Error_when_more_than_one_default_env_is_defined(self):
+        with self.assertRaises(ValueError):
+            Config('dev', {'a': 1}, is_default=True)\
+                .add_configuration('prod', {'a': 2}, is_default=True)
+
+
+    def test_should_use_default_env_from_master_config_when_no_env_is_given(self):
+        # when
+        config = Config('dev', {'a': 'dev1'})\
+            .add_configuration('prod', {'a': 'prod2'})\
+            .add_configuration('test', {'a': 'test3'})
+
+        # expect
+        self.assertEqual(config.resolve(), {'a': 'dev1'})
+        self.assertEqual(config.resolve('dev'), {'a': 'dev1'})
+        self.assertEqual(config.resolve('prod'), {'a': 'prod2'})
+        self.assertEqual(config.resolve('test'), {'a': 'test3'})
+
+        # when
+        self._set_os_env('prod')
+        self.assertEqual(config.resolve(), {'a': 'prod2'})
+        self._set_os_env('dev')
+        self.assertEqual(config.resolve(), {'a': 'dev1'})
+        self._set_os_env('test')
+        self.assertEqual(config.resolve(), {'a': 'test3'})
+
+    def test_should_use_default_env_from_secondary_config_when_no_env_is_given(self):
+        # when
+        config = Config('dev', {'a': 'dev1'}, is_default=False)\
+            .add_configuration('prod', {'a': 'prod2'}, is_default=True)\
+            .add_configuration('test', {'a': 'test3'})
+
+        # expect
+        self.assertEqual(config.resolve(), {'a': 'prod2'})
+        self.assertEqual(config.resolve('dev'), {'a': 'dev1'})
+        self.assertEqual(config.resolve('prod'), {'a': 'prod2'})
+        self.assertEqual(config.resolve('test'), {'a': 'test3'})
+
+
+    def _set_os_env(self, value=None, env_var_name='bgq_env'):
+        for key in ['env', 'bgq_env', 'my_namespace_' ]:
+            if key in os.environ:
+                del os.environ[key]
+
+        if value:
+            os.environ[env_var_name] = value
+
+
+    def test_should_use_default_env_from_master_config_in_DatasetConfig(self):
+        # when
+        config = DatasetConfig('dev',
+                               project_id='my_dev_project_id',
+                               properties={
+                                   'a': 'dev_',
+                               }) \
+            .add_configuration('prod',
+                               project_id='my_prod_project_id',
+                               properties={
+                                   'a': 'prod_',
+                               })
+
+        # then
+        self.assertEqual(config.resolve_project_id(), 'my_dev_project_id')
+        self.assertEqual(config.resolve_extra_properties(), { 'a': 'dev_'})
+
+
+    def test_should_use_default_env_from_secondary_config_in_DatasetConfig(self):
+        # when
+        config = DatasetConfig('dev',
+                               project_id='my_dev_project_id',
+                               properties={
+                                   'a': 'dev_',
+                               },
+                               is_default=False) \
+            .add_configuration('prod',
+                               project_id='my_prod_project_id',
+                               properties={
+                                   'a': 'prod_',
+                               },
+                               is_default=True)
+
+        # then
+        self.assertEqual(config.resolve_project_id(), 'my_prod_project_id')
+        self.assertEqual(config.resolve_extra_properties(), {'a': 'prod_'})
+
+
     def test_should_model_certain_properties_in_DatasetConfig(self):
         # when
         config = DatasetConfig('dev',
@@ -146,6 +263,7 @@ class TestConfig(TestCase):
                                })
 
         # then
+        self.assertEqual(config.resolve_project_id(),            'my_dev_project_id')
         self.assertEqual(config.resolve_project_id('dev'),       'my_dev_project_id')
         self.assertEqual(config.resolve_dataset_name('dev'),     'None')
         self.assertEqual(config.resolve_internal_tables('dev'),  ['table_1', 'table_2'])

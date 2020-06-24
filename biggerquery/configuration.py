@@ -16,7 +16,8 @@ class Config:
                  name: str,
                  properties: dict,
                  is_master: bool = True,
-                 environment_variables_prefix: str = ''):
+                 is_default: bool = True,
+                 environment_variables_prefix: str = 'bgq_'):
         if is_master:
             self.master_config_name = name
 
@@ -24,31 +25,46 @@ class Config:
             name: EnvConfig(name, properties)
         }
 
+        self.default_env_name = None
+        self._update_default_env_name(name, is_default)
+
         self.environment_variables_prefix = environment_variables_prefix
 
-    def resolve_property(self, property_name: str, config_name: str):
-        return self.resolve(config_name)[property_name]
+    def resolve_property(self, property_name: str, env_name: str = None):
+        static_props = self.resolve(env_name)
+
+        if property_name in static_props:
+            return static_props[property_name]
+
+        return self._resolve_property_from_os_env(property_name)
 
     def resolve(self, name: str = None) -> dict:
         env_config = self._get_env_config(name)
 
         properties_with_placeholders = {key: self._resolve_property_with_os_env_fallback(key, value)
-                for (key, value) in env_config.properties.items()}
+                                        for (key, value) in env_config.properties.items()}
 
-        string_properties = {k: v for (k, v) in properties_with_placeholders.items() if isinstance(v,str)}
+        string_properties = {k: v for (k, v) in properties_with_placeholders.items() if isinstance(v, str)}
 
         return {key: self._resolve_placeholders(value, string_properties)
                 for (key, value) in properties_with_placeholders.items()}
 
-
-    def add_configuration(self, name: str, properties: dict):
+    def add_configuration(self, name: str, properties: dict, is_default: bool = False):
 
         all_properties = self._get_master_properties()
         all_properties.update(properties)
 
         self.configs[name] = EnvConfig(name, all_properties)
 
+        self._update_default_env_name(name, is_default)
+
         return self
+
+    def _update_default_env_name(self, name: str, is_default: bool):
+        if is_default:
+            if self.default_env_name:
+                raise ValueError(f"default env is already set to '{self.default_env_name}', you can set only one default env")
+            self.default_env_name = name
 
     def _get_master_properties(self) -> dict:
         if not self._has_master_config():
@@ -59,17 +75,21 @@ class Config:
     def _has_master_config(self) -> bool :
         return hasattr(self, 'master_config_name')
 
-    def _resolve_default_config_name(self):
-        return self._resolve_property_from_os_env('env')
-
     def _get_env_config(self, name: str) -> EnvConfig:
 
-        used_name = name or self._resolve_default_config_name()
+        explicit_env_name = name or self._check_property_from_os_env('env')
 
-        if used_name not in self.configs:
-            raise ValueError('no such config name: ' + used_name)
+        if not explicit_env_name:
+            return self._get_default_config()
+        else:
+            if explicit_env_name not in self.configs:
+                raise ValueError(f"no such config name '{explicit_env_name}'")
+            return self.configs[explicit_env_name]
 
-        return self.configs[used_name]
+    def _get_default_config(self) -> EnvConfig:
+        if not self.default_env_name:
+            raise ValueError('no explicit env is given and no default env is defined, cant resolve properties')
+        return self.configs[self.default_env_name]
 
     def _resolve_property_with_os_env_fallback(self, key, value):
         if value is None:
@@ -77,12 +97,17 @@ class Config:
         else:
             return value
 
-    def _resolve_property_from_os_env(self, key):
+    def _check_property_from_os_env(self, key):
         env_var_name = self.environment_variables_prefix + key
-        if env_var_name not in os.environ:
-            raise ValueError(
-                "failed to load property value '" + key + "' from os.environment, no such env variable '" + env_var_name + "'")
-        return os.environ[env_var_name]
+        if env_var_name in os.environ:
+            return os.environ[env_var_name]
+        return None
+
+    def _resolve_property_from_os_env(self, key):
+        property = self._check_property_from_os_env(key)
+        if not property:
+            raise ValueError(f"failed to load property '{key}' from os.environment, no such env variable")
+        return property
 
     def _resolve_placeholders(self, value, variables:dict):
         if isinstance(value, str):
@@ -103,7 +128,8 @@ class DatasetConfig:
                  internal_tables: list = None,
                  external_tables: dict = None,
                  properties: dict = None,
-                 is_master: bool = True):
+                 is_master: bool = True,
+                 is_default: bool = True):
        all_properties = (properties or {}).copy()
        all_properties['project_id'] = project_id
        all_properties['env'] = env # for placeholders resolving
@@ -111,7 +137,7 @@ class DatasetConfig:
        all_properties['internal_tables'] = internal_tables or []
        all_properties['external_tables'] = external_tables or {}
 
-       self.delegate = Config(name=env, properties=all_properties, is_master=is_master)
+       self.delegate = Config(name=env, properties=all_properties, is_master=is_master, is_default=is_default)
 
     def add_configuration(self,
                           env: str,
@@ -119,7 +145,8 @@ class DatasetConfig:
                           dataset_name: str = None,
                           internal_tables: list = None,
                           external_tables: dict = None,
-                          properties: dict = None):
+                          properties: dict = None,
+                          is_default: bool = False):
 
         all_properties = (properties or {}).copy()
 
@@ -135,7 +162,7 @@ class DatasetConfig:
         if external_tables:
             all_properties['external_tables'] = external_tables
 
-        self.delegate.add_configuration(env, all_properties)
+        self.delegate.add_configuration(env, all_properties, is_default=is_default)
         return self
 
     def create_dataset_manager(self, env: str = None) -> InteractiveDatasetManager:
