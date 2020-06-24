@@ -8,15 +8,25 @@ class Workflow(object):
                  definition,
                  schedule_interval=DEFAULT_SCHEDULE_INTERVAL,
                  dt_as_datetime=False,
+                 workflow_id='default_workflow',
                  **kwargs):
         self.definition = self._parse_definition(definition)
         self.schedule_interval = schedule_interval
         self.dt_as_datetime = dt_as_datetime
+        self.workflow_id = workflow_id
         self.kwargs = kwargs
 
     def run(self, runtime):
         for job in self.build_sequential_order():
             job.run(runtime=runtime)
+
+    def run_job(self, job_id, runtime):
+        for job_wrapper in self.build_sequential_order():
+            if job_wrapper.job.id == job_id:
+                job_wrapper.job.run(runtime)
+                break
+        else:
+            raise ValueError(f'Job {job_id} not found.')
 
     def build_sequential_order(self):
         return self.definition.sequential_order()
