@@ -19,6 +19,23 @@ class WorkflowTestCase(TestCase):
         for step in definition:
             step.assert_has_calls([mock.call.run(runtime='2019-01-01')])
 
+    def test_should_run_single_job(self):
+        # given
+        first_job = mock.Mock()
+        setattr(first_job, 'id', 'first job')
+
+        definition = [first_job] + [mock.Mock() for i in range(100)]
+        workflow = Workflow(definition=definition)
+
+        # when
+        workflow.run_job('first job', '2020-01-01')
+
+        # then
+        for step in definition[1:]:
+            step.assert_not_called()
+        # and
+        first_job.assert_has_calls([mock.call.run('2020-01-01')])
+
     def test_should_have_id_and_schedule_interval(self):
         # given
         workflow = Workflow(
