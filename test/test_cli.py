@@ -18,7 +18,7 @@ class CliTestCase(TestCase):
         absolute = str(Path(TEST_MODULE_PATH).absolute())
         expected = [(absolute, "__init__.py"), (absolute, "Unused1.py"), (absolute, "Unused2.py"),
                     (absolute, "Unused3.py")]
-        self.assertEqual(expected, res_as_list)
+        self.assertCountEqual(expected, res_as_list)
 
         for (path, name) in res_as_list:
             self.assertEqual('/', path[0], "Path should be absolute and start with /")
@@ -32,7 +32,7 @@ class CliTestCase(TestCase):
         # then
         res_as_list = list(res)
         expected = ['test_module', 'test_module.Unused1', 'test_module.Unused2', 'test_module.Unused3']
-        self.assertEqual(expected, list(res_as_list))
+        self.assertCountEqual(expected, list(res_as_list))
 
     def test_build_module_path(self):
         # given
@@ -54,15 +54,16 @@ class CliTestCase(TestCase):
         res = list(res)
         self.assertEqual(4, len(res))
         expected = ['test_module', 'test_module.Unused1', 'test_module.Unused2', 'test_module.Unused3']
-        self.assertEqual(expected, [x.__name__ for x in res])
+        self.assertCountEqual(expected, [x.__name__ for x in res])
 
-        unused2 = res[2]
+        unused2 = sorted(res, key=lambda x: x.__name__)[2]
         self.assertIn('workflow_1', dir(unused2))
         self.assertNotIn('workflow_2', dir(unused2))
 
     def test_walk_module_objects(self):
         # given
-        unused2 = list(walk_modules(TEST_MODULE_PATH))[2]
+        modules = sorted(list(walk_modules(TEST_MODULE_PATH)), key=lambda x: x.__name__)
+        unused2 = modules[2]  # !!!
 
         # when
         res = walk_module_objects(unused2, bgq.Workflow)
