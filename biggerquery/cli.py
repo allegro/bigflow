@@ -150,7 +150,7 @@ def find_root_package(project_name: Optional[str], root: Optional[str]) -> Path:
         return Path(root_module.__file__.replace('__init__.py', ''))
 
 
-def cli_run(root_package: Path, job: str, runtime: str = None, workflow_id: str = None):
+def cli_run(root_package: Path, job: str, runtime: str = None, workflow_id: str = None) -> None:
     """
     Runs the specified job or workflow
 
@@ -203,7 +203,7 @@ def _parse_args(project_name: Optional[str], operations: [str]) -> Namespace:
     return parser.parse_args()
 
 
-def cli():
+def cli() -> None:
     project_name = read_project_name_from_setup()
     RUN_OPERATION = 'run'
     args = _parse_args(project_name, operations=[RUN_OPERATION])

@@ -1,24 +1,21 @@
-from os.path import realpath
-from pathlib import Path
 from unittest import TestCase
-import biggerquery as bgq
-from biggerquery.cli import *
 
-TEST_MODULE_SRC = 'test_module'
+from biggerquery.cli import *
 
 
 class CliTestCase(TestCase):
 
-    def test_walk_module_files(self):
-        # given
-        path = Path(TEST_MODULE_SRC)
+    def setUp(self) -> None:
+        global TEST_MODULE_PATH
+        TEST_MODULE_PATH = Path(__file__).parent / 'test_module'
 
+    def test_walk_module_files(self):
         # when
-        res = walk_module_files(path)
+        res = walk_module_files(TEST_MODULE_PATH)
 
         # then
         res_as_list = list(res)
-        absolute = str(Path(TEST_MODULE_SRC).absolute())
+        absolute = str(Path(TEST_MODULE_PATH).absolute())
         expected = [(absolute, "__init__.py"), (absolute, "Unused1.py"), (absolute, "Unused2.py"),
                     (absolute, "Unused3.py")]
         self.assertEqual(expected, res_as_list)
@@ -29,11 +26,8 @@ class CliTestCase(TestCase):
             self.assertEqual(expected_ending, path[-len(expected_ending):])
 
     def test_walk_module_paths(self):
-        # given
-        path = Path(TEST_MODULE_SRC)
-
         # when
-        res = walk_module_paths(path)
+        res = walk_module_paths(TEST_MODULE_PATH)
 
         # then
         res_as_list = list(res)
@@ -41,11 +35,8 @@ class CliTestCase(TestCase):
         self.assertEqual(expected, list(res_as_list))
 
     def test_walk_modules(self):
-        # given
-        path = Path(TEST_MODULE_SRC)
-
         # when
-        res = walk_modules(path)
+        res = walk_modules(TEST_MODULE_PATH)
 
         # then
         res = list(res)
@@ -59,8 +50,7 @@ class CliTestCase(TestCase):
 
     def test_walk_module_objects(self):
         # given
-        path = Path(TEST_MODULE_SRC)
-        unused2 = list(walk_modules(path))[2]
+        unused2 = list(walk_modules(TEST_MODULE_PATH))[2]
 
         # when
         res = walk_module_objects(unused2, bgq.Workflow)
@@ -77,11 +67,8 @@ class CliTestCase(TestCase):
         self.assertEqual(3, len(res))
 
     def test_walk_workflows(self):
-        # given
-        path = Path(TEST_MODULE_SRC)
-
         # when
-        res = walk_workflows(path)
+        res = walk_workflows(TEST_MODULE_PATH)
 
         # then
         res = list(res)
@@ -92,11 +79,8 @@ class CliTestCase(TestCase):
         self.assertNotEqual('@once', res[1].schedule_interval)
 
     def test_find_workflow_positive(self):
-        # given
-        path = Path(TEST_MODULE_SRC)
-
         # when
-        res = find_workflow(path, 'ID_1')
+        res = find_workflow(TEST_MODULE_PATH, 'ID_1')
 
         # then
         self.assertEqual(bgq.Workflow, type(res))
@@ -104,11 +88,8 @@ class CliTestCase(TestCase):
         self.assertEqual('@once', res.schedule_interval)
 
     def test_find_workflow_negative(self):
-        # given
-        path = Path(TEST_MODULE_SRC)
-
         # when
-        res = find_workflow(path, 'NOT_EXISTING_ID')
+        res = find_workflow(TEST_MODULE_PATH, 'NOT_EXISTING_ID')
 
         # then
         self.assertEqual(None, res)
@@ -127,14 +108,17 @@ class CliTestCase(TestCase):
 
     def test_find_root_package_root_used(self):
         # when
-        res = find_root_package(None, TEST_MODULE_SRC)
+        res = find_root_package(None, "test.test_module")
 
         # then
-        self.assertEqual(realpath(Path(TEST_MODULE_SRC)), realpath(res))
+        self.assertEqual(resolve(TEST_MODULE_PATH), resolve(res))
 
     def test_find_root_package_project_name_used(self):
+        # given
+        test_module_src = resolve(TEST_MODULE_PATH)
+
         # when
-        res = find_root_package(TEST_MODULE_SRC, "some_other_path")
+        res = find_root_package(test_module_src, "some_other_path")
 
         # then
-        self.assertEqual(realpath(Path(TEST_MODULE_SRC)), realpath(res))
+        self.assertEqual(test_module_src, resolve(res))
