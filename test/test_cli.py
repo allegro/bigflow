@@ -7,7 +7,7 @@ from biggerquery.cli import *
 TEST_MODULE_SRC = 'test_module'
 
 
-class CacheBuilderTestCase(TestCase):
+class CliTestCase(TestCase):
 
     def test_walk_module_files(self):
         # given

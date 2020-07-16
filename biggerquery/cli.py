@@ -6,16 +6,17 @@ from datetime import datetime
 from importlib import import_module
 from pathlib import Path
 from types import ModuleType
+from typing import List, Tuple
 
 import biggerquery as bgq
 from typing import Optional
 
 
-def resolve(path: Path):
+def resolve(path: Path) -> str:
     return str(path.absolute())
 
 
-def walk_module_files(root_package: Path) -> (str, str):
+def walk_module_files(root_package: Path) -> Tuple[str, str]:
     """
     Returning all the Python files in the `root_package`
 
@@ -43,7 +44,7 @@ def build_module_path(root_package: Path, module_dir: Path, module_file: str) ->
         .replace('.__init__', '')
 
 
-def walk_module_paths(root_package: Path) -> [str]:
+def walk_module_paths(root_package: Path) -> List[str]:
     """
     Returning all the module paths in the `root_package`
     """
@@ -51,7 +52,7 @@ def walk_module_paths(root_package: Path) -> [str]:
         yield build_module_path(root_package, Path(module_dir), module_file)
 
 
-def walk_modules(root_package: Path) -> [ModuleType]:
+def walk_modules(root_package: Path) -> List[ModuleType]:
     """
     Imports all the modules in the path and returns
     """
@@ -62,7 +63,7 @@ def walk_modules(root_package: Path) -> [ModuleType]:
             print(f"Skipping module {module_path}. Can't import due to exception {str(e)}.")
 
 
-def walk_module_objects(module: ModuleType, expect_type: type) -> (str, type):
+def walk_module_objects(module: ModuleType, expect_type: type) -> Tuple[str, type]:
     """
     Returns module items of the set type
     """
@@ -71,7 +72,7 @@ def walk_module_objects(module: ModuleType, expect_type: type) -> (str, type):
             yield name, obj
 
 
-def walk_workflows(root_package: Path) -> [bgq.Workflow]:
+def walk_workflows(root_package: Path) -> List[bgq.Workflow]:
     """
     Imports modules in the `root_package` and returns all the elements of the type bgq.Workflow
     """
@@ -176,13 +177,16 @@ def _parse_args(project_name: Optional[str], operations: [str]) -> Namespace:
     project_name_description = build_project_name_description(project_name)
     parser = argparse.ArgumentParser(description='BiggerQuery CLI. ' + project_name_description)
     parser.add_argument('operation', choices=operations)
-    group = parser.add_mutually_exclusive_group(required=True)
+
+    group = parser.add_mutually_exclusive_group()
+    group.required = True
     group.add_argument('-j', '--job',
                        type=str,
                        help='The job to start, identified by workflow id and job id in format "<workflow_id>.<job_id>".')
     group.add_argument('-w', '--workflow',
                        type=str,
                        help='The id of the workflow to start.')
+
     parser.add_argument('-c', '--config',
                         type=str,
                         help='The configuration environment that should be used.')
