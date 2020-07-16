@@ -34,6 +34,18 @@ class CliTestCase(TestCase):
         expected = ['test_module', 'test_module.Unused1', 'test_module.Unused2', 'test_module.Unused3']
         self.assertEqual(expected, list(res_as_list))
 
+    def test_build_module_path(self):
+        # given
+        root_path = TEST_MODULE_PATH.parent
+        module_file = "Unused1.py"
+        file_path = TEST_MODULE_PATH
+
+        # when
+        res = build_module_path(root_path, file_path, module_file)
+
+        # then
+        self.assertEqual("test.test_module.Unused1", res)
+
     def test_walk_modules(self):
         # when
         res = walk_modules(TEST_MODULE_PATH)
