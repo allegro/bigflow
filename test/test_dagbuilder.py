@@ -1,16 +1,15 @@
 import difflib
 import os
-import sys
 from pathlib import Path
 
 import mock
 from unittest import TestCase
 from biggerquery import Job
-from biggerquery.dagbuilder import get_dags_output_dir, clear_dags_output_dir, generate_dag_file, _get_timezone_offset_seconds
+from biggerquery.dagbuilder import get_dags_output_dir, clear_dags_output_dir, generate_dag_file, get_timezone_offset_seconds
 from biggerquery.workflow import WorkflowJob, Workflow, Definition
 
 
-class DagbuilderTestCase(TestCase):
+class DagBuilderTestCase(TestCase):
 
     def test_should_get_DAGs_output_dir(self):
 
@@ -21,7 +20,6 @@ class DagbuilderTestCase(TestCase):
         dags_dir = get_dags_output_dir(workdir)
 
         #then
-        print (dags_dir.as_posix())
         self.assertEqual(dags_dir.as_posix(), workdir + "/.dags")
 
     def test_should_clear_DAGs_output_dir(self):
@@ -146,7 +144,7 @@ tjob3.set_upstream(tjob2)
 tjob3.set_upstream(tjob1)
 '''
 
-        self.assert_files_are_equal(expected_dag_content,dag_file_content)
+        self.assert_files_are_equal(expected_dag_content, dag_file_content)
 
 
     def test_should_generate_DAG_file_from_workflow_with_daily_scheduling(self):
@@ -218,9 +216,9 @@ tjob1 = kubernetes_pod_operator.KubernetesPodOperator(
 
             diff = list(difflib.Differ().compare(expected_dag_content.splitlines(keepends=True), dag_file_content.splitlines(keepends=True)))
             print('diff:')
-            sys.stdout.writelines(diff)
+            print(''.join(diff))
 
             raise ValueError('Files are not equal')
 
     def expected_start_date_shift(self) -> str :
-        return _get_timezone_offset_seconds()
+        return get_timezone_offset_seconds()

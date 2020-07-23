@@ -1,15 +1,13 @@
 import shutil
 from pathlib import Path
-from biggerquery import Config
-Path(__file__).parent.absolute()
 from datetime import datetime
 
 
 def clear_dags_output_dir(workdir: str):
     dags_dir_path = get_dags_output_dir(workdir)
 
-    print ("clearing dags_output_dir", str(dags_dir_path.resolve()))
-    shutil.rmtree( str(dags_dir_path.resolve()) )
+    print("clearing dags_output_dir", str(dags_dir_path.resolve()))
+    shutil.rmtree(str(dags_dir_path.resolve()))
 
 
 def generate_dag_file(workdir: str,
@@ -24,14 +22,14 @@ def generate_dag_file(workdir: str,
     print(f'build_ver: {build_ver}')
     print(f'docker_repository: {docker_repository}')
 
-    dag_deployment_id = _get_dag_deployment_id(workflow.workflow_id, start_from, build_ver)
+    dag_deployment_id = get_dag_deployment_id(workflow.workflow_id, start_from, build_ver)
     dag_file_path = get_dags_output_dir(workdir) / (dag_deployment_id + '_dag.py')
 
     if workflow.schedule_interval == '@daily':
         start_from = start_from[:10]
         start_date_as_str = f'datetime.strptime("{start_from}", "%Y-%m-%d")'
     else:
-        start_date_as_str = f'datetime.strptime("{start_from}", "%Y-%m-%d %H:%M:%S") - (timedelta(seconds={_get_timezone_offset_seconds()}))'
+        start_date_as_str = f'datetime.strptime("{start_from}", "%Y-%m-%d %H:%M:%S") - (timedelta(seconds={get_timezone_offset_seconds()}))'
 
     print(f'dag_file_path: {dag_file_path.resolve()}')
 
@@ -60,9 +58,7 @@ dag = DAG(
 )
 """.format(dag_id=dag_deployment_id,
            start_date_as_str=start_date_as_str,
-           schedule_interval=workflow.schedule_interval),
-
-)
+           schedule_interval=workflow.schedule_interval))
 
     def get_job(workflow_job):
         return workflow_job.job
@@ -107,9 +103,9 @@ dag = DAG(
     return dag_file_path.as_posix()
 
 
-def _get_dag_deployment_id(workflow_name: str,
-                           start_from: str,
-                           build_ver: str):
+def get_dag_deployment_id(workflow_name: str,
+                          start_from: str,
+                          build_ver: str):
     return '{workflow_name}__v{ver}__{start_from}'.format(
         workflow_name=workflow_name,
         ver=build_ver.replace('.','_').replace('-','_'),
@@ -117,7 +113,7 @@ def _get_dag_deployment_id(workflow_name: str,
     )
 
 
-def _get_timezone_offset_seconds() -> str:
+def get_timezone_offset_seconds() -> str:
     return str(datetime.now().astimezone().tzinfo.utcoffset(None).seconds)
 
 
