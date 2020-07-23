@@ -6,9 +6,8 @@ __all__ = [
     'Config',
     'DatasetConfig',
 
-    'build_dag_from_notebook',
-    'build_dag',
-    'workflow_to_dag',
+    'clear_dags_output_dir',
+    'generate_dag_file',
 
     'component',
     'Dataset',
@@ -25,9 +24,7 @@ from .dataset_manager import create_dataset_manager
 from .configuration import Config
 from .configuration import DatasetConfig
 
-from .deployment import build_dag_from_notebook
-from .deployment import build_dag
-from .deployment import workflow_to_dag
+from .dagbuilder import clear_dags_output_dir, generate_dag_file
 
 from .interactive import interactive_component as component
 from .interactive import InteractiveDatasetManager as Dataset #TODO rename
