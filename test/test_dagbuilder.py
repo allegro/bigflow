@@ -35,12 +35,10 @@ class DagBuilderTestCase(TestCase):
         #then
         self.assertFalse(f.exists())
 
-
     def test_should_generate_DAG_file_from_workflow_with_hourly_scheduling(self):
         # given
         workdir = os.path.dirname(__file__)
         docker_repository = 'eu.gcr.io/my_docker_repository_project/my-project'
-
 
         # given
         job1 = Job(

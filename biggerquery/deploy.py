@@ -37,12 +37,11 @@ def deploy_docker_image(build_ver: str, deployment_config, auth_method: str = 'l
 
 def deploy_dags_folder(workdir: str, deployment_config: Config, clear_dags_folder=False,
                        auth_method: str = 'local_account', gs_client=None):
-    project_id = deployment_config.resolve()['deploy_project_id']
-    dags_bucket = deployment_config.resolve()['dags_bucket']
 
     print(f"Deploying DAGs folder, auth_method={auth_method}, clear_dags_folder={clear_dags_folder}, workdir={workdir}")
+    dags_bucket = deployment_config.resolve()['dags_bucket']
 
-    client = gs_client or create_storage_client(project_id, auth_method, deployment_config)
+    client = gs_client or create_storage_client(auth_method, deployment_config)
     bucket = client.bucket(dags_bucket)
 
     if clear_dags_folder:
@@ -71,6 +70,7 @@ def upload_DAGs_dolder(workdir: str, bucket):
     dags_dir_path = get_dags_output_dir(workdir)
 
     def upload_file(local_file_path, target_file_name):
+        print('bolb', target_file_name)
         blob = bucket.blob(target_file_name)
         blob.upload_from_filename(local_file_path, content_type='application/octet-stream')
         print(f"uploading file {local_file_path} to {blob_URI(blob)}")
@@ -78,13 +78,14 @@ def upload_DAGs_dolder(workdir: str, bucket):
     i = 0
     for f in dags_dir_path.iterdir():
         if f.is_file():
-            upload_file(f.resolve(), 'dags/' + f.name)
+            upload_file(f.as_posix(), 'dags/' + f.name)
             i += 1
 
     print(f"{i} files uploaded")
 
 
-def create_storage_client(project_id: str, auth_method: str, deployment_config):
+def create_storage_client(auth_method: str, deployment_config):
+    project_id = deployment_config.resolve()['deploy_project_id']
     if auth_method == 'local_account':
         return storage.Client(project=project_id)
     elif auth_method == 'service_account':
