@@ -1,0 +1,110 @@
+from google.oauth2 import credentials
+from subprocess import run
+import requests
+from typing import List
+from google.cloud import storage
+from biggerquery.configuration import Config
+from biggerquery.dagbuilder import get_dags_output_dir
+
+
+def os_call(cmd: List, input: str = None):
+    print('executing:', ' '.join(cmd))
+    if input:
+        run(cmd, check=True, input=input, encoding='ascii')
+    else:
+        run(cmd, check=True)
+    print('')
+
+
+def deploy_docker_image(build_ver: str, deployment_config, auth_method: str = 'local_account'):
+    docker_repository = deployment_config.resolve()['docker_repository']
+    docker_image = docker_repository + ":" + build_ver
+
+    print(f"Deploying docker image tag={docker_image} auth_method={auth_method}")
+
+    if auth_method == 'local_account':
+        os_call(['gcloud', 'auth', 'configure-docker'])
+    elif auth_method == 'service_account':
+        oauthtoken = get_vault_token(deployment_config)
+        os_call(['docker', 'login', '-u', 'oauth2accesstoken', '--password-stdin', 'https://eu.gcr.io'],
+                input=oauthtoken)
+    else:
+        raise ValueError('unsupported auth_method: ' + auth_method)
+
+    os_call(['docker', 'push', docker_image])
+    return docker_image
+
+
+def deploy_dags_folder(workdir: str, deployment_config: Config, clear_dags_folder=False,
+                       auth_method: str = 'local_account', gs_client=None):
+    project_id = deployment_config.resolve()['deploy_project_id']
+    dags_bucket = deployment_config.resolve()['dags_bucket']
+
+    print(f"Deploying DAGs folder, auth_method={auth_method}, clear_dags_folder={clear_dags_folder}, workdir={workdir}")
+
+    client = gs_client or create_storage_client(project_id, auth_method, deployment_config)
+    bucket = client.bucket(dags_bucket)
+
+    if clear_dags_folder:
+        clear_remote_DAGs_bucket(bucket)
+
+    upload_DAGs_dolder(workdir, bucket)
+    return dags_bucket
+
+
+def clear_remote_DAGs_bucket(bucket):
+    i = 0
+    for blob in bucket.list_blobs(prefix='dags'):
+        if not blob.name in ['dags/', 'dags/airflow_monitoring.py']:
+            print(f"deleting file {blob_URI(blob)}")
+            blob.delete()
+            i += 1
+
+    print(f"{i} files deleted")
+
+
+def blob_URI(blob):
+    return f"gs://{blob.bucket.name}/{blob.name}"
+
+
+def upload_DAGs_dolder(workdir: str, bucket):
+    dags_dir_path = get_dags_output_dir(workdir)
+
+    def upload_file(local_file_path, target_file_name):
+        blob = bucket.blob(target_file_name)
+        blob.upload_from_filename(local_file_path, content_type='application/octet-stream')
+        print(f"uploading file {local_file_path} to {blob_URI(blob)}")
+
+    i = 0
+    for f in dags_dir_path.iterdir():
+        if f.is_file():
+            upload_file(f.resolve(), 'dags/' + f.name)
+            i += 1
+
+    print(f"{i} files uploaded")
+
+
+def create_storage_client(project_id: str, auth_method: str, deployment_config):
+    if auth_method == 'local_account':
+        return storage.Client(project=project_id)
+    elif auth_method == 'service_account':
+        oauthtoken = get_vault_token(deployment_config)
+        return storage.Client(project=project_id, credentials=credentials.Credentials(oauthtoken))
+    else:
+        raise ValueError('unsupported auth_method: ' + auth_method)
+
+
+def get_vault_token(deployment_config):
+    vault_endpoint = deployment_config.resolve_property('deploy_vault_endpoint')
+    vault_secret = deployment_config.resolve_property('deploy_vault_secret')
+
+    headers = {'X-Vault-Token': vault_secret}
+    response = requests.get(vault_endpoint, headers=headers, verify=False)
+
+    if response.status_code != 200:
+        raise ValueError(
+            'Could not get vault token, response code: {}'.format(
+                response.status_code))
+
+    print(f"get oauth token from {vault_endpoint} status_code={response.status_code}")
+    return response.json()['data']['token']
