@@ -27,12 +27,11 @@ def generate_dag_file(workdir: str,
     dag_deployment_id = _get_dag_deployment_id(workflow.workflow_id, start_from, build_ver)
     dag_file_path = get_dags_output_dir(workdir) / (dag_deployment_id + '_dag.py')
 
-    TIMEZONE_OFFSET_SECONDS = str(datetime.now().astimezone().tzinfo.utcoffset(None).seconds)
     if workflow.schedule_interval == '@daily':
         start_from = start_from[:10]
         start_date_as_str = f'datetime.strptime("{start_from}", "%Y-%m-%d")'
     else:
-        start_date_as_str = f'datetime.strptime("{start_from}", "%Y-%m-%d %H:%M:%S") - (timedelta(seconds={TIMEZONE_OFFSET_SECONDS}))'
+        start_date_as_str = f'datetime.strptime("{start_from}", "%Y-%m-%d %H:%M:%S") - (timedelta(seconds={_get_timezone_offset_seconds()}))'
 
     print(f'dag_file_path: {dag_file_path.resolve()}')
 
@@ -116,6 +115,10 @@ def _get_dag_deployment_id(workflow_name: str,
         ver=build_ver.replace('.','_').replace('-','_'),
         start_from=datetime.strptime(start_from, "%Y-%m-%d" if len(start_from) <= 10 else "%Y-%m-%d %H:%M:%S").strftime('%Y_%m_%d_%H_%M_%S')
     )
+
+
+def _get_timezone_offset_seconds() -> str:
+    return str(datetime.now().astimezone().tzinfo.utcoffset(None).seconds)
 
 
 def get_dags_output_dir(workdir: str) -> Path:

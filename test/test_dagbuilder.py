@@ -6,7 +6,7 @@ from pathlib import Path
 import mock
 from unittest import TestCase
 from biggerquery import Job
-from biggerquery.dagbuilder import get_dags_output_dir, clear_dags_output_dir, generate_dag_file
+from biggerquery.dagbuilder import get_dags_output_dir, clear_dags_output_dir, generate_dag_file, _get_timezone_offset_seconds
 from biggerquery.workflow import WorkflowJob, Workflow, Definition
 
 
@@ -23,7 +23,6 @@ class DagbuilderTestCase(TestCase):
         #then
         print (dags_dir.as_posix())
         self.assertEqual(dags_dir.as_posix(), workdir + "/.dags")
-
 
     def test_should_clear_DAGs_output_dir(self):
         # given
@@ -90,7 +89,7 @@ from airflow.contrib.operators import kubernetes_pod_operator
 default_args = {
             'owner': 'airflow',
             'depends_on_past': True,
-            'start_date': datetime.strptime("2020-07-01 10:00:00", "%Y-%m-%d %H:%M:%S") - (timedelta(seconds=7200)),
+            'start_date': datetime.strptime("2020-07-01 10:00:00", "%Y-%m-%d %H:%M:%S") - (timedelta(seconds='''+self.expected_start_date_shift()+''')),
             'email_on_failure': False,
             'email_on_retry': False,
             'execution_timeout': timedelta(minutes=90)
@@ -212,9 +211,7 @@ tjob1 = kubernetes_pod_operator.KubernetesPodOperator(
     dag=dag)            
 
 '''
-
         self.assert_files_are_equal(expected_dag_content, dag_file_content)
-
 
     def assert_files_are_equal(self, expected_dag_content, dag_file_content):
         if not expected_dag_content == dag_file_content:
@@ -224,3 +221,6 @@ tjob1 = kubernetes_pod_operator.KubernetesPodOperator(
             sys.stdout.writelines(diff)
 
             raise ValueError('Files are not equal')
+
+    def expected_start_date_shift(self) -> str :
+        return _get_timezone_offset_seconds()
