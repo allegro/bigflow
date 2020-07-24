@@ -13,3 +13,4 @@ google-cloud-storage==1.26.0
 google-cloud-logging==1.14.0
 google-auth==1.11.2
 six==1.14.0
+responses==0.10.15
