@@ -34,4 +34,5 @@ setuptools.setup(
     extras_require={
         'stackdriver': stackdriver_extras_require
     },
+    scripts=["bgq"]
 )
