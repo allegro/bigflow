@@ -47,7 +47,7 @@ def deploy_dags_folder(workdir: str, deployment_config: Config, clear_dags_folde
     if clear_dags_folder:
         clear_remote_DAGs_bucket(bucket)
 
-    upload_DAGs_dolder(workdir, bucket)
+    upload_DAGs_folder(workdir, bucket)
     return dags_bucket
 
 
@@ -66,7 +66,7 @@ def blob_URI(blob):
     return f"gs://{blob.bucket.name}/{blob.name}"
 
 
-def upload_DAGs_dolder(workdir: str, bucket):
+def upload_DAGs_folder(workdir: str, bucket):
     dags_dir_path = get_dags_output_dir(workdir)
 
     def upload_file(local_file_path, target_file_name):

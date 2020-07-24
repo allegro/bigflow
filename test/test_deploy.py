@@ -3,14 +3,13 @@ import os
 from unittest import TestCase
 from biggerquery import Job, Config
 from biggerquery.dagbuilder import get_dags_output_dir, clear_dags_output_dir, generate_dag_file, get_timezone_offset_seconds
-from biggerquery.deploy import deploy_dags_folder
+from biggerquery.deploy import deploy_dags_folder, deploy_docker_image
 import mock
 
 
 class DeployTestCase(TestCase):
 
-    @mock.patch('google.cloud.storage.Client')
-    def test_should_clear_GCS_DAGs_folder(self, gs_client_mock):
+    def test_should_clear_GCS_DAGs_folder(self):
 
         # given
         workdir = os.path.dirname(__file__)
@@ -19,6 +18,7 @@ class DeployTestCase(TestCase):
                         properties={
        #                            'deploy_project_id': 'MY_DEPLOY_PROJECT_ID',
        #                            'docker_repository_project': 'MY_DOCKER_REPO_PROJECT_ID',
+       #                            'docker_repository': 'eu.gcr.io/{docker_repository_project}/my-space'
        #                            'deploy_vault_endpoint': 'https://example.com/v1/gcp/token',
                                    'dags_bucket': 'europe-west1-1-bucket'
                        })
@@ -51,9 +51,10 @@ class DeployTestCase(TestCase):
         config = Config(name='dev',
                         environment_variables_prefix='bamboo_bgq_',
                         properties={
-                            #'deploy_project_id': 'MY_DEPLOY_PROJECT_ID',
-                            #                            'docker_repository_project': 'MY_DOCKER_REPO_PROJECT_ID',
-                            #                            'deploy_vault_endpoint': 'https://example.com/v1/gcp/token',
+                            # 'deploy_project_id': 'MY_DEPLOY_PROJECT_ID',
+                            # 'docker_repository_project': 'MY_DOCKER_REPO_PROJECT_ID',
+                            # 'docker_repository': 'eu.gcr.io/{docker_repository_project}/my-space'
+                            # 'deploy_vault_endpoint': 'https://example.com/v1/gcp/token',
                             'dags_bucket': 'europe-west1-1-bucket'
                         })
 
