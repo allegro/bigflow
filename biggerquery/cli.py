@@ -150,19 +150,19 @@ def find_root_package(project_name: Optional[str], root: Optional[str]) -> Path:
         return Path(root_module.__file__.replace('__init__.py', ''))
 
 
-def cli_run(root_package: Path, job: str, runtime: str = None, workflow_id: str = None) -> None:
+def cli_run(root_package: Path, runtime: Optional[str] = None, full_job_id: Optional[str] = None, workflow_id: Optional[str] = None) -> None:
     """
     Runs the specified job or workflow
 
     @param root_package: Path Path to the root package of this project
-    @param job: str Represents both workflow_id and job_id in a string in format "<workflow_id>.<job_id>"
-    @param runtime: str Date of XXX in format "%Y-%m-%d %H:%M:%S"
-    @param workflow_id: str The id of the workflow that should be executed
+    @param runtime: Optional[str] Date of XXX in format "%Y-%m-%d %H:%M:%S"
+    @param full_job_id: Optional[str] Represents both workflow_id and job_id in a string in format "<workflow_id>.<job_id>"
+    @param workflow_id: Optional[str] The id of the workflow that should be executed
     @return:
     """
-    if job is not None:
+    if full_job_id is not None:
         try:
-            workflow_id, job_id = job.split('.')
+            workflow_id, job_id = full_job_id.split('.')
         except ValueError:
             raise ValueError(
                 'You should specify job using the workflow_id and job_id parameters - --job <workflow_id>.<job_id>.')
@@ -212,6 +212,6 @@ def cli() -> None:
     if operation == RUN_OPERATION:
         set_configuration_env(args.config)
         root_package = find_root_package(project_name, args.root)
-        cli_run(root_package, args.job, args.runtime, args.workflow)
+        cli_run(root_package, args.runtime, args.job, args.workflow)
     else:
         raise ValueError(f'Operation unknown - {operation}')

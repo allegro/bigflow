@@ -9,6 +9,9 @@ class CliTestCase(TestCase):
         global TEST_MODULE_PATH
         TEST_MODULE_PATH = Path(__file__).parent / 'test_module'
 
+    def doCleanups(self) -> None:
+        import_module("test_module.Unused1").started_jobs.clear()
+
     def test_should_walk_through_all_files_inside_package_tree(self):
         # when
         res = walk_module_files(TEST_MODULE_PATH)
@@ -136,3 +139,66 @@ class CliTestCase(TestCase):
 
         # then
         self.assertEqual(test_module_src, resolve(res))
+
+    def test_should_run_workflow(self):
+        # given
+        root_package = find_root_package(None, "test.test_module")
+
+        # when
+        cli_run(root_package, workflow_id="ID_3")
+
+        # then
+        self.assert_started_jobs(['J_ID_3', 'J_ID_4'])
+
+        # when
+        cli_run(root_package, workflow_id="ID_4")
+
+        # then
+        self.assert_started_jobs(['J_ID_3', 'J_ID_4', 'J_ID_5'])
+
+    def test_should_run_workflow_multiple_times(self):
+        # given
+        root_package = find_root_package(None, "test.test_module")
+
+        # when
+        cli_run(root_package, workflow_id="ID_3")
+        cli_run(root_package, workflow_id="ID_3")
+
+        # then
+        self.assert_started_jobs(['J_ID_3', 'J_ID_4', 'J_ID_3', 'J_ID_4'])
+
+    def test_should_run_job(self):
+        # given
+        root_package = find_root_package(None, "test.test_module")
+
+        # when
+        cli_run(root_package, full_job_id="ID_3.J_ID_3")
+
+        # then
+        self.assert_started_jobs(['J_ID_3'])
+
+        # when
+        cli_run(root_package, full_job_id="ID_3.J_ID_4")
+
+        # then
+        self.assert_started_jobs(['J_ID_3', 'J_ID_4'])
+
+        # when
+        cli_run(root_package, full_job_id="ID_4.J_ID_5")
+
+        # then
+        self.assert_started_jobs(['J_ID_3', 'J_ID_4', 'J_ID_5'])
+
+    def test_should_run_job_multiple_times(self):
+        # given
+        root_package = find_root_package(None, "test.test_module")
+
+        # when
+        cli_run(root_package, full_job_id="ID_3.J_ID_3")
+        cli_run(root_package, full_job_id="ID_3.J_ID_3")
+
+        # then
+        self.assert_started_jobs(['J_ID_3', 'J_ID_3'])
+
+    def assert_started_jobs(self, ids):
+        self.assertEqual(ids, import_module("test_module.Unused1").started_jobs)
