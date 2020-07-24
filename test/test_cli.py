@@ -105,11 +105,36 @@ class CliTestCase(TestCase):
         self.assertEqual('@once', res.schedule_interval)
 
     def test_should_not_find_non_existing_workflow(self):
-        # when
-        res = find_workflow(TEST_MODULE_PATH, 'NOT_EXISTING_ID')
+        with self.assertRaises(ValueError) as cm:
+            # when
+            find_workflow(TEST_MODULE_PATH, 'NOT_EXISTING_ID')
 
         # then
-        self.assertEqual(None, res)
+        exception_message = cm.exception.args[0]
+        expected_prefix = "Workflow with id NOT_EXISTING_ID not found in package "
+        expected_suffix = "biggerquery/test/test_module"
+        self.assertEqual(exception_message[:len(expected_prefix)], expected_prefix)
+        self.assertEqual(exception_message[-len(expected_suffix):], expected_suffix)
+
+    def test_should_raise_exception_when_no_jobid_and_no_workflow(self):
+        # given
+        root_package = find_root_package(None, "test.test_module")
+
+        with self.assertRaises(ValueError):
+            # when
+            cli_run(root_package)
+
+    def test_should_raise_exception_when_job_id_incorrect(self):
+        # given
+        root_package = find_root_package(None, "test.test_module")
+
+        with self.assertRaises(ValueError):
+            # when just job id
+            cli_run(root_package, full_job_id="J_ID_1")
+
+        with self.assertRaises(ValueError):
+            # when just workflow id
+            cli_run(root_package, full_job_id="ID_1")
 
     def test_should_set_configuration_env(self):
         # given
@@ -199,6 +224,28 @@ class CliTestCase(TestCase):
 
         # then
         self.assert_started_jobs(['J_ID_3', 'J_ID_3'])
+
+    def test_should_read_root_if_set(self):
+        # given
+        args = lambda: None
+        expected = "ROOT_VALUE"
+        args.root = expected
+
+        # when
+        res = read_root(args)
+
+        # then
+        self.assertEqual(expected, res)
+
+    def test_should_return_None_when_no_root_property(self):
+        # given
+        args = lambda: None
+
+        # when
+        res = read_root(args)
+
+        # then
+        self.assertEqual(None, res)
 
     def assert_started_jobs(self, ids):
         self.assertEqual(ids, import_module("test_module.Unused1").started_jobs)
