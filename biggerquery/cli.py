@@ -88,6 +88,7 @@ def find_workflow(root_package: Path, workflow_id: str) -> bgq.Workflow:
     for workflow in walk_workflows(root_package):
         if workflow.workflow_id == workflow_id:
             return workflow
+    raise ValueError('Workflow with id {} not found in package {}'.format(workflow_id, root_package))
 
 
 def set_configuration_env(env):
@@ -150,7 +151,10 @@ def find_root_package(project_name: Optional[str], root: Optional[str]) -> Path:
         return Path(root_module.__file__.replace('__init__.py', ''))
 
 
-def cli_run(root_package: Path, runtime: Optional[str] = None, full_job_id: Optional[str] = None, workflow_id: Optional[str] = None) -> None:
+def cli_run(root_package: Path,
+            runtime: Optional[str] = None,
+            full_job_id: Optional[str] = None,
+            workflow_id: Optional[str] = None) -> None:
     """
     Runs the specified job or workflow
 
@@ -203,6 +207,10 @@ def _parse_args(project_name: Optional[str], operations: [str]) -> Namespace:
     return parser.parse_args()
 
 
+def read_root(args):
+    return args.root if hasattr(args, 'root') else None
+
+
 def cli() -> None:
     project_name = read_project_name_from_setup()
     RUN_OPERATION = 'run'
@@ -211,7 +219,7 @@ def cli() -> None:
 
     if operation == RUN_OPERATION:
         set_configuration_env(args.config)
-        root_package = find_root_package(project_name, args.root)
+        root_package = find_root_package(project_name, read_root(args))
         cli_run(root_package, args.runtime, args.job, args.workflow)
     else:
         raise ValueError(f'Operation unknown - {operation}')
