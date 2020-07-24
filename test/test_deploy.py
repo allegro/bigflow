@@ -1,9 +1,12 @@
 
 import os
 from unittest import TestCase
+
+import responses
+
 from biggerquery import Job, Config
-from biggerquery.dagbuilder import get_dags_output_dir, clear_dags_output_dir, generate_dag_file, get_timezone_offset_seconds
-from biggerquery.deploy import deploy_dags_folder, deploy_docker_image
+from biggerquery.dagbuilder import get_dags_output_dir, clear_dags_output_dir
+from biggerquery.deploy import deploy_dags_folder, get_vault_token
 import mock
 
 
@@ -89,3 +92,41 @@ class DeployTestCase(TestCase):
         gs_client_mock.bucket.assert_called_with('europe-west1-1-bucket')
         f1_blob_mock.upload_from_filename.assert_called_with(f1.as_posix(), content_type='application/octet-stream')
         f2_blob_mock.upload_from_filename.assert_called_with(f2.as_posix(), content_type='application/octet-stream')
+
+    @responses.activate
+    def test_should_retrieve_token_from_vault(self):
+        # given
+        responses.add(responses.GET, 'https://example.com/v1/gcp/token', status=200, json={'data': {'token': 'token_value'}})
+        config = Config(name='dev',
+                        properties={
+                            'deploy_vault_endpoint': 'https://example.com/v1/gcp/token',
+                            'deploy_vault_secret': 'secret',
+                            'dags_bucket': 'europe-west1-1-bucket'
+                        })
+        # when
+        token = get_vault_token(config)
+
+        # then
+        self.assertEqual(token, 'token_value')
+        self.assertEqual(len(responses.calls), 1)
+        self.assertEqual(responses.calls[0].request.url, 'https://example.com/v1/gcp/token')
+        self.assertEqual(responses.calls[0].request.headers['X-Vault-Token'], 'secret')
+
+    @responses.activate
+    def test_should_raise_value_error_if_vault_problem_occurred_during_fetching_token(self):
+        # given
+        responses.add(responses.GET, 'https://example.com/v1/gcp/token', status=503)
+        config = Config(name='dev',
+                        properties={
+                            'deploy_vault_endpoint': 'https://example.com/v1/gcp/token',
+                            'deploy_vault_secret': 'secret',
+                            'dags_bucket': 'europe-west1-1-bucket'
+                        })
+
+        # then
+        with self.assertRaises(ValueError):
+            # when
+            get_vault_token(config)
+            self.assertEqual(len(responses.calls), 1)
+            self.assertEqual(responses.calls[0].request.url, 'https://example.com/v1/gcp/token')
+            self.assertEqual(responses.calls[0].request.headers['X-Vault-Token'], 'secret')
