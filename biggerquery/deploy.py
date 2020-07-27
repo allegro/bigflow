@@ -67,7 +67,6 @@ def upload_DAGs_folder(workdir: str, bucket):
     dags_dir_path = get_dags_output_dir(workdir)
 
     def upload_file(local_file_path, target_file_name):
-        print('bolb', target_file_name)
         blob = bucket.blob(target_file_name)
         blob.upload_from_filename(local_file_path, content_type='application/octet-stream')
         print(f"uploading file {local_file_path} to {blob_URI(blob)}")
