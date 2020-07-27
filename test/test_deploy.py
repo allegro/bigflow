@@ -4,7 +4,6 @@ from unittest import TestCase
 
 import responses
 
-from biggerquery import Job, Config
 from biggerquery.dagbuilder import get_dags_output_dir, clear_dags_output_dir
 from biggerquery.deploy import deploy_dags_folder, get_vault_token
 import mock
@@ -16,15 +15,6 @@ class DeployTestCase(TestCase):
 
         # given
         workdir = os.path.dirname(__file__)
-        config = Config(name='dev',
-                        environment_variables_prefix='bamboo_bgq_',
-                        properties={
-       #                            'deploy_project_id': 'MY_DEPLOY_PROJECT_ID',
-       #                            'docker_repository_project': 'MY_DOCKER_REPO_PROJECT_ID',
-       #                            'docker_repository': 'eu.gcr.io/{docker_repository_project}/my-space'
-       #                            'deploy_vault_endpoint': 'https://example.com/v1/gcp/token',
-                                   'dags_bucket': 'europe-west1-1-bucket'
-                       })
 
         # mocking
         gs_client_mock = mock.Mock()
@@ -39,7 +29,8 @@ class DeployTestCase(TestCase):
         gs_client_mock.bucket.return_value = bucket_mock
 
         # when
-        deploy_dags_folder(workdir, config, True, auth_method='local_account', gs_client=gs_client_mock)
+        deploy_dags_folder(workdir, dags_bucket='europe-west1-1-bucket', project_id='', clear_dags_folder=True,
+                           auth_method='local_account', gs_client=gs_client_mock)
 
         #then
         gs_client_mock.bucket.assert_called_with('europe-west1-1-bucket')
@@ -51,15 +42,6 @@ class DeployTestCase(TestCase):
 
         # given
         workdir = os.path.dirname(__file__)
-        config = Config(name='dev',
-                        environment_variables_prefix='bamboo_bgq_',
-                        properties={
-                            # 'deploy_project_id': 'MY_DEPLOY_PROJECT_ID',
-                            # 'docker_repository_project': 'MY_DOCKER_REPO_PROJECT_ID',
-                            # 'docker_repository': 'eu.gcr.io/{docker_repository_project}/my-space'
-                            # 'deploy_vault_endpoint': 'https://example.com/v1/gcp/token',
-                            'dags_bucket': 'europe-west1-1-bucket'
-                        })
 
         clear_dags_output_dir(workdir)
         dags_dir = get_dags_output_dir(workdir)
@@ -86,7 +68,8 @@ class DeployTestCase(TestCase):
         bucket_mock.blob.side_effect = blobs
 
         # when
-        deploy_dags_folder(workdir, config, False, auth_method='local_account', gs_client=gs_client_mock)
+        deploy_dags_folder(workdir, dags_bucket='europe-west1-1-bucket', project_id='', clear_dags_folder=False,
+                           auth_method='local_account', gs_client=gs_client_mock)
 
         #then
         gs_client_mock.bucket.assert_called_with('europe-west1-1-bucket')
@@ -97,14 +80,10 @@ class DeployTestCase(TestCase):
     def test_should_retrieve_token_from_vault(self):
         # given
         responses.add(responses.GET, 'https://example.com/v1/gcp/token', status=200, json={'data': {'token': 'token_value'}})
-        config = Config(name='dev',
-                        properties={
-                            'deploy_vault_endpoint': 'https://example.com/v1/gcp/token',
-                            'deploy_vault_secret': 'secret',
-                            'dags_bucket': 'europe-west1-1-bucket'
-                        })
+        vault_endpoint = 'https://example.com/v1/gcp/token'
+
         # when
-        token = get_vault_token(config)
+        token = get_vault_token(vault_endpoint, 'secret')
 
         # then
         self.assertEqual(token, 'token_value')
@@ -116,17 +95,12 @@ class DeployTestCase(TestCase):
     def test_should_raise_value_error_if_vault_problem_occurred_during_fetching_token(self):
         # given
         responses.add(responses.GET, 'https://example.com/v1/gcp/token', status=503)
-        config = Config(name='dev',
-                        properties={
-                            'deploy_vault_endpoint': 'https://example.com/v1/gcp/token',
-                            'deploy_vault_secret': 'secret',
-                            'dags_bucket': 'europe-west1-1-bucket'
-                        })
+        vault_endpoint = 'https://example.com/v1/gcp/token'
 
         # then
         with self.assertRaises(ValueError):
             # when
-            get_vault_token(config)
+            get_vault_token(vault_endpoint, 'secret')
             self.assertEqual(len(responses.calls), 1)
             self.assertEqual(responses.calls[0].request.url, 'https://example.com/v1/gcp/token')
             self.assertEqual(responses.calls[0].request.headers['X-Vault-Token'], 'secret')

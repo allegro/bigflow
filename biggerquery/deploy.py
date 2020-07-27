@@ -3,7 +3,6 @@ from subprocess import run
 import requests
 from typing import List
 from google.cloud import storage
-from biggerquery.configuration import Config
 from biggerquery.dagbuilder import get_dags_output_dir
 
 
@@ -16,16 +15,14 @@ def os_call(cmd: List, input: str = None):
     print('')
 
 
-def deploy_docker_image(build_ver: str, deployment_config, auth_method: str = 'local_account'):
-    docker_repository = deployment_config.resolve()['docker_repository']
+def deploy_docker_image(build_ver: str, docker_repository: str, auth_method: str = 'local_account', vault_endpoint: str = None, vault_secret: str = None):
     docker_image = docker_repository + ":" + build_ver
-
     print(f"Deploying docker image tag={docker_image} auth_method={auth_method}")
 
     if auth_method == 'local_account':
         os_call(['gcloud', 'auth', 'configure-docker'])
     elif auth_method == 'service_account':
-        oauthtoken = get_vault_token(deployment_config)
+        oauthtoken = get_vault_token(vault_endpoint, vault_secret)
         os_call(['docker', 'login', '-u', 'oauth2accesstoken', '--password-stdin', 'https://eu.gcr.io'],
                 input=oauthtoken)
     else:
@@ -35,13 +32,13 @@ def deploy_docker_image(build_ver: str, deployment_config, auth_method: str = 'l
     return docker_image
 
 
-def deploy_dags_folder(workdir: str, deployment_config: Config, clear_dags_folder=False,
-                       auth_method: str = 'local_account', gs_client=None):
+def deploy_dags_folder(workdir: str, dags_bucket:str, project_id: str, clear_dags_folder=False,
+                       auth_method: str = 'local_account', vault_endpoint: str = None, vault_secret: str = None,
+                       gs_client=None):
 
     print(f"Deploying DAGs folder, auth_method={auth_method}, clear_dags_folder={clear_dags_folder}, workdir={workdir}")
-    dags_bucket = deployment_config.resolve()['dags_bucket']
 
-    client = gs_client or create_storage_client(auth_method, deployment_config)
+    client = gs_client or create_storage_client(auth_method, project_id, vault_endpoint, vault_secret)
     bucket = client.bucket(dags_bucket)
 
     if clear_dags_folder:
@@ -84,21 +81,17 @@ def upload_DAGs_folder(workdir: str, bucket):
     print(f"{i} files uploaded")
 
 
-def create_storage_client(auth_method: str, deployment_config):
-    project_id = deployment_config.resolve()['deploy_project_id']
+def create_storage_client(auth_method: str, project_id: str, vault_endpoint: str, vault_secret: str):
     if auth_method == 'local_account':
         return storage.Client(project=project_id)
     elif auth_method == 'service_account':
-        oauthtoken = get_vault_token(deployment_config)
+        oauthtoken = get_vault_token(vault_endpoint, vault_secret)
         return storage.Client(project=project_id, credentials=credentials.Credentials(oauthtoken))
     else:
         raise ValueError('unsupported auth_method: ' + auth_method)
 
 
-def get_vault_token(deployment_config):
-    vault_endpoint = deployment_config.resolve_property('deploy_vault_endpoint')
-    vault_secret = deployment_config.resolve_property('deploy_vault_secret')
-
+def get_vault_token(vault_endpoint: str, vault_secret: str):
     headers = {'X-Vault-Token': vault_secret}
     response = requests.get(vault_endpoint, headers=headers, verify=False)
 
