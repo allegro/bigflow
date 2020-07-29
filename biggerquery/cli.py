@@ -6,17 +6,17 @@ from datetime import datetime
 from importlib import import_module
 from pathlib import Path
 from types import ModuleType
-from typing import List, Tuple, Iterator
+from typing import Optional
+from typing import Tuple, Iterable
 
 import biggerquery as bgq
-from typing import Optional
 
 
 def resolve(path: Path) -> str:
     return str(path.absolute())
 
 
-def walk_module_files(root_package: Path) -> Iterator[Tuple[str, str]]:
+def walk_module_files(root_package: Path) -> Iterable[Tuple[str, str]]:
     """
     Returning all the Python files in the `root_package`
 
@@ -44,7 +44,7 @@ def build_module_path(root_package: Path, module_dir: Path, module_file: str) ->
         .replace('.__init__', '')
 
 
-def walk_module_paths(root_package: Path) -> Iterator[str]:
+def walk_module_paths(root_package: Path) -> Iterable[str]:
     """
     Returning all the module paths in the `root_package`
     """
@@ -52,7 +52,7 @@ def walk_module_paths(root_package: Path) -> Iterator[str]:
         yield build_module_path(root_package, Path(module_dir), module_file)
 
 
-def walk_modules(root_package: Path) -> Iterator[ModuleType]:
+def walk_modules(root_package: Path) -> Iterable[ModuleType]:
     """
     Imports all the modules in the path and returns
     """
@@ -63,7 +63,7 @@ def walk_modules(root_package: Path) -> Iterator[ModuleType]:
             print(f"Skipping module {module_path}. Can't import due to exception {str(e)}.")
 
 
-def walk_module_objects(module: ModuleType, expect_type: type) -> Iterator[Tuple[str, type]]:
+def walk_module_objects(module: ModuleType, expect_type: type) -> Iterable[Tuple[str, type]]:
     """
     Returns module items of the set type
     """
@@ -72,7 +72,7 @@ def walk_module_objects(module: ModuleType, expect_type: type) -> Iterator[Tuple
             yield name, obj
 
 
-def walk_workflows(root_package: Path) -> Iterator[bgq.Workflow]:
+def walk_workflows(root_package: Path) -> Iterable[bgq.Workflow]:
     """
     Imports modules in the `root_package` and returns all the elements of the type bgq.Workflow
     """
