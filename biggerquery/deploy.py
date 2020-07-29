@@ -91,6 +91,11 @@ def create_storage_client(auth_method: str, project_id: str, vault_endpoint: str
 
 
 def get_vault_token(vault_endpoint: str, vault_secret: str):
+    if not vault_endpoint:
+        raise ValueError('vault_endpoint is required')
+    if not vault_secret:
+        raise ValueError('vault_secret is required')
+
     headers = {'X-Vault-Token': vault_secret}
     response = requests.get(vault_endpoint, headers=headers, verify=False)
 

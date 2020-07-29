@@ -225,14 +225,14 @@ class CliTestCase(TestCase):
         # then
         self.assert_started_jobs(['J_ID_3', 'J_ID_3'])
 
-    def test_should_read_root_if_set(self):
+    def test_should_read_project_package_if_set(self):
         # given
         args = lambda: None
         expected = "ROOT_VALUE"
-        args.root = expected
+        args.project_package = expected
 
         # when
-        res = read_root(args)
+        res = read_project_package(args)
 
         # then
         self.assertEqual(expected, res)
@@ -242,7 +242,7 @@ class CliTestCase(TestCase):
         args = lambda: None
 
         # when
-        res = read_root(args)
+        res = read_project_package(args)
 
         # then
         self.assertEqual(None, res)
