@@ -201,7 +201,7 @@ def cli_run(project_package: str,
 def _parse_args(project_name: Optional[str]) -> Namespace:
     project_name_description = build_project_name_description(project_name)
     parser = argparse.ArgumentParser(description=f'Welcome to BiggerQuery CLI. {project_name_description}'
-                                                  '\nType: bgq {run,deploy-dags,deploy-image} -h to print detailed help for selected command.')
+                                                  '\nType: bgq {run,deploy-dags,deploy-image,deploy} -h to print detailed help for selected command.')
     subparsers = parser.add_subparsers(dest='operation',
                                        required=True,
                                        help='bgq command to execute')
@@ -209,13 +209,14 @@ def _parse_args(project_name: Optional[str]) -> Namespace:
     _create_run_parser(subparsers, project_name)
     _create_deploy_dags_parser(subparsers)
     _create_deploy_image_parser(subparsers)
+    _create_deploy_parser(subparsers)
 
     return parser.parse_args()
 
 
 def _create_run_parser(subparsers, project_name):
     parser = subparsers.add_parser('run',
-                                   description='BiggerQuery CLI run command -- run workflow or job')
+                                   description='BiggerQuery CLI run command -- run a workflow or job')
 
     group = parser.add_mutually_exclusive_group()
     group.required = True
@@ -276,12 +277,33 @@ def _add_deploy_parsers_common_arguments(parser):
 
     _add_parsers_common_arguments(parser)
 
+def _create_deploy_parser(subparsers):
+    parser = subparsers.add_parser('deploy',
+                                   description='BiggerQuery CLI deploy command -- performs complete deployment: deploys DAG files to Composer and Docker images to Container Registry.')
+
+    _add_deploy_dags_parser__arguments(parser)
+    _add_deploy_image_parser_argumentss(parser)
+    _add_deploy_parsers_common_arguments(parser)
+
 
 def _create_deploy_image_parser(subparsers):
     parser = subparsers.add_parser('deploy-image',
-                                   description='BiggerQuery CLI deploy-image command -- deploy docker image to Container Registry'
+                                   description='BiggerQuery CLI deploy-image command -- deploys Docker images to Container Registry.'
                                    )
 
+    _add_deploy_image_parser_argumentss(parser)
+    _add_deploy_parsers_common_arguments(parser)
+
+
+def _create_deploy_dags_parser(subparsers):
+    parser = subparsers.add_parser('deploy-dags',
+                                   description='BiggerQuery CLI deploy-dags command -- deploys DAG files from {project_dir}/.dags folder to Composer.')
+
+    _add_deploy_dags_parser__arguments(parser)
+    _add_deploy_parsers_common_arguments(parser)
+
+
+def _add_deploy_image_parser_argumentss(parser):
     parser.add_argument('-v', '--version',
                         required=True,
                         help="Docker image version. Required.")
@@ -290,13 +312,8 @@ def _create_deploy_image_parser(subparsers):
                         help='Target docker repository. Typically Container Registry repository on'
                              ' Google Cloud with the following naming schema: [HOSTNAME]/[PROJECT-ID]/[IMAGE].')
 
-    _add_deploy_parsers_common_arguments(parser)
 
-
-def _create_deploy_dags_parser(subparsers):
-    parser = subparsers.add_parser('deploy-dags',
-                                   description='BiggerQuery CLI deploy-dags command -- deploy DAG files to Composer')
-
+def _add_deploy_dags_parser__arguments(parser):
     parser.add_argument('-cdf', '--clear-dags-folder',
                         action='store_true',
                         help="Clears the DAGs bucket before uploading fresh DAG files. "
@@ -310,7 +327,6 @@ def _create_deploy_dags_parser(subparsers):
                         help="Name of the target Google Cloud Storage bucket which underlies DAGs folder of your Composer."
                              " If not set, will be read from {project-dir}/deployment_config.py")
 
-    _add_deploy_parsers_common_arguments(parser)
 
 def read_project_package(args):
     return args.project_package if hasattr(args, 'project_package') else None
@@ -331,6 +347,26 @@ def _resolve_property(args, property_name):
         return config.resolve_property(property_name, args.config)
 
 
+def _cli_deploy_dags(args):
+    deploy_dags_folder(workdir=_resolve_project_dir(args),
+                       dags_bucket=_resolve_property(args, 'dags_bucket'),
+                       clear_dags_folder=args.clear_dags_folder,
+                       auth_method=args.auth_method,
+                       vault_endpoint=_resolve_property(args, 'vault_endpoint'),
+                       vault_secret=args.vault_secret,
+                       project_id=_resolve_property(args, 'gcp_project_id')
+                       )
+
+
+def _cli_deploy_image(args):
+    deploy_docker_image(build_ver=args.version,
+                        auth_method=args.auth_method,
+                        docker_repository=_resolve_property(args, 'docker_repository'),
+                        vault_endpoint=_resolve_property(args, 'vault_endpoint'),
+                        vault_secret=args.vault_secret
+                        )
+
+
 def cli() -> None:
     project_name = read_project_name_from_setup()
     args = _parse_args(project_name)
@@ -343,20 +379,11 @@ def cli() -> None:
         root_package = find_root_package(project_name, read_project_package(args))
         cli_run(root_package, args.runtime, args.job, args.workflow)
     elif operation == 'deploy-image':
-        deploy_docker_image(build_ver=args.version,
-                            auth_method=args.auth_method,
-                            docker_repository=_resolve_property(args, 'docker_repository'),
-                            vault_endpoint=_resolve_property(args, 'vault_endpoint'),
-                            vault_secret=args.vault_secret
-                           )
+        _cli_deploy_image(args)
     elif operation == 'deploy-dags':
-        deploy_dags_folder(workdir=_resolve_project_dir(args),
-                           dags_bucket=_resolve_property(args, 'dags_bucket'),
-                           clear_dags_folder=args.clear_dags_folder,
-                           auth_method=args.auth_method,
-                           vault_endpoint=_resolve_property(args, 'vault_endpoint'),
-                           vault_secret=args.vault_secret,
-                           project_id=_resolve_property(args, 'gcp_project_id')
-                          )
+        _cli_deploy_dags(args)
+    elif operation == 'deploy':
+        _cli_deploy_dags(args)
+        _cli_deploy_image(args)
     else:
         raise ValueError(f'Operation unknown - {operation}')
