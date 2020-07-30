@@ -545,7 +545,7 @@ The same, but using `service_account` authentication and configuration specified
 
 ```bash
 bgq deploy \
---version 1.0 \
+--dist_path // version 1.0 \
 --docker-repository 'eu.gcr.io/my_gcp_dev_project/my_project' \
 --auth-method=service_account \
 --vault-secret ***** \

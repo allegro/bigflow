@@ -20,7 +20,7 @@ class DagBuilderTestCase(TestCase):
         dags_dir = get_dags_output_dir(workdir)
 
         #then
-        self.assertEqual(dags_dir.as_posix(), workdir + "/.dags")
+        self.assertEqual(dags_dir.as_posix(), workdir + "/.dagss")
 
     def test_should_clear_DAGs_output_dir(self):
         # given
@@ -73,7 +73,7 @@ class DagBuilderTestCase(TestCase):
         dag_file_path = generate_dag_file(workdir, docker_repository, workflow, '2020-07-01 10:00:00', '0.3.0', 'ca')
 
         #then
-        self.assertEqual(dag_file_path, workdir + '/.dags/my_workflow__v0_3_0__2020_07_01_10_00_00_dag.py')
+        self.assertEqual(dag_file_path, workdir + '/.dagss/my_workflow__v0_3_0__2020_07_01_10_00_00_dag.py')
 
         dag_file_content = Path(dag_file_path).read_text()
         expected_dag_content = '''    
@@ -168,7 +168,7 @@ tjob3.set_upstream(tjob1)
         dag_file_path = generate_dag_file(workdir, docker_repository, workflow, '2020-07-01', '0.3.0', 'ca')
 
         # then
-        self.assertEqual(dag_file_path, workdir + '/.dags/my_daily_workflow__v0_3_0__2020_07_01_00_00_00_dag.py')
+        self.assertEqual(dag_file_path, workdir + '/.dagss/my_daily_workflow__v0_3_0__2020_07_01_00_00_00_dag.py')
 
         dag_file_content = Path(dag_file_path).read_text()
         expected_dag_content = '''    

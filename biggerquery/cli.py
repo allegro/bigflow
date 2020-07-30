@@ -155,12 +155,12 @@ def find_root_package(project_name: Optional[str], project_dir: Optional[str]) -
         return Path(root_module.__file__.replace('__init__.py', ''))
 
 
-def import_deployment_config(project_dir: str):
-    spec = importlib.util.spec_from_file_location("deployment_config", f"{project_dir}/deployment_config.py")
+def import_deployment_config(deployment_config_path: str):
+    spec = importlib.util.spec_from_file_location("deployment_config", deployment_config_path)
 
     if not spec:
-        raise ValueError(f'Failed to load deployment_config.py from {project_dir}. '
-        'Create a proper deployment_config.py '
+        raise ValueError(f'Failed to load deployment_config from {deployment_config_path}. '
+        'Create a proper deployment_config.py file'
         'or set all the properties via command line arguments.')
 
     deployment_config_module = importlib.util.module_from_spec(spec)
@@ -236,6 +236,7 @@ def _create_run_parser(subparsers, project_name):
     if project_name is None:
         parser.add_argument('--project_package',
                             required=True,
+                            type=str,
                             help='The main package of your project. '
                                  'Should contain project_setup.py')
 
@@ -246,7 +247,7 @@ def _add_parsers_common_arguments(parser):
                         help='Config environment name that should be used. For example: dev, prod.'
                              ' If not set, default Config name will be used.'
                              ' This env name is applied to all biggerquery.Config objects that are defined by'
-                             ' individual workflows as well as to {project-dir}/deployment_config.py.')
+                             ' individual workflows as well as to deployment_config.py.')
 
 
 def _add_deploy_parsers_common_arguments(parser):
@@ -258,22 +259,21 @@ def _add_deploy_parsers_common_arguments(parser):
                              "service_account -- credentials for service account are obtained from Vault. "
                              "Default: local_account",
                         choices=['local_account', 'service_account'])
-
     parser.add_argument('-ve', '--vault-endpoint',
+                        type=str,
                         help="URL of a Vault endpoint to get OAuth token for service account."
                              " Required if auth-method is service_account."
-                             " If not set, will be read from {project-dir}/deployment_config.py"
+                             " If not set, will be read from deployment_config.py"
                         )
-
     parser.add_argument('-vs', '--vault-secret',
+                        type=str,
                         help="Vault secret token."
                              " Required if auth-method is service_account."
                         )
-
-    parser.add_argument('-d', '--project-dir',
-                        help="Path to your project. Should contain .dags folder with DAGs to deploy."
-                             " Can contain deployment_config.py."
-                             " If not set, current dir will be used.")
+    parser.add_argument('-dc', '--deployment-config-path',
+                        type=str,
+                        help="Path to the deployment_config.py file."
+                             " If not set, {current_dir}/deployment_config.py will be used.")
 
     _add_parsers_common_arguments(parser)
 
@@ -297,23 +297,30 @@ def _create_deploy_image_parser(subparsers):
 
 def _create_deploy_dags_parser(subparsers):
     parser = subparsers.add_parser('deploy-dags',
-                                   description='BiggerQuery CLI deploy-dags command -- deploys DAG files from {project_dir}/.dags folder to Composer.')
+                                   description='BiggerQuery CLI deploy-dags command -- deploys DAG files from local .dagss folder to Composer.')
 
     _add_deploy_dags_parser__arguments(parser)
     _add_deploy_parsers_common_arguments(parser)
 
 
 def _add_deploy_image_parser_argumentss(parser):
-    parser.add_argument('-v', '--version',
-                        required=True,
-                        help="Docker image version. Required.")
-
+    group = parser.add_mutually_exclusive_group()
+    group.required = True
+    group.add_argument('-v', '--version',
+                        help='Version of a Docker image which is stored in a local Docker repository.')
+    group.add_argument('-i', '--image-tar-path',
+                        help='Path to a Docker image *.tar. The file name must contain version number with the following naming schema: image-{version}.tar')
     parser.add_argument('-r', '--docker-repository',
-                        help='Target docker repository. Typically Container Registry repository on'
-                             ' Google Cloud with the following naming schema: [HOSTNAME]/[PROJECT-ID]/[IMAGE].')
-
+                        type=str,
+                        help='Name of a local and target Docker repository. Typically, a target repository is hosted by Google Cloud Container Registry.'
+                             ' If so, with the following naming schema: {HOSTNAME}/{PROJECT-ID}/{IMAGE}.'
+                        )
 
 def _add_deploy_dags_parser__arguments(parser):
+    parser.add_argument('-dd', '--dags-dir',
+                        type=str,
+                        help="Path to the folder with DAGs to deploy."
+                             " If not set, {current_dir}/.dags will be used.")
     parser.add_argument('-cdf', '--clear-dags-folder',
                         action='store_true',
                         help="Clears the DAGs bucket before uploading fresh DAG files. "
@@ -321,21 +328,27 @@ def _add_deploy_dags_parser__arguments(parser):
 
     parser.add_argument('-p', '--gcp-project-id',
                         help="Name of your Google Cloud Platform project."
-                             " If not set, will be read from {project-dir}/deployment_config.py")
+                             " If not set, will be read from deployment_config.py")
 
     parser.add_argument('-b', '--dags-bucket',
                         help="Name of the target Google Cloud Storage bucket which underlies DAGs folder of your Composer."
-                             " If not set, will be read from {project-dir}/deployment_config.py")
+                             " If not set, will be read from deployment_config.py")
 
 
 def read_project_package(args):
     return args.project_package if hasattr(args, 'project_package') else None
 
 
-def _resolve_project_dir(args):
-    if args.project_dir:
-        return args.project_dir
-    return os.getcwd()
+def _resolve_deployment_config_path(args):
+    if args.deployment_config_path:
+        return args.deployment_config_path
+    return os.getcwd()+'/deployment_config.py'
+
+
+def _resolve_dags_dir(args):
+    if args.dags_dir:
+        return args.dags_dir
+    return os.getcwd()+'/.dags'
 
 
 def _resolve_property(args, property_name):
@@ -343,12 +356,12 @@ def _resolve_property(args, property_name):
     if cli_atr:
         return cli_atr
     else:
-        config = import_deployment_config(_resolve_project_dir(args))
+        config = import_deployment_config(_resolve_deployment_config_path(args))
         return config.resolve_property(property_name, args.config)
 
 
 def _cli_deploy_dags(args):
-    deploy_dags_folder(workdir=_resolve_project_dir(args),
+    deploy_dags_folder(dags_dir=_resolve_dags_dir(args),
                        dags_bucket=_resolve_property(args, 'dags_bucket'),
                        clear_dags_folder=args.clear_dags_folder,
                        auth_method=args.auth_method,
