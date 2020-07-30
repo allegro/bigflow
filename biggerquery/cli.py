@@ -13,7 +13,7 @@ import biggerquery as bgq
 from typing import Optional
 
 from biggerquery import Config
-from biggerquery.deploy import deploy_dags_folder
+from biggerquery.deploy import deploy_dags_folder, deploy_docker_image
 
 
 def resolve(path: Path) -> str:
@@ -134,7 +134,7 @@ def read_project_name_from_setup() -> Optional[str]:
 
 def build_project_name_description(project_name: str) -> str:
     if project_name is None:
-        return 'Project name not found in the project_setup.PROJECT_NAME.'
+        return ''
     else:
         return 'Project name is taken from project_setup.PROJECT_NAME: {0}.'.format(project_name)
 
@@ -172,11 +172,6 @@ def import_deployment_config(project_dir: str):
     return deployment_config_module.deployment_config
 
 
-def cli_deploy_image(auth_method:str, vault_endpoint:str, vault_secret:str, project_id:str):
-    print (f"cli_deploy_image -- auth_method:{auth_method} "
-           f"vault_endpoint:{vault_endpoint} vault_secret:{vault_secret} project_dir:{project_id}")
-
-
 def cli_run(project_package: str,
             runtime: Optional[str] = None,
             full_job_id: Optional[str] = None,
@@ -205,8 +200,11 @@ def cli_run(project_package: str,
 
 def _parse_args(project_name: Optional[str]) -> Namespace:
     project_name_description = build_project_name_description(project_name)
-    parser = argparse.ArgumentParser(description='BiggerQuery CLI. ' + project_name_description)
-    subparsers = parser.add_subparsers(dest='operation', required=True)
+    parser = argparse.ArgumentParser(description=f'Welcome to BiggerQuery CLI. {project_name_description}'
+                                                  '\nType: bgq {run,deploy-dags,deploy-image} -h to print detailed help for selected command.')
+    subparsers = parser.add_subparsers(dest='operation',
+                                       required=True,
+                                       help='bgq command to execute')
 
     _create_run_parser(subparsers, project_name)
     _create_deploy_dags_parser(subparsers)
@@ -216,7 +214,8 @@ def _parse_args(project_name: Optional[str]) -> Namespace:
 
 
 def _create_run_parser(subparsers, project_name):
-    parser = subparsers.add_parser('run')
+    parser = subparsers.add_parser('run',
+                                   description='BiggerQuery CLI run command -- run workflow or job')
 
     group = parser.add_mutually_exclusive_group()
     group.required = True
@@ -226,19 +225,27 @@ def _create_run_parser(subparsers, project_name):
     group.add_argument('-w', '--workflow',
                        type=str,
                        help='The id of the workflow to start.')
-    parser.add_argument('-c', '--config',
-                        type=str,
-                        help='Config environment name that should be used. For example: dev, prod')
     parser.add_argument('-r', '--runtime',
                         type=str, default=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                         help='The date and time when this job or workflow should be started. '
                              'The default is now (%(default)s). '
                              'Examples: 2019-01-01, 2020-01-01 01:00:00')
+    _add_parsers_common_arguments(parser)
+
     if project_name is None:
         parser.add_argument('--project_package',
                             required=True,
                             help='The main package of your project. '
                                  'Should contain project_setup.py')
+
+
+def _add_parsers_common_arguments(parser):
+    parser.add_argument('-c', '--config',
+                        type=str,
+                        help='Config environment name that should be used. For example: dev, prod.'
+                             ' If not set, default Config name will be used.'
+                             ' This env name is applied to all biggerquery.Config objects that are defined by'
+                             ' individual workflows as well as to {project-dir}/deployment_config.py.')
 
 
 def _add_deploy_parsers_common_arguments(parser):
@@ -267,20 +274,28 @@ def _add_deploy_parsers_common_arguments(parser):
                              " Can contain deployment_config.py."
                              " If not set, current dir will be used.")
 
-    parser.add_argument('-e', '--env',
-                        help="Environment name in {project-dir}/deployment_config.py."
-                             " If not set, default Config name will be used. ")
+    _add_parsers_common_arguments(parser)
 
 
 def _create_deploy_image_parser(subparsers):
-    parser = subparsers.add_parser('deploy-image')
+    parser = subparsers.add_parser('deploy-image',
+                                   description='BiggerQuery CLI deploy-image command -- deploy docker image to Container Registry'
+                                   )
+
+    parser.add_argument('-v', '--version',
+                        required=True,
+                        help="Docker image version. Required.")
+
+    parser.add_argument('-r', '--docker-repository',
+                        help='Target docker repository. Typically Container Registry repository on'
+                             ' Google Cloud with the following naming schema: [HOSTNAME]/[PROJECT-ID]/[IMAGE].')
+
     _add_deploy_parsers_common_arguments(parser)
 
 
 def _create_deploy_dags_parser(subparsers):
-    parser = subparsers.add_parser('deploy-dags')
-
-    _add_deploy_parsers_common_arguments(parser)
+    parser = subparsers.add_parser('deploy-dags',
+                                   description='BiggerQuery CLI deploy-dags command -- deploy DAG files to Composer')
 
     parser.add_argument('-cdf', '--clear-dags-folder',
                         action='store_true',
@@ -295,6 +310,7 @@ def _create_deploy_dags_parser(subparsers):
                         help="Name of the target Google Cloud Storage bucket which underlies DAGs folder of your Composer."
                              " If not set, will be read from {project-dir}/deployment_config.py")
 
+    _add_deploy_parsers_common_arguments(parser)
 
 def read_project_package(args):
     return args.project_package if hasattr(args, 'project_package') else None
@@ -312,7 +328,7 @@ def _resolve_property(args, property_name):
         return cli_atr
     else:
         config = import_deployment_config(_resolve_project_dir(args))
-        return config.resolve_property(property_name, args.env)
+        return config.resolve_property(property_name, args.config)
 
 
 def cli() -> None:
@@ -320,16 +336,19 @@ def cli() -> None:
     args = _parse_args(project_name)
     operation = args.operation
 
+    print('Config env name is:', args.config)
+
     if operation == 'run':
         set_configuration_env(args.config)
         root_package = find_root_package(project_name, read_project_package(args))
         cli_run(root_package, args.runtime, args.job, args.workflow)
     elif operation == 'deploy-image':
-        cli_deploy_image(auth_method=args.auth_method,
-                         vault_endpoint=_resolve_property(args, 'vault_endpoint'),
-                         vault_secret=args.vault_secret,
-                         project_id=_resolve_property(args, 'gcp_project_id')
-                         )
+        deploy_docker_image(build_ver=args.version,
+                            auth_method=args.auth_method,
+                            docker_repository=_resolve_property(args, 'docker_repository'),
+                            vault_endpoint=_resolve_property(args, 'vault_endpoint'),
+                            vault_secret=args.vault_secret
+                           )
     elif operation == 'deploy-dags':
         deploy_dags_folder(workdir=_resolve_project_dir(args),
                            dags_bucket=_resolve_property(args, 'dags_bucket'),
@@ -338,6 +357,6 @@ def cli() -> None:
                            vault_endpoint=_resolve_property(args, 'vault_endpoint'),
                            vault_secret=args.vault_secret,
                            project_id=_resolve_property(args, 'gcp_project_id')
-                           )
+                          )
     else:
         raise ValueError(f'Operation unknown - {operation}')
