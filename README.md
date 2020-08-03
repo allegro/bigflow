@@ -377,6 +377,35 @@ workflow_v2 = bgq.Workflow(definition=[wait_for_requests.to_job()])
 workflow_v2.run('2090-01-01')
 ```
 
+## Running Bigger Query
+
+Bigger Query offers a cli (command-line interface) that lets you run or deploy jobs and workflows directly from your terminal. The main commands are:
+* `run` - lets you run a job or a workflow,
+
+To run any command, start with `bgq` and command name. To ask for help, use `bgq -h` or `bgq <command name> -h`.
+
+### Run
+
+`run` command lets you run a job or a workflow. Here are a few examples how it can be used:
+
+```
+bgq run --workflow workflowId
+bgq run --workflow workflowId --runtime '2020-01-01 00:00:00' --config prod
+bgq run --job jobId
+bgq run --job jobId --runtime '2020-01-01 00:00:00'
+bgq run --job jobId --runtime '2020-01-01 00:00:00' --config dev
+```
+
+Command requires you to provide one of those two parameters:
+* `--job <job id>` - use it to run a job by its id. You can set job id by setting `id` field in the object representing this job. 
+* `--workflow <workflow id>` - use it to run a workflow by its id. You can set workflow id using named parameter `workflow_id` (`bgq.Workflow(workflow_id="YOUR_ID", ...)`). 
+In both cases, id needs to be set and unique.
+
+Command also allows the following optional parameters:
+* `--runtime <runtime in format YYYY-MM-DD hh:mm:ss>` - use it to set the date and time when this job or workflow should be started. Example value: `2020-01-01 00:12:00`. The default is now. 
+* `--config <runtime>` - use it to configure environment name that should be used. Example: `dev`, `prod`. If not set, the default Config name will be used. This env name is applied to all biggerquery.Config objects that are defined by individual workflows as well as to deployment_config.py.
+* `--project_package <project_package>` - use it to set the main package of your project, only when project_setup.PROJECT_NAME not found. Example: `logistics_tasks`. The value does not affect when project_setup.PROJECT_NAME is set. Otherwise, it is required. 
+
 ## Tutorial
 
 Inside this repository, you can find the BiggerQuery tutorial. We recommend using the GCP Jupyter Lab to go through the tutorial. It takes a few clicks to set up.
