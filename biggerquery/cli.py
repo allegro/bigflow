@@ -209,7 +209,12 @@ def _parse_args(project_name: Optional[str]) -> Namespace:
     _create_run_parser(subparsers, project_name)
     _create_deploy_dags_parser(subparsers)
     _create_deploy_image_parser(subparsers)
+    _create_build_parser(subparsers)
+    _create_build_dags_parser(subparsers)
+    _create_build_image_parser(subparsers)
+    _create_build_package_parser(subparsers)
     _create_deploy_parser(subparsers)
+
 
     return parser.parse_args()
 
@@ -276,6 +281,37 @@ def _add_deploy_parsers_common_arguments(parser):
                              " If not set, {current_dir}/deployment_config.py will be used.")
 
     _add_parsers_common_arguments(parser)
+
+def _create_build_parser(subparsers):
+    parser = subparsers.add_parser('build', description='')
+    _add_build_dags_parser_arguments(parser)
+    _add_build_image_parser_arguments(parser)
+    _add_build_package_parser_arguments(parser)
+
+def _add_build_dags_parser_arguments(parser):
+    parser.add_argument('-w', '--workflow',
+                        type=str,
+                        help="")
+    parser.add_argument('-t', '--start-time',
+                        help="")
+
+def _add_build_image_parser_arguments(parser):
+    parser.add_argument('-w', '--workflow',
+                        type=str,
+                        help="")
+    parser.add_argument('-t', '--start-time',
+                        help="")
+
+
+def _create_build_dags_parser(args):
+    pass
+
+def _create_build_image_parser(args):
+    pass
+
+def _create_build_package_parser(args):
+    pass
+
 
 def _create_deploy_parser(subparsers):
     parser = subparsers.add_parser('deploy',
