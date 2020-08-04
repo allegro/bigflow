@@ -118,7 +118,7 @@ def get_timezone_offset_seconds() -> str:
 
 
 def get_dags_output_dir(workdir: str) -> Path:
-    dags_dir_path = Path(workdir) / '.dagss'
+    dags_dir_path = Path(workdir) / '.dags'
 
     if not dags_dir_path.exists():
         dags_dir_path.mkdir()
