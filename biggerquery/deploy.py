@@ -7,12 +7,16 @@ from typing import List
 from google.cloud import storage
 
 def os_call(cmd: List, input: str = None):
-    print('executing:', ' '.join(cmd))
+    print('executing cmd:', ' '.join(cmd))
     if input:
         run(cmd, check=True, input=input, encoding='ascii')
     else:
         run(cmd, check=True)
     print('')
+
+
+def load_image_from_tar(image_tar_path: str):
+    os_call(['docker', 'load', '-i', image_tar_path])
 
 
 def deploy_docker_image(build_ver: str, docker_repository: str, auth_method: str = 'local_account', vault_endpoint: str = None, vault_secret: str = None):

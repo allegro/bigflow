@@ -451,7 +451,7 @@ bgq deploy-dags --auth-method=service_account --vault-endpoint https://example.c
 Deploy commands require a lot of configuration. You can pass all parameters directly as command line arguments,
 or save them in a `deployment_config.py` file.
  
-For local development and for simple CI/CD scenarios we recommend using a `deployment_config.py` file.
+For local development and for most CI/CD scenarios we recommend using a `deployment_config.py` file.
 This file has to contain a `biggerquery.Config` object stored in the `deployment_config` variable
 and can be placed in a main folder of your project.
 
@@ -484,48 +484,51 @@ bgq deploy-dags --config prod
 or even `bgq deploy-dags`, because env `dev` is the default one in this case.
 
 **Important**. By default, the `deployment_config.py` file is located in a main directory of your project,
-so `bgq` expects to find it in a `current directory`.
-You can change this location by setting the 
-`project-dir` parameter (and then `bgq` loads it from `{project-dir}/deployment_config.py`). 
-    
+so `bgq` expects it exists under this path: `{current_dir}/deployment_config.py`.
+You can change this location by setting the `deployment-config-path` parameter:
+
+```bash
+bgq deploy-dags --deployment-config-path '/tmp/my_deployment_config.py'
+```
 
 #### Deploy DAG files examples
 
-Upload DAG files to `dev` Composer from a current project directory using `local_account` authentication.
+Upload DAG files from `{current_dir}/.dags` to a `dev` Composer using `local_account` authentication.
 Configuration is taken from `{current_dir}/deployment_config.py`: 
 
 ```bash
 bgq deploy-dags --config dev
 ```
 
-Upload DAG files from given project directory using `service_account` authentication.
-All parameters given via command line arguments:
+Upload DAG files from a given dir  using `service_account` authentication.
+Configuration is specified via command line arguments:
  
 ```bash  
 bgq deploy-dags \
+--dags-dir '/tmp/my_dags' \
 --auth-method=service_account \
 --vault-secret ***** \
 --vault-endpoint 'https://example.com/vault' \
---project-dir '/Users/kazik/my_project' \
 --dags-bucket europe-west1-12323a-bucket \
---gcp-project-id my_gcp_dev_project
+--gcp-project-id my_gcp_dev_project \
 --clear-dags-folder
 ```
   
 #### Deploy Docker image examples
 
-Upload Docker image using `local_account` authentication and configuration taken from
-`{current_dir}/deployment_config.py`:
+Upload a Docker image from a local repository using `local_account` authentication.
+Configuration is taken from `{current_dir}/deployment_config.py`:
 
 ```bash
 bgq deploy-image --version 1.0 --config dev
 ```
 
-Upload Docker image using `service_account` authentication and configuration specified via command line arguments:
+Upload a Docker image exported to a `.tar` file using `service_account` authentication.
+Configuration is specified via command line arguments:
 
 ```bash
 bgq deploy-image \
---version 1.0 \
+--image-tar-path '/tmp/image-0.1.0-tar' \
 --docker-repository 'eu.gcr.io/my_gcp_dev_project/my_project' \
 --auth-method=service_account \
 --vault-secret ***** \
@@ -534,24 +537,31 @@ bgq deploy-image \
 
 #### Complete deploy examples
 
-Upload DAG files and Docker image using `local_account` authentication and configuration taken from
-`{current_dir}/deployment_config.py`:
+Upload DAG files from `{current_dir}/.dags` dir and a Docker image from a local repository using `local_account` authentication.
+Configuration is taken from `{current_dir}/deployment_config.py`:
 
 ```bash
 bgq deploy --version 1.0 --config dev
 ```
 
-The same, but using `service_account` authentication and configuration specified via command line arguments:
+The same, but configuration is taken from a given file:
+
+```bash
+bgq deploy --version 1.0 --config dev --deployment-config-path '/tmp/my_deployment_config.py'
+```
+
+Upload DAG files from a given dir and a Docker image exported to a `.tar` file using `service_account` authentication.
+Configuration is specified via command line arguments:
 
 ```bash
 bgq deploy \
---dist_path // version 1.0 \
+--image-tar-path '/tmp/image-0.1.0-tar' \
+--dags-dir '/tmp/my_dags' \
 --docker-repository 'eu.gcr.io/my_gcp_dev_project/my_project' \
 --auth-method=service_account \
 --vault-secret ***** \
---vault-endpoint 'https://example.com/vault'
---project-dir '/Users/kazik/my_project' \
+--vault-endpoint 'https://example.com/vault' \
 --dags-bucket europe-west1-12323a-bucket \
---gcp-project-id my_gcp_dev_project
+--gcp-project-id my_gcp_dev_project \
 --clear-dags-folder
 ```
