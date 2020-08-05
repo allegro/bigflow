@@ -213,7 +213,7 @@ def cli_run(project_package: str,
 def _parse_args(project_name: Optional[str]) -> Namespace:
     project_name_description = build_project_name_description(project_name)
     parser = argparse.ArgumentParser(description=f'Welcome to BiggerQuery CLI. {project_name_description}'
-                                                  '\nType: bgq {run,deploy-dags,deploy-image,deploy} -h to print detailed help for selected command.')
+                                                  '\nType: bgq {run,deploy-dags,deploy-image,deploy,build,build-dags,build-image,build-package} -h to print detailed help for selected command.')
     subparsers = parser.add_subparsers(dest='operation',
                                        required=True,
                                        help='bgq command to execute')
@@ -221,14 +221,45 @@ def _parse_args(project_name: Optional[str]) -> Namespace:
     _create_run_parser(subparsers, project_name)
     _create_deploy_dags_parser(subparsers)
     _create_deploy_image_parser(subparsers)
-    _create_build_parser(subparsers)
-    _create_build_dags_parser(subparsers)
-    _create_build_image_parser(subparsers)
-    _create_build_package_parser(subparsers)
     _create_deploy_parser(subparsers)
 
+    _create_build_dags_parser(subparsers)
+    _create_build_image_parser(subparsers)
+    _create_build_parser(subparsers)
 
     return parser.parse_args()
+
+
+def _create_build_parser(subparsers):
+    parser = subparsers.add_parser('build', description='')
+    _add_build_dags_parser_arguments(parser)
+    _add_build_image_parser_arguments(parser)
+
+
+def _add_build_dags_parser_arguments(parser):
+    parser.add_argument('-w', '--workflow',
+                        type=str,
+                        help="")
+    parser.add_argument('-r', '--runtime',
+                        help="")
+
+
+def _add_build_image_parser_arguments(parser):
+    parser.add_argument('-e', '--export-image-to-file',
+                        type=bool,
+                        help="")
+
+
+def _create_build_dags_parser(subparsers):
+    parser = subparsers.add_parser('build-dags',
+                                   description='')
+    _add_build_dags_parser_arguments(parser)
+
+
+def _create_build_image_parser(subparsers):
+    parser = subparsers.add_parser('build-image',
+                                   description='')
+    _add_build_image_parser_arguments(parser)
 
 
 def _create_run_parser(subparsers, project_name):
@@ -293,37 +324,6 @@ def _add_deploy_parsers_common_arguments(parser):
                              " If not set, {current_dir}/deployment_config.py will be used.")
 
     _add_parsers_common_arguments(parser)
-
-def _create_build_parser(subparsers):
-    parser = subparsers.add_parser('build', description='')
-    _add_build_dags_parser_arguments(parser)
-    _add_build_image_parser_arguments(parser)
-    _add_build_package_parser_arguments(parser)
-
-def _add_build_dags_parser_arguments(parser):
-    parser.add_argument('-w', '--workflow',
-                        type=str,
-                        help="")
-    parser.add_argument('-t', '--start-time',
-                        help="")
-
-def _add_build_image_parser_arguments(parser):
-    parser.add_argument('-w', '--workflow',
-                        type=str,
-                        help="")
-    parser.add_argument('-t', '--start-time',
-                        help="")
-
-
-def _create_build_dags_parser(args):
-    pass
-
-def _create_build_image_parser(args):
-    pass
-
-def _create_build_package_parser(args):
-    pass
-
 
 def _create_deploy_parser(subparsers):
     parser = subparsers.add_parser('deploy',
@@ -438,6 +438,15 @@ def _cli_deploy_image(args):
                         vault_secret=args.vault_secret
                         )
 
+def _cli_build_image(args):
+    pass
+
+def _cli_build_package(args):
+    pass
+
+def _cli_build_dags(args):
+    pass
+
 
 def cli() -> None:
     project_name = read_project_name_from_setup()
@@ -457,5 +466,15 @@ def cli() -> None:
     elif operation == 'deploy':
         _cli_deploy_dags(args)
         _cli_deploy_image(args)
+    elif operation == 'build-dags':
+        _cli_build_dags(args)
+    elif operation == 'build-image':
+        _cli_build_image(args)
+    elif operation == 'build-package':
+        _cli_build_package(args)
+    elif operation == 'build':
+        _cli_build_dags(args)
+        _cli_build_image(args)
+        _cli_build_package(args)
     else:
         raise ValueError(f'Operation unknown - {operation}')
