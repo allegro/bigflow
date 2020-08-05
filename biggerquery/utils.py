@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 import zipfile
 import tempfile
 import shutil
@@ -8,6 +9,10 @@ import functools
 from google.api_core.exceptions import BadRequest
 
 logger = logging.getLogger(__name__)
+
+
+def resolve(path: Path):
+    return str(path.absolute())
 
 
 def not_none_or_error(arg_value, arg_name):

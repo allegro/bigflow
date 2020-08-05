@@ -7,6 +7,10 @@ from better_setuptools_git_version import get_version as base_get_version
 
 VERSION_PATTERN = re.compile(r'^(\d+\.)?(\d+\.)?(\w+)$')
 
+__all__ = [
+    'get_version'
+]
+
 
 def git_tag_command(tag):
     print(f'setting git tag {tag}')
