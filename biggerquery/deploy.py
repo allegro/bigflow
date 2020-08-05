@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from google.cloud.storage import Bucket
 from google.oauth2 import credentials
 from subprocess import run
 import requests
@@ -36,7 +37,7 @@ def deploy_docker_image(build_ver: str, docker_repository: str, auth_method: str
     return docker_image
 
 
-def deploy_dags_folder(dags_dir: str, dags_bucket:str, project_id: str, clear_dags_folder=False,
+def deploy_dags_folder(dags_dir: str, dags_bucket: str, project_id: str, clear_dags_folder: bool = False,
                        auth_method: str = 'local_account', vault_endpoint: str = None, vault_secret: str = None,
                        gs_client=None):
 
@@ -52,7 +53,7 @@ def deploy_dags_folder(dags_dir: str, dags_bucket:str, project_id: str, clear_da
     return dags_bucket
 
 
-def clear_remote_DAGs_bucket(bucket):
+def clear_remote_DAGs_bucket(bucket: Bucket):
     i = 0
     for blob in bucket.list_blobs(prefix='dags'):
         if not blob.name in ['dags/', 'dags/airflow_monitoring.py']:
@@ -67,7 +68,7 @@ def blob_URI(blob):
     return f"gs://{blob.bucket.name}/{blob.name}"
 
 
-def upload_DAGs_folder(dags_dir: str, bucket):
+def upload_DAGs_folder(dags_dir: str, bucket: Bucket):
     dags_dir_path = Path(dags_dir)
 
     def upload_file(local_file_path, target_file_name):
