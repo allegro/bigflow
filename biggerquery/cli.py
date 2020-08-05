@@ -142,7 +142,7 @@ def build_project_name_description(project_name: str) -> str:
 
 def find_root_package(project_name: Optional[str], project_dir: Optional[str]) -> Path:
     """
-    Finds project package path. Tries first to find locatin in project_setup.PROJECT_NAME,
+    Finds project package path. Tries first to find location in project_setup.PROJECT_NAME,
     and if not found then by making a path to the `root` module
 
     @param project_dir: Path to the root package of a project, used only when PROJECT_NAME not set
@@ -170,10 +170,12 @@ def _decode_version_number_from_file_name(file_path: Path):
 
 def import_deployment_config(deployment_config_path: str, property_name: str):
     if not Path(deployment_config_path).exists():
-        raise ValueError(f"Can't find '{property_name}' property in deployment_config.py in {{current_dir}}. If your deployment_config.py is elswhere, "
-                         "you can set path to it using --deployment-config-path. If you are not using deployment_config.py -- "
+        raise ValueError(f"Can't find deployment_config.py at '{deployment_config_path}'. "
+                         f"Property '{property_name}' can't be resolved. "
+                          "If your deployment_config.py is elswhere, "
+                          "you can set path to it using --deployment-config-path. If you are not using deployment_config.py -- "
                          f"set '{property_name}' property as a command line argument.")
-    spec = importlib.util.spec_from_file_location("deployment_config", deployment_config_path)
+    spec = importlib.util.spec_from_file_location('deployment_config', deployment_config_path)
 
     if not spec:
         raise ValueError(f'Failed to load deployment_config from {deployment_config_path}. '
@@ -313,41 +315,42 @@ def _add_deploy_parsers_common_arguments(parser):
     parser.add_argument('-a', '--auth-method',
                         type=str,
                         default='local_account',
-                        help="One of two authentication metho: "
-                             "local_account -- you are using credentials of your local user authenticated in gcloud; "
-                             "service_account -- credentials for service account are obtained from Vault. "
-                             "Default: local_account",
+                        help='One of two authentication method: '
+                             'local_account -- you are using credentials of your local user authenticated in gcloud; '
+                             'service_account -- credentials for service account are obtained from Vault. '
+                             'Default: local_account',
                         choices=['local_account', 'service_account'])
     parser.add_argument('-ve', '--vault-endpoint',
                         type=str,
-                        help="URL of a Vault endpoint to get OAuth token for service account."
-                             " Required if auth-method is service_account."
-                             " If not set, will be read from deployment_config.py"
+                        help='URL of a Vault endpoint to get OAuth token for service account. '
+                             'Required if auth-method is service_account. '
+                             'If not set, will be read from deployment_config.py.'
                         )
     parser.add_argument('-vs', '--vault-secret',
                         type=str,
-                        help="Vault secret token."
-                             " Required if auth-method is service_account."
+                        help='Vault secret token. '
+                             'Required if auth-method is service_account.'
                         )
     parser.add_argument('-dc', '--deployment-config-path',
                         type=str,
-                        help="Path to the deployment_config.py file."
-                             " If not set, {current_dir}/deployment_config.py will be used.")
+                        help='Path to the deployment_config.py file. '
+                             'If not set, {current_dir}/deployment_config.py will be used.')
 
     _add_parsers_common_arguments(parser)
 
 def _create_deploy_parser(subparsers):
     parser = subparsers.add_parser('deploy',
-                                   description='BiggerQuery CLI deploy command -- performs complete deployment: deploys DAG files to Composer and Docker images to Container Registry.')
+                                   description='Performs complete deployment. Uploads DAG files from local DAGs folder '
+                                               'to Composer and uploads Docker image to Container Registry.')
 
-    _add_deploy_dags_parser__arguments(parser)
+    _add_deploy_dags_parser_arguments(parser)
     _add_deploy_image_parser_argumentss(parser)
     _add_deploy_parsers_common_arguments(parser)
 
 
 def _create_deploy_image_parser(subparsers):
     parser = subparsers.add_parser('deploy-image',
-                                   description='BiggerQuery CLI deploy-image command -- deploys Docker images to Container Registry.'
+                                   description='Uploads Docker image to Container Registry.'
                                    )
 
     _add_deploy_image_parser_argumentss(parser)
@@ -356,9 +359,9 @@ def _create_deploy_image_parser(subparsers):
 
 def _create_deploy_dags_parser(subparsers):
     parser = subparsers.add_parser('deploy-dags',
-                                   description='BiggerQuery CLI deploy-dags command -- deploys DAG files from local .dagss folder to Composer.')
+                                   description='Uploads DAG files from local DAGs folder to Composer.')
 
-    _add_deploy_dags_parser__arguments(parser)
+    _add_deploy_dags_parser_arguments(parser)
     _add_deploy_parsers_common_arguments(parser)
 
 
@@ -377,7 +380,7 @@ def _add_deploy_image_parser_argumentss(parser):
                              ' If so, with the following naming schema: {HOSTNAME}/{PROJECT-ID}/{IMAGE}.'
                         )
 
-def _add_deploy_dags_parser__arguments(parser):
+def _add_deploy_dags_parser_arguments(parser):
     parser.add_argument('-dd', '--dags-dir',
                         type=str,
                         help="Path to the folder with DAGs to deploy."
@@ -403,13 +406,13 @@ def read_project_package(args):
 def _resolve_deployment_config_path(args):
     if args.deployment_config_path:
         return args.deployment_config_path
-    return os.getcwd()+'/deployment_config.py'
+    return os.path.join(os.getcwd(), 'deployment_config.py')
 
 
 def _resolve_dags_dir(args):
     if args.dags_dir:
         return args.dags_dir
-    return os.getcwd()+'/.dags'
+    return os.path.join(os.getcwd(), '.dags')
 
 
 def _resolve_vault_endpoint(args):
@@ -417,6 +420,7 @@ def _resolve_vault_endpoint(args):
         return _resolve_property(args, 'vault_endpoint')
     else:
         return None
+
 
 def _resolve_property(args, property_name):
     cli_atr = getattr(args, property_name)
@@ -438,15 +442,16 @@ def _cli_deploy_dags(args):
                        )
 
 
-def _load_image_from_tar(image_tar_path:str):
+def _load_image_from_tar(image_tar_path: str):
     print(f'Loading Docker image from {image_tar_path} ...', )
+
 
 def _cli_deploy_image(args):
     if args.image_tar_path:
         build_ver = _decode_version_number_from_file_name(Path(args.image_tar_path))
         load_image_from_tar(args.image_tar_path)
     else:
-        build_ver = build_ver=args.version
+        build_ver = args.version
 
     deploy_docker_image(build_ver=build_ver,
                         auth_method=args.auth_method,
@@ -470,7 +475,6 @@ def _cli_build_dags(args):
 
 
 def cli(raw_args) -> None:
-    print("raw_args", raw_args)
     project_name = read_project_name_from_setup()
     parsed_args = _parse_args(project_name, raw_args)
     operation = parsed_args.operation
