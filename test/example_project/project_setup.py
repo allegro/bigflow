@@ -1,6 +1,7 @@
 from pathlib import Path
 from setuptools import setup
-import biggerquery.build as build
+
+from biggerquery import build
 
 PROJECT_NAME = 'main_package'
 BUILD_PATH = Path('.').parent / 'build'
@@ -13,6 +14,8 @@ ROOT_PACKAGE = Path('.').parent / 'main_package'
 PROJECT_DIR = Path('.').parent
 DOCKER_REPOSITORY = 'test_docker_repository'
 DEPLOYMENT_CONFIG_PATH = Path('.').parent / 'deployment_config.py'
+REQUIREMENTS_PATH = Path('.').parent / 'resources' / 'requirements2.txt'
+RESOURCES_PATH = Path('.').parent / 'resources'
 
 if __name__ == '__main__':
     setup(**build.project_setup(
@@ -26,4 +29,7 @@ if __name__ == '__main__':
         image_dir=IMAGE_DIR_PATH,
         eggs_dir=EGGS_DIR_PATH,
         deployment_config=DEPLOYMENT_CONFIG_PATH,
-        docker_repository=DOCKER_REPOSITORY))
+        docker_repository=DOCKER_REPOSITORY,
+        version='0.1.0',
+        resources_dir=RESOURCES_PATH,
+        project_requirements_file=REQUIREMENTS_PATH))
