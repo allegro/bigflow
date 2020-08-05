@@ -8,7 +8,7 @@ from biggerquery.build import now, get_docker_image_id, build_docker_image_tag, 
     clear_image_leftovers, clear_package_leftovers, clear_dags_leftovers
 from example_project.project_setup import DOCKER_REPOSITORY, PROJECT_NAME
 
-TEST_PROJECT_PATH = Path('./example_project')
+TEST_PROJECT_PATH = Path(__file__) / 'example_project'
 IMAGE_DIR_PATH = TEST_PROJECT_PATH / 'image'
 DAGS_DIR_PATH = TEST_PROJECT_PATH / '.dags'
 DIST_DIR_PATH = TEST_PROJECT_PATH / 'dist'
