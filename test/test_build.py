@@ -6,7 +6,7 @@ from unittest import TestCase
 from biggerquery.cli import walk_module_files
 from biggerquery.build import now, get_docker_image_id, build_docker_image_tag, \
     clear_image_leftovers, clear_package_leftovers, clear_dags_leftovers
-from example_project.setup import DOCKER_REPOSITORY, PROJECT_NAME
+from example_project.project_setup import DOCKER_REPOSITORY, PROJECT_NAME
 
 TEST_PROJECT_PATH = Path('./example_project')
 IMAGE_DIR_PATH = TEST_PROJECT_PATH / 'image'
@@ -131,7 +131,7 @@ class BuildProjectE2E(SetupTestCase):
         create_package_leftovers()
         create_image_leftovers()
         create_dags_leftovers()
-        self.test_project.run_build('python setup.py build_project')
+        self.test_project.run_build('python project_setup.py build_project')
 
         # then
         self.assertTrue(python_package_built())
@@ -154,7 +154,7 @@ class BuildPackageCommandE2E(SetupTestCase):
         clear_dags_leftovers(DAGS_DIR_PATH)
 
         # when
-        self.test_project.run_build('python setup.py build_project --build-package')
+        self.test_project.run_build('python project_setup.py build_project --build-package')
 
         # then
         self.assertTrue(python_package_built())
@@ -171,7 +171,7 @@ class BuildDagsCommandE2E(SetupTestCase):
         clear_package_leftovers(DIST_DIR_PATH, EGGS_DIR_PATH, BUILD_PATH)
 
         # when
-        self.test_project.run_build('python setup.py build_project --build-dags')
+        self.test_project.run_build('python project_setup.py build_project --build-dags')
 
         # then
         self.assertTrue(dags_built(TEST_PROJECT_PATH, 2))
@@ -179,13 +179,13 @@ class BuildDagsCommandE2E(SetupTestCase):
         self.assertTrue(dags_contain(TEST_PROJECT_PATH, now(template="%Y-%m-%d")))
 
         # when
-        self.test_project.run_build("python setup.py build_project --build-dags --start-time '2020-01-02 00:00:00'")
+        self.test_project.run_build("python project_setup.py build_project --build-dags --start-time '2020-01-02 00:00:00'")
 
         # then
         self.assertTrue(dags_contain(TEST_PROJECT_PATH, '2020-01-02'))
 
         # when
-        self.test_project.run_build('python setup.py build_project --build-dags --workflow workflow1')
+        self.test_project.run_build('python project_setup.py build_project --build-dags --workflow workflow1')
 
         # then
         self.assertTrue(self.single_dag_for_workflow_exists('workflow1'))
@@ -206,10 +206,10 @@ class BuildImageCommandE2E(SetupTestCase):
         create_image_leftovers()
         clear_dags_leftovers(DAGS_DIR_PATH)
         clear_package_leftovers(DIST_DIR_PATH, EGGS_DIR_PATH, BUILD_PATH)
-        self.test_project.run_build('python setup.py build_project --build-package')
+        self.test_project.run_build('python project_setup.py build_project --build-package')
 
         # when
-        self.test_project.run_build('python setup.py build_project --build-image')
+        self.test_project.run_build('python project_setup.py build_project --build-image')
 
         # then
         self.assertFalse(image_leftovers_exist())
@@ -218,10 +218,10 @@ class BuildImageCommandE2E(SetupTestCase):
 
     def test_should_export_image_to_file(self):
         # given
-        self.test_project.run_build('python setup.py build_project --build-package')
+        self.test_project.run_build('python project_setup.py build_project --build-package')
 
         # when
-        self.test_project.run_build('python setup.py build_project --build-image --export-image-to-file')
+        self.test_project.run_build('python project_setup.py build_project --build-image --export-image-to-file')
 
         # then
         self.assertTrue(docker_image_as_file_built())
