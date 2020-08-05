@@ -1,6 +1,7 @@
 import argparse
 import importlib
 import os
+import subprocess
 import sys
 from argparse import Namespace
 from datetime import datetime
@@ -229,40 +230,46 @@ def _parse_args(project_name: Optional[str], args) -> Namespace:
 
     _create_build_dags_parser(subparsers)
     _create_build_image_parser(subparsers)
+    _create_build_package_parser(subparsers)
     _create_build_parser(subparsers)
 
     return parser.parse_args(args)
 
 
 def _create_build_parser(subparsers):
-    parser = subparsers.add_parser('build', description='')
+    parser = subparsers.add_parser('build', description='Builds docker image, DAG files and .whl package from local files.')
     _add_build_dags_parser_arguments(parser)
     _add_build_image_parser_arguments(parser)
+
+
+def _create_build_package_parser(subparsers):
+    subparsers.add_parser('build-package', description='Builds .whl package from local files.')
 
 
 def _add_build_dags_parser_arguments(parser):
     parser.add_argument('-w', '--workflow',
                         type=str,
-                        help="")
-    parser.add_argument('-r', '--runtime',
-                        help="")
+                        help='The id of the workflow to start.')
+    parser.add_argument('-t', '--start-time',
+                        help='The date and time for which workflow should work.')
 
 
 def _add_build_image_parser_arguments(parser):
     parser.add_argument('-e', '--export-image-to-file',
-                        type=bool,
-                        help="")
+                        default=False,
+                        action="store_true",
+                        help="If set to true image will be exported to file.")
 
 
 def _create_build_dags_parser(subparsers):
     parser = subparsers.add_parser('build-dags',
-                                   description='')
+                                   description='Builds DAG files from local files.')
     _add_build_dags_parser_arguments(parser)
 
 
 def _create_build_image_parser(subparsers):
     parser = subparsers.add_parser('build-image',
-                                   description='')
+                                   description='Builds docker image from local files.')
     _add_build_image_parser_arguments(parser)
 
 
@@ -449,13 +456,17 @@ def _cli_deploy_image(args):
                         )
 
 def _cli_build_image(args):
-    pass
+    cmd = 'python setup.py build_project --build-image' + (' --e' if args.export_image_to_file else '')
+    subprocess.getoutput(cmd)
 
-def _cli_build_package(args):
-    pass
+def _cli_build_package():
+    cmd = 'python setup.py build_project --build-package'
+    subprocess.getoutput(cmd)
 
 def _cli_build_dags(args):
-    pass
+    cmd = 'python setup.py build_project --build-dags' + ((' --w ' + args.workflow) if args.workflow else '') + \
+          ((' --t ' + args.start_time) if args.start_time else '')
+    subprocess.getoutput(cmd)
 
 
 def cli(raw_args) -> None:
@@ -476,14 +487,14 @@ def cli(raw_args) -> None:
         _cli_deploy_dags(parsed_args)
         _cli_deploy_image(parsed_args)
     elif operation == 'build-dags':
-        _cli_build_dags(args)
+        _cli_build_dags(parsed_args)
     elif operation == 'build-image':
-        _cli_build_image(args)
+        _cli_build_image(parsed_args)
     elif operation == 'build-package':
-        _cli_build_package(args)
+        _cli_build_package()
     elif operation == 'build':
-        _cli_build_dags(args)
-        _cli_build_image(args)
-        _cli_build_package(args)
+        _cli_build_dags(parsed_args)
+        _cli_build_image(parsed_args)
+        _cli_build_package()
     else:
         raise ValueError(f'Operation unknown - {operation}')

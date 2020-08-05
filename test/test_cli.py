@@ -556,6 +556,84 @@ deployment_config = Config(name='dev',
 
         dc_file.unlink()
 
+    @mock.patch('biggerquery.cli._cli_build_dags')
+    def test_should_call_cli_build_dags_command(self, _cli_build_dags_mock):
+        # when
+        cli(['build-dags'])
+
+        # then
+        _cli_build_dags_mock.assert_called_with(Namespace(operation='build-dags', start_time=None, workflow=None))
+
+        # when
+        cli(['build-dags', '-t', '2020-01-01 00:00:00'])
+
+        # then
+        _cli_build_dags_mock.assert_called_with(Namespace(operation='build-dags', start_time='2020-01-01 00:00:00', workflow=None))
+
+        # when
+        cli(['build-dags', '-w', 'some_workflow'])
+
+        # then
+        _cli_build_dags_mock.assert_called_with(Namespace(operation='build-dags', start_time=None, workflow='some_workflow'))
+
+        # when
+        cli(['build-dags', '-w', 'some_workflow', '-t', '2020-01-01 00:00:00'])
+
+        # then
+        _cli_build_dags_mock.assert_called_with(Namespace(operation='build-dags', start_time='2020-01-01 00:00:00', workflow='some_workflow'))
+
+    @mock.patch('biggerquery.cli._cli_build_image')
+    def test_should_call_cli_build_image_command(self, _cli_build_image_mock):
+        # when
+        cli(['build-image'])
+
+        # then
+        _cli_build_image_mock.assert_called_with(Namespace(operation='build-image', export_image_to_file=False))
+
+        # when
+        cli(['build-image', '-e'])
+
+        # then
+        _cli_build_image_mock.assert_called_with(Namespace(operation='build-image', export_image_to_file=True))
+
+    @mock.patch('biggerquery.cli._cli_build_package')
+    def test_should_call_cli_build_package_command(self, _cli_build_package_mock):
+        # when
+        cli(['build-package'])
+
+        # then
+        _cli_build_package_mock.assert_called_with()
+
+    @mock.patch('biggerquery.cli._cli_build_package')
+    @mock.patch('biggerquery.cli._cli_build_dags')
+    @mock.patch('biggerquery.cli._cli_build_image')
+    def test_should_call_cli_build_command(self, _cli_build_package_mock, _cli_build_dags_mock, _cli_build_image_mock):
+        # when
+        cli(['build'])
+
+        # then
+        _cli_build_package_mock.assert_called_with(Namespace(operation='build', export_image_to_file=False,
+                                                             start_time=None, workflow=None))
+        # when
+        cli(['build', '-e'])
+
+        # then
+        _cli_build_package_mock.assert_called_with(Namespace(operation='build', export_image_to_file=True,
+                                                             start_time=None, workflow=None))
+
+        # when
+        cli(['build', '-e', '-t', '2020-01-01 00:00:00'])
+
+        # then
+        _cli_build_package_mock.assert_called_with(Namespace(operation='build', export_image_to_file=True,
+                                                             start_time='2020-01-01 00:00:00', workflow=None))
+
+        # when
+        cli(['build', '-e', '-t', '2020-01-01 00:00:00', '-w', 'some_workflow'])
+
+        # then
+        _cli_build_package_mock.assert_called_with(Namespace(operation='build', export_image_to_file=True,
+                                                             start_time='2020-01-01 00:00:00', workflow='some_workflow'))
 
     def _touch_file(self, file_name: str, content: str = ''):
         workdir = Path(os.path.dirname(__file__))
