@@ -1,4 +1,5 @@
 from unittest import TestCase
+import mock
 
 from biggerquery.cli import *
 from biggerquery.cli import _decode_version_number_from_file_name
@@ -264,7 +265,7 @@ class CliTestCase(TestCase):
         f_release.unlink()
         f_dev.unlink()
 
-    def test_raise_error_when_given_file_is_not_tar(self):
+    def test_should_raise_error_when_given_image_file_is_not_tar(self):
         # given
         f = self._touch_file('image-0.1.0.zip')
 
@@ -274,7 +275,7 @@ class CliTestCase(TestCase):
 
         f.unlink()
 
-    def test_raise_error_when_given_file_name_has_wrong_pattern(self):
+    def test_should_raise_error_when_given_file_name_has_wrong_pattern(self):
         # given
         f = self._touch_file('image.0.1.0.tar')
 
@@ -284,14 +285,258 @@ class CliTestCase(TestCase):
 
         f.unlink()
 
-    def test_raise_error_when_given_file_does_not_exists(self):
+    def test_should_raise_error_when_given_file_does_not_exists(self):
         with self.assertRaises(ValueError):
             # when
             _decode_version_number_from_file_name(Path('/Users/image-0.1122123.0.tar'))
 
-    def _touch_file(self, file_name):
+    def test_should_raise_error_when_deployment_config_is_needed_but_missing(self):
+        with self.assertRaises(ValueError):
+            # when
+            cli(['deploy-dags'])
+
+    @mock.patch('biggerquery.cli.deploy_dags_folder')
+    def test_should_call_cli_deploy_dags_command__with_defaults_and_with_implicit_deployment_config_file(self, deploy_dags_folder_mock):
+        #given
+        dc_file = self._touch_file('deployment_config.py',
+        '''
+from biggerquery import Config
+
+deployment_config = Config(name='dev',
+                           properties={
+                               'gcp_project_id': 'my-gcp-project-id',
+                               'dags_bucket': 'my-dags-bucket'
+                           })
+        ''')
+
+        #when
+        cli(['deploy-dags'])
+
+        #then
+        deploy_dags_folder_mock.assert_called_with(auth_method='local_account',
+                                                   clear_dags_folder=False,
+                                                   dags_bucket='my-dags-bucket',
+                                                   dags_dir=(Path(os.path.dirname(__file__)) / '.dags').as_posix(),
+                                                   project_id='my-gcp-project-id',
+                                                   vault_endpoint=None,
+                                                   vault_secret=None)
+
+        dc_file.unlink()
+
+    @mock.patch('biggerquery.cli.deploy_dags_folder')
+    def test_should_call_cli_deploy_dags_command_for_different_environments(self, deploy_dags_folder_mock):
+        # given
+        dc_file = self._touch_file('deployment_config.py',
+        '''
+from biggerquery import Config
+
+deployment_config = Config(name='dev',
+                          properties={
+                              'gcp_project_id': 'my-gcp-dev-project-id',
+                              'dags_bucket': 'my-dags-dev-bucket'
+                          })\
+    .add_configuration(name='prod', 
+                          properties={
+                              'gcp_project_id': 'my-gcp-prod-project-id',
+                              'dags_bucket': 'my-dags-prod-bucket'
+}                          
+                          
+        ''')
+
+        # when
+        cli(['deploy-dags'])
+
+        # then
+        deploy_dags_folder_mock.assert_called_with(auth_method='local_account',
+                                                   clear_dags_folder=False,
+                                                   dags_bucket='my-dags-bucket',
+                                                   dags_dir=(Path(os.path.dirname(__file__)) / '.dags').as_posix(),
+                                                   project_id='my-gcp-project-id',
+                                                   vault_endpoint=None,
+                                                   vault_secret=None)
+
+        dc_file.unlink()
+
+    @mock.patch('biggerquery.cli.deploy_dags_folder')
+    def test_should_call_cli_deploy_dags_command__when_parameters_are_given_by_explicit_deployment_config_file(self, deploy_dags_folder_mock):
+        # given
+        dc_file = self._touch_file('deployment_config_another.py',
+        '''
+from biggerquery import Config
+
+deployment_config = Config(name='dev',
+                        properties={
+                               'gcp_project_id': 'my-another-gcp-project-id',
+                               'vault_endpoint': 'my-another-vault-endpoint',
+                               'dags_bucket': 'my-another-dags-bucket'
+                        })
+        ''')
+
+        #when
+        cli(['deploy-dags',
+             '--deployment-config-path', dc_file.as_posix(),
+             '--dags-dir', '/tmp/my-dags-dir',
+             '--auth-method', 'service_account',
+             '--vault-secret', 'secrett'
+            ])
+
+        #then
+        deploy_dags_folder_mock.assert_called_with(auth_method='service_account',
+                                                   clear_dags_folder=False,
+                                                   dags_bucket='my-another-dags-bucket',
+                                                   dags_dir='/tmp/my-dags-dir',
+                                                   project_id='my-another-gcp-project-id',
+                                                   vault_endpoint='my-another-vault-endpoint',
+                                                   vault_secret='secrett')
+
+        dc_file.unlink()
+
+    @mock.patch('biggerquery.cli.deploy_dags_folder')
+    def test_should_call_cli_deploy_dags_command__when_all_parameters_are_given_by_cli_arguments(self, deploy_dags_folder_mock):
+        #when
+        cli(['deploy-dags',
+             '--dags-bucket', 'my-dags-bucket',
+             '--dags-dir', '/tmp/my-dags-dir',
+             '--vault-endpoint', 'my-vault-endpoint',
+             '--gcp-project-id', 'my-gcp-project-id',
+             '--auth-method', 'service_account',
+             '--clear-dags-folder',
+             '--vault-secret', 'secrett'
+            ])
+
+        #then
+        deploy_dags_folder_mock.assert_called_with(auth_method='service_account',
+                                                   clear_dags_folder=True,
+                                                   dags_bucket='my-dags-bucket',
+                                                   dags_dir='/tmp/my-dags-dir',
+                                                   project_id='my-gcp-project-id',
+                                                   vault_endpoint='my-vault-endpoint',
+                                                   vault_secret='secrett')
+
+
+    @mock.patch('biggerquery.cli.deploy_docker_image')
+    def test_should_call_cli_deploy_image_command__with_defaults_and_with_implicit_deployment_config_file(self, deploy_docker_image_mock):
+        # given
+        dc_file = self._touch_file('deployment_config.py',
+        '''
+from biggerquery import Config
+
+deployment_config = Config(name='dev',
+                          properties={
+                              'docker_repository': 'my-docker--repository'
+                          })
+        ''')
+
+        # when
+        cli(['deploy-image', '-v', '0.0.2'])
+
+        #then
+        deploy_docker_image_mock.assert_called_with(auth_method='local_account',
+                                                    docker_repository='my-docker--repository',
+                                                    build_ver='0.0.2',
+                                                    vault_endpoint=None,
+                                                    vault_secret=None)
+
+        dc_file.unlink()
+
+    @mock.patch('biggerquery.cli.deploy_docker_image')
+    def test_should_call_cli_deploy_image_command__with_explicit_deployment_config_file(self, deploy_docker_image_mock):
+        # given
+        dc_file = self._touch_file('my_deployment_config.py',
+        '''
+from biggerquery import Config
+
+deployment_config = Config(name='dev',
+                         properties={
+                             'docker_repository': 'my-another-docker-repository' ,
+                             'vault_endpoint' : 'my-another-vault-endpoint'   
+                         })
+        ''')
+
+        # when
+        cli(['deploy-image',
+             '-v', '0.0.3',
+             '--deployment-config-path', dc_file.as_posix(),
+             '--auth-method', 'service_account',
+             '--vault-secret', 'secrett'
+             ])
+
+        # then
+        deploy_docker_image_mock.assert_called_with(auth_method='service_account',
+                                                    docker_repository='my-another-docker-repository',
+                                                    build_ver='0.0.3',
+                                                    vault_endpoint='my-another-vault-endpoint',
+                                                    vault_secret='secrett')
+
+        dc_file.unlink()
+
+    @mock.patch('biggerquery.cli.load_image_from_tar')
+    @mock.patch('biggerquery.cli.deploy_docker_image')
+    def test_should_call_cli_deploy_image_command__when_all_parameters_are_given_by_cli_arguments_and_image_is_loaded_from_tar(self, deploy_docker_image_mock, load_image_from_tar_mock):
+        #given
+        tar = self._touch_file('image-0.0.1.tar')
+
+        #when
+        cli(['deploy-image',
+             '--image-tar-path', tar.as_posix(),
+             '--docker-repository', 'my-docker-repository',
+             '--vault-endpoint', 'my-vault-endpoint',
+             '--auth-method', 'service_account',
+             '--vault-secret', 'secrett'
+            ])
+
+        #then
+        deploy_docker_image_mock.assert_called_with(auth_method='service_account',
+                                                    docker_repository='my-docker-repository',
+                                                    build_ver='0.0.1',
+                                                    vault_endpoint='my-vault-endpoint',
+                                                    vault_secret='secrett')
+
+        tar.unlink()
+
+    @mock.patch('biggerquery.cli.deploy_dags_folder')
+    @mock.patch('biggerquery.cli.deploy_docker_image')
+    def test_should_call_both_deploy_methods_with_deploy_command(self, deploy_docker_image_mock, deploy_dags_folder_mock):
+        # given
+        dc_file = self._touch_file('deployment_config.py',
+        '''
+from biggerquery import Config
+
+deployment_config = Config(name='dev',
+                         properties={
+                             'docker_repository': 'my-docker--repository',
+                             'gcp_project_id': 'my-gcp-project-id',
+                            'dags_bucket': 'my-dags-bucket'
+                         })
+        ''')
+
+        # when
+        cli(['deploy', '-v', '0.0.2'])
+
+
+
+        # then
+        deploy_dags_folder_mock.assert_called_with(auth_method='local_account',
+                                                   clear_dags_folder=False,
+                                                   dags_bucket='my-dags-bucket',
+                                                   dags_dir=(Path(os.path.dirname(__file__)) / '.dags').as_posix(),
+                                                   project_id='my-gcp-project-id',
+                                                   vault_endpoint=None,
+                                                   vault_secret=None)
+
+        deploy_docker_image_mock.assert_called_with(auth_method='local_account',
+                                                    docker_repository='my-docker--repository',
+                                                    build_ver='0.0.2',
+                                                    vault_endpoint=None,
+                                                    vault_secret=None)
+
+        dc_file.unlink()
+
+
+    def _touch_file(self, file_name: str, content: str = ''):
         workdir = Path(os.path.dirname(__file__))
         f = workdir / file_name
         f.touch()
+        f.write_text(content)
         return f
 
