@@ -2,7 +2,7 @@ from unittest import TestCase
 from pathlib import Path
 from biggerquery.resources import find_all_resources, read_requirements
 
-TEST_PROJECT_PATH = Path('./example_project')
+TEST_PROJECT_PATH = Path('.') / 'example_project'
 
 
 class FindAllResourcesTestCase(TestCase):
