@@ -167,7 +167,11 @@ def _decode_version_number_from_file_name(file_path: Path):
     return split[1]
 
 
-def import_deployment_config(deployment_config_path: str):
+def import_deployment_config(deployment_config_path: str, property_name: str):
+    if not Path(deployment_config_path).exists():
+        raise ValueError(f"Can't find '{property_name}' property in deployment_config.py in {{current_dir}}. If your deployment_config.py is elswhere, "
+                         "you can set path to it using --deployment-config-path. If you are not using deployment_config.py -- "
+                         f"set '{property_name}' property as a command line argument.")
     spec = importlib.util.spec_from_file_location("deployment_config", deployment_config_path)
 
     if not spec:
@@ -210,7 +214,7 @@ def cli_run(project_package: str,
         raise ValueError('You must provide the --job or --workflow for the run command.')
 
 
-def _parse_args(project_name: Optional[str]) -> Namespace:
+def _parse_args(project_name: Optional[str], args) -> Namespace:
     project_name_description = build_project_name_description(project_name)
     parser = argparse.ArgumentParser(description=f'Welcome to BiggerQuery CLI. {project_name_description}'
                                                   '\nType: bgq {run,deploy-dags,deploy-image,deploy,build,build-dags,build-image,build-package} -h to print detailed help for selected command.')
@@ -227,7 +231,7 @@ def _parse_args(project_name: Optional[str]) -> Namespace:
     _create_build_image_parser(subparsers)
     _create_build_parser(subparsers)
 
-    return parser.parse_args()
+    return parser.parse_args(args)
 
 
 def _create_build_parser(subparsers):
@@ -401,12 +405,18 @@ def _resolve_dags_dir(args):
     return os.getcwd()+'/.dags'
 
 
+def _resolve_vault_endpoint(args):
+    if args.auth_method == 'service_account':
+        return _resolve_property(args, 'vault_endpoint')
+    else:
+        return None
+
 def _resolve_property(args, property_name):
     cli_atr = getattr(args, property_name)
     if cli_atr:
         return cli_atr
     else:
-        config = import_deployment_config(_resolve_deployment_config_path(args))
+        config = import_deployment_config(_resolve_deployment_config_path(args), property_name)
         return config.resolve_property(property_name, args.config)
 
 
@@ -415,7 +425,7 @@ def _cli_deploy_dags(args):
                        dags_bucket=_resolve_property(args, 'dags_bucket'),
                        clear_dags_folder=args.clear_dags_folder,
                        auth_method=args.auth_method,
-                       vault_endpoint=_resolve_property(args, 'vault_endpoint'),
+                       vault_endpoint=_resolve_vault_endpoint(args),
                        vault_secret=args.vault_secret,
                        project_id=_resolve_property(args, 'gcp_project_id')
                        )
@@ -434,7 +444,7 @@ def _cli_deploy_image(args):
     deploy_docker_image(build_ver=build_ver,
                         auth_method=args.auth_method,
                         docker_repository=_resolve_property(args, 'docker_repository'),
-                        vault_endpoint=_resolve_property(args, 'vault_endpoint'),
+                        vault_endpoint=_resolve_vault_endpoint(args),
                         vault_secret=args.vault_secret
                         )
 
@@ -448,24 +458,23 @@ def _cli_build_dags(args):
     pass
 
 
-def cli() -> None:
+def cli(raw_args) -> None:
+    print("raw_args", raw_args)
     project_name = read_project_name_from_setup()
-    args = _parse_args(project_name)
-    operation = args.operation
-
-    print('Config env name is:', args.config)
+    parsed_args = _parse_args(project_name, raw_args)
+    operation = parsed_args.operation
 
     if operation == 'run':
-        set_configuration_env(args.config)
-        root_package = find_root_package(project_name, read_project_package(args))
-        cli_run(root_package, args.runtime, args.job, args.workflow)
+        set_configuration_env(parsed_args.config)
+        root_package = find_root_package(project_name, read_project_package(parsed_args))
+        cli_run(root_package, parsed_args.runtime, parsed_args.job, parsed_args.workflow)
     elif operation == 'deploy-image':
-        _cli_deploy_image(args)
+        _cli_deploy_image(parsed_args)
     elif operation == 'deploy-dags':
-        _cli_deploy_dags(args)
+        _cli_deploy_dags(parsed_args)
     elif operation == 'deploy':
-        _cli_deploy_dags(args)
-        _cli_deploy_image(args)
+        _cli_deploy_dags(parsed_args)
+        _cli_deploy_image(parsed_args)
     elif operation == 'build-dags':
         _cli_build_dags(args)
     elif operation == 'build-image':
