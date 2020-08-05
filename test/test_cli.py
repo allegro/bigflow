@@ -339,7 +339,7 @@ deployment_config = Config(name='dev',
                           properties={
                               'gcp_project_id': 'my-gcp-prod-project-id',
                               'dags_bucket': 'my-dags-prod-bucket'
-}                          
+                          })                          
                           
         ''')
 
@@ -349,9 +349,33 @@ deployment_config = Config(name='dev',
         # then
         deploy_dags_folder_mock.assert_called_with(auth_method='local_account',
                                                    clear_dags_folder=False,
-                                                   dags_bucket='my-dags-bucket',
+                                                   dags_bucket='my-dags-dev-bucket',
                                                    dags_dir=(Path(os.path.dirname(__file__)) / '.dags').as_posix(),
-                                                   project_id='my-gcp-project-id',
+                                                   project_id='my-gcp-dev-project-id',
+                                                   vault_endpoint=None,
+                                                   vault_secret=None)
+
+        # when
+        cli(['deploy-dags', '--config', 'dev'])
+
+        # then
+        deploy_dags_folder_mock.assert_called_with(auth_method='local_account',
+                                                   clear_dags_folder=False,
+                                                   dags_bucket='my-dags-dev-bucket',
+                                                   dags_dir=(Path(os.path.dirname(__file__)) / '.dags').as_posix(),
+                                                   project_id='my-gcp-dev-project-id',
+                                                   vault_endpoint=None,
+                                                   vault_secret=None)
+
+        # when
+        cli(['deploy-dags', '--config', 'prod'])
+
+        # then
+        deploy_dags_folder_mock.assert_called_with(auth_method='local_account',
+                                                   clear_dags_folder=False,
+                                                   dags_bucket='my-dags-prod-bucket',
+                                                   dags_dir=(Path(os.path.dirname(__file__)) / '.dags').as_posix(),
+                                                   project_id='my-gcp-prod-project-id',
                                                    vault_endpoint=None,
                                                    vault_secret=None)
 
