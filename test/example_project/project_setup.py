@@ -2,7 +2,7 @@ from pathlib import Path
 from setuptools import setup
 
 import sys
-sys.path.insert(0, Path(__file__).parent.parent.parent / 'biggerquery')
+sys.path.insert(0, str((Path(__file__).parent.parent.parent / 'biggerquery').absolute()))
 
 from biggerquery import build
 
