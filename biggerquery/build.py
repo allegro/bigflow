@@ -12,14 +12,17 @@ import xmlrunner
 
 from .cli import walk_workflows
 from .dagbuilder import generate_dag_file
+from .resources import read_requirements, find_all_resources
+from .utils import resolve
 
 
-def now(template="%Y-%m-%d %H:00:00"):
+__all__ = [
+    'project_setup'
+]
+
+
+def now(template: str = "%Y-%m-%d %H:00:00"):
     return datetime.now().strftime(template)
-
-
-def resolve(path: Path):
-    return str(path.absolute())
 
 
 def run_tests(build_dir: Path, test_package: Path):
@@ -46,7 +49,7 @@ def clear_package_leftovers(dist_dir: Path, eggs_dir: Path, build_dir: Path):
         shutil.rmtree(to_delete, ignore_errors=True)
 
 
-def run_process(cmd):
+def run_process(cmd: str):
     print(cmd)
     process = subprocess.Popen(cmd.split(' '), stdout=subprocess.PIPE)
     for c in iter(lambda: process.stdout.read(1), b''):
@@ -186,27 +189,6 @@ def build_command(
                     self.export_image_to_file)
 
     return BuildCommand
-
-
-def find_all_resources(resources_dir: Path):
-    for path in resources_dir.rglob('*'):
-        current_dir_path = resolve(resources_dir.parent)
-        relative_path = str(path.resolve()).replace(current_dir_path + os.sep, '')
-        if path.is_file():
-            yield relative_path
-
-
-def read_requirements(requirements_path: Path):
-    result = []
-    with open(str(requirements_path.absolute()), 'r') as base_requirements:
-        for l in base_requirements.readlines():
-            if '-r ' in l:
-                subrequirements_file_name = l.strip().replace('-r ', '')
-                subrequirements_path = requirements_path.parent / subrequirements_file_name
-                result.extend(read_requirements(subrequirements_path))
-            else:
-                result.append(l.strip())
-        return result
 
 
 def project_setup(
