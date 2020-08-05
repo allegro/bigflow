@@ -14,3 +14,5 @@ google-cloud-logging==1.14.0
 google-auth==1.11.2
 six==1.14.0
 responses==0.10.15
+better-setuptools-git-version==1.0.5
+unittest-xml-reporting==3.0.2
