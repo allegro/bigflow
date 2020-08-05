@@ -239,13 +239,13 @@ def _parse_args(project_name: Optional[str], args) -> Namespace:
 
 
 def _create_build_parser(subparsers):
-    parser = subparsers.add_parser('build', description='Builds docker image, DAG files and .whl package from local files.')
+    parser = subparsers.add_parser('build', description='Builds a Docker image, DAG files and .whl package from local sources.')
     _add_build_dags_parser_arguments(parser)
     _add_build_image_parser_arguments(parser)
 
 
 def _create_build_package_parser(subparsers):
-    subparsers.add_parser('build-package', description='Builds .whl package from local files.')
+    subparsers.add_parser('build-package', description='Builds .whl package from local sources.')
 
 
 def _valid_datetime(dt):
@@ -259,9 +259,9 @@ def _valid_datetime(dt):
 def _add_build_dags_parser_arguments(parser):
     parser.add_argument('-w', '--workflow',
                         type=str,
-                        help='The id of the workflow to start.')
+                        help='Id of a workflow to build.')
     parser.add_argument('-t', '--start-time',
-                        help='The date and time for which workflow should work.',
+                        help='Point of time from which a workflow should start working.',
                         type=_valid_datetime)
 
 
@@ -269,18 +269,18 @@ def _add_build_image_parser_arguments(parser):
     parser.add_argument('-e', '--export-image-to-file',
                         default=False,
                         action="store_true",
-                        help="If set to true image will be exported to file.")
+                        help="If true, an image is exported to a *.tar file.")
 
 
 def _create_build_dags_parser(subparsers):
     parser = subparsers.add_parser('build-dags',
-                                   description='Builds DAG files from local files.')
+                                   description='Builds DAG files from local sources to {current_dir}/.dags')
     _add_build_dags_parser_arguments(parser)
 
 
 def _create_build_image_parser(subparsers):
     parser = subparsers.add_parser('build-image',
-                                   description='Builds docker image from local files.')
+                                   description='Builds a docker image from local files.')
     _add_build_image_parser_arguments(parser)
 
 
