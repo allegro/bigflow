@@ -1,21 +1,24 @@
 from pathlib import Path
 from setuptools import setup
 
+import sys
+sys.path.insert(0, Path(__file__).parent.parent.parent / 'biggerquery')
+
 from biggerquery import build
 
+PROJECT_DIR = Path(__file__).parent
 PROJECT_NAME = 'main_package'
-BUILD_PATH = Path('.').parent / 'build'
-TEST_PATH = Path('.').parent / 'test'
-DAGS_DIR_PATH = Path('.').parent / '.dags'
-DIST_DIR_PATH = Path('.').parent / 'dist'
-IMAGE_DIR_PATH = Path('.').parent / 'image'
-EGGS_DIR_PATH = Path('.').parent / f'{PROJECT_NAME}.egg-info'
-ROOT_PACKAGE = Path('.').parent / 'main_package'
-PROJECT_DIR = Path('.').parent
+BUILD_PATH = Path(__file__).parent / 'build'
+TEST_PATH = Path(__file__).parent / 'test'
+DAGS_DIR_PATH = Path(__file__).parent / '.dags'
+DIST_DIR_PATH = Path(__file__).parent / 'dist'
+IMAGE_DIR_PATH = Path(__file__).parent / 'image'
+EGGS_DIR_PATH = Path(__file__).parent / f'{PROJECT_NAME}.egg-info'
+ROOT_PACKAGE = Path(__file__).parent / 'main_package'
 DOCKER_REPOSITORY = 'test_docker_repository'
-DEPLOYMENT_CONFIG_PATH = Path('.').parent / 'deployment_config.py'
-REQUIREMENTS_PATH = Path('.').parent / 'resources' / 'requirements2.txt'
-RESOURCES_PATH = Path('.').parent / 'resources'
+DEPLOYMENT_CONFIG_PATH = Path(__file__).parent / 'deployment_config.py'
+REQUIREMENTS_PATH = Path(__file__).parent / 'resources' / 'requirements2.txt'
+RESOURCES_PATH = Path(__file__).parent / 'resources'
 
 if __name__ == '__main__':
     setup(**build.project_setup(
