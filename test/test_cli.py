@@ -582,6 +582,11 @@ deployment_config = Config(name='dev',
         # then
         _cli_build_dags_mock.assert_called_with(Namespace(operation='build-dags', start_time='2020-01-01 00:00:00', workflow='some_workflow'))
 
+        # when
+        with self.assertRaises(SystemExit):
+            cli(['build-dags', '-w', 'some_workflow', '-t', '2020-01-01'])
+
+        _cli_build_dags_mock.assert_called_with(Namespace(operation='build-dags', start_time='2020-01-01 00:00:00', workflow='some_workflow'))
     @mock.patch('biggerquery.cli._cli_build_image')
     def test_should_call_cli_build_image_command(self, _cli_build_image_mock):
         # when

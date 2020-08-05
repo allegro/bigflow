@@ -248,12 +248,21 @@ def _create_build_package_parser(subparsers):
     subparsers.add_parser('build-package', description='Builds .whl package from local files.')
 
 
+def _valid_datetime(dt):
+    try:
+        datetime.strptime(dt, "%Y-%m-%d %H:%M:%S")
+        return dt
+    except ValueError:
+        raise ValueError("Not a valid date: '{0}'.".format(dt))
+
+
 def _add_build_dags_parser_arguments(parser):
     parser.add_argument('-w', '--workflow',
                         type=str,
                         help='The id of the workflow to start.')
     parser.add_argument('-t', '--start-time',
-                        help='The date and time for which workflow should work.')
+                        help='The date and time for which workflow should work.',
+                        type=_valid_datetime)
 
 
 def _add_build_image_parser_arguments(parser):
@@ -460,16 +469,19 @@ def _cli_deploy_image(args):
                         vault_secret=args.vault_secret
                         )
 
+
 def _cli_build_image(args):
-    cmd = 'python setup.py build_project --build-image' + (' --e' if args.export_image_to_file else '')
+    cmd = 'python project_setup.py build_project --build-image' + (' --e' if args.export_image_to_file else '')
     subprocess.getoutput(cmd)
+
 
 def _cli_build_package():
-    cmd = 'python setup.py build_project --build-package'
+    cmd = 'python project_setup.py build_project --build-package'
     subprocess.getoutput(cmd)
 
+
 def _cli_build_dags(args):
-    cmd = 'python setup.py build_project --build-dags' + ((' --w ' + args.workflow) if args.workflow else '') + \
+    cmd = 'python project_setup.py build_project --build-dags' + ((' --w ' + args.workflow) if args.workflow else '') + \
           ((' --t ' + args.start_time) if args.start_time else '')
     subprocess.getoutput(cmd)
 
