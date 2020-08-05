@@ -9,6 +9,7 @@ import setuptools
 import unittest
 
 import xmlrunner
+
 from .cli import walk_workflows
 from .dagbuilder import generate_dag_file
 
@@ -198,10 +199,11 @@ def project_setup(
         image_dir: Path,
         eggs_dir: Path,
         deployment_config: Path,
-        docker_repository: str):
+        docker_repository: str,
+        version: str):
     return {
         'name': project_name,
-        'version': '0.1.0',
+        'version': version,
         'packages': setuptools.find_packages(exclude=['test']),
         'cmdclass': {
             'build_project': build_command(
@@ -215,6 +217,6 @@ def project_setup(
                 eggs_dir,
                 deployment_config,
                 docker_repository,
-                '0.1.0')
+                version)
         }
     }
