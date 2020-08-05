@@ -316,7 +316,7 @@ deployment_config = Config(name='dev',
         deploy_dags_folder_mock.assert_called_with(auth_method='local_account',
                                                    clear_dags_folder=False,
                                                    dags_bucket='my-dags-bucket',
-                                                   dags_dir=(Path(os.path.dirname(__file__)) / '.dags').as_posix(),
+                                                   dags_dir=self._expected_default_dags_dir(),
                                                    project_id='my-gcp-project-id',
                                                    vault_endpoint=None,
                                                    vault_secret=None)
@@ -350,7 +350,7 @@ deployment_config = Config(name='dev',
         deploy_dags_folder_mock.assert_called_with(auth_method='local_account',
                                                    clear_dags_folder=False,
                                                    dags_bucket='my-dags-dev-bucket',
-                                                   dags_dir=(Path(os.path.dirname(__file__)) / '.dags').as_posix(),
+                                                   dags_dir=self._expected_default_dags_dir(),
                                                    project_id='my-gcp-dev-project-id',
                                                    vault_endpoint=None,
                                                    vault_secret=None)
@@ -362,7 +362,7 @@ deployment_config = Config(name='dev',
         deploy_dags_folder_mock.assert_called_with(auth_method='local_account',
                                                    clear_dags_folder=False,
                                                    dags_bucket='my-dags-dev-bucket',
-                                                   dags_dir=(Path(os.path.dirname(__file__)) / '.dags').as_posix(),
+                                                   dags_dir=self._expected_default_dags_dir(),
                                                    project_id='my-gcp-dev-project-id',
                                                    vault_endpoint=None,
                                                    vault_secret=None)
@@ -374,7 +374,7 @@ deployment_config = Config(name='dev',
         deploy_dags_folder_mock.assert_called_with(auth_method='local_account',
                                                    clear_dags_folder=False,
                                                    dags_bucket='my-dags-prod-bucket',
-                                                   dags_dir=(Path(os.path.dirname(__file__)) / '.dags').as_posix(),
+                                                   dags_dir=self._expected_default_dags_dir(),
                                                    project_id='my-gcp-prod-project-id',
                                                    vault_endpoint=None,
                                                    vault_secret=None)
@@ -543,7 +543,7 @@ deployment_config = Config(name='dev',
         deploy_dags_folder_mock.assert_called_with(auth_method='local_account',
                                                    clear_dags_folder=False,
                                                    dags_bucket='my-dags-bucket',
-                                                   dags_dir=(Path(os.path.dirname(__file__)) / '.dags').as_posix(),
+                                                   dags_dir=self._expected_default_dags_dir(),
                                                    project_id='my-gcp-project-id',
                                                    vault_endpoint=None,
                                                    vault_secret=None)
@@ -556,9 +556,11 @@ deployment_config = Config(name='dev',
 
         dc_file.unlink()
 
+    def _expected_default_dags_dir(self):
+        return (Path(os.getcwd()) / '.dags').as_posix()
 
     def _touch_file(self, file_name: str, content: str = ''):
-        workdir = Path(os.path.dirname(__file__))
+        workdir = Path(os.getcwd())
         f = workdir / file_name
         f.touch()
         f.write_text(content)

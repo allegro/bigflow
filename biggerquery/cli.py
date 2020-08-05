@@ -169,9 +169,11 @@ def _decode_version_number_from_file_name(file_path: Path):
 
 def import_deployment_config(deployment_config_path: str, property_name: str):
     if not Path(deployment_config_path).exists():
-        raise ValueError(f"Can't find '{property_name}' property in deployment_config.py in {{current_dir}}. If your deployment_config.py is elswhere, "
-                         "you can set path to it using --deployment-config-path. If you are not using deployment_config.py -- "
-                         f"set '{property_name}' property as a command line argument.")
+        raise ValueError(f"Can't find deployment_config.py at '{deployment_config_path}'. "
+                         f"Property '{property_name}' can't be resolved. "
+                          "If your deployment_config.py is elswhere, "
+                          "you can set path to it using --deployment-config-path. If you are not using deployment_config.py -- "
+                          f"set '{property_name}' property as a command line argument.")
     spec = importlib.util.spec_from_file_location("deployment_config", deployment_config_path)
 
     if not spec:
