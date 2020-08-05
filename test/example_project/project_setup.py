@@ -2,7 +2,9 @@ from pathlib import Path
 from setuptools import setup
 
 import sys
-sys.path.insert(0, str((Path(__file__).parent.parent.parent / 'biggerquery').absolute()))
+bgq_package = str((Path(__file__).parent.parent.parent / 'biggerquery').absolute())
+print(f'Adding to path: {bgq_package}')
+sys.path.insert(0, bgq_package)
 
 from biggerquery import build
 
