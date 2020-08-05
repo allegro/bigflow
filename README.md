@@ -385,3 +385,183 @@ Inside this repository, you can find the BiggerQuery tutorial. We recommend usin
 
 * [BigQuery workflow from the Jupyter notebook](https://datacraftacademy.com/bigquery-workflow-from-the-jupyter-notebook/)
 * [Fastai batch prediction on a BigQuery table](https://datacraftacademy.com/fastai-batch-prediction-on-a-bigquery-table/)
+
+
+## CLI
+
+TODO
+what is CLI? how to install bgq command?
+
+### CLI deploy
+
+CLI `deploy` commands deploy your **workflows** to Google Cloud Composer.
+There are two artifacts which are deployed and should be built before using `deploy`:
+
+1. DAG files built by `biggerquery`,
+1. Docker image built by `biggerquery`. 
+
+
+There are three `deploy` commands:
+
+1. `deploy-dags` uploads all DAG files from a `{project_dir}/.dags` folder to a Google Cloud Storage **Bucket** which underlies your Composer's DAGs Folder.
+
+1. `deploy-image` pushes a docker image to Google Cloud Container **Registry** which should be readable from your Composer's Kubernetes cluster.
+
+1. `deploy` simply runs both `deploy-dags` and `deploy-image`.  
+
+
+Start your work from reading detailed help: 
+
+```bash
+bgq deploy-dags -h
+bgq deploy-image -h
+bgq deploy -h
+```
+
+#### Authentication methods
+
+There are two authentication methods: `local_account` for local development and 
+`service_account` for CI/CD servers.
+
+**`local_account` method** is used **by default** and it relies on your local user `gcloud` account.
+Check if you are authenticated by typing:
+
+```bash
+gcloud info
+```  
+
+Example of the `deploy-dags` command with `local_account` authentication:
+
+```bash
+bgq deploy-dags 
+```
+
+**`service_account` method** allows you to authenticate with a [service account](https://cloud.google.com/iam/docs/service-accounts) 
+as long as you have a [Vault](https://www.vaultproject.io/) server for managing OAuth tokens.
+
+
+Example of the `deploy-dags` command with `service_account` authentication (requires Vault):
+ 
+```bash 
+bgq deploy-dags --auth-method=service_account --vault-endpoint https://example.com/vault --vault-secret *****
+```
+
+#### Managing configuration in deployment_config.py
+
+Deploy commands require a lot of configuration. You can pass all parameters directly as command line arguments,
+or save them in a `deployment_config.py` file.
+ 
+For local development and for most CI/CD scenarios we recommend using a `deployment_config.py` file.
+This file has to contain a `biggerquery.Config` object stored in the `deployment_config` variable
+and can be placed in a main folder of your project.
+
+`deployment_config.py` example:
+
+```python
+from biggerquery import Config
+
+deployment_config = Config(name='dev',                    
+                           properties={
+                               'gcp_project_id': 'my_gcp_dev_project',
+                               'docker_repository_project': '{gcp_project_id}',
+                               'docker_repository': 'eu.gcr.io/{docker_repository_project}/my-project',
+                               'vault_endpoint': 'https://example.com/vault',
+                               'dags_bucket': 'europe-west1-123456-bucket'
+                           })\
+        .ad_configuration(name='prod', properties={
+                               'gcp_project_id': 'my_gcp_prod_project',
+                               'dags_bucket': 'europe-west1-654321-bucket'})
+``` 
+
+Having that, you can run extremely concise `deploy` command, for example:  
+
+
+```bash 
+bgq deploy-dags --config dev
+bgq deploy-dags --config prod
+```
+
+or even `bgq deploy-dags`, because env `dev` is the default one in this case.
+
+**Important**. By default, the `deployment_config.py` file is located in a main directory of your project,
+so `bgq` expects it exists under this path: `{current_dir}/deployment_config.py`.
+You can change this location by setting the `deployment-config-path` parameter:
+
+```bash
+bgq deploy-dags --deployment-config-path '/tmp/my_deployment_config.py'
+```
+
+#### Deploy DAG files examples
+
+Upload DAG files from `{current_dir}/.dags` to a `dev` Composer using `local_account` authentication.
+Configuration is taken from `{current_dir}/deployment_config.py`: 
+
+```bash
+bgq deploy-dags --config dev
+```
+
+Upload DAG files from a given dir  using `service_account` authentication.
+Configuration is specified via command line arguments:
+ 
+```bash  
+bgq deploy-dags \
+--dags-dir '/tmp/my_dags' \
+--auth-method=service_account \
+--vault-secret ***** \
+--vault-endpoint 'https://example.com/vault' \
+--dags-bucket europe-west1-12323a-bucket \
+--gcp-project-id my_gcp_dev_project \
+--clear-dags-folder
+```
+  
+#### Deploy Docker image examples
+
+Upload a Docker image from a local repository using `local_account` authentication.
+Configuration is taken from `{current_dir}/deployment_config.py`:
+
+```bash
+bgq deploy-image --version 1.0 --config dev
+```
+
+Upload a Docker image exported to a `.tar` file using `service_account` authentication.
+Configuration is specified via command line arguments:
+
+```bash
+bgq deploy-image \
+--image-tar-path '/tmp/image-0.1.0-tar' \
+--docker-repository 'eu.gcr.io/my_gcp_dev_project/my_project' \
+--auth-method=service_account \
+--vault-secret ***** \
+--vault-endpoint 'https://example.com/vault'
+```
+
+#### Complete deploy examples
+
+Upload DAG files from `{current_dir}/.dags` dir and a Docker image from a local repository using `local_account` authentication.
+Configuration is taken from `{current_dir}/deployment_config.py`:
+
+```bash
+bgq deploy --version 1.0 --config dev
+```
+
+The same, but configuration is taken from a given file:
+
+```bash
+bgq deploy --version 1.0 --config dev --deployment-config-path '/tmp/my_deployment_config.py'
+```
+
+Upload DAG files from a given dir and a Docker image exported to a `.tar` file using `service_account` authentication.
+Configuration is specified via command line arguments:
+
+```bash
+bgq deploy \
+--image-tar-path '/tmp/image-0.1.0-tar' \
+--dags-dir '/tmp/my_dags' \
+--docker-repository 'eu.gcr.io/my_gcp_dev_project/my_project' \
+--auth-method=service_account \
+--vault-secret ***** \
+--vault-endpoint 'https://example.com/vault' \
+--dags-bucket europe-west1-12323a-bucket \
+--gcp-project-id my_gcp_dev_project \
+--clear-dags-folder
+```

@@ -29,7 +29,7 @@ class DeployTestCase(TestCase):
         gs_client_mock.bucket.return_value = bucket_mock
 
         # when
-        deploy_dags_folder(workdir, dags_bucket='europe-west1-1-bucket', project_id='', clear_dags_folder=True,
+        deploy_dags_folder(dags_dir=workdir + '/.dags', dags_bucket='europe-west1-1-bucket', project_id='', clear_dags_folder=True,
                            auth_method='local_account', gs_client=gs_client_mock)
 
         #then
@@ -68,7 +68,7 @@ class DeployTestCase(TestCase):
         bucket_mock.blob.side_effect = blobs
 
         # when
-        deploy_dags_folder(workdir, dags_bucket='europe-west1-1-bucket', project_id='', clear_dags_folder=False,
+        deploy_dags_folder(dags_dir=workdir + '/.dags', dags_bucket='europe-west1-1-bucket', project_id='', clear_dags_folder=False,
                            auth_method='local_account', gs_client=gs_client_mock)
 
         #then
