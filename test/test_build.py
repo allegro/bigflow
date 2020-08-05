@@ -4,7 +4,8 @@ from pathlib import Path
 import subprocess
 from unittest import TestCase
 from biggerquery.cli import walk_module_files
-from biggerquery.build import now, get_docker_image_id, build_docker_image_tag, clear_image_leftovers, clear_package_leftovers, clear_dags_leftovers
+from biggerquery.build import now, get_docker_image_id, build_docker_image_tag, \
+    clear_image_leftovers, clear_package_leftovers, clear_dags_leftovers, find_all_resources, read_requirements
 from example_project.setup import DOCKER_REPOSITORY, PROJECT_NAME
 
 TEST_PROJECT_PATH = Path('./example_project')
@@ -227,9 +228,26 @@ class BuildImageCommandE2E(SetupTestCase):
         self.assertTrue(deployment_config_copied())
 
 
-class ResourcesTestCase(TestCase):
-    pass
+class FindAllResourcesTestCase(TestCase):
+    def test_should_find_all_resource_file_paths(self):
+        # when
+        resources = list(find_all_resources(TEST_PROJECT_PATH / 'resources'))
+
+        # then
+        self.assertEqual(resources, [
+            'resources/requirements1.txt',
+            'resources/requirements2.txt',
+        ])
 
 
-class BeamSetupHelpersTestCase(TestCase):
-    pass
+class ReadRequirementsTestCase(TestCase):
+    def test_should_return_all_requirements_from_the_hierarchy(self):
+        # when
+        requirements = read_requirements(TEST_PROJECT_PATH / 'resources' / 'requirements2.txt')
+
+        # then
+        self.assertEqual(requirements, [
+            'freezegun==0.3.14',
+            'schedule',
+            'datetime_truncate==1.1.0',
+        ])

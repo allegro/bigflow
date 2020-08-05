@@ -188,6 +188,27 @@ def build_command(
     return BuildCommand
 
 
+def find_all_resources(resources_dir: Path):
+    for path in resources_dir.rglob('*'):
+        current_dir_path = resolve(resources_dir.parent)
+        relative_path = str(path.resolve()).replace(current_dir_path + os.sep, '')
+        if path.is_file():
+            yield relative_path
+
+
+def read_requirements(requirements_path: Path):
+    result = []
+    with open(str(requirements_path.absolute()), 'r') as base_requirements:
+        for l in base_requirements.readlines():
+            if '-r ' in l:
+                subrequirements_file_name = l.strip().replace('-r ', '')
+                subrequirements_path = requirements_path.parent / subrequirements_file_name
+                result.extend(read_requirements(subrequirements_path))
+            else:
+                result.append(l.strip())
+        return result
+
+
 def project_setup(
         root_package: Path,
         project_dir: Path,
@@ -200,11 +221,17 @@ def project_setup(
         eggs_dir: Path,
         deployment_config: Path,
         docker_repository: str,
-        version: str):
+        version: str,
+        resources_dir: Path,
+        project_requirements_file: Path):
     return {
         'name': project_name,
         'version': version,
         'packages': setuptools.find_packages(exclude=['test']),
+        'install_requires': read_requirements(project_requirements_file),
+        'data_files': [
+            ('resources', list(find_all_resources(resources_dir)))
+        ],
         'cmdclass': {
             'build_project': build_command(
                 root_package,
