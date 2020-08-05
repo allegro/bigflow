@@ -402,6 +402,7 @@ def _cli_deploy_dags(args):
 def _load_image_from_tar(image_tar_path: str):
     print(f'Loading Docker image from {image_tar_path} ...', )
 
+
 def _cli_deploy_image(args):
     if args.image_tar_path:
         build_ver = _decode_version_number_from_file_name(Path(args.image_tar_path))
@@ -418,7 +419,6 @@ def _cli_deploy_image(args):
 
 
 def cli(raw_args) -> None:
-    print("raw_args", raw_args)
     project_name = read_project_name_from_setup()
     parsed_args = _parse_args(project_name, raw_args)
     operation = parsed_args.operation
