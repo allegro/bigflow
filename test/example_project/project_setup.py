@@ -1,8 +1,11 @@
+import os
 from pathlib import Path
 from setuptools import setup
 
 import sys
-bgq_package = str((Path(__file__).parent.parent.parent / 'biggerquery').absolute())
+bgq_path_index = str(Path(__file__).absolute()).split(os.sep).index('biggerquery')
+bgq_path_parts = str(Path(__file__).absolute()).split(os.sep)[:bgq_path_index + 1] + ['biggerquery']
+bgq_package = os.path.join(os.sep, *bgq_path_parts)
 print(f'Adding to path: {bgq_package}')
 sys.path.insert(0, bgq_package)
 
