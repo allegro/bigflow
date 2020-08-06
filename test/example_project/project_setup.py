@@ -3,13 +3,12 @@ from pathlib import Path
 from setuptools import setup
 
 import sys
+# For Travis
 bgq_path_index = str(Path(__file__).absolute()).split(os.sep).index('biggerquery')
 bgq_path_parts = str(Path(__file__).absolute()).split(os.sep)[:bgq_path_index + 1]
 bgq_package = os.path.join(os.sep, *bgq_path_parts)
 print(f'Adding to path: {bgq_package}')
 sys.path.insert(0, bgq_package)
-
-
 
 PROJECT_DIR = Path(__file__).parent
 PROJECT_NAME = 'main_package'
@@ -38,7 +37,7 @@ if __name__ == '__main__':
         dist_dir=DIST_DIR_PATH,
         image_dir=IMAGE_DIR_PATH,
         eggs_dir=EGGS_DIR_PATH,
-        deployment_config=DEPLOYMENT_CONFIG_PATH,
+        deployment_config_file=DEPLOYMENT_CONFIG_PATH,
         docker_repository=DOCKER_REPOSITORY,
         version='0.1.0',
         resources_dir=RESOURCES_PATH,
