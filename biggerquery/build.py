@@ -10,11 +10,11 @@ import unittest
 
 import xmlrunner
 
-from .cli import walk_workflows
+from .cli import walk_workflows, import_deployment_config
 from .dagbuilder import generate_dag_file
 from .resources import read_requirements, find_all_resources
 from .utils import resolve
-
+from .version import get_version
 
 __all__ = [
     'project_setup'
@@ -161,13 +161,13 @@ def build_command(
 
         def run(self) -> None:
             if self.build_package or self.should_run_whole_build():
-                print('Building pip package')
+                print('Building the pip package')
                 clear_package_leftovers(dist_dir, eggs_dir, build_dir)
                 run_tests(build_dir, test_package)
                 self.run_command('bdist_wheel')
 
             if self.build_dags or self.should_run_whole_build():
-                print('Building dags')
+                print('Building the dags')
                 clear_dags_leftovers(dags_dir)
                 build_dags(
                     root_package,
@@ -178,7 +178,7 @@ def build_command(
                     self.workflow)
 
             if self.build_image or self.should_run_whole_build():
-                print('Building image')
+                print('Building the image')
                 clear_image_leftovers(image_dir)
                 build_image(
                     docker_repository,
@@ -191,21 +191,47 @@ def build_command(
     return BuildCommand
 
 
+AUTOMATIC = None
+
+
+def get_docker_repository_from_deployment_config(deployment_config_file: Path):
+    config = import_deployment_config(resolve(deployment_config_file), 'docker_repository')
+    return config.resolve_property('docker_repository', None)
+
+
 def project_setup(
-        root_package: Path,
-        project_dir: Path,
         project_name: str,
-        build_dir: Path,
-        test_package: Path,
-        dags_dir: Path,
-        dist_dir: Path,
-        image_dir: Path,
-        eggs_dir: Path,
-        deployment_config: Path,
-        docker_repository: str,
-        version: str,
-        resources_dir: Path,
-        project_requirements_file: Path):
+        docker_repository: str = AUTOMATIC,
+        root_package: Path = AUTOMATIC,
+        project_dir: Path = Path('.'),
+        build_dir: Path = Path('.').parent / 'build',
+        test_package: Path = Path('.').parent / 'test',
+        dags_dir: Path = Path('.').parent / '.dags',
+        dist_dir: Path = Path('.').parent / 'dist',
+        image_dir: Path = Path('.').parent / 'image',
+        eggs_dir: Path = AUTOMATIC,
+        deployment_config_file: Path = Path('.').parent / 'deployment_config.py',
+        version: str = AUTOMATIC,
+        resources_dir: Path = Path('.').parent / 'resources',
+        project_requirements_file: Path = Path('.') / 'resources' / 'requirements.txt'):
+
+    if docker_repository is None:
+        docker_repository = get_docker_repository_from_deployment_config(deployment_config_file)
+        if docker_repository is None:
+            raise ValueError('You must provide the docker_repository parameter, '
+                             'either through project_setup parameter or deployment_config.py')
+    if root_package is None:
+        root_package = project_dir / project_name
+    if eggs_dir is None:
+        eggs_dir = project_dir / f'{project_name}.egg-info'
+    if version is None:
+        try:
+            version = get_version()
+        except Exception as e:
+            print(e)
+            raise ValueError('You must provide package version, either through the project_setup parameter '
+                             'or by using git in your project.')
+
     return {
         'name': project_name,
         'version': version,
@@ -224,7 +250,7 @@ def project_setup(
                 dist_dir,
                 image_dir,
                 eggs_dir,
-                deployment_config,
+                deployment_config_file,
                 docker_repository,
                 version)
         }

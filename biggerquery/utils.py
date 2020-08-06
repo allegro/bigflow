@@ -6,6 +6,7 @@ import shutil
 import logging
 from collections import namedtuple
 import functools
+
 from google.api_core.exceptions import BadRequest
 
 logger = logging.getLogger(__name__)
@@ -87,6 +88,7 @@ def log_syntax_error(method):
                 raise e
 
     return decorated
+
 
 def merge_dicts(dict1, dict2):
     return {**dict1, **dict2}
