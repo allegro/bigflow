@@ -1,3 +1,4 @@
+import os
 from unittest import TestCase, mock
 from pathlib import Path
 from biggerquery.resources import *
@@ -86,8 +87,37 @@ class FindSetupTestCase(TestCase):
 
 
 class CreateFileIfNotExistsTestCase(TestCase):
-    pass
+    def setUp(self):
+        self.example_file = Path(__file__).parent / 'resources' / 'example_file'
+        if self.example_file.exists():
+              os.remove(self.example_file)
+
+    def test_should_create_existent_or_non_existent_file(self):
+        # when
+        create_file_if_not_exists(self.example_file, 'test file')
+
+        # then
+        self.assertTrue(self.example_file.read_text(), 'test file')
+
+        # when trying to create existing
+        create_file_if_not_exists(self.example_file, 'test file')
+
+        # then
+        self.assertTrue(self.example_file.read_text(), 'test file')
 
 
 class CreateSetupBodyTestCase(TestCase):
-    pass
+    def test_should_create_setup_body(self):
+        # when
+        body = create_setup_body('example_project')
+
+        # then
+        self.assertEqual(body, f'''
+import setuptools
+
+setuptools.setup(
+        name='example_project',
+        version='0.1.0',
+        packages=setuptools.find_namespace_packages(include=["example_project.*"])
+)
+''')
