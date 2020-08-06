@@ -4,12 +4,12 @@ from setuptools import setup
 
 import sys
 bgq_path_index = str(Path(__file__).absolute()).split(os.sep).index('biggerquery')
-bgq_path_parts = str(Path(__file__).absolute()).split(os.sep)[:bgq_path_index + 1] + ['biggerquery']
+bgq_path_parts = str(Path(__file__).absolute()).split(os.sep)[:bgq_path_index + 1]
 bgq_package = os.path.join(os.sep, *bgq_path_parts)
 print(f'Adding to path: {bgq_package}')
 sys.path.insert(0, bgq_package)
 
-from biggerquery import build
+
 
 PROJECT_DIR = Path(__file__).parent
 PROJECT_NAME = 'main_package'
@@ -26,6 +26,8 @@ REQUIREMENTS_PATH = Path(__file__).parent / 'resources' / 'requirements2.txt'
 RESOURCES_PATH = Path(__file__).parent / 'resources'
 
 if __name__ == '__main__':
+    from biggerquery import build
+
     setup(**build.project_setup(
         root_package=ROOT_PACKAGE,
         project_dir=PROJECT_DIR,
