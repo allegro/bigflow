@@ -214,6 +214,13 @@ def secure_get_version():
 
 
 def auto_configuration(project_name: str, project_dir: Path = Path('.').parent):
+    '''
+    Auto configuration for the standard BigFlow project structure (that you can generate through the CLI).
+    The 'project_name' parameter should be a valid python package name.
+
+    Example:
+    project_setup(**auto_configuration('my_super_project'))
+    '''
     deployment_config_file = project_dir / 'deployment_config.py'
 
     return {
@@ -249,6 +256,17 @@ def project_setup(
         version: str,
         resources_dir: Path,
         project_requirements_file: Path):
+    '''
+    This function produces arguments for setuptools.setup. The produced setup provides commands that allow you to build
+    whl package, docker image and DAGs. Paired with auto_configuration function, it provides fully automated build
+    tool (accessed by CLI) for your project (that you can generate using CLI).
+
+    Example:
+    from setuptools import setup
+    from biggerquery.build import project_setup, auto_configuration
+
+    setup(project_setup(**auto_configuration('my_super_project')))
+    '''
     if project_name is None or docker_repository is None or root_package is None or project_dir is None or \
             build_dir is None or test_package is None or dags_dir is None or dist_dir is None or image_dir is None or \
             eggs_dir is None or deployment_config_file is None or version is None or resources_dir is None or project_requirements_file is None:
