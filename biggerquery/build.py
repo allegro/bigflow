@@ -17,7 +17,8 @@ from .utils import resolve
 from .version import get_version
 
 __all__ = [
-    'project_setup'
+    'project_setup',
+    'auto_configuration'
 ]
 
 
@@ -191,46 +192,67 @@ def build_command(
     return BuildCommand
 
 
-AUTOMATIC = None
-
-
 def get_docker_repository_from_deployment_config(deployment_config_file: Path):
-    config = import_deployment_config(resolve(deployment_config_file), 'docker_repository')
-    return config.resolve_property('docker_repository', None)
+    try:
+        config = import_deployment_config(resolve(deployment_config_file), 'docker_repository')
+    except ValueError:
+        raise ValueError(f"Can't find the specified deployment configuration: {resolve(deployment_config_file)}")
+    docker_repository = config.resolve_property('docker_repository', None)
+
+    if docker_repository is None:
+        raise ValueError(f"Can't find the 'docker_repository' property in the specified config file: {resolve(deployment_config_file)}")
+    return docker_repository
+
+
+def secure_get_version():
+    try:
+        return get_version()
+    except Exception as e:
+        print(e)
+        raise ValueError("Can't get the current package version. To use the automatic versioning, "
+                         "you need to use git inside your project directory.")
+
+
+def auto_configuration(project_name: str, project_dir: Path = Path('.').parent):
+    deployment_config_file = project_dir / 'deployment_config.py'
+
+    return {
+        'project_name': project_name,
+        'docker_repository': get_docker_repository_from_deployment_config(deployment_config_file),
+        'root_package': project_dir / project_name,
+        'project_dir': project_dir,
+        'build_dir': project_dir / 'build',
+        'test_package': project_dir / 'test',
+        'dags_dir': project_dir / '.dags',
+        'dist_dir': project_dir / 'dist',
+        'image_dir': project_dir / 'image',
+        'eggs_dir': project_dir / f'{project_name}.egg-info',
+        'deployment_config_file': deployment_config_file,
+        'version': secure_get_version(),
+        'resources_dir': project_dir / 'resources',
+        'project_requirements_file': project_dir / 'resources' / 'requirements.txt'
+    }
 
 
 def project_setup(
         project_name: str,
-        docker_repository: str = AUTOMATIC,
-        root_package: Path = AUTOMATIC,
-        project_dir: Path = Path('.'),
-        build_dir: Path = Path('.').parent / 'build',
-        test_package: Path = Path('.').parent / 'test',
-        dags_dir: Path = Path('.').parent / '.dags',
-        dist_dir: Path = Path('.').parent / 'dist',
-        image_dir: Path = Path('.').parent / 'image',
-        eggs_dir: Path = AUTOMATIC,
-        deployment_config_file: Path = Path('.').parent / 'deployment_config.py',
-        version: str = AUTOMATIC,
-        resources_dir: Path = Path('.').parent / 'resources',
-        project_requirements_file: Path = Path('.') / 'resources' / 'requirements.txt'):
-
-    if docker_repository is None:
-        docker_repository = get_docker_repository_from_deployment_config(deployment_config_file)
-        if docker_repository is None:
-            raise ValueError('You must provide the docker_repository parameter, '
-                             'either through project_setup parameter or deployment_config.py')
-    if root_package is None:
-        root_package = project_dir / project_name
-    if eggs_dir is None:
-        eggs_dir = project_dir / f'{project_name}.egg-info'
-    if version is None:
-        try:
-            version = get_version()
-        except Exception as e:
-            print(e)
-            raise ValueError('You must provide package version, either through the project_setup parameter '
-                             'or by using git in your project.')
+        docker_repository: str,
+        root_package: Path,
+        project_dir: Path,
+        build_dir: Path,
+        test_package: Path,
+        dags_dir: Path,
+        dist_dir: Path,
+        image_dir: Path,
+        eggs_dir: Path,
+        deployment_config_file: Path,
+        version: str,
+        resources_dir: Path,
+        project_requirements_file: Path):
+    if project_name is None or docker_repository is None or root_package is None or project_dir is None or \
+            build_dir is None or test_package is None or dags_dir is None or dist_dir is None or image_dir is None or \
+            eggs_dir is None or deployment_config_file is None or version is None or resources_dir is None or project_requirements_file is None:
+        raise ValueError('You need to provide all parameters for the project_setup function.')
 
     return {
         'name': project_name,

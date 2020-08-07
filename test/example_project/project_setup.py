@@ -1,14 +1,17 @@
 import os
+import sys
 from pathlib import Path
 from setuptools import setup
 
-import sys
-# For Travis
-bgq_path_index = str(Path(__file__).absolute()).split(os.sep).index('biggerquery')
-bgq_path_parts = str(Path(__file__).absolute()).split(os.sep)[:bgq_path_index + 1]
-bgq_package = os.path.join(os.sep, *bgq_path_parts)
-print(f'Adding to path: {bgq_package}')
-sys.path.insert(0, bgq_package)
+
+def add_bigflow_to_path():
+    # For Travis
+    bgq_path_index = str(Path(__file__).absolute()).split(os.sep).index('biggerquery')
+    bgq_path_parts = str(Path(__file__).absolute()).split(os.sep)[:bgq_path_index + 1]
+    bgq_package = os.path.join(os.sep, *bgq_path_parts)
+    print(f'Adding to path: {bgq_package}')
+    sys.path.insert(0, bgq_package)
+
 
 PROJECT_DIR = Path(__file__).parent
 PROJECT_NAME = 'main_package'
@@ -21,10 +24,11 @@ EGGS_DIR_PATH = Path(__file__).parent / f'{PROJECT_NAME}.egg-info'
 ROOT_PACKAGE = Path(__file__).parent / 'main_package'
 DOCKER_REPOSITORY = 'test_docker_repository'
 DEPLOYMENT_CONFIG_PATH = Path(__file__).parent / 'deployment_config.py'
-REQUIREMENTS_PATH = Path(__file__).parent / 'resources' / 'requirements2.txt'
+REQUIREMENTS_PATH = Path(__file__).parent / 'resources' / 'requirements.txt'
 RESOURCES_PATH = Path(__file__).parent / 'resources'
 
 if __name__ == '__main__':
+    add_bigflow_to_path()
     from biggerquery import build
 
     setup(**build.project_setup(
