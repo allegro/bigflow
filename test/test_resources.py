@@ -12,7 +12,7 @@ class FindAllResourcesTestCase(TestCase):
         resources = list(find_all_resources(TEST_PROJECT_PATH / 'resources'))
 
         # then
-        self.assertEqual(resources, [
+        self.assertCountEqual(resources, [
             'resources/requirements.txt',
             'resources/requirements_base.txt',
         ])
