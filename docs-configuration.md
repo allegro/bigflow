@@ -24,22 +24,21 @@ deployment_config = Config(name='dev',
         .add_configuration(name='prod',
                            properties={
                                'dags_bucket': 'europe-west1-my-4321-bucket'
-})
+                           })
 ```
 
-As you can see, it's a combination of Python `dicts` with
+`Config` is the combination of Python `dicts` with
 some extra features that are useful for configuring things:
 
 1. The `Config` object holds multiple named configurations, one configuration
 per each environment (here `dev` and `prod`).
 
-1. Properties with values depending on environment (here `dags_bucket`)
-are defined explicitly for each environment.
-
 1. Properties with constant values (here `vault_endpoint`) 
 are defined only once in the master configuration (here, 'dev' configuration is master).
 They are *inherited* by other configurations.
 
+1. Properties with different values per environment (here `dags_bucket`) 
+are defined explicitly in each configuration.
 
 Test it:
 
@@ -306,16 +305,15 @@ to call Big Query SQL.
 
 `DatasetConfig` defines four properties that are required by `DatasetManager`:
 
-* `project_id` &mdash; GCP project Id of an internal (local) dataset,
-* `dataset_name` &mdash; internal dataset name,
-* `internal_tables` &mdash; list of table names in internal dataset,
-* `external_tables` &mdash; dict that defines aliases for external table names.
+* `project_id` &mdash; GCP project Id of an internal dataset.
+* `dataset_name` &mdash; Internal dataset name.
+* `internal_tables` &mdash; List of table names in an internal dataset. 
+  Fully qualified names of internal tables are resolved to `{project_id}.{dataset_name}.{table_name}`.  
+* `external_tables` &mdash; Dict that defines aliases for external table names.
+  Fully qualified names of external tables have to be declared explicitly.
 
 The distinction between internal and external tables shouldn't be treated too seriously.
 Internal means `mine`. External means any other. It's just a naming convention.
-
-Fully qualified names of an internal tables are resolved to `{project_id}.{dataset_name}.{table_name}`,
-while full names of external tables have to be declared explicitly.
 
 For example:
 
