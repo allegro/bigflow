@@ -4,8 +4,8 @@ from unittest import TestCase
 
 import responses
 
-from biggerquery.dagbuilder import get_dags_output_dir, clear_dags_output_dir
-from biggerquery.deploy import deploy_dags_folder, get_vault_token
+from bigflow.dagbuilder import get_dags_output_dir, clear_dags_output_dir
+from bigflow.deploy import deploy_dags_folder, get_vault_token
 import mock
 
 

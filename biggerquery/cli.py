@@ -9,11 +9,11 @@ from pathlib import Path
 from types import ModuleType
 from typing import Tuple, Iterator
 import importlib.util
-import biggerquery as bgq
+import bigflow as bf
 from typing import Optional
 
-from biggerquery import Config
-from biggerquery.deploy import deploy_dags_folder, deploy_docker_image, load_image_from_tar
+from bigflow import Config
+from bigflow.deploy import deploy_dags_folder, deploy_docker_image, load_image_from_tar
 
 
 def resolve(path: Path) -> str:
@@ -76,16 +76,16 @@ def walk_module_objects(module: ModuleType, expect_type: type) -> Iterator[Tuple
             yield name, obj
 
 
-def walk_workflows(root_package: Path) -> Iterator[bgq.Workflow]:
+def walk_workflows(root_package: Path) -> Iterator[bf.Workflow]:
     """
-    Imports modules in the `root_package` and returns all the elements of the type bgq.Workflow
+    Imports modules in the `root_package` and returns all the elements of the type bf.Workflow
     """
     for module in walk_modules(root_package):
-        for name, workflow in walk_module_objects(module, bgq.Workflow):
+        for name, workflow in walk_module_objects(module, bf.Workflow):
             yield workflow
 
 
-def find_workflow(root_package: Path, workflow_id: str) -> bgq.Workflow:
+def find_workflow(root_package: Path, workflow_id: str) -> bf.Workflow:
     """
     Imports modules and finds the workflow with id workflow_id
     """
@@ -97,11 +97,11 @@ def find_workflow(root_package: Path, workflow_id: str) -> bgq.Workflow:
 
 def set_configuration_env(env):
     """
-    Sets 'bgq_env' env variable
+    Sets 'bf_env' env variable
     """
     if env is not None:
-        os.environ['bgq_env'] = env
-    print(f"bgq_env is : {os.environ.get('bgq_env', None)}")
+        os.environ['bf_env'] = env
+    print(f"bf_env is : {os.environ.get('bf_env', None)}")
 
 
 def execute_job(root_package: Path, workflow_id: str, job_id: str, runtime=None):
@@ -185,7 +185,7 @@ def import_deployment_config(deployment_config_path: str, property_name: str):
     spec.loader.exec_module(deployment_config_module)
 
     if not isinstance(deployment_config_module.deployment_config, Config):
-        raise ValueError('deployment_config attribute in deployment_config.py should be instance of biggerquery.Config')
+        raise ValueError('deployment_config attribute in deployment_config.py should be instance of bigflow.Config')
 
     return deployment_config_module.deployment_config
 
@@ -218,11 +218,11 @@ def cli_run(project_package: str,
 
 def _parse_args(project_name: Optional[str], args) -> Namespace:
     project_name_description = build_project_name_description(project_name)
-    parser = argparse.ArgumentParser(description=f'Welcome to BiggerQuery CLI. {project_name_description}'
-                                                  '\nType: bgq {run,deploy-dags,deploy-image,deploy} -h to print detailed help for selected command.')
+    parser = argparse.ArgumentParser(description=f'Welcome to BigFlow CLI. {project_name_description}'
+                                                  '\nType: bf {run,deploy-dags,deploy-image,deploy} -h to print detailed help for selected command.')
     subparsers = parser.add_subparsers(dest='operation',
                                        required=True,
-                                       help='bgq command to execute')
+                                       help='bf command to execute')
 
     _create_run_parser(subparsers, project_name)
     _create_deploy_dags_parser(subparsers)
@@ -234,7 +234,7 @@ def _parse_args(project_name: Optional[str], args) -> Namespace:
 
 def _create_run_parser(subparsers, project_name):
     parser = subparsers.add_parser('run',
-                                   description='BiggerQuery CLI run command -- run a workflow or job')
+                                   description='BigFlow CLI run command -- run a workflow or job')
 
     group = parser.add_mutually_exclusive_group()
     group.required = True
@@ -264,7 +264,7 @@ def _add_parsers_common_arguments(parser):
                         type=str,
                         help='Config environment name that should be used. For example: dev, prod.'
                              ' If not set, default Config name will be used.'
-                             ' This env name is applied to all biggerquery.Config objects that are defined by'
+                             ' This env name is applied to all bigflow.Config objects that are defined by'
                              ' individual workflows as well as to deployment_config.py.')
 
 

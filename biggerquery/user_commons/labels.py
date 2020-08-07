@@ -1,4 +1,4 @@
-from biggerquery.interactive import interactive_component
+from bigflow.interactive import interactive_component
 
 
 def add_label_component(table_name, labels, ds=None):

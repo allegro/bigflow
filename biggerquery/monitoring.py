@@ -6,9 +6,9 @@ import googleapiclient.discovery
 
 logger = logging.getLogger(__name__)
 
-BIGGERQUERY_JOB_FAILURE_METRIC_TYPE = 'custom.googleapis.com/biggerquery_job_failure_count'
-BIGGERQUERY_JOB_FAILURE_METRIC = {
-        "type": BIGGERQUERY_JOB_FAILURE_METRIC_TYPE,
+BIGFLOW_JOB_FAILURE_METRIC_TYPE = 'custom.googleapis.com/bigflow'
+BIGFLOW_JOB_FAILURE_METRIC = {
+        "type": BIGFLOW_JOB_FAILURE_METRIC_TYPE,
         "labels": [
             {
                 "key": "job_id",
@@ -133,10 +133,10 @@ def increment_counter(client, monitoring_config, metric_type, job_id):
 def increment_job_failure_count(monitoring_config, job_id):
     try:
         client = api_client()
-        if not metric_exists(client, monitoring_config.project_resource, BIGGERQUERY_JOB_FAILURE_METRIC_TYPE):
-            api_create_metric(client, monitoring_config.project_resource, BIGGERQUERY_JOB_FAILURE_METRIC)
-            wait_for_metric(client, monitoring_config.project_resource, BIGGERQUERY_JOB_FAILURE_METRIC_TYPE)
-        increment_counter(client, monitoring_config, BIGGERQUERY_JOB_FAILURE_METRIC_TYPE, job_id)
+        if not metric_exists(client, monitoring_config.project_resource, BIGFLOW_JOB_FAILURE_METRIC_TYPE):
+            api_create_metric(client, monitoring_config.project_resource, BIGFLOW_JOB_FAILURE_METRIC)
+            wait_for_metric(client, monitoring_config.project_resource, BIGFLOW_JOB_FAILURE_METRIC_TYPE)
+        increment_counter(client, monitoring_config, BIGFLOW_JOB_FAILURE_METRIC_TYPE, job_id)
     except Exception as e:
         raise MetricError('Cannot increment job failure count: ' + str(e)) from e
 

@@ -17,7 +17,7 @@ class Config:
                  properties: dict,
                  is_master: bool = True,
                  is_default: bool = True,
-                 environment_variables_prefix: str = 'bgq_'):
+                 environment_variables_prefix: str = 'bf_'):
         if is_master:
             self.master_config_name = name
 

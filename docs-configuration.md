@@ -240,7 +240,7 @@ it is resolved from an OS environment variable. For example:
 import os
 from bigflow import Config
 
-os.environ['bgq_my_secret'] = '123456'
+os.environ['bf_my_secret'] = '123456'
 
 config = Config(name='dev',
                 properties={
@@ -261,7 +261,7 @@ my_secret: 123456
 
 There are two important aspects here.
 **First**, by default, OS environment variable names
-must be prefixed with `bgq_`. You can change this prefix by setting
+must be prefixed with `bf_`. You can change this prefix by setting
 the `environment_variables_prefix` parameter in the `Config` init method.
 
 **Second**, since secret properties don't exist in Python code
@@ -281,9 +281,9 @@ config = Config(name='dev',
                 name='prod',
                 properties={})
 
-os.environ['bgq_env'] = 'prod'
+os.environ['bf_env'] = 'prod'
 config.pretty_print('')
-os.environ['bgq_env'] = 'dev'
+os.environ['bf_env'] = 'dev'
 config.pretty_print('')
 ```
 
@@ -316,7 +316,7 @@ Internal means `mine`. External means any other. It's just a naming convention.
 For example:
 
 ```python
-from biggerquery import DatasetConfig
+from bigflow import DatasetConfig
 
 INTERNAL_TABLES = ['quality_metric']
 

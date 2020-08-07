@@ -3,15 +3,15 @@ import mock
 import tempfile
 import imp
 
-from biggerquery.utils import AutoDeletedTmpFile
-from biggerquery.interactive import DatasetConfigInternal
-from biggerquery.job import Job
+from bigflow.utils import AutoDeletedTmpFile
+from bigflow.interactive import DatasetConfigInternal
+from bigflow.job import Job
 
 
 class JobTestCase(TestCase):
 
-    @mock.patch('biggerquery.job.create_dataset_manager')
-    def test_should_run_bigquery_component(self, create_dataset_manager_mock):
+    @mock.patch('bigflow.job.create_dataset_manager')
+    def test_should_run_bigflow_component(self, create_dataset_manager_mock):
 
         # given
         create_dataset_manager_mock.side_effect = lambda **kwargs: (kwargs, kwargs)

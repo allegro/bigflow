@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import sys
 
-from biggerquery.cli import cli
+from bigflow.cli import cli
 
 cli(sys.argv[1:])

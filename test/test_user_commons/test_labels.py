@@ -1,7 +1,7 @@
 from unittest import TestCase
 
-from biggerquery.interactive import InteractiveComponent
-from biggerquery.user_commons.labels import add_label_component
+from bigflow.interactive import InteractiveComponent
+from bigflow.user_commons.labels import add_label_component
 
 
 class FakeTable(object):
