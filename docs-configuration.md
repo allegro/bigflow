@@ -1,0 +1,354 @@
+# Configuration
+
+Configuration in Bigflow is managed as Python code in `bigflow.Config` objects.
+It follows the [Configuration as Code](https://rollout.io/blog/configuration-as-code-everything-need-know/) principle.
+
+You will use `bigflow.Config` to configure individual workflows as well
+as to configure GCP deployment of your project.
+
+## Config object
+
+Here is the example of a `Config`:
+
+```python
+from bigflow import Config
+
+deployment_config = Config(name='dev',
+                           properties={
+                               'gcp_project_id': '{env}-project-id',
+                               'docker_repository_project':  'my-shared-docker-project-id',
+                               'docker_repository': 'eu.gcr.io/{docker_repository_project}/my-analytics',
+                               'vault_endpoint': 'https://example.com/vault',
+                               'dags_bucket': 'europe-west1-my-1234-bucket'
+                           })\
+        .add_configuration(name='prod',
+                           properties={
+                               'dags_bucket': 'europe-west1-my-4321-bucket'
+})
+```
+
+As you can see, it's a combination of Python `dicts` with
+some extra features that are useful for configuring things:
+
+1. The `Config` object holds multiple named configurations, one configuration
+per each environment (here `dev` and `prod`).
+
+1. Properties with values depending on environment (here `dags_bucket`)
+are defined explicitly for each environment.
+
+1. Properties with constant values (here `vault_endpoint`) 
+are defined only once in the master configuration (here, 'dev' configuration is master).
+They are *inherited* by other configurations.
+
+
+Test it:
+
+```python
+deployment_config.pretty_print('dev')
+deployment_config.pretty_print('prod')
+```
+
+output:
+
+```text
+dev config:
+{   'dags_bucket': 'europe-west1-my-1234-bucket',
+    'docker_repository': 'eu.gcr.io/my-shared-docker-project-id/my-analytics',
+    'docker_repository_project': 'my-shared-docker-project-id',
+    'gcp_project_id': 'dev-project-id',
+    'vault_endpoint': 'https://example.com/vault'}
+prod config:
+{   'dags_bucket': 'europe-west1-my-4321-bucket',
+    'docker_repository': 'eu.gcr.io/my-shared-docker-project-id/my-analytics',
+    'docker_repository_project': 'my-shared-docker-project-id',
+    'gcp_project_id': 'prod-project-id',
+    'vault_endpoint': 'https://example.com/vault'}
+```
+
+### String interpolation
+
+String properties are interpolated using values from other properties.
+Thanks to that, your `Config` can be super concise and smart.
+For example, the `docker_repository` property is resolved from:
+ 
+```python
+'docker_repository_project':  'my-shared-docker-project-id',
+'docker_repository': 'eu.gcr.io/{docker_repository_project}/my-analytics'
+```
+
+to
+
+```text
+'docker_repository': 'eu.gcr.io/my-shared-docker-project-id/my-analytics'
+```
+
+
+Interpolation is **contextual**, meaning that, it aware of a current environment. For example:
+
+```python
+
+config = Config(name='dev',
+                properties={
+                   'my_project': 'dev-project-id',
+                   'my_resource': '{my_project}_some_resource'
+                }).add_configuration(
+                name='prod',
+                properties={
+                   'my_project': 'prod-project-id'
+                })
+
+config.pretty_print('dev')
+config.pretty_print('prod')
+```  
+
+output:
+
+```text
+dev config:
+{   'my_project': 'dev-project-id',
+    'my_resource': 'dev-project-id_some_resource'}
+prod config:
+{   'my_project': 'prod-project-id',
+    'my_resource': 'prod-project-id_some_resource'}
+
+```
+
+There is a **special placeholder**: `env` for properties containing environment name. For example,
+the `gcp_project_id` property is resolved from:
+
+```python
+'gcp_project_id': '{env}-project-id'
+```
+
+to `dev-project-id` on `dev` and to `prod-project-id` on `prod`.
+
+### Master configuration
+
+In a `Config` object you can define a master configuration. 
+Any property defined in the master configuration is *inherited* by other configurations.  
+
+By default, the configuration defined in the `Config` object constructor is the master one:
+
+
+```python
+config = Config(name='dev',
+                properties={
+                   'my_project': 'my_value'
+                }).add_configuration(
+                name='prod',
+                properties={})
+
+config.pretty_print('dev')
+config.pretty_print('prod')
+```
+
+output:
+
+```text
+dev config:
+{'my_project': 'my_value'}
+prod config:
+{'my_project': 'my_value'}
+```
+
+You can disable properties inheritance by setting the `is_master` flag to `False`:
+
+```python
+config = Config(name='dev',
+                is_master=False,
+                properties={
+                   'my_project': 'my_value'
+                }).add_configuration(
+                name='prod',
+                properties={})
+
+config.pretty_print('dev')
+config.pretty_print('prod')
+```
+
+output:
+
+```text
+dev config:
+{'my_project': 'my_value'}
+prod config:
+{}                
+```                
+
+### Default configuration
+
+A default configuration is used when no environment name is given. 
+By default, the configuration defined in the `Config` object constructor is the default one.
+It is chosen while resolving properties, when `env_name` is `None`. For example:
+
+
+```python
+config = Config(name='dev',
+                properties={
+                   'my_project': 'I_am_{env}'
+                }).add_configuration(
+                name='prod',
+                properties={})
+
+config.pretty_print()
+config.pretty_print('dev')
+
+```
+
+output:
+
+```text
+dev config:
+{'my_project': 'I_am_dev'}
+dev config:
+{'my_project': 'I_am_dev'}
+```
+
+You can change the roles by setting the `is_default` flag:
+
+```python
+config = Config(name='dev',
+                is_default=False,
+                properties={
+                   'my_project': 'I_am_{env}'
+                }).add_configuration(
+                name='prod',
+                is_default=True,
+                properties={})
+
+config.pretty_print()
+config.pretty_print('dev')
+
+```
+
+output:
+
+```text
+prod config:
+{'my_project': 'I_am_prod'}
+dev config:
+{'my_project': 'I_am_dev'}
+
+### Operating System environment variables support
+
+**Secrets** shouldn't be stored in source code, but still, you need them in your configuration.
+Typically, they are stored safely on CI/CD servers and they are 
+passed around as Operating System environment variables.
+
+`Config` object supports that approach. When a property is not defined explicitly in Python,
+it is resolved from an OS environment variable. For example:
+
+
+```python
+import os
+from bigflow import Config
+
+os.environ['bgq_my_secret'] = '123456'
+
+config = Config(name='dev',
+                properties={
+                   'my_project': 'I_am_{env}'
+                })
+
+config.pretty_print('dev')
+print ('my_secret:', config.resolve_property('my_secret', 'dev'))
+```
+
+output:
+
+```text
+dev config:
+{'my_project': 'I_am_dev'}
+my_secret: 123456
+```
+
+There are two important aspects here.
+**First**, by default, OS environment variable names
+must be prefixed with `bgq_`. You can change this prefix by setting
+the `environment_variables_prefix` parameter in `Config` constructor.
+
+**Second**, since secret properties don't exist in Python code
+they are resolved always lazily and only by name, using the `Config.resolve_property()` function.
+
+
+More interestingly, you can even resolve a current configuration name from OS environment:
+
+```python
+import os
+from bigflow import Config
+
+config = Config(name='dev',
+                properties={
+                   'my_project': 'I_am_{env}'
+                }).add_configuration(
+                name='prod',
+                properties={})
+
+os.environ['bgq_env'] = 'prod'
+config.pretty_print('')
+os.environ['bgq_env'] = 'dev'
+config.pretty_print('')
+```
+
+output:
+
+```text
+prod config:
+{'my_project': 'I_am_prod'}
+dev config:
+{'my_project': 'I_am_dev'}
+```
+ 
+## Dataset Config
+
+`DatasetConfig` is a convenient extension to `Config` designed for workflows which use `DatasetManager`
+to call Big Query SQL. 
+
+`DatasetConfig` defines four properties that are required by `DatasetManager`:
+
+* `project_id` &mdash; GCP project Id of an internal (local) dataset,
+* `dataset_name` &mdash; internal dataset name,
+* `internal_tables` &mdash; list of table names in internal dataset,
+* `external_tables` &mdash; dict that defines aliases for external table names.
+
+The distinction between internal and external tables shouldn't be treated too seriously.
+Internal means `mine`. External means any other. It's just a naming convention.
+
+Fully qualified names of an internal tables are resolved to `{project_id}.{dataset_name}.{table_name}`,
+while full names of external tables have to be declared explicitly.
+
+For example:
+
+```python
+from biggerquery import DatasetConfig
+
+INTERNAL_TABLES = ['quality_metric']
+
+EXTERNAL_TABLES = {
+    'offer_ctr': 'not-my-project.offer_scorer.offer_ctr',
+    'box_ctr': 'other-project.box_scorer.box_ctr'
+}
+
+dataset_config = DatasetConfig(env='dev',
+                               project_id='my-project-dev',
+                               dataset_name='scorer',
+                               internal_tables=INTERNAL_TABLES,
+                               external_tables=EXTERNAL_TABLES
+                               )\
+            .add_configuration('prod',
+                               project_id='my-project-prod')
+``` 
+  
+Having that, a `DatasetManager` instance can be easily created:
+
+```python
+dataset_manager = dataset_config.create_dataset_manager()
+``` 
+
+Then, you can use short table names in SQL, `DatasetManager` resolves them to fully qualified names: 
+
+```python
+dataset_manager.collect('select * from {quality_metric}')
+
+dataset_manager.collect('select * from {offer_ctr}')
+```
