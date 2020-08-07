@@ -474,8 +474,7 @@ def _cli_deploy_image(args):
                         auth_method=args.auth_method,
                         docker_repository=_resolve_property(args, 'docker_repository'),
                         vault_endpoint=_resolve_vault_endpoint(args),
-                        vault_secret=args.vault_secret
-                        )
+                        vault_secret=args.vault_secret)
 
 
 def _cli_build_image(args):

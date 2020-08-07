@@ -13,15 +13,15 @@ class FindAllResourcesTestCase(TestCase):
 
         # then
         self.assertEqual(resources, [
-            'resources/requirements1.txt',
-            'resources/requirements2.txt',
+            'resources/requirements.txt',
+            'resources/requirements_base.txt',
         ])
 
 
 class ReadRequirementsTestCase(TestCase):
     def test_should_return_all_requirements_from_the_hierarchy(self):
         # when
-        requirements = read_requirements(TEST_PROJECT_PATH / 'resources' / 'requirements2.txt')
+        requirements = read_requirements(TEST_PROJECT_PATH / 'resources' / 'requirements.txt')
 
         # then
         self.assertEqual(requirements, [

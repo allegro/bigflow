@@ -2,10 +2,12 @@ import os
 import json
 from pathlib import Path
 import subprocess
-from unittest import TestCase
+from unittest import TestCase, mock
 from biggerquery.cli import walk_module_files
+from biggerquery.version import get_version
 from biggerquery.build import now, get_docker_image_id, build_docker_image_tag, \
-    clear_image_leftovers, clear_package_leftovers, clear_dags_leftovers
+    clear_image_leftovers, clear_package_leftovers, clear_dags_leftovers, auto_configuration, \
+    get_docker_repository_from_deployment_config, project_setup, secure_get_version
 from example_project.project_setup import DOCKER_REPOSITORY, PROJECT_NAME
 
 TEST_PROJECT_PATH = Path(__file__).parent / 'example_project'
@@ -226,3 +228,53 @@ class BuildImageCommandE2E(SetupTestCase):
         # then
         self.assertTrue(docker_image_as_file_built())
         self.assertTrue(deployment_config_copied())
+
+
+class AutoConfigurationTestCase(TestCase):
+    def test_should_produce_default_configuration_for_project_setup(self):
+        # given
+        project_dir = Path(__file__).parent / 'example_project'
+
+        # expected
+        self.assertEqual(auto_configuration('example_project', project_dir), {
+            'project_name': 'example_project',
+            'docker_repository': 'test_repository',
+            'root_package': project_dir / 'example_project',
+            'project_dir': project_dir,
+            'build_dir': project_dir / 'build',
+            'test_package': project_dir / 'test',
+            'dags_dir': project_dir / '.dags',
+            'dist_dir': project_dir / 'dist',
+            'image_dir': project_dir / 'image',
+            'eggs_dir': project_dir / 'example_project.egg-info',
+            'deployment_config_file': project_dir / 'deployment_config.py',
+            'version': get_version(),
+            'resources_dir': project_dir / 'resources',
+            'project_requirements_file': project_dir / 'resources' / 'requirements.txt'
+        })
+
+    def test_should_raise_error_when_cant_find_deployment_config(self):
+        # then
+        with self.assertRaises(ValueError) as e:
+            # when
+            get_docker_repository_from_deployment_config(Path(__file__).parent / 'example_project' / 'unknown.py')
+
+    @mock.patch('biggerquery.build.get_version')
+    def test_should_raise_error_when_cant_get_version(self, get_version_mock):
+        # given
+        get_version_mock.side_effect = self.get_version_error
+
+        # then
+        with self.assertRaises(ValueError) as e:
+            # when
+            secure_get_version()
+
+    def test_should_suite_project_setup(self):
+        # given
+        project_dir = Path(__file__).parent / 'example_project'
+
+        # expected
+        self.assertTrue(project_setup(**auto_configuration('example_project', project_dir)))
+
+    def get_version_error(self):
+        raise RuntimeError('get_version error')
