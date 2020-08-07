@@ -30,6 +30,9 @@ class Config:
 
         self.environment_variables_prefix = environment_variables_prefix
 
+    def __str__(self):
+        return '\n'.join(list(map(lambda e: self.pretty_print(e), self.configs.keys())))
+
     def resolve_property(self, property_name: str, env_name: str = None):
         static_props = self.resolve(env_name)
 
@@ -188,6 +191,9 @@ class DatasetConfig:
 
     def pretty_print(self, env_name: str = None):
         return self.delegate.pretty_print(env_name)
+
+    def __str__(self):
+        return self.delegate.__str__()
 
     def resolve(self, env_name: str = None) -> dict :
         return self.delegate.resolve(env_name)
