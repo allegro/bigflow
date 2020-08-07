@@ -1,5 +1,6 @@
 import os
 import pprint
+
 from .interactive import InteractiveDatasetManager
 
 
@@ -9,6 +10,14 @@ class EnvConfig:
                  properties: dict):
         self.name = name
         self.properties = properties
+
+
+class StringStream:
+    def __init__(self):
+        self.value = ''
+
+    def write(self, text):
+        self.value += text
 
 
 class Config:
@@ -30,6 +39,9 @@ class Config:
 
         self.environment_variables_prefix = environment_variables_prefix
 
+    def __str__(self):
+        return '\n'.join(list(map(lambda e: self.pretty_print(e), self.configs.keys())))
+
     def resolve_property(self, property_name: str, env_name: str = None):
         static_props = self.resolve(env_name)
 
@@ -39,11 +51,13 @@ class Config:
         return self._resolve_property_from_os_env(property_name)
 
     def pretty_print(self, env_name: str = None):
-        pp = pprint.PrettyPrinter(indent=4)
+        s = StringStream()
+        pp = pprint.PrettyPrinter(indent=4, stream=s)
 
         env_config = self._get_env_config(env_name)
-        print(env_config.name, 'config:')
+        s.write(env_config.name + ' config:\n')
         pp.pprint(self.resolve(env_name))
+        return s.value[:-1]
 
     def resolve(self, env_name: str = None) -> dict:
         env_config = self._get_env_config(env_name)
@@ -188,6 +202,9 @@ class DatasetConfig:
 
     def pretty_print(self, env_name: str = None):
         return self.delegate.pretty_print(env_name)
+
+    def __str__(self):
+        return str(self.delegate)
 
     def resolve(self, env_name: str = None) -> dict :
         return self.delegate.resolve(env_name)
