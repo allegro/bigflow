@@ -33,7 +33,7 @@ some extra features that are useful for configuring things:
 1. The `Config` object holds multiple named configurations, one configuration
 per each environment (here `dev` and `prod`).
 
-1. Properties with constant values (here `vault_endpoint`) 
+1. Properties with constant values (here `vault_endpoint`, `docker_repository_project` and `docker_repository`) 
 are defined only once in the master configuration (here, 'dev' configuration is master).
 They are *inherited* by other configurations.
 
@@ -47,7 +47,7 @@ deployment_config.pretty_print('dev')
 deployment_config.pretty_print('prod')
 ```
 
-output:
+final properties:
 
 ```text
 dev config:
@@ -82,33 +82,30 @@ to
 ```
 
 
-Interpolation is **contextual**, meaning that, it aware of a current environment. For example:
+Interpolation is **contextual**, meaning that, it is aware of a current environment. For example:
 
 ```python
-
 config = Config(name='dev',
                 properties={
-                   'my_project': 'dev-project-id',
-                   'my_resource': '{my_project}_some_resource'
+                    'offers': 'fake_offers',
+                    'transactions': '{offers}_transactions'
                 }).add_configuration(
                 name='prod',
                 properties={
-                   'my_project': 'prod-project-id'
+                   'offers': 'real_offers'
                 })
 
 config.pretty_print('dev')
 config.pretty_print('prod')
 ```  
 
-output:
+final properties:
 
 ```text
 dev config:
-{   'my_project': 'dev-project-id',
-    'my_resource': 'dev-project-id_some_resource'}
+{'offers': 'fake_offers', 'transactions': 'fake_offers_transactions'}
 prod config:
-{   'my_project': 'prod-project-id',
-    'my_resource': 'prod-project-id_some_resource'}
+{'offers': 'real_offers', 'transactions': 'real_offers_transactions'}
 
 ```
 
@@ -227,6 +224,7 @@ prod config:
 {'my_project': 'I_am_prod'}
 dev config:
 {'my_project': 'I_am_dev'}
+```
 
 ### Operating System environment variables support
 
@@ -310,7 +308,7 @@ to call Big Query SQL.
 * `internal_tables` &mdash; List of table names in an internal dataset. 
   Fully qualified names of internal tables are resolved to `{project_id}.{dataset_name}.{table_name}`.  
 * `external_tables` &mdash; Dict that defines aliases for external table names.
-  Fully qualified names of external tables have to be declared explicitly.
+  Fully qualified names of those tables have to be declared explicitly.
 
 The distinction between internal and external tables shouldn't be treated too seriously.
 Internal means `mine`. External means any other. It's just a naming convention.
@@ -323,7 +321,7 @@ from biggerquery import DatasetConfig
 INTERNAL_TABLES = ['quality_metric']
 
 EXTERNAL_TABLES = {
-    'offer_ctr': 'not-my-project.offer_scorer.offer_ctr',
+    'offer_ctr': 'not-my-project.offer_scorer.offer_ctr_long_name',
     'box_ctr': 'other-project.box_scorer.box_ctr'
 }
 
@@ -343,10 +341,20 @@ Having that, a `DatasetManager` instance can be easily created:
 dataset_manager = dataset_config.create_dataset_manager()
 ``` 
 
-Then, you can use short table names in SQL, `DatasetManager` resolves them to fully qualified names: 
+Then, you can use short table names in SQL, `DatasetManager` resolves them to fully qualified names.
+
+For example, in this SQL, a short name of an internal table: 
 
 ```python
 dataset_manager.collect('select * from {quality_metric}')
+```
 
+is resolved to `my-project-dev.scorer.quality_metric`.
+
+In this SQL, an alias of an external table: 
+
+```python
 dataset_manager.collect('select * from {offer_ctr}')
 ```
+
+is resolved to `not-my-project.offer_scorer.offer_ctr_long_name`.
