@@ -127,7 +127,7 @@ to `dev-project-id` on `dev` and to `prod-project-id` on `prod`.
 In a `Config` object you can define a master configuration. 
 Any property defined in the master configuration is *inherited* by other configurations.  
 
-By default, the configuration defined in the `Config` object constructor is the master one:
+By default, the configuration defined in the `Config` init method is the master one:
 
 
 ```python
@@ -178,7 +178,7 @@ prod config:
 ### Default configuration
 
 A default configuration is used when no environment name is given. 
-By default, the configuration defined in the `Config` object constructor is the default one.
+By default, the configuration defined in the `Config` init method is the default one.
 It is chosen while resolving properties, when `env_name` is `None`. For example:
 
 
@@ -265,7 +265,7 @@ my_secret: 123456
 There are two important aspects here.
 **First**, by default, OS environment variable names
 must be prefixed with `bgq_`. You can change this prefix by setting
-the `environment_variables_prefix` parameter in `Config` constructor.
+the `environment_variables_prefix` parameter in the `Config` init method.
 
 **Second**, since secret properties don't exist in Python code
 they are resolved always lazily and only by name, using the `Config.resolve_property()` function.
