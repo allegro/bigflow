@@ -15,6 +15,7 @@ from typing import Optional
 
 from biggerquery import Config
 from biggerquery.deploy import deploy_dags_folder, deploy_docker_image, load_image_from_tar
+from biggerquery.resources import find_file
 
 
 def resolve(path: Path) -> str:
@@ -253,15 +254,22 @@ def _valid_datetime(dt):
         datetime.strptime(dt, "%Y-%m-%d %H:%M:%S")
         return dt
     except ValueError:
-        raise ValueError("Not a valid date: '{0}'.".format(dt))
+        try:
+            datetime.strptime(dt, "%Y-%m-%d")
+            return dt
+        except ValueError:
+            raise ValueError("Not a valid date: '{0}'.".format(dt))
 
 
 def _add_build_dags_parser_arguments(parser):
     parser.add_argument('-w', '--workflow',
                         type=str,
-                        help='Id of a workflow to build.')
+                        help="Id of a workflow to build. For example to run only this workflow: bgq.Workflow(workflow_id='workflow1',"
+                             " definition=[ExampleJob('job1')]) you should use --w workflow1")
     parser.add_argument('-t', '--start-time',
-                        help='Point of time from which a workflow should start working.',
+                        help='Point of time from which a workflow should start working. '
+                             'For workflows triggered hourly -- datetime in format: Y-m-d H:M:S, for example 2020-01-01 00:00:00'
+                             'For workflows triggered daily -- datetime in format: Y-m-d, for example 2020-01-01',
                         type=_valid_datetime)
 
 
@@ -471,19 +479,26 @@ def _cli_deploy_image(args):
 
 
 def _cli_build_image(args):
+    p = check_if_project_setup_exists()
     cmd = 'python project_setup.py build_project --build-image' + (' --e' if args.export_image_to_file else '')
-    subprocess.getoutput(cmd)
+    subprocess.getoutput(f'cd {resolve(p)};{cmd}')
 
 
 def _cli_build_package():
+    p = check_if_project_setup_exists()
     cmd = 'python project_setup.py build_project --build-package'
-    subprocess.getoutput(cmd)
+    subprocess.getoutput(f'cd {resolve(p)};{cmd}')
 
 
 def _cli_build_dags(args):
+    p = check_if_project_setup_exists()
     cmd = 'python project_setup.py build_project --build-dags' + ((' --w ' + args.workflow) if args.workflow else '') + \
           ((' --t ' + args.start_time) if args.start_time else '')
-    subprocess.getoutput(cmd)
+    subprocess.getoutput(f'cd {resolve(p)};{cmd}')
+
+
+def check_if_project_setup_exists():
+    find_file('project_setup.py', Path('.').parent.resolve(), 0)
 
 
 def cli(raw_args) -> None:
