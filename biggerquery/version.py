@@ -27,8 +27,17 @@ def set_next_version_tag() -> None:
     git_tag_command(tag)
 
 
+def is_dirty():
+    return 'dirty' in subprocess.getoutput("git diff --quiet || echo 'dirty'")
+
+
+def raise_error_if_dirty_master():
+    if is_master() and is_dirty():
+        raise ValueError("Can't work on a dirty master.")
+
+
 def get_version() -> str:
-    # TODO dirty master protection
+    raise_error_if_dirty_master()
     if is_master() and not is_head_at_tag(get_tag()):
         set_next_version_tag()
     return base_get_version(template="{tag}dev{sha}").replace('+dirty', '')

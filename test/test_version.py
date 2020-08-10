@@ -40,8 +40,10 @@ class GetVersionTestCase(TestCase):
     @mock.patch('biggerquery.version.is_head_at_tag')
     @mock.patch('biggerquery.version.set_next_version_tag')
     @mock.patch('biggerquery.version.base_get_version')
+    @mock.patch('biggerquery.version.is_dirty')
     def test_should_set_bumped_tag_if_on_master(
             self,
+            is_dirty_mock,
             base_get_version_mock,
             set_next_version_tag_mock,
             is_head_at_tag_mock,
@@ -49,6 +51,7 @@ class GetVersionTestCase(TestCase):
         # given
         is_master_mock.return_value = True
         is_head_at_tag_mock.return_value = False
+        is_dirty_mock.return_value = False
         base_get_version_mock.return_value = '0.1.0'
 
         # when
@@ -57,6 +60,12 @@ class GetVersionTestCase(TestCase):
         # then
         set_next_version_tag_mock.assert_called_once_with()
         self.assertEqual(result, '0.1.0')
+
+        # then
+        with self.assertRaises(ValueError) as e:
+            # when
+            is_dirty_mock.return_value = True
+            get_version()
 
 
 class SetNextVersionTagTestCase(TestCase):
