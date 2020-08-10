@@ -12,13 +12,13 @@ __all__ = [
 ]
 
 
-def git_tag_command(tag):
+def git_tag_command(tag: str) -> None:
     print(f'setting git tag {tag}')
     print(subprocess.getoutput(f'git tag {tag}'))
     print(subprocess.getoutput('git push origin --tags'))
 
 
-def set_next_version_tag():
+def set_next_version_tag() -> None:
     latest_tag = get_tag()
     if latest_tag:
         tag = bump_minor(latest_tag)
@@ -27,14 +27,14 @@ def set_next_version_tag():
     git_tag_command(tag)
 
 
-def get_version():
+def get_version() -> str:
     # TODO dirty master protection
     if is_master() and not is_head_at_tag(get_tag()):
         set_next_version_tag()
     return base_get_version(template="{tag}dev{sha}").replace('+dirty', '')
 
 
-def bump_minor(version):
+def bump_minor(version: str) -> str:
     if not VERSION_PATTERN.match(version):
         raise ValueError('Expected version pattern is <major: int>.<minor: int>.<patch: int>.')
     major, minor, patch = version.split('.')
@@ -42,5 +42,5 @@ def bump_minor(version):
     return f'{major}.{minor}.0'
 
 
-def is_master():
+def is_master() -> bool:
     return subprocess.getoutput('git rev-parse --abbrev-ref HEAD') == 'master'
