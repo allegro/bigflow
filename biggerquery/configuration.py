@@ -1,4 +1,5 @@
 import os
+import pprint
 
 from .interactive import InteractiveDatasetManager
 
@@ -9,6 +10,14 @@ class EnvConfig:
                  properties: dict):
         self.name = name
         self.properties = properties
+
+
+class StringStream:
+    def __init__(self):
+        self.value = ''
+
+    def write(self, text):
+        self.value += text
 
 
 class Config:
@@ -30,6 +39,9 @@ class Config:
 
         self.environment_variables_prefix = environment_variables_prefix
 
+    def __str__(self):
+        return '\n'.join(list(map(lambda e: self.pretty_print(e), self.configs.keys())))
+
     def resolve_property(self, property_name: str, env_name: str = None):
         static_props = self.resolve(env_name)
 
@@ -38,13 +50,23 @@ class Config:
 
         return self._resolve_property_from_os_env(property_name)
 
-    def resolve(self, name: str = None) -> dict:
-        env_config = self._get_env_config(name)
+    def pretty_print(self, env_name: str = None):
+        s = StringStream()
+        pp = pprint.PrettyPrinter(indent=4, stream=s)
+
+        env_config = self._get_env_config(env_name)
+        s.write(env_config.name + ' config:\n')
+        pp.pprint(self.resolve(env_name))
+        return s.value[:-1]
+
+    def resolve(self, env_name: str = None) -> dict:
+        env_config = self._get_env_config(env_name)
 
         properties_with_placeholders = {key: self._resolve_property_with_os_env_fallback(key, value)
                                         for (key, value) in env_config.properties.items()}
 
         string_properties = {k: v for (k, v) in properties_with_placeholders.items() if isinstance(v, str)}
+        string_properties['env'] = env_config.name
 
         return {key: self._resolve_placeholders(value, string_properties)
                 for (key, value) in properties_with_placeholders.items()}
@@ -88,7 +110,7 @@ class Config:
 
     def _get_default_config(self) -> EnvConfig:
         if not self.default_env_name:
-            raise ValueError('no explicit env is given and no default env is defined, cant resolve properties')
+            raise ValueError("No explicit env name is given and no default env is defined, can't resolve properties.")
         return self.configs[self.default_env_name]
 
     def _resolve_property_with_os_env_fallback(self, key, value):
@@ -97,16 +119,20 @@ class Config:
         else:
             return value
 
+    def _os_env_variable_name(self, key):
+        return self.environment_variables_prefix + key
+
     def _check_property_from_os_env(self, key):
-        env_var_name = self.environment_variables_prefix + key
+        env_var_name = self._os_env_variable_name(key)
         if env_var_name in os.environ:
             return os.environ[env_var_name]
         return None
 
-    def _resolve_property_from_os_env(self, key):
-        property = self._check_property_from_os_env(key)
+    def _resolve_property_from_os_env(self, property_name):
+        property = self._check_property_from_os_env(property_name)
         if not property:
-            raise ValueError(f"failed to load property '{key}' from os.environment, no such env variable")
+            os_env_var_name = self._os_env_variable_name(property_name)
+            raise ValueError(f"Failed to load property '{property_name}' from OS environment, no such env variable: '{os_env_var_name}'.")
         return property
 
     def _resolve_placeholders(self, value, variables:dict):
@@ -132,7 +158,6 @@ class DatasetConfig:
                  is_default: bool = True):
        all_properties = (properties or {}).copy()
        all_properties['project_id'] = project_id
-       all_properties['env'] = env # for placeholders resolving
        all_properties['dataset_name'] = dataset_name
        all_properties['internal_tables'] = internal_tables or []
        all_properties['external_tables'] = external_tables or {}
@@ -151,7 +176,6 @@ class DatasetConfig:
         all_properties = (properties or {}).copy()
 
         all_properties['project_id'] = project_id
-        all_properties['env'] = env  # for placeholders resolving
 
         if dataset_name:
             all_properties['dataset_name'] = dataset_name
@@ -176,8 +200,14 @@ class DatasetConfig:
     def resolve_extra_properties(self, env: str = None):
         return {k: v for (k, v) in self.resolve(env).items() if self._is_extra_property(k)}
 
-    def resolve(self, env: str = None) -> dict :
-        return self.delegate.resolve(env)
+    def pretty_print(self, env_name: str = None):
+        return self.delegate.pretty_print(env_name)
+
+    def __str__(self):
+        return str(self.delegate)
+
+    def resolve(self, env_name: str = None) -> dict :
+        return self.delegate.resolve(env_name)
 
     def resolve_property(self, property_name: str, env: str = None):
         return self.delegate.resolve_property(property_name, env)
