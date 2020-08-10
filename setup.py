@@ -14,7 +14,7 @@ with open(os.path.join('requirements', 'stackdriver_extras.txt'), 'r') as stackd
 
 
 setuptools.setup(
-    name="bigflow",
+    name="biggerquery",
     version="1.0.dev12",
     author=u"Chi",
     author_email="chibox-team@allegrogroup.com",
