@@ -236,6 +236,11 @@ def auto_configuration(project_name: str, project_dir: Path = Path('.').parent):
     }
 
 
+def parameter_not_null_or_error(parameter_name: str, parameter_value):
+    if parameter_value is None:
+        raise ValueError(f"Parameter {parameter_name} can't be None.")
+
+
 def project_setup(
         project_name: str,
         docker_repository: str,
@@ -262,10 +267,24 @@ def project_setup(
 
     setup(project_setup(**auto_configuration('my_super_project')))
     '''
-    if project_name is None or docker_repository is None or root_package is None or project_dir is None or \
-            build_dir is None or test_package is None or dags_dir is None or dist_dir is None or image_dir is None or \
-            eggs_dir is None or deployment_config_file is None or version is None or resources_dir is None or project_requirements_file is None:
-        raise ValueError('You need to provide all parameters for the project_setup function.')
+    params_to_check = [
+        ('project_name', project_name),
+        ('docker_repository', docker_repository),
+        ('root_package', root_package),
+        ('project_dir', project_dir),
+        ('build_dir', build_dir),
+        ('test_package', test_package),
+        ('dags_dir', dags_dir),
+        ('dist_dir', dist_dir),
+        ('image_dir', image_dir),
+        ('eggs_dir', eggs_dir),
+        ('deployment_config_file', deployment_config_file),
+        ('version', version),
+        ('resources_dir', resources_dir),
+        ('project_requirements_file', project_requirements_file),
+    ]
+    for parameter_name, parameter_value in params_to_check:
+        parameter_not_null_or_error(parameter_name, parameter_value)
 
     return {
         'name': project_name,
