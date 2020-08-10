@@ -95,10 +95,6 @@ def build_docker_image_tag(docker_repository: str, package_version: str):
     return docker_repository + ':' + package_version
 
 
-def validate_build_image_parameters(version):
-    pass
-
-
 def build_image(
         docker_repository: str,
         version: str,
