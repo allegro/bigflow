@@ -479,7 +479,7 @@ def _cli_deploy_image(args):
 
 def _cli_build_image(args):
     check_if_project_setup_exists()
-    cmd = 'python project_setup.py build_project --build-image' + (' --e' if args.export_image_to_file else '')
+    cmd = 'python project_setup.py build_project --build-image' + (' --export-image-to-file' if args.export_image_to_file else '')
     run_process(cmd)
 
 
@@ -491,17 +491,18 @@ def _cli_build_package():
 
 def _cli_build_dags(args):
     check_if_project_setup_exists()
-    cmd = 'python project_setup.py build_project --build-dags' + ((' --w ' + args.workflow) if args.workflow else '') + \
-          ((' --t ' + args.start_time) if args.start_time else '')
+    cmd = 'python project_setup.py build_project --build-dags' + \
+          ((' --workflow ' + args.workflow) if args.workflow else '') + \
+          ((' --start-time ' + args.start_time) if args.start_time else '')
     run_process(cmd)
 
 
 def _cli_build(args):
     check_if_project_setup_exists()
     cmd = 'python project_setup.py build_project' + \
-          ((' --w ' + args.workflow) if args.workflow else '') + \
-          ((' --t ' + args.start_time) if args.start_time else '') + \
-          (' --e' if args.export_image_to_file else '')
+          ((' --workflow ' + args.workflow) if args.workflow else '') + \
+          ((' --start-time ' + args.start_time) if args.start_time else '') + \
+          (' --export-image-to-file' if args.export_image_to_file else '')
     run_process(cmd)
 
 

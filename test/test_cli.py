@@ -615,36 +615,34 @@ deployment_config = Config(name='dev',
         # then
         _cli_build_package_mock.assert_called_with()
 
-    @mock.patch('biggerquery.cli._cli_build_package')
-    @mock.patch('biggerquery.cli._cli_build_dags')
-    @mock.patch('biggerquery.cli._cli_build_image')
-    def test_should_call_cli_build_command(self, _cli_build_package_mock, _cli_build_dags_mock, _cli_build_image_mock):
+    @mock.patch('biggerquery.cli._cli_build')
+    def test_should_call_cli_build_command(self, _cli_build_mock):
         # when
         cli(['build'])
 
         # then
-        _cli_build_package_mock.assert_called_with(Namespace(operation='build', export_image_to_file=False,
-                                                             start_time=None, workflow=None))
+        _cli_build_mock.assert_called_with(Namespace(operation='build', export_image_to_file=False,
+                                                     start_time=None, workflow=None))
         # when
-        cli(['build', '-e'])
+        cli(['build', '--export-image-to-file'])
 
         # then
-        _cli_build_package_mock.assert_called_with(Namespace(operation='build', export_image_to_file=True,
-                                                             start_time=None, workflow=None))
+        _cli_build_mock.assert_called_with(Namespace(operation='build', export_image_to_file=True,
+                                                     start_time=None, workflow=None))
 
         # when
-        cli(['build', '-e', '-t', '2020-01-01 00:00:00'])
+        cli(['build', '--export-image-to-file', '--start-time', '2020-01-01 00:00:00'])
 
         # then
-        _cli_build_package_mock.assert_called_with(Namespace(operation='build', export_image_to_file=True,
-                                                             start_time='2020-01-01 00:00:00', workflow=None))
+        _cli_build_mock.assert_called_with(Namespace(operation='build', export_image_to_file=True,
+                                                     start_time='2020-01-01 00:00:00', workflow=None))
 
         # when
-        cli(['build', '-e', '-t', '2020-01-01 00:00:00', '-w', 'some_workflow'])
+        cli(['build', '--export-image-to-file', '--start-time', '2020-01-01 00:00:00', '--workflow', 'some_workflow'])
 
         # then
-        _cli_build_package_mock.assert_called_with(Namespace(operation='build', export_image_to_file=True,
-                                                             start_time='2020-01-01 00:00:00', workflow='some_workflow'))
+        _cli_build_mock.assert_called_with(Namespace(operation='build', export_image_to_file=True,
+                                                     start_time='2020-01-01 00:00:00', workflow='some_workflow'))
 
     @mock.patch('biggerquery.cli.check_if_project_setup_exists')
     @mock.patch('biggerquery.cli.run_process')
