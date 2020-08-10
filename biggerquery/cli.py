@@ -1,7 +1,6 @@
 import argparse
 import importlib
 import os
-import subprocess
 import sys
 from argparse import Namespace
 from datetime import datetime
@@ -16,6 +15,7 @@ from typing import Optional
 from biggerquery import Config
 from biggerquery.deploy import deploy_dags_folder, deploy_docker_image, load_image_from_tar
 from biggerquery.resources import find_file
+from .utils import run_process
 
 
 def resolve(path: Path) -> str:
@@ -478,26 +478,35 @@ def _cli_deploy_image(args):
 
 
 def _cli_build_image(args):
-    p = check_if_project_setup_exists()
+    check_if_project_setup_exists()
     cmd = 'python project_setup.py build_project --build-image' + (' --e' if args.export_image_to_file else '')
-    subprocess.getoutput(f'cd {resolve(p)};{cmd}')
+    run_process(cmd)
 
 
 def _cli_build_package():
-    p = check_if_project_setup_exists()
+    check_if_project_setup_exists()
     cmd = 'python project_setup.py build_project --build-package'
-    subprocess.getoutput(f'cd {resolve(p)};{cmd}')
+    run_process(cmd)
 
 
 def _cli_build_dags(args):
-    p = check_if_project_setup_exists()
+    check_if_project_setup_exists()
     cmd = 'python project_setup.py build_project --build-dags' + ((' --w ' + args.workflow) if args.workflow else '') + \
           ((' --t ' + args.start_time) if args.start_time else '')
-    subprocess.getoutput(f'cd {resolve(p)};{cmd}')
+    run_process(cmd)
+
+
+def _cli_build(args):
+    check_if_project_setup_exists()
+    cmd = 'python project_setup.py build_project' + \
+          ((' --w ' + args.workflow) if args.workflow else '') + \
+          ((' --t ' + args.start_time) if args.start_time else '') + \
+          (' --e' if args.export_image_to_file else '')
+    run_process(cmd)
 
 
 def check_if_project_setup_exists():
-    find_file('project_setup.py', Path('.').parent.resolve(), 0)
+    find_file('project_setup.py', Path('.'), 1)
 
 
 def cli(raw_args) -> None:
@@ -523,8 +532,6 @@ def cli(raw_args) -> None:
     elif operation == 'build-package':
         _cli_build_package()
     elif operation == 'build':
-        _cli_build_dags(parsed_args)
-        _cli_build_image(parsed_args)
-        _cli_build_package()
+        _cli_build(parsed_args)
     else:
         raise ValueError(f'Operation unknown - {operation}')

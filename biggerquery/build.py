@@ -1,7 +1,6 @@
 import os
-import sys
-import subprocess
 from pathlib import Path
+import subprocess
 import shutil
 import distutils.cmd
 from datetime import datetime
@@ -15,6 +14,7 @@ from .dagbuilder import generate_dag_file
 from .resources import read_requirements, find_all_resources
 from .utils import resolve
 from .version import get_version
+from .utils import run_process
 
 __all__ = [
     'project_setup',
@@ -48,13 +48,6 @@ def clear_package_leftovers(dist_dir: Path, eggs_dir: Path, build_dir: Path):
     for to_delete in [build_dir, dist_dir, eggs_dir]:
         print(f'Removing: {str(to_delete.absolute())}')
         shutil.rmtree(to_delete, ignore_errors=True)
-
-
-def run_process(cmd: str):
-    print(cmd)
-    process = subprocess.Popen(cmd.split(' '), stdout=subprocess.PIPE)
-    for c in iter(lambda: process.stdout.read(1), b''):
-        sys.stdout.write(c.decode('utf-8'))
 
 
 def get_docker_image_id(tag):
@@ -100,6 +93,10 @@ def build_dags(
 
 def build_docker_image_tag(docker_repository: str, package_version: str):
     return docker_repository + ':' + package_version
+
+
+def validate_build_image_parameters(version):
+    pass
 
 
 def build_image(

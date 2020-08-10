@@ -28,6 +28,7 @@ def set_next_version_tag():
 
 
 def get_version():
+    # TODO dirty master protection
     if is_master() and not is_head_at_tag(get_tag()):
         set_next_version_tag()
     return base_get_version(template="{tag}dev{sha}").replace('+dirty', '')

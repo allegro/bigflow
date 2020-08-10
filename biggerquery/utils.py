@@ -1,4 +1,6 @@
 import os
+import subprocess
+import sys
 from pathlib import Path
 import zipfile
 import tempfile
@@ -10,6 +12,13 @@ import functools
 from google.api_core.exceptions import BadRequest
 
 logger = logging.getLogger(__name__)
+
+
+def run_process(cmd: str):
+    print(cmd)
+    process = subprocess.Popen(cmd.split(' '), stdout=subprocess.PIPE)
+    for c in iter(lambda: process.stdout.read(1), b''):
+        sys.stdout.write(c.decode('utf-8'))
 
 
 def resolve(path: Path):

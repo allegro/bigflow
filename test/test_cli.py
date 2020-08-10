@@ -647,8 +647,8 @@ deployment_config = Config(name='dev',
                                                              start_time='2020-01-01 00:00:00', workflow='some_workflow'))
 
     @mock.patch('biggerquery.cli.check_if_project_setup_exists')
-    @mock.patch('biggerquery.cli.subprocess')
-    def test_should_call_build_command_through_CLI(self, subprocess_mock, check_if_project_setup_exists_mock):
+    @mock.patch('biggerquery.cli.run_process')
+    def test_should_call_build_command_through_CLI(self, run_process_mock, check_if_project_setup_exists_mock):
         # given
         check_if_project_setup_exists_mock.return_value = TEST_PROJECT_PATH
 
@@ -656,14 +656,12 @@ deployment_config = Config(name='dev',
         cli(['build'])
 
         # then
-        self.assertEqual(subprocess_mock.getoutput.call_count, 3)
-        subprocess_mock.getoutput.assert_any_call('cd {0};python project_setup.py build_project --build-dags'.format(str(TEST_PROJECT_PATH)))
-        subprocess_mock.getoutput.assert_any_call('cd {0};python project_setup.py build_project --build-image'.format(str(TEST_PROJECT_PATH)))
-        subprocess_mock.getoutput.assert_any_call('cd {0};python project_setup.py build_project --build-package'.format(str(TEST_PROJECT_PATH)))
+        self.assertEqual(run_process_mock.call_count, 1)
+        run_process_mock.assert_any_call('python project_setup.py build_project --build-dags --build-image --build-package'.format(str(TEST_PROJECT_PATH)))
 
     @mock.patch('biggerquery.cli.check_if_project_setup_exists')
-    @mock.patch('biggerquery.cli.subprocess')
-    def test_should_call_build_package_command_through_CLI(self, subprocess_mock, check_if_project_setup_exists_mock):
+    @mock.patch('biggerquery.cli.run_process')
+    def test_should_call_build_package_command_through_CLI(self, run_process_mock, check_if_project_setup_exists_mock):
         # given
         check_if_project_setup_exists_mock.return_value = TEST_PROJECT_PATH
 
@@ -671,12 +669,12 @@ deployment_config = Config(name='dev',
         cli(['build-package'])
 
         # then
-        self.assertEqual(subprocess_mock.getoutput.call_count, 1)
-        subprocess_mock.getoutput.assert_any_call('cd {0};python project_setup.py build_project --build-package'.format(str(TEST_PROJECT_PATH)))
+        self.assertEqual(run_process_mock.call_count, 1)
+        run_process_mock.assert_any_call('python project_setup.py build_project --build-package')
 
     @mock.patch('biggerquery.cli.check_if_project_setup_exists')
-    @mock.patch('biggerquery.cli.subprocess')
-    def test_should_call_build_command_through_CLI(self, subprocess_mock, check_if_project_setup_exists_mock):
+    @mock.patch('biggerquery.cli.run_process')
+    def test_should_call_build_command_through_CLI(self, run_process_mock, check_if_project_setup_exists_mock):
         # given
         check_if_project_setup_exists_mock.return_value = TEST_PROJECT_PATH
 
@@ -684,12 +682,12 @@ deployment_config = Config(name='dev',
         cli(['build-image'])
 
         # then
-        self.assertEqual(subprocess_mock.getoutput.call_count, 1)
-        subprocess_mock.getoutput.assert_any_call('cd {0};python project_setup.py build_project --build-image'.format(str(TEST_PROJECT_PATH)))
+        self.assertEqual(run_process_mock.call_count, 1)
+        run_process_mock.assert_any_call('python project_setup.py build_project --build-image')
 
     @mock.patch('biggerquery.cli.check_if_project_setup_exists')
-    @mock.patch('biggerquery.cli.subprocess')
-    def test_should_call_build_dags_command_through_CLI(self, subprocess_mock, check_if_project_setup_exists_mock):
+    @mock.patch('biggerquery.cli.run_process')
+    def test_should_call_build_dags_command_through_CLI(self, run_process_mock, check_if_project_setup_exists_mock):
         # given
         check_if_project_setup_exists_mock.return_value = TEST_PROJECT_PATH
 
@@ -697,8 +695,8 @@ deployment_config = Config(name='dev',
         cli(['build-dags'])
 
         # then
-        self.assertEqual(subprocess_mock.getoutput.call_count, 1)
-        subprocess_mock.getoutput.assert_any_call('cd {0};python project_setup.py build_project --build-dags'.format(str(TEST_PROJECT_PATH)))
+        self.assertEqual(run_process_mock.call_count, 1)
+        run_process_mock.assert_any_call('python project_setup.py build_project --build-dags')
 
     def _expected_default_dags_dir(self):
         return (Path(os.getcwd()) / '.dags').as_posix()
