@@ -66,9 +66,9 @@ Typically, `bf run` is used for local development as a quick way to execute your
  
 **Here are a few examples how it can be used**.
 
-The simplest workflow you can create has only one job which prints 'Hello World'.
+The simplest workflow you can create has only one job which prints 'Hello World'
 (complete source code is available in this repository 
-as a part of the [Hello World](https://github.com/allegro/bigflow/tree/master/docs/hello_wordl) project).
+as a part of the [Hello World](https://github.com/allegro/bigflow/tree/master/docs/hello_word) project).
 
 `docs/hello_world/hello_world_workflow.py`:
 
