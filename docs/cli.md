@@ -64,16 +64,16 @@ Typically, `bf run` is used for local development as a quick way to execute your
 * It uses [local authentication](#authentication-methods) so it relies on permissions of your Google account.
 * It executes a job or workflow only once (on production environment you probably wants your workflows to be run periodically by Composer).
  
-**Here are a few examples how it can be used**.
+**Here are a few examples**
 
-The simplest workflow you can create has only one job which prints 'Hello World'
-(complete source code is available in this repository 
-as a part of the [Docs Examples](https://github.com/allegro/bigflow/tree/master/docs/docs_examples) project).
+The example workflow is super simple. It consists of two jobs. The first one says Hello, and the second one says
+Goodbye. 
 
-`docs/hello_world/hello_world_workflow.py`:
+`docs/docs_examples/hello_world_workflow.py`:
 
 ```python
 from bigflow.workflow import Workflow
+
 
 class HelloWorldJob:
     def __init__(self):
@@ -82,11 +82,21 @@ class HelloWorldJob:
     def run(self, runtime):
         print(f'Hello world at {runtime}!')
 
-hello_world_workflow = Workflow(workflow_id='hello_world_workflow', definition=[HelloWorldJob()])
+
+class SayGoodbyeJob:
+    def __init__(self):
+        self.id = 'say_goodbye'
+
+    def run(self, runtime):
+        print(f'Goodbye!')
+
+hello_world_workflow = Workflow(workflow_id='hello_world_workflow',
+                                definition=[
+                                            HelloWorldJob(),
+                                            SayGoodbyeJob()])
 ```
 
 Start from getting to the project dir:
-
 
 ```shell
 cd docs
@@ -95,35 +105,104 @@ cd docs
 Run the `hello_world_workflow` workflow:
 
 ```shell
-cd docs
 bf run --workflow hello_world_workflow
 ```
 
-Or a single job:
-
-```shell
-bf run --job hello_world_workflow.hello_world
-```
-
-
-You should see the following output:
+Output:
 
 ```text
-Hello world at 2020-08-11 13:47:49!
+Hello world at 2020-08-11 14:14:58!
+Goodbye!
 ```
 
+Run a single job:
 
-### Setting the runtime
-
-// TODO 
-
+```shell
+bf run --job hello_world_workflow.say_goodbye
 ```
-bgq run --workflow workflowId
-bgq run --workflow workflowId --runtime '2020-01-01 00:00:00' --config prod
-bgq run --job jobId
-bgq run --job jobId --runtime '2020-01-01 00:00:00'
-bgq run --job jobId --runtime '2020-01-01 00:00:00' --config dev
+
+Output:
+
+```text
+Goodbye!
 ```
+
+Complete source code for all examples is available in this repository 
+as a part of the [Docs Examples](https://github.com/allegro/bigflow/tree/master/docs/docs_examples) project.
+
+### Setting the runtime parameter
+
+The most important parameter for a workflow is the `runtime`.
+Think about it more like a period than a point in time because batch workflows process data in batches based on timestamps.
+
+#### Workflow with daily scheduling
+When you run a workflow **daily**, `runtime` means: all data with timestamps within given day.
+For example:
+ 
+`docs/docs_examples/daily_workflow.py`:
+
+```python
+from bigflow.workflow import Workflow
+
+
+class SomeJob:
+    def __init__(self):
+        self.id = 'some_job'
+
+    def run(self, runtime):
+        print(f'I should process data with timestamps from: {runtime} 00:00 to {runtime} 23:59')
+
+daily_workflow = Workflow(workflow_id='daily_workflow',
+                                definition=[SomeJob()])
+```
+ 
+ 
+Run `daily_workflow` for batch date 2020-01-01:
+
+```shell
+bf run --workflow daily_workflow --runtime 2020-01-01
+```
+
+Output:
+
+```text
+I should process data with timestamps from: 2020-01-01 00:00 to 2020-01-01 23:59
+``` 
+ 
+#### Workflow with hourly scheduling 
+When you run a workflow **hourly**, `runtime` means: all data with timestamps within given hour.
+For example:
+ 
+`docs/docs_examples/hourly_workflow.py`: 
+ 
+```python
+from bigflow.workflow import Workflow
+from datetime import datetime
+from datetime import timedelta
+
+class SomeJob:
+    def __init__(self):
+        self.id = 'some_job'
+
+    def run(self, runtime):
+        print(f'I should process data with timestamps from: {runtime} '
+              f'to {datetime.strptime(runtime, "%Y-%m-%d %H:%M:%S") + timedelta(minutes=59, seconds=59) }')
+
+hourly_workflow = Workflow(workflow_id='hourly_workflow',
+                                definition=[SomeJob()])
+```
+
+Run `hourly_workflow` for batch hour 2020-01-01 10:00:00:
+
+```shell
+bf run run --workflow hourly_workflow --runtime '2020-01-01 10:00:00'
+```
+
+Output:
+
+```text
+I should process data with timestamps from: 2020-01-01 10:00:00 to 2020-01-01 10:59:59
+``` 
 
 Run command requires you to provide one of those two parameters:
 * `--job <job id>` - use it to run a job by its id. You can set job id by setting `id` field in the object representing this job. 
