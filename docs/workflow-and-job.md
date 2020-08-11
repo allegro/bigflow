@@ -1,6 +1,6 @@
-## Workflows and jobs
+# Workflows and jobs
 
-### Overview
+## Overview
 
 The basic BigFlow workflow is a series of jobs. Each job executes part of your processing logic. Job is a Python object. 
 It can execute anything that can be executed from the Python code, for example:
@@ -25,32 +25,14 @@ class HelloWorldJob:
 hello_world_workflow = Workflow(workflow_id='hello_world_workflow', definition=[HelloWorldJob()])
 ```
 
-Now, you can run the `hello_world_workflow`:
-
-```shell script
-bgf run --workflow hello_world_workflow
-```
-
-Or a single job:
-
-```shell script
-bgf run --job hello_world_workflow.hello_world
-```
-
-You can also run the workflow and job within the module:
+You can run the workflow and job within the module (but we recommend using CLI):
 
 ```python
 hello_world_workflow.run()
 hello_world_workflow.run_job('hello_world')
 ```
 
-Finally, you can build and deploy created workflow to Cloud Composer:
-
-```shell script
-bgf build;bgf deploy
-```
-
-### Job
+## Job
 
 Job is just an object that has a unique `id` and implements the `run` method.
 
@@ -65,7 +47,7 @@ class SimpleJob:
 job = SimpleJob('my_simple_job')
 ```
 
-The `runtime` parameter represents a date and time of job execution. Let us say that your workflow runs every day at 7 am,
+The `runtime` parameter represents a date and time of a job execution. Let us say that your workflow runs every day at 7 am,
 starting from 2020-01-01. Then, the `run` method will be executed for each job with `runtime` 
 equals `"2020-01-01 07:00:00"`, `"2020-01-02 07:00:00"`, `"2020-01-03 07:00:00"` and so on.
 
@@ -82,8 +64,8 @@ hello_world_workflow.run_job('2')
 >>> '2020-01-02 01:11:00'
 ```
 
-There are 2 additional parameters, that job can supply - `retry_count` and `retry_pause_sec`. The `retry_count` parameter
-determines how many times a job will be retried. The `retry_pause_sec` sets how long the pause between retries should be.
+There are 2 additional parameters, that a job can supply - `retry_count` and `retry_pause_sec`. The `retry_count` parameter
+determines how many times a job will be retried. The `retry_pause_sec` says how long the pause between retries should be.
 
 ```python
 class SimpleJob:
@@ -94,17 +76,15 @@ class SimpleJob:
 
     def run(self, runtime):
         print(runtime)
-
-job = SimpleJob('my_simple_job')
 ```
 
 ## Workflow
 
 The `Workflow` class arranges jobs into a DAG. There are 2 ways of specifying job arrangement. First one is passing a list
-of jobs to `Workflow`:
+of jobs:
 
 ```python
-from biggerquery.build import Workflow
+from bigflow.build import Workflow
 
 class Job(object):
     def __init__(self, id):
@@ -113,15 +93,26 @@ class Job(object):
     def run(self, runtime):
         print(runtime)
 
-example_workflow = Workflow(definition=[Job('1'), Job('2')])
+example_workflow = Workflow(
+    workflow_id='example_workflow', 
+    definition=[Job('1'), Job('2')])
 ```
 
-The second one is passing `Definition` object, it allows you to create a graph:
+The second one is passing `Definition` object, that allows you to create a graph.
+
+Let us say that we want to create the following DAG:
+    
+```
+     |--job2--|
+job1-         -->job4 
+     |--job3--|
+```
+
+The implementation looks like this:
 
 ```python
-from biggerquery.build import Workflow
-from biggerquery.build import Definition
-from biggerquery.build import WorkflowJob
+from bigflow.build import Workflow
+from bigflow.build import Definition
 
 class Job(object):
     def __init__(self, id):
@@ -132,15 +123,25 @@ class Job(object):
 
 job1, job2, job3, job4 = Job('1'), Job('2'), Job('3'), Job('4')
 
-Definition({
-    create_quality_metric_table_job: (calculate_box_quality_metric_job, calculate_offer_quality_metric_job)
-})
+
+example_workflow = Workflow(definition=Definition({
+    job1: (job2, job3),
+    job2: (job4, ),
+    job3: (job4, )
+}))
 ```
+
+The `Workflow` class has some additional parameters:
+
+* `schedule_interval`
+* `runtime_as_datetime`
+* 
 
 ## Local run
 
+The `Workflow` class provides 
 
-### Why not Airflow DAG?
+## Why not Airflow DAG?
 
 We treat Airflow as a deployment platform only (possibly one of many). Build tool produces immutable, disposable DAG. We avoid dealing with
 Airflow state. We think that there are better places to store historical data
