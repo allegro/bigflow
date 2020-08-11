@@ -17,7 +17,7 @@ from bigflow.workflow import Workflow
 
 class HelloWorldJob:
     def __init__(self):
-        self.id = 'hello_world'
+        self.id = docs
 
     def run(self, runtime):
         print(f'Hello world at {runtime}!')
