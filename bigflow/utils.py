@@ -1,13 +1,28 @@
 import os
+import subprocess
+import sys
+from pathlib import Path
 import zipfile
 import tempfile
 import shutil
 import logging
 from collections import namedtuple
 import functools
+
 from google.api_core.exceptions import BadRequest
 
 logger = logging.getLogger(__name__)
+
+
+def run_process(cmd: str):
+    print(cmd)
+    process = subprocess.Popen(cmd.split(' '), stdout=subprocess.PIPE)
+    for c in iter(lambda: process.stdout.read(1), b''):
+        sys.stdout.write(c.decode('utf-8'))
+
+
+def resolve(path: Path):
+    return str(path.absolute())
 
 
 def not_none_or_error(arg_value, arg_name):
@@ -82,6 +97,7 @@ def log_syntax_error(method):
                 raise e
 
     return decorated
+
 
 def merge_dicts(dict1, dict2):
     return {**dict1, **dict2}

@@ -43,8 +43,7 @@ are defined explicitly in each configuration.
 Test it:
 
 ```python
-deployment_config.pretty_print('dev')
-deployment_config.pretty_print('prod')
+print(deployment_config)
 ```
 
 final properties:
@@ -95,8 +94,7 @@ config = Config(name='dev',
                    'offers': 'real_offers'
                 })
 
-config.pretty_print('dev')
-config.pretty_print('prod')
+print(config)
 ```  
 
 final properties:
@@ -134,8 +132,7 @@ config = Config(name='dev',
                 name='prod',
                 properties={})
 
-config.pretty_print('dev')
-config.pretty_print('prod')
+print(config)
 ```
 
 output:
@@ -158,8 +155,7 @@ config = Config(name='dev',
                 name='prod',
                 properties={})
 
-config.pretty_print('dev')
-config.pretty_print('prod')
+print(config)
 ```
 
 output:
@@ -168,7 +164,7 @@ output:
 dev config:
 {'my_project': 'my_value'}
 prod config:
-{}                
+{}               
 ```                
 
 ### Default configuration
@@ -186,8 +182,8 @@ config = Config(name='dev',
                 name='prod',
                 properties={})
 
-config.pretty_print()
-config.pretty_print('dev')
+print(config.pretty_print())
+print(config.pretty_print('dev'))
 
 ```
 
@@ -212,8 +208,8 @@ config = Config(name='dev',
                 is_default=True,
                 properties={})
 
-config.pretty_print()
-config.pretty_print('dev')
+print(config.pretty_print())
+print(config.pretty_print('dev'))
 
 ```
 
@@ -247,7 +243,7 @@ config = Config(name='dev',
                    'my_project': 'I_am_{env}'
                 })
 
-config.pretty_print('dev')
+print(config)
 print ('my_secret:', config.resolve_property('my_secret', 'dev'))
 ```
 
@@ -267,7 +263,6 @@ the `environment_variables_prefix` parameter in the `Config` init method.
 **Second**, since secret properties don't exist in Python code
 they are resolved always lazily and only by name, using the `Config.resolve_property()` function.
 
-
 More interestingly, you can even resolve a current configuration name from OS environment:
 
 ```python
@@ -282,9 +277,9 @@ config = Config(name='dev',
                 properties={})
 
 os.environ['bf_env'] = 'prod'
-config.pretty_print('')
+print(config.pretty_print(''))
 os.environ['bf_env'] = 'dev'
-config.pretty_print('')
+print(config.pretty_print(''))
 ```
 
 output:

@@ -14,6 +14,8 @@ from typing import Optional
 
 from bigflow import Config
 from bigflow.deploy import deploy_dags_folder, deploy_docker_image, load_image_from_tar
+from bigflow.resources import find_file
+from .utils import run_process
 
 
 def resolve(path: Path) -> str:
@@ -219,7 +221,7 @@ def cli_run(project_package: str,
 def _parse_args(project_name: Optional[str], args) -> Namespace:
     project_name_description = build_project_name_description(project_name)
     parser = argparse.ArgumentParser(description=f'Welcome to BigFlow CLI. {project_name_description}'
-                                                  '\nType: bf {run,deploy-dags,deploy-image,deploy} -h to print detailed help for selected command.')
+                                                  '\nType: bf {run,deploy-dags,deploy-image,deploy,build,build-dags,build-image,build-package} -h to print detailed help for selected command.')
     subparsers = parser.add_subparsers(dest='operation',
                                        required=True,
                                        help='bf command to execute')
@@ -229,7 +231,65 @@ def _parse_args(project_name: Optional[str], args) -> Namespace:
     _create_deploy_image_parser(subparsers)
     _create_deploy_parser(subparsers)
 
+    _create_build_dags_parser(subparsers)
+    _create_build_image_parser(subparsers)
+    _create_build_package_parser(subparsers)
+    _create_build_parser(subparsers)
+
     return parser.parse_args(args)
+
+
+def _create_build_parser(subparsers):
+    parser = subparsers.add_parser('build', description='Builds a Docker image, DAG files and .whl package from local sources.')
+    _add_build_dags_parser_arguments(parser)
+    _add_build_image_parser_arguments(parser)
+
+
+def _create_build_package_parser(subparsers):
+    subparsers.add_parser('build-package', description='Builds .whl package from local sources.')
+
+
+def _valid_datetime(dt):
+    try:
+        datetime.strptime(dt, "%Y-%m-%d %H:%M:%S")
+        return dt
+    except ValueError:
+        try:
+            datetime.strptime(dt, "%Y-%m-%d")
+            return dt
+        except ValueError:
+            raise ValueError("Not a valid date: '{0}'.".format(dt))
+
+
+def _add_build_dags_parser_arguments(parser):
+    parser.add_argument('-w', '--workflow',
+                        type=str,
+                        help="Id of a workflow to build. For example to run only this workflow: bgq.Workflow(workflow_id='workflow1',"
+                             " definition=[ExampleJob('job1')]) you should use --w workflow1")
+    parser.add_argument('-t', '--start-time',
+                        help='Point of time from which a workflow should start working. '
+                             'For workflows triggered hourly -- datetime in format: Y-m-d H:M:S, for example 2020-01-01 00:00:00'
+                             'For workflows triggered daily -- datetime in format: Y-m-d, for example 2020-01-01',
+                        type=_valid_datetime)
+
+
+def _add_build_image_parser_arguments(parser):
+    parser.add_argument('-e', '--export-image-to-file',
+                        default=False,
+                        action="store_true",
+                        help="If true, an image is exported to a *.tar file.")
+
+
+def _create_build_dags_parser(subparsers):
+    parser = subparsers.add_parser('build-dags',
+                                   description='Builds DAG files from local sources to {current_dir}/.dags')
+    _add_build_dags_parser_arguments(parser)
+
+
+def _create_build_image_parser(subparsers):
+    parser = subparsers.add_parser('build-image',
+                                   description='Builds a docker image from local files.')
+    _add_build_image_parser_arguments(parser)
 
 
 def _create_run_parser(subparsers, project_name):
@@ -414,8 +474,40 @@ def _cli_deploy_image(args):
                         auth_method=args.auth_method,
                         docker_repository=_resolve_property(args, 'docker_repository'),
                         vault_endpoint=_resolve_vault_endpoint(args),
-                        vault_secret=args.vault_secret
-                        )
+                        vault_secret=args.vault_secret)
+
+
+def _cli_build_image(args):
+    check_if_project_setup_exists()
+    cmd = 'python project_setup.py build_project --build-image' + (' --export-image-to-file' if args.export_image_to_file else '')
+    run_process(cmd)
+
+
+def _cli_build_package():
+    check_if_project_setup_exists()
+    cmd = 'python project_setup.py build_project --build-package'
+    run_process(cmd)
+
+
+def _cli_build_dags(args):
+    check_if_project_setup_exists()
+    cmd = 'python project_setup.py build_project --build-dags' + \
+          ((' --workflow ' + args.workflow) if args.workflow else '') + \
+          ((' --start-time ' + args.start_time) if args.start_time else '')
+    run_process(cmd)
+
+
+def _cli_build(args):
+    check_if_project_setup_exists()
+    cmd = 'python project_setup.py build_project' + \
+          ((' --workflow ' + args.workflow) if args.workflow else '') + \
+          ((' --start-time ' + args.start_time) if args.start_time else '') + \
+          (' --export-image-to-file' if args.export_image_to_file else '')
+    run_process(cmd)
+
+
+def check_if_project_setup_exists():
+    find_file('project_setup.py', Path('.'), 1)
 
 
 def cli(raw_args) -> None:
@@ -434,5 +526,13 @@ def cli(raw_args) -> None:
     elif operation == 'deploy':
         _cli_deploy_dags(parsed_args)
         _cli_deploy_image(parsed_args)
+    elif operation == 'build-dags':
+        _cli_build_dags(parsed_args)
+    elif operation == 'build-image':
+        _cli_build_image(parsed_args)
+    elif operation == 'build-package':
+        _cli_build_package()
+    elif operation == 'build':
+        _cli_build(parsed_args)
     else:
         raise ValueError(f'Operation unknown - {operation}')
