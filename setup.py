@@ -15,7 +15,7 @@ with open(os.path.join('requirements', 'stackdriver_extras.txt'), 'r') as stackd
 
 setuptools.setup(
     name="bigflow",
-    version="0.1.0",
+    version="0.1.1",
     author=u"Chi",
     author_email="chibox-team@allegrogroup.com",
     description="BigQuery client wrapper with clean API",
