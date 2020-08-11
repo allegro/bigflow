@@ -1,12 +1,12 @@
 # BigFlow CLI
 
-BigFlow offers a command-line tool called `bgq`.
+BigFlow offers a command-line tool called `bf`.
 It lets you to run, build, and deploy your workflows from command-line on any machine with Python.
 
-`bgq` is a recommended way of working with BigFlow
+`bf` is a recommended way of working with BigFlow
 for developing on local machine as well as for build and deployment automation on CI/CD servers.  
 
-## Installing `bgq`
+## Installing `bf`
 
 Prerequisites:
 
@@ -14,7 +14,7 @@ Prerequisites:
 2. [Google Cloud SDK](https://cloud.google.com/sdk/docs/downloads-interactive)  
 
 
-You can install the `bgq` tool globally but we recommend to 
+You can install the `bf` tool globally but we recommend to 
 install it locally with `venv`, in your project's folder:
 
 ```bash
@@ -23,7 +23,7 @@ source .bigflow_env/bin/activate
 cd .bigflow_env
 ```
 
-Install the `bgq` tool:
+Install the `bf` tool:
 
 ```bash
 pip install bigflow
@@ -32,13 +32,13 @@ pip install bigflow
 Test it:
 
 ```shell
-bgq -h
+bf -h
 ```
 
-You should see the welcome message and the list of all `bgq` commands:
+You should see the welcome message and the list of all `bf` commands:
 
 ```text
-Welcome to BiggerQuery CLI. Type: bgq {run,deploy-dags,deploy-
+Welcome to BiggerQuery CLI. Type: bf {run,deploy-dags,deploy-
 image,deploy,build,build-dags,build-image,build-package} -h to print detailed
 help for selected command.
 ```
@@ -46,27 +46,76 @@ help for selected command.
 Each command has its own set of arguments. Check it with `-h`, for example:
 
 ```shell
-bgq run -h
+bf run -h
 ```
 
 ## Running jobs and workflows
 
 
-`bgq run` command lets you to run a job or a workflow for a given `runtime`,
+`bf run` command lets you to run a job or a workflow for a given `runtime`,
 
 It simply takes your local source code and runs it directly on GCP, without deploying to
 Composer. 
 
-Typically, `bgq run` is used for local development as a quick way to execute your code on GCP.
-`bgq run` is not recommended for executing workflows on production, because:
+Typically, `bf run` is used for local development as a quick way to execute your code on GCP.
+`bf run` is not recommended for executing workflows on production, because:
 
-* It's driven from a local machine. If you kill or suspend a `bgq run` process, what happens on GCP is undefined.
+* It's driven from a local machine. If you kill or suspend a `bf run` process, what happens on GCP is undefined.
 * It uses [local authentication](#authentication-methods) so it relies on permissions of your Google account.
 * It executes a job or workflow only once (on production environment you probably wants your workflows to be run periodically by Composer).
  
 **Here are a few examples how it can be used**.
 
+The simplest workflow you can create has only one job which prints 'Hello World'.
+(complete source code is available in this repository 
+as a part of the [Hello World](https://github.com/allegro/bigflow/tree/master/docs/hello_wordl) project).
 
+`docs/hello_world/hello_world_workflow.py`:
+
+```python
+from bigflow.workflow import Workflow
+
+class HelloWorldJob:
+    def __init__(self):
+        self.id = 'hello_world'
+
+    def run(self, runtime):
+        print(f'Hello world at {runtime}!')
+
+hello_world_workflow = Workflow(workflow_id='hello_world_workflow', definition=[HelloWorldJob()])
+```
+
+Start from getting to the project dir:
+
+
+```shell
+cd docs
+```
+
+Run the `hello_world_workflow` workflow:
+
+```shell
+cd docs
+bf run --workflow hello_world_workflow
+```
+
+Or a single job:
+
+```shell
+bf run --job hello_world_workflow.hello_world
+```
+
+
+You should see the following output:
+
+```text
+Hello world at 2020-08-11 13:47:49!
+```
+
+
+### Setting the runtime
+
+// TODO 
 
 ```
 bgq run --workflow workflowId
@@ -87,6 +136,8 @@ Run command also allows the following optional parameters:
 * `--project_package <project_package>` - use it to set the main package of your project, only when project_setup.PROJECT_NAME not found. Example: `logistics_tasks`. The value does not affect when project_setup.PROJECT_NAME is set. Otherwise, it is required. 
 
 ## Build to Airflow DAG
+
+// TODO 
 
 ## Deploying to GCP
 
