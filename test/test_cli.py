@@ -1,8 +1,8 @@
 from unittest import TestCase
 import mock
 
-from biggerquery.cli import *
-from biggerquery.cli import _decode_version_number_from_file_name
+from bigflow.cli import *
+from bigflow.cli import _decode_version_number_from_file_name
 from test.test_build import TEST_PROJECT_PATH
 
 
@@ -29,7 +29,7 @@ class CliTestCase(TestCase):
         # and at the first position there are absolute paths
         for (path, name) in res_as_list:
             self.assertEqual('/', path[0], "Path should be absolute and start with /")
-            expected_ending = 'biggerquery/test/test_module'
+            expected_ending = 'bigflow/test/test_module'
             self.assertEqual(expected_ending, path[-len(expected_ending):])
 
     def test_should_walk_through_all_module_paths_inside_package_tree(self):
@@ -73,9 +73,9 @@ class CliTestCase(TestCase):
         unused2 = modules[2]  # !!!
 
         # when looks in unused2
-        res = walk_module_objects(unused2, bgq.Workflow)
+        res = walk_module_objects(unused2, bf.Workflow)
 
-        # then finds 1 bgq.Workflow objects
+        # then finds 1 bf.Workflow objects
         res = list(res)
         self.assertEqual(1, len(res))
 
@@ -103,7 +103,7 @@ class CliTestCase(TestCase):
         res = find_workflow(TEST_MODULE_PATH, 'ID_1')
 
         # then
-        self.assertEqual(bgq.Workflow, type(res))
+        self.assertEqual(bf.Workflow, type(res))
         self.assertEqual('ID_1', res.workflow_id)
         self.assertEqual('@once', res.schedule_interval)
 
@@ -115,7 +115,7 @@ class CliTestCase(TestCase):
         # then
         exception_message = cm.exception.args[0]
         expected_prefix = "Workflow with id NOT_EXISTING_ID not found in package "
-        expected_suffix = "biggerquery/test/test_module"
+        expected_suffix = "bigflow/test/test_module"
         self.assertEqual(exception_message[:len(expected_prefix)], expected_prefix)
         self.assertEqual(exception_message[-len(expected_suffix):], expected_suffix)
 
@@ -143,13 +143,13 @@ class CliTestCase(TestCase):
         # given
         import os
         to_set = "Come fake config"
-        self.assertNotEqual(to_set, os.environ.get('bgq_env', None))
+        self.assertNotEqual(to_set, os.environ.get('bf_env', None))
 
         # when
         set_configuration_env(to_set)
 
         # then
-        self.assertEqual(to_set, os.environ.get('bgq_env', None))
+        self.assertEqual(to_set, os.environ.get('bf_env', None))
 
     def test_should_find_root_package_when_root_package_used(self):
         # when
@@ -296,12 +296,12 @@ class CliTestCase(TestCase):
             # when
             cli(['deploy-dags'])
 
-    @mock.patch('biggerquery.cli.deploy_dags_folder')
+    @mock.patch('bigflow.cli.deploy_dags_folder')
     def test_should_call_cli_deploy_dags_command__with_defaults_and_with_implicit_deployment_config_file(self, deploy_dags_folder_mock):
         #given
         dc_file = self._touch_file('deployment_config.py',
         '''
-from biggerquery import Config
+from bigflow import Config
 
 deployment_config = Config(name='dev',
                            properties={
@@ -324,12 +324,12 @@ deployment_config = Config(name='dev',
 
         dc_file.unlink()
 
-    @mock.patch('biggerquery.cli.deploy_dags_folder')
+    @mock.patch('bigflow.cli.deploy_dags_folder')
     def test_should_call_cli_deploy_dags_command_for_different_environments(self, deploy_dags_folder_mock):
         # given
         dc_file = self._touch_file('deployment_config.py',
         '''
-from biggerquery import Config
+from bigflow import Config
 
 deployment_config = Config(name='dev',
                           properties={
@@ -382,12 +382,12 @@ deployment_config = Config(name='dev',
 
         dc_file.unlink()
 
-    @mock.patch('biggerquery.cli.deploy_dags_folder')
+    @mock.patch('bigflow.cli.deploy_dags_folder')
     def test_should_call_cli_deploy_dags_command__when_parameters_are_given_by_explicit_deployment_config_file(self, deploy_dags_folder_mock):
         # given
         dc_file = self._touch_file('deployment_config_another.py',
         '''
-from biggerquery import Config
+from bigflow import Config
 
 deployment_config = Config(name='dev',
                         properties={
@@ -416,7 +416,7 @@ deployment_config = Config(name='dev',
 
         dc_file.unlink()
 
-    @mock.patch('biggerquery.cli.deploy_dags_folder')
+    @mock.patch('bigflow.cli.deploy_dags_folder')
     def test_should_call_cli_deploy_dags_command__when_all_parameters_are_given_by_cli_arguments(self, deploy_dags_folder_mock):
         #when
         cli(['deploy-dags',
@@ -439,12 +439,12 @@ deployment_config = Config(name='dev',
                                                    vault_secret='secrett')
 
 
-    @mock.patch('biggerquery.cli.deploy_docker_image')
+    @mock.patch('bigflow.cli.deploy_docker_image')
     def test_should_call_cli_deploy_image_command__with_defaults_and_with_implicit_deployment_config_file(self, deploy_docker_image_mock):
         # given
         dc_file = self._touch_file('deployment_config.py',
         '''
-from biggerquery import Config
+from bigflow import Config
 
 deployment_config = Config(name='dev',
                           properties={
@@ -464,12 +464,12 @@ deployment_config = Config(name='dev',
 
         dc_file.unlink()
 
-    @mock.patch('biggerquery.cli.deploy_docker_image')
+    @mock.patch('bigflow.cli.deploy_docker_image')
     def test_should_call_cli_deploy_image_command__with_explicit_deployment_config_file(self, deploy_docker_image_mock):
         # given
         dc_file = self._touch_file('my_deployment_config.py',
         '''
-from biggerquery import Config
+from bigflow import Config
 
 deployment_config = Config(name='dev',
                          properties={
@@ -495,8 +495,8 @@ deployment_config = Config(name='dev',
 
         dc_file.unlink()
 
-    @mock.patch('biggerquery.cli.load_image_from_tar')
-    @mock.patch('biggerquery.cli.deploy_docker_image')
+    @mock.patch('bigflow.cli.load_image_from_tar')
+    @mock.patch('bigflow.cli.deploy_docker_image')
     def test_should_call_cli_deploy_image_command__when_all_parameters_are_given_by_cli_arguments_and_image_is_loaded_from_tar(self, deploy_docker_image_mock, load_image_from_tar_mock):
         #given
         tar = self._touch_file('image-0.0.1.tar')
@@ -519,13 +519,13 @@ deployment_config = Config(name='dev',
 
         tar.unlink()
 
-    @mock.patch('biggerquery.cli.deploy_dags_folder')
-    @mock.patch('biggerquery.cli.deploy_docker_image')
+    @mock.patch('bigflow.cli.deploy_dags_folder')
+    @mock.patch('bigflow.cli.deploy_docker_image')
     def test_should_call_both_deploy_methods_with_deploy_command(self, deploy_docker_image_mock, deploy_dags_folder_mock):
         # given
         dc_file = self._touch_file('deployment_config.py',
         '''
-from biggerquery import Config
+from bigflow import Config
 
 deployment_config = Config(name='dev',
                          properties={
@@ -557,7 +557,7 @@ deployment_config = Config(name='dev',
 
         dc_file.unlink()
 
-    @mock.patch('biggerquery.cli._cli_build_dags')
+    @mock.patch('bigflow.cli._cli_build_dags')
     def test_should_call_cli_build_dags_command(self, _cli_build_dags_mock):
         # when
         cli(['build-dags'])
@@ -593,7 +593,7 @@ deployment_config = Config(name='dev',
         with self.assertRaises(SystemExit):
             cli(['build-dags', '-w', 'some_workflow', '-t', '20200101'])
 
-    @mock.patch('biggerquery.cli._cli_build_image')
+    @mock.patch('bigflow.cli._cli_build_image')
     def test_should_call_cli_build_image_command(self, _cli_build_image_mock):
         # when
         cli(['build-image'])
@@ -607,7 +607,7 @@ deployment_config = Config(name='dev',
         # then
         _cli_build_image_mock.assert_called_with(Namespace(operation='build-image', export_image_to_file=True))
 
-    @mock.patch('biggerquery.cli._cli_build_package')
+    @mock.patch('bigflow.cli._cli_build_package')
     def test_should_call_cli_build_package_command(self, _cli_build_package_mock):
         # when
         cli(['build-package'])
@@ -615,7 +615,7 @@ deployment_config = Config(name='dev',
         # then
         _cli_build_package_mock.assert_called_with()
 
-    @mock.patch('biggerquery.cli._cli_build')
+    @mock.patch('bigflow.cli._cli_build')
     def test_should_call_cli_build_command(self, _cli_build_mock):
         # when
         cli(['build'])
@@ -644,8 +644,8 @@ deployment_config = Config(name='dev',
         _cli_build_mock.assert_called_with(Namespace(operation='build', export_image_to_file=True,
                                                      start_time='2020-01-01 00:00:00', workflow='some_workflow'))
 
-    @mock.patch('biggerquery.cli.check_if_project_setup_exists')
-    @mock.patch('biggerquery.cli.run_process')
+    @mock.patch('bigflow.cli.check_if_project_setup_exists')
+    @mock.patch('bigflow.cli.run_process')
     def test_should_call_build_command_through_CLI(self, run_process_mock, check_if_project_setup_exists_mock):
         # given
         check_if_project_setup_exists_mock.return_value = TEST_PROJECT_PATH
@@ -657,8 +657,8 @@ deployment_config = Config(name='dev',
         self.assertEqual(run_process_mock.call_count, 1)
         run_process_mock.assert_any_call('python project_setup.py build_project --build-dags --build-image --build-package'.format(str(TEST_PROJECT_PATH)))
 
-    @mock.patch('biggerquery.cli.check_if_project_setup_exists')
-    @mock.patch('biggerquery.cli.run_process')
+    @mock.patch('bigflow.cli.check_if_project_setup_exists')
+    @mock.patch('bigflow.cli.run_process')
     def test_should_call_build_package_command_through_CLI(self, run_process_mock, check_if_project_setup_exists_mock):
         # given
         check_if_project_setup_exists_mock.return_value = TEST_PROJECT_PATH
@@ -670,8 +670,8 @@ deployment_config = Config(name='dev',
         self.assertEqual(run_process_mock.call_count, 1)
         run_process_mock.assert_any_call('python project_setup.py build_project --build-package')
 
-    @mock.patch('biggerquery.cli.check_if_project_setup_exists')
-    @mock.patch('biggerquery.cli.run_process')
+    @mock.patch('bigflow.cli.check_if_project_setup_exists')
+    @mock.patch('bigflow.cli.run_process')
     def test_should_call_build_command_through_CLI(self, run_process_mock, check_if_project_setup_exists_mock):
         # given
         check_if_project_setup_exists_mock.return_value = TEST_PROJECT_PATH
@@ -683,8 +683,8 @@ deployment_config = Config(name='dev',
         self.assertEqual(run_process_mock.call_count, 1)
         run_process_mock.assert_any_call('python project_setup.py build_project --build-image')
 
-    @mock.patch('biggerquery.cli.check_if_project_setup_exists')
-    @mock.patch('biggerquery.cli.run_process')
+    @mock.patch('bigflow.cli.check_if_project_setup_exists')
+    @mock.patch('bigflow.cli.run_process')
     def test_should_call_build_dags_command_through_CLI(self, run_process_mock, check_if_project_setup_exists_mock):
         # given
         check_if_project_setup_exists_mock.return_value = TEST_PROJECT_PATH

@@ -130,7 +130,7 @@ def build_command(
         version: str):
 
     class BuildCommand(distutils.cmd.Command):
-        description = 'BiggerQuery project build.'
+        description = 'BigFlow project build.'
         user_options = [
             ('build-dags', None, 'Builds the DAG files.'),
             ('build-package', None, 'Builds the whl package.'),
@@ -263,7 +263,7 @@ def project_setup(
 
     Example:
     from setuptools import setup
-    from biggerquery.build import project_setup, auto_configuration
+    from bigflow.build import project_setup, auto_configuration
 
     setup(project_setup(**auto_configuration('my_super_project')))
     '''

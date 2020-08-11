@@ -3,7 +3,7 @@ from collections import OrderedDict
 import mock
 from unittest import TestCase
 
-from biggerquery.workflow import Workflow, Definition, InvalidJobGraph, WorkflowJob
+from bigflow.workflow import Workflow, Definition, InvalidJobGraph, WorkflowJob
 
 
 class WorkflowTestCase(TestCase):

@@ -1,6 +1,6 @@
 from unittest import TestCase, mock
 
-from biggerquery.version import VERSION_PATTERN, bump_minor, get_version, set_next_version_tag
+from bigflow.version import VERSION_PATTERN, bump_minor, get_version, set_next_version_tag
 
 
 class VersionPatternTestCase(TestCase):
@@ -36,11 +36,11 @@ class BumpMinorTestCase(TestCase):
 
 class GetVersionTestCase(TestCase):
 
-    @mock.patch('biggerquery.version.is_master')
-    @mock.patch('biggerquery.version.is_head_at_tag')
-    @mock.patch('biggerquery.version.set_next_version_tag')
-    @mock.patch('biggerquery.version.base_get_version')
-    @mock.patch('biggerquery.version.is_dirty')
+    @mock.patch('bigflow.version.is_master')
+    @mock.patch('bigflow.version.is_head_at_tag')
+    @mock.patch('bigflow.version.set_next_version_tag')
+    @mock.patch('bigflow.version.base_get_version')
+    @mock.patch('bigflow.version.is_dirty')
     def test_should_set_bumped_tag_if_on_master(
             self,
             is_dirty_mock,
@@ -70,8 +70,8 @@ class GetVersionTestCase(TestCase):
 
 class SetNextVersionTagTestCase(TestCase):
 
-    @mock.patch('biggerquery.version.get_tag')
-    @mock.patch('biggerquery.version.git_tag_command')
+    @mock.patch('bigflow.version.get_tag')
+    @mock.patch('bigflow.version.git_tag_command')
     def test_should_set_next_version_depending_on_last_tag(self, git_tag_command_mock, get_tag_mock):
         # given
         get_tag_mock.return_value = ''
