@@ -2,7 +2,7 @@
 
 ## Documentation
 
-1. What is BigFlow?
+1. [What is BigFlow?](#what-is-bigflow)
 1. [Getting started](#getting-started)
 1. [Help me](#help-me)
 1. [CLI](./docs/cli.md)
@@ -24,6 +24,9 @@
     1. Dataproc
     1. Job monitoring
 1. Roadmap
+
+## What is BigFlow?
+TODO
 
 ## Getting started
 TODO
