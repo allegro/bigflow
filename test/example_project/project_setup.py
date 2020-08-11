@@ -6,7 +6,7 @@ from setuptools import setup
 
 def add_bigflow_to_path():
     # For Travis
-    bf_path_index = str(Path(__file__).absolute()).split(os.sep).index('bigflow')
+    bf_path_index = str(Path(__file__).absolute()).split(os.sep).index('biggerquery')
     bf_path_parts = str(Path(__file__).absolute()).split(os.sep)[:bf_path_index + 1]
     bf_package = os.path.join(os.sep, *bf_path_parts)
     print(f'Adding to path: {bf_package}')

@@ -29,7 +29,7 @@ class CliTestCase(TestCase):
         # and at the first position there are absolute paths
         for (path, name) in res_as_list:
             self.assertEqual('/', path[0], "Path should be absolute and start with /")
-            expected_ending = 'bigflow/test/test_module'
+            expected_ending = 'biggerquery/test/test_module'
             self.assertEqual(expected_ending, path[-len(expected_ending):])
 
     def test_should_walk_through_all_module_paths_inside_package_tree(self):
@@ -115,7 +115,7 @@ class CliTestCase(TestCase):
         # then
         exception_message = cm.exception.args[0]
         expected_prefix = "Workflow with id NOT_EXISTING_ID not found in package "
-        expected_suffix = "bigflow/test/test_module"
+        expected_suffix = "biggerquery/test/test_module"
         self.assertEqual(exception_message[:len(expected_prefix)], expected_prefix)
         self.assertEqual(exception_message[-len(expected_suffix):], expected_suffix)
 
