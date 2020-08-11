@@ -557,7 +557,7 @@ deployment_config = Config(name='dev',
 
         dc_file.unlink()
 
-    @mock.patch('biggerquery.cli._cli_build_dags')
+    @mock.patch('bigflow.cli._cli_build_dags')
     def test_should_call_cli_build_dags_command(self, _cli_build_dags_mock):
         # when
         cli(['build-dags'])
@@ -593,7 +593,7 @@ deployment_config = Config(name='dev',
         with self.assertRaises(SystemExit):
             cli(['build-dags', '-w', 'some_workflow', '-t', '20200101'])
 
-    @mock.patch('biggerquery.cli._cli_build_image')
+    @mock.patch('bigflow.cli._cli_build_image')
     def test_should_call_cli_build_image_command(self, _cli_build_image_mock):
         # when
         cli(['build-image'])
@@ -607,7 +607,7 @@ deployment_config = Config(name='dev',
         # then
         _cli_build_image_mock.assert_called_with(Namespace(operation='build-image', export_image_to_file=True))
 
-    @mock.patch('biggerquery.cli._cli_build_package')
+    @mock.patch('bigflow.cli._cli_build_package')
     def test_should_call_cli_build_package_command(self, _cli_build_package_mock):
         # when
         cli(['build-package'])
@@ -615,7 +615,7 @@ deployment_config = Config(name='dev',
         # then
         _cli_build_package_mock.assert_called_with()
 
-    @mock.patch('biggerquery.cli._cli_build')
+    @mock.patch('bigflow.cli._cli_build')
     def test_should_call_cli_build_command(self, _cli_build_mock):
         # when
         cli(['build'])
@@ -644,8 +644,8 @@ deployment_config = Config(name='dev',
         _cli_build_mock.assert_called_with(Namespace(operation='build', export_image_to_file=True,
                                                      start_time='2020-01-01 00:00:00', workflow='some_workflow'))
 
-    @mock.patch('biggerquery.cli.check_if_project_setup_exists')
-    @mock.patch('biggerquery.cli.run_process')
+    @mock.patch('bigflow.cli.check_if_project_setup_exists')
+    @mock.patch('bigflow.cli.run_process')
     def test_should_call_build_command_through_CLI(self, run_process_mock, check_if_project_setup_exists_mock):
         # given
         check_if_project_setup_exists_mock.return_value = TEST_PROJECT_PATH
@@ -657,8 +657,8 @@ deployment_config = Config(name='dev',
         self.assertEqual(run_process_mock.call_count, 1)
         run_process_mock.assert_any_call('python project_setup.py build_project --build-dags --build-image --build-package'.format(str(TEST_PROJECT_PATH)))
 
-    @mock.patch('biggerquery.cli.check_if_project_setup_exists')
-    @mock.patch('biggerquery.cli.run_process')
+    @mock.patch('bigflow.cli.check_if_project_setup_exists')
+    @mock.patch('bigflow.cli.run_process')
     def test_should_call_build_package_command_through_CLI(self, run_process_mock, check_if_project_setup_exists_mock):
         # given
         check_if_project_setup_exists_mock.return_value = TEST_PROJECT_PATH
@@ -670,8 +670,8 @@ deployment_config = Config(name='dev',
         self.assertEqual(run_process_mock.call_count, 1)
         run_process_mock.assert_any_call('python project_setup.py build_project --build-package')
 
-    @mock.patch('biggerquery.cli.check_if_project_setup_exists')
-    @mock.patch('biggerquery.cli.run_process')
+    @mock.patch('bigflow.cli.check_if_project_setup_exists')
+    @mock.patch('bigflow.cli.run_process')
     def test_should_call_build_command_through_CLI(self, run_process_mock, check_if_project_setup_exists_mock):
         # given
         check_if_project_setup_exists_mock.return_value = TEST_PROJECT_PATH
@@ -683,8 +683,8 @@ deployment_config = Config(name='dev',
         self.assertEqual(run_process_mock.call_count, 1)
         run_process_mock.assert_any_call('python project_setup.py build_project --build-image')
 
-    @mock.patch('biggerquery.cli.check_if_project_setup_exists')
-    @mock.patch('biggerquery.cli.run_process')
+    @mock.patch('bigflow.cli.check_if_project_setup_exists')
+    @mock.patch('bigflow.cli.run_process')
     def test_should_call_build_dags_command_through_CLI(self, run_process_mock, check_if_project_setup_exists_mock):
         # given
         check_if_project_setup_exists_mock.return_value = TEST_PROJECT_PATH

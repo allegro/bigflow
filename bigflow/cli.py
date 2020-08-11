@@ -264,7 +264,7 @@ def _valid_datetime(dt):
 def _add_build_dags_parser_arguments(parser):
     parser.add_argument('-w', '--workflow',
                         type=str,
-                        help="Id of a workflow to build. For example to run only this workflow: bgq.Workflow(workflow_id='workflow1',"
+                        help="Id of a workflow to build. For example to run only this workflow: bf.Workflow(workflow_id='workflow1',"
                              " definition=[ExampleJob('job1')]) you should use --w workflow1")
     parser.add_argument('-t', '--start-time',
                         help='Point of time from which a workflow should start working. '

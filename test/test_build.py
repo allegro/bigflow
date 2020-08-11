@@ -3,9 +3,9 @@ import json
 from pathlib import Path
 import subprocess
 from unittest import TestCase, mock
-from biggerquery.cli import walk_module_files
-from biggerquery.version import get_version
-from biggerquery.build import now, get_docker_image_id, build_docker_image_tag, \
+from bigflow.cli import walk_module_files
+from bigflow.version import get_version
+from bigflow.build import now, get_docker_image_id, build_docker_image_tag, \
     clear_image_leftovers, clear_package_leftovers, clear_dags_leftovers, auto_configuration, \
     get_docker_repository_from_deployment_config, project_setup, secure_get_version
 from example_project.project_setup import DOCKER_REPOSITORY, PROJECT_NAME
@@ -259,7 +259,7 @@ class AutoConfigurationTestCase(TestCase):
             # when
             get_docker_repository_from_deployment_config(Path(__file__).parent / 'example_project' / 'unknown.py')
 
-    @mock.patch('biggerquery.build.get_version')
+    @mock.patch('bigflow.build.get_version')
     def test_should_raise_error_when_cant_get_version(self, get_version_mock):
         # given
         get_version_mock.side_effect = self.get_version_error
