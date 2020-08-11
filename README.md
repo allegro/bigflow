@@ -10,7 +10,7 @@
     1. build
     1. deploy
     1. start-project
-1. Configuration
+1. [Configuration](./docs/configuration.md)
 1. Build
 1. Deployment
     1. Cloud Composer
