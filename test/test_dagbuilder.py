@@ -4,9 +4,9 @@ from pathlib import Path
 
 import mock
 from unittest import TestCase
-from biggerquery import Job
-from biggerquery.dagbuilder import get_dags_output_dir, clear_dags_output_dir, generate_dag_file, get_timezone_offset_seconds
-from biggerquery.workflow import WorkflowJob, Workflow, Definition
+from bigflow import Job
+from bigflow.dagbuilder import get_dags_output_dir, clear_dags_output_dir, generate_dag_file, get_timezone_offset_seconds
+from bigflow.workflow import WorkflowJob, Workflow, Definition
 
 
 class DagBuilderTestCase(TestCase):
@@ -102,7 +102,7 @@ dag = DAG(
 tjob1 = kubernetes_pod_operator.KubernetesPodOperator(
     task_id='job1',
     name='job1',
-    cmds=['bgq'],
+    cmds=['bf'],
     arguments=['run', '--job', 'my_workflow.job1', '--runtime', '{{ execution_date.strftime("%Y-%m-%d %H:%M:%S") }}', '--root', 'ca', '--config', '{{var.value.env}}'],
     namespace='default',
     image='eu.gcr.io/my_docker_repository_project/my-project:0.3.0',
@@ -115,7 +115,7 @@ tjob1 = kubernetes_pod_operator.KubernetesPodOperator(
 tjob2 = kubernetes_pod_operator.KubernetesPodOperator(
     task_id='job2',
     name='job2',
-    cmds=['bgq'],
+    cmds=['bf'],
     arguments=['run', '--job', 'my_workflow.job2', '--runtime', '{{ execution_date.strftime("%Y-%m-%d %H:%M:%S") }}', '--root', 'ca', '--config', '{{var.value.env}}'],
     namespace='default',
     image='eu.gcr.io/my_docker_repository_project/my-project:0.3.0',
@@ -129,7 +129,7 @@ tjob2.set_upstream(tjob1)
 tjob3 = kubernetes_pod_operator.KubernetesPodOperator(
     task_id='job3',
     name='job3',
-    cmds=['bgq'],
+    cmds=['bf'],
     arguments=['run', '--job', 'my_workflow.job3', '--runtime', '{{ execution_date.strftime("%Y-%m-%d %H:%M:%S") }}', '--root', 'ca', '--config', '{{var.value.env}}'],
     namespace='default',
     image='eu.gcr.io/my_docker_repository_project/my-project:0.3.0',
@@ -197,7 +197,7 @@ dag = DAG(
 tjob1 = kubernetes_pod_operator.KubernetesPodOperator(
     task_id='job1',
     name='job1',
-    cmds=['bgq'],
+    cmds=['bf'],
     arguments=['run', '--job', 'my_daily_workflow.job1', '--runtime', '{{ execution_date.strftime("%Y-%m-%d %H:%M:%S") }}', '--root', 'ca', '--config', '{{var.value.env}}'],
     namespace='default',
     image='eu.gcr.io/my_docker_repository_project/my-project:0.3.0',

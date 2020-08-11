@@ -6,7 +6,7 @@ import uuid
 
 import pandas as pd
 
-from biggerquery import create_dataset_manager
+from bigflow import create_dataset_manager
 from . import config
 
 

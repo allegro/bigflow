@@ -11,5 +11,5 @@ install:
   - pip install -r test/requirements.txt
 
 script:
-  - python -m unittest discover -s biggerquery -t . -p '*.py'
+  - python -m unittest discover -s bigflow -t . -p '*.py'
   - python -m unittest discover -s test -p '*.py'

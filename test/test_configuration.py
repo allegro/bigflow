@@ -1,7 +1,7 @@
 import os
 from unittest import TestCase
 
-from biggerquery.configuration import Config, DatasetConfig
+from bigflow.configuration import Config, DatasetConfig
 
 
 class TestConfig(TestCase):
@@ -18,7 +18,7 @@ class TestConfig(TestCase):
 
     def test_should_resolve_to_os_env_variable_when_property_value_is_None(self):
         # when
-        os.environ['bgq_b'] = 'x'
+        os.environ['bf_b'] = 'x'
         config = Config('dev', {'a': 1, 'b': None})
 
         # then
@@ -85,7 +85,7 @@ class TestConfig(TestCase):
 
     def test_should_give_priority_to_explicit_properties_rather_than_os_env_variables(self):
         # when
-        os.environ['bgq_bb'] = 'x'
+        os.environ['bf_bb'] = 'x'
         config = Config('dev', {'bb': 1})
 
         # then
@@ -132,7 +132,7 @@ class TestConfig(TestCase):
             config.resolve_property('b')
 
         # when
-        os.environ['bgq_b'] = 'b_from_env'
+        os.environ['bf_b'] = 'b_from_env'
 
         # then
         self.assertEqual(config.resolve(), {'a': 'dev1'})
@@ -143,7 +143,7 @@ class TestConfig(TestCase):
 
 
     def test_should_use_bg_as_the_default_environment_variables_prefix(self):
-        self._set_os_env('prod', 'bgq_env')
+        self._set_os_env('prod', 'bf_env')
         # when
         config = Config('dev', {'a': 'dev1'})\
             .add_configuration('prod', {'a': 'prod2'})
@@ -196,8 +196,8 @@ class TestConfig(TestCase):
         self.assertEqual(config.resolve('test'), {'a': 'test3'})
 
 
-    def _set_os_env(self, value=None, env_var_name='bgq_env'):
-        for key in ['env', 'bgq_env', 'my_namespace_' ]:
+    def _set_os_env(self, value=None, env_var_name='bf_env'):
+        for key in ['env', 'bf_env', 'my_namespace_' ]:
             if key in os.environ:
                 del os.environ[key]
 

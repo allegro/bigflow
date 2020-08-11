@@ -14,14 +14,14 @@ with open(os.path.join('requirements', 'stackdriver_extras.txt'), 'r') as stackd
 
 
 setuptools.setup(
-    name="biggerquery",
-    version="1.0.dev8",
+    name="bigflow",
+    version="0.1.0",
     author=u"Chi",
     author_email="chibox-team@allegrogroup.com",
     description="BigQuery client wrapper with clean API",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/allegro/biggerquery",
+    url="https://github.com/allegro/bigflow",
     packages=setuptools.find_packages(exclude=('test', 'e2e')),
     data_files=[
         ('requirements', ['requirements/base.txt', 'requirements/stackdriver_extras.txt']),
@@ -34,5 +34,5 @@ setuptools.setup(
     extras_require={
         'stackdriver': stackdriver_extras_require
     },
-    scripts=["bgq"]
+    scripts=["bf"]
 )

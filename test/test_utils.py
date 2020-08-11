@@ -7,9 +7,9 @@ from unittest import TestCase
 
 from google.api_core.exceptions import BadRequest
 
-from biggerquery.utils import unzip_file_and_save_outside_zip_as_tmp_file
-from biggerquery.utils import AutoDeletedTmpFile
-from biggerquery.utils import log_syntax_error
+from bigflow.utils import unzip_file_and_save_outside_zip_as_tmp_file
+from bigflow.utils import AutoDeletedTmpFile
+from bigflow.utils import log_syntax_error
 
 
 class UnzipFileAndSaveOutsideZipAsTmpFileTestCase(TestCase):
@@ -99,7 +99,7 @@ PARAMETER2 = '2'
 
 class LogSyntaxErrorTestCase(TestCase):
 
-    @mock.patch('biggerquery.utils.logger')
+    @mock.patch('bigflow.utils.logger')
     def test_should_catch_bad_request_and_log_message(self, logger_mock: mock.Mock):
         # when
         self.bad_request_occurred()

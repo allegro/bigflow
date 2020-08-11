@@ -1,4 +1,4 @@
-import biggerquery as bgq
+import bigflow as bf
 
 
 def sensor_component(table_alias, where_clause, ds=None):
@@ -18,4 +18,4 @@ def sensor_component(table_alias, where_clause, ds=None):
 
     sensor.__name__ = 'wait_for_{}'.format(table_alias)
 
-    return sensor if ds is None else bgq.component(ds=ds)(sensor)
+    return sensor if ds is None else bf.component(ds=ds)(sensor)

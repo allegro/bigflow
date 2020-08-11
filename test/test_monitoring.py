@@ -2,7 +2,7 @@ import mock
 from unittest import TestCase
 from datetime import datetime
 
-from biggerquery import monitoring
+from bigflow import monitoring
 from freezegun import freeze_time
 
 TEST_DATETIME = datetime(year=2019, month=1, day=2)
@@ -40,7 +40,7 @@ class GetNowRFC3339(TestCase):
 
 class MetricExistsTestCase(TestCase):
 
-    @mock.patch('biggerquery.monitoring.api_list_metrics')
+    @mock.patch('bigflow.monitoring.api_list_metrics')
     def test_should_check_if_metric_exists(self, api_list_metrics_mock: mock.Mock):
         # given
         api_list_metrics_mock.return_value = {'metricDescriptors': 'something'}
@@ -58,7 +58,7 @@ class MetricExistsTestCase(TestCase):
 
 class WaitForMetricTestCase(TestCase):
 
-    @mock.patch('biggerquery.monitoring.metric_exists')
+    @mock.patch('bigflow.monitoring.metric_exists')
     def test_should_wait_until_metric_exists(self, metric_exists_mock):
         # given
         metric_exists_mock.return_value = True
@@ -66,7 +66,7 @@ class WaitForMetricTestCase(TestCase):
         # expect
         self.assertTrue(monitoring.wait_for_metric('client', 'project_resource', 'metric_type'))
 
-    @mock.patch('biggerquery.monitoring.metric_exists')
+    @mock.patch('bigflow.monitoring.metric_exists')
     def test_should_raise_exception_when_no_retries_left(self, metric_exists_mock):
         # given
         metric_exists_mock.return_value = False
@@ -113,7 +113,7 @@ class CreateTimeseriesData(TestCase):
 class IncrementCounterTestCase(TestCase):
 
     @freeze_time(TEST_DATETIME)
-    @mock.patch('biggerquery.monitoring.api_create_timeseries')
+    @mock.patch('bigflow.monitoring.api_create_timeseries')
     def test_should_call_api_create_timeseries(self, api_create_timeseries_mock: mock.Mock):
         # given
         monitoring_config = monitoring.MonitoringConfig(
@@ -141,11 +141,11 @@ class IncrementCounterTestCase(TestCase):
 
 class IncrementJobFailureCount(TestCase):
 
-    @mock.patch('biggerquery.monitoring.api_client')
-    @mock.patch('biggerquery.monitoring.increment_counter')
-    @mock.patch('biggerquery.monitoring.wait_for_metric')
-    @mock.patch('biggerquery.monitoring.api_create_metric')
-    @mock.patch('biggerquery.monitoring.metric_exists')
+    @mock.patch('bigflow.monitoring.api_client')
+    @mock.patch('bigflow.monitoring.increment_counter')
+    @mock.patch('bigflow.monitoring.wait_for_metric')
+    @mock.patch('bigflow.monitoring.api_create_metric')
+    @mock.patch('bigflow.monitoring.metric_exists')
     def test_should_create_metric_if_not_found(self,
                                                metric_exists_mock,
                                                api_create_metric_mock,
@@ -167,13 +167,13 @@ class IncrementJobFailureCount(TestCase):
         api_create_metric_mock.assert_called_once_with(
             'client',
             monitoring_config.project_resource,
-            monitoring.BIGGERQUERY_JOB_FAILURE_METRIC)
+            monitoring.BIGFLOW_JOB_FAILURE_METRIC)
 
-    @mock.patch('biggerquery.monitoring.api_client')
-    @mock.patch('biggerquery.monitoring.increment_counter')
-    @mock.patch('biggerquery.monitoring.wait_for_metric')
-    @mock.patch('biggerquery.monitoring.api_create_metric')
-    @mock.patch('biggerquery.monitoring.metric_exists')
+    @mock.patch('bigflow.monitoring.api_client')
+    @mock.patch('bigflow.monitoring.increment_counter')
+    @mock.patch('bigflow.monitoring.wait_for_metric')
+    @mock.patch('bigflow.monitoring.api_create_metric')
+    @mock.patch('bigflow.monitoring.metric_exists')
     def test_should_increment_counter(self,
                                       metric_exists_mock,
                                       api_create_metric_mock,
@@ -195,7 +195,7 @@ class IncrementJobFailureCount(TestCase):
         increment_counter_mock.assert_called_once_with(
             'client',
             monitoring_config,
-            monitoring.BIGGERQUERY_JOB_FAILURE_METRIC_TYPE,
+            monitoring.BIGFLOW_JOB_FAILURE_METRIC_TYPE,
             'job id')
 
 
@@ -209,7 +209,7 @@ class FailingJob(object):
 
 class MeterJobRunFailuresTestCase(TestCase):
 
-    @mock.patch('biggerquery.monitoring.increment_job_failure_count')
+    @mock.patch('bigflow.monitoring.increment_job_failure_count')
     def test_should_increment_failure_count_when_job_fail(self, increment_job_failure_count_mock):
         # given
         monitoring_config = monitoring.MonitoringConfig(

@@ -1,7 +1,7 @@
 import os
 from unittest import TestCase, mock
 from pathlib import Path
-from biggerquery.resources import *
+from bigflow.resources import *
 
 TEST_PROJECT_PATH = Path(__file__).parent / 'example_project'
 
@@ -69,7 +69,7 @@ class FindSetupTestCase(TestCase):
         # then
         self.assertEqual(setup_path, Path(__file__).parent.parent / 'setup.py')
 
-    @mock.patch('biggerquery.resources.find_file')
+    @mock.patch('bigflow.resources.find_file')
     def test_should_retry_n_times(self, find_file_mock):
         # given
         find_file_mock.side_effect = self.raise_value_error
