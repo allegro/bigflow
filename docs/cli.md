@@ -2,13 +2,13 @@
 
 # BigFlow CLI
 
-BigFlow offers a command-line tool called `bf`.
+BigFlow offers a command-line tool called `bigflow`.
 It lets you run, build, and deploy your workflows from command-line on any machine with Python.
 
-`bf` is a recommended way of working with BigFlow
+`bigflow` CLI is the recommended way of working with BigFlow
 for developing on a local machine as well as for build and deployment automation on CI/CD servers.  
 
-## Installing `bf`
+## Installing `bigflow` CLI
 
 Prerequisites:
 
@@ -16,7 +16,7 @@ Prerequisites:
 2. [Google Cloud SDK](https://cloud.google.com/sdk/docs/downloads-interactive)  
 
 
-You can install the `bf` tool globally but we recommend to 
+You can install the `bigflow` CLI tool globally but we recommend to 
 install it locally with `venv`, in your project's folder:
 
 ```bash
@@ -25,7 +25,7 @@ source .bigflow_env/bin/activate
 cd .bigflow_env
 ```
 
-Install the `bf` tool:
+Install the `bigflow` tool:
 
 ```bash
 pip install bigflow
@@ -34,13 +34,13 @@ pip install bigflow
 Test it:
 
 ```shell
-bf -h
+bigflow -h
 ```
 
-You should see the welcome message and the list of all `bf` commands:
+You should see the welcome message and the list of all `bigflow` commands:
 
 ```text
-Welcome to BiggerQuery CLI. Type: bf {run,deploy-dags,deploy-
+Welcome to BiggerQuery CLI. Type: bigflow {run,deploy-dags,deploy-
 image,deploy,build,build-dags,build-image,build-package} -h to print detailed
 help for a selected command.
 ```
@@ -48,21 +48,21 @@ help for a selected command.
 Each command has its own set of arguments. Check it with `-h`, for example:
 
 ```shell
-bf run -h
+bigflow run -h
 ```
 
 ## Running jobs and workflows
 
 
-`bf run` command lets you run a job or a workflow for a given `runtime`,
+`bigflow run` command lets you run a job or a workflow for a given `runtime`,
 
 It simply takes your local source code and runs it directly on GCP, without deploying to
 Composer. 
 
-Typically, `bf run` is used for local development as a quick way to execute your code on GCP.
-`bf run` is not recommended for executing workflows on production, because:
+Typically, `bigflow run` is used for local development as a quick way to execute your code on GCP.
+`bigflow run` is not recommended for executing workflows on production, because:
 
-* It's driven from a local machine. If you kill or suspend a `bf run` process, what happens on GCP is undefined.
+* It's driven from a local machine. If you kill or suspend a `bigflow run` process, what happens on GCP is undefined.
 * It uses [local authentication](#authentication-methods) so it relies on permissions of your Google account.
 * It executes a job or workflow only once
   (while on production environment you probably want your workflows to be run periodically by Composer).
@@ -101,7 +101,7 @@ cd docs
 Run the `hello_world_workflow` workflow:
 
 ```shell
-bf run --workflow hello_world_workflow
+bigflow run --workflow hello_world_workflow
 ```
 
 Output:
@@ -114,7 +114,7 @@ Goodbye!
 Run a single job:
 
 ```shell
-bf run --job hello_world_workflow.say_goodbye
+bigflow run --job hello_world_workflow.say_goodbye
 ```
 
 Output:
@@ -156,7 +156,7 @@ daily_workflow = Workflow(workflow_id='daily_workflow',
 Run `daily_workflow` for batch date 2020-01-01:
 
 ```shell
-bf run --workflow daily_workflow --runtime 2020-01-01
+bigflow run --workflow daily_workflow --runtime 2020-01-01
 ```
 
 Output:
@@ -188,7 +188,7 @@ hourly_workflow = Workflow(workflow_id='hourly_workflow',
 Run `hourly_workflow` for batch hour 2020-01-01 10:00:00:
 
 ```shell
-bf run run --workflow hourly_workflow --runtime '2020-01-01 10:00:00'
+bigflow run run --workflow hourly_workflow --runtime '2020-01-01 10:00:00'
 ```
 
 Output:
@@ -231,7 +231,7 @@ To select a required environment, use the `config` parameter.
 Execute this workflow with `dev` config:
 
 ```shell
-bf run --workflow hello_config_workflow --config dev
+bigflow run --workflow hello_config_workflow --config dev
 ```
 
 Output:
@@ -244,7 +244,7 @@ Message to print on DEV
 and with `prod` config:
 
 ```shell
-bf run --workflow hello_config_workflow --config prod
+bigflow run --workflow hello_config_workflow --config prod
 ```
 
 Output:
@@ -279,7 +279,7 @@ build-dags,build-image,build-package,build
 ## Deploying to GCP
 
 CLI `deploy` commands deploy your **workflows** to Google Cloud Composer.
-On this stage, you should have two build artifacts created by the `bf build` command: DAG files and a Docker image.
+On this stage, you should have two build artifacts created by the `bigflow build` command: DAG files and a Docker image.
 
 There are three `deploy` commands:
 

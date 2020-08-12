@@ -221,10 +221,10 @@ def cli_run(project_package: str,
 def _parse_args(project_name: Optional[str], args) -> Namespace:
     project_name_description = build_project_name_description(project_name)
     parser = argparse.ArgumentParser(description=f'Welcome to BigFlow CLI. {project_name_description}'
-                                                  '\nType: bf {run,deploy-dags,deploy-image,deploy,build,build-dags,build-image,build-package} -h to print detailed help for a selected command.')
+                                                  '\nType: bigflow {run,deploy-dags,deploy-image,deploy,build,build-dags,build-image,build-package} -h to print detailed help for a selected command.')
     subparsers = parser.add_subparsers(dest='operation',
                                        required=True,
-                                       help='bf command to execute')
+                                       help='bigflow command to execute')
 
     _create_run_parser(subparsers, project_name)
     _create_deploy_dags_parser(subparsers)
@@ -264,7 +264,7 @@ def _valid_datetime(dt):
 def _add_build_dags_parser_arguments(parser):
     parser.add_argument('-w', '--workflow',
                         type=str,
-                        help="Id of a workflow to build. For example to run only this workflow: bf.Workflow(workflow_id='workflow1',"
+                        help="Id of a workflow to build. For example to run only this workflow: bigflow.Workflow(workflow_id='workflow1',"
                              " definition=[ExampleJob('job1')]) you should use --w workflow1")
     parser.add_argument('-t', '--start-time',
                         help='Point of time from which a workflow should start working. '
