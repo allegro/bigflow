@@ -1,12 +1,14 @@
+                  
+
 # BigFlow CLI
 
-BigFlow offers a command-line tool called `bf`.
-It lets you to run, build, and deploy your workflows from command-line on any machine with Python.
+BigFlow package offers a command-line tool called `bigflow`.
+It lets you run, build, and deploy your workflows from command-line on any machine with Python.
 
-`bf` is a recommended way of working with BigFlow
-for developing on local machine as well as for build and deployment automation on CI/CD servers.  
+BigFlow CLI is the recommended way of working with BigFlow projects
+on a local machine as well as for build and deployment automation on CI/CD servers.  
 
-## Installing `bf`
+## Installing BigFlow CLI
 
 Prerequisites:
 
@@ -14,7 +16,7 @@ Prerequisites:
 2. [Google Cloud SDK](https://cloud.google.com/sdk/docs/downloads-interactive)  
 
 
-You can install the `bf` tool globally but we recommend to 
+You can install the `bigflow` package globally but we recommend to 
 install it locally with `venv`, in your project's folder:
 
 ```bash
@@ -23,7 +25,7 @@ source .bigflow_env/bin/activate
 cd .bigflow_env
 ```
 
-Install the `bf` tool:
+Install the `bigflow` package:
 
 ```bash
 pip install bigflow
@@ -32,60 +34,62 @@ pip install bigflow
 Test it:
 
 ```shell
-bf -h
+bigflow -h
 ```
 
-You should see the welcome message and the list of all `bf` commands:
+You should see the welcome message and the list of all `bigflow` commands:
 
 ```text
-Welcome to BiggerQuery CLI. Type: bf {run,deploy-dags,deploy-
+Welcome to BiggerQuery CLI. Type: bigflow {run,deploy-dags,deploy-
 image,deploy,build,build-dags,build-image,build-package} -h to print detailed
-help for selected command.
+help for a selected command.
 ```
 
 Each command has its own set of arguments. Check it with `-h`, for example:
 
 ```shell
-bf run -h
+bigflow run -h
 ```
 
 ## Running jobs and workflows
 
-`bf run` command lets you to run a job or a workflow for a given `runtime`,
+`bigflow run` command lets you run a job or a workflow for a given `runtime`.
+It runs your source code on your local machine (without deploying it to Airflow/Composer). 
 
-It simply takes your local source code and runs it directly on GCP, without deploying to
-Composer. 
+Typically, `bigflow run` is used for local development because it's the simplest way to execute a workflow.
+It's not recommended to be used on production, because:
 
-Typically, `bf run` is used for local development as a quick way to execute your code on GCP.
-`bf run` is not recommended for executing workflows on production, because:
-
-* It's driven from a local machine. If you kill or suspend a `bf run` process, what happens on GCP is undefined.
+* It's driven from a local machine. If you kill or suspend a `bigflow run` process, what happens on GCP is undefined.
 * It uses [local authentication](#authentication-methods) so it relies on permissions of your Google account.
-* It executes a job or workflow only once (on production environment you probably wants your workflows to be run periodically by Composer).
- 
-**Here are a few examples how it can be used**.
+* It executes a job or workflow only once
+  (while on production environment you probably want your workflows to be run periodically by Composer).
 
-The simplest workflow you can create has only one job which prints 'Hello World'
-(complete source code is available in this repository 
-as a part of the [Docs Examples](https://github.com/allegro/bigflow/tree/master/docs/docs_examples) project).
+**Here are a few examples**
 
-`docs/hello_world/hello_world_workflow.py`:
+The example workflow is super simple. It consists of two jobs. The first one says Hello, and the second one says
+Goodbye. 
+
+[`hello_world_workflow.py`](docs_examples/hello_world_workflow.py):
 
 ```python
 from bigflow.workflow import Workflow
-
 class HelloWorldJob:
     def __init__(self):
         self.id = 'hello_world'
-
     def run(self, runtime):
         print(f'Hello world at {runtime}!')
-
-hello_world_workflow = Workflow(workflow_id='hello_world_workflow', definition=[HelloWorldJob()])
+class SayGoodbyeJob:
+    def __init__(self):
+        self.id = 'say_goodbye'
+    def run(self, runtime):
+        print(f'Goodbye!')
+hello_world_workflow = Workflow(workflow_id='hello_world_workflow',
+                                definition=[
+                                            HelloWorldJob(),
+                                            SayGoodbyeJob()])
 ```
 
 Start from getting to the project dir:
-
 
 ```shell
 cd docs
@@ -94,58 +98,185 @@ cd docs
 Run the `hello_world_workflow` workflow:
 
 ```shell
-cd docs
-bf run --workflow hello_world_workflow
+bigflow run --workflow hello_world_workflow
 ```
 
-Or a single job:
-
-```shell
-bf run --job hello_world_workflow.hello_world
-```
-
-
-You should see the following output:
+Output:
 
 ```text
-Hello world at 2020-08-11 13:47:49!
+Hello world at 2020-08-11 14:14:58!
+Goodbye!
+```
+
+Run a single job:
+
+```shell
+bigflow run --job hello_world_workflow.say_goodbye
+```
+
+Output:
+
+```text
+Goodbye!
+```
+
+Complete source code for all examples is available in this repository 
+as a part of the [Docs Examples](https://github.com/allegro/bigflow/tree/master/docs/docs_examples) project.
+
+### Setting the runtime parameter
+
+The most important parameter for a workflow is `runtime`.
+Bigflow workflows process data in batches, 
+where batch means: all units of data having timestamps within a given period.
+The `runtime` parameter defines this period.
+
+When a workflow is deployed on Airflow/Composer, the `runtime` parameter is taken from Airflow `execution_date`.
+
+#### Workflow with daily scheduling
+When you run a workflow **daily**, `runtime` means all data with timestamps within a given day.
+For example:
+
+[`daily_workflow.py`](docs_examples/daily_workflow.py):
+
+```python
+from bigflow.workflow import Workflow
+class SomeJob:
+    def __init__(self):
+        self.id = 'some_job'
+    def run(self, runtime):
+        print(f'I should process data with timestamps from: {runtime} 00:00 to {runtime} 23:59')
+daily_workflow = Workflow(workflow_id='daily_workflow',
+                                definition=[SomeJob()])
 ```
 
 
-### Setting the runtime
+Run `daily_workflow` for batch date 2020-01-01:
 
-// TODO 
-
-```
-bgq run --workflow workflowId
-bgq run --workflow workflowId --runtime '2020-01-01 00:00:00' --config prod
-bgq run --job jobId
-bgq run --job jobId --runtime '2020-01-01 00:00:00'
-bgq run --job jobId --runtime '2020-01-01 00:00:00' --config dev
+```shell
+bigflow run --workflow daily_workflow --runtime 2020-01-01
 ```
 
-Run command requires you to provide one of those two parameters:
-* `--job <job id>` - use it to run a job by its id. You can set job id by setting `id` field in the object representing this job. 
-* `--workflow <workflow id>` - use it to run a workflow by its id. You can set workflow id using named parameter `workflow_id` (`bgq.Workflow(workflow_id="YOUR_ID", ...)`). 
-In both cases, id needs to be set and unique.
+Output:
 
-Run command also allows the following optional parameters:
-* `--runtime <runtime in format YYYY-MM-DD hh:mm:ss>` - use it to set the date and time when this job or workflow should be started. Example value: `2020-01-01 00:12:00`. The default is now. 
-* `--config <runtime>` - use it to configure environment name that should be used. Example: `dev`, `prod`. If not set, the default Config name will be used. This env name is applied to all biggerquery.Config objects that are defined by individual workflows as well as to deployment_config.py.
-* `--project_package <project_package>` - use it to set the main package of your project, only when project_setup.PROJECT_NAME not found. Example: `logistics_tasks`. The value does not affect when project_setup.PROJECT_NAME is set. Otherwise, it is required. 
+```text
+I should process data with timestamps from: 2020-01-01 00:00 to 2020-01-01 23:59
+``` 
 
-## Build to Airflow DAG
+#### Workflow with hourly scheduling 
+When you run a workflow **hourly**, `runtime` means all data with timestamps within a given hour.
+For example:
+
+[`hourly_workflow.py`](docs_examples/hourly_workflow.py):
+
+```python
+from bigflow.workflow import Workflow
+from datetime import datetime
+from datetime import timedelta
+class SomeJob:
+    def __init__(self):
+        self.id = 'some_job'
+    def run(self, runtime):
+        print(f'I should process data with timestamps from: {runtime} '
+              f'to {datetime.strptime(runtime, "%Y-%m-%d %H:%M:%S") + timedelta(minutes=59, seconds=59) }')
+hourly_workflow = Workflow(workflow_id='hourly_workflow',
+                                definition=[SomeJob()])
+```
+
+Run `hourly_workflow` for batch hour 2020-01-01 10:00:00:
+
+```shell
+bigflow run run --workflow hourly_workflow --runtime '2020-01-01 10:00:00'
+```
+
+Output:
+
+```text
+I should process data with timestamps from: 2020-01-01 10:00:00 to 2020-01-01 10:59:59
+``` 
+
+#### Selecting environment configuration
+
+In BigFlow, project environments are configured by [`bigflow.Config`](https://github.com/allegro/bigflow/blob/workflow-and-job-docs/docs/configuration.md) objects.
+
+Here we show how to create a workflow, which prints different messaged for each environment.
+
+[`hello_config_workflow.py`](docs_examples/hello_config_workflow.py):
+
+```python
+from bigflow import Config
+from bigflow.workflow import Workflow
+config = Config(name='dev',
+                properties={
+                        'message_to_print': 'Message to print on DEV'
+                }).add_configuration(
+                name='prod',
+                properties={
+                       'message_to_print': 'Message to print on PROD'
+                })
+class HelloConfigJob:
+    def __init__(self, message_to_print):
+        self.id = 'hello_config_job'
+        self.message_to_print = message_to_print
+    def run(self, runtime):
+        print(self.message_to_print)
+hello_world_workflow = Workflow(workflow_id='hello_config_workflow',
+                                definition=[HelloConfigJob(config.resolve_property('message_to_print'))])
+```
+
+
+To select a required environment, use the `config` parameter.
+Execute this workflow with `dev` config:
+
+```shell
+bigflow run --workflow hello_config_workflow --config dev
+```
+
+Output:
+
+```text
+bf_env is : dev
+Message to print on DEV
+```
+
+and with `prod` config:
+
+```shell
+bigflow run --workflow hello_config_workflow --config prod
+```
+
+Output:
+
+```text
+bf_env is : prod
+Message to print on PROD
+```
+
+## Building Airflow DAGs
+
+One of the key features of BigFlow CLI is the full automation of the build and deployment process.
+BigFlow can build your workflows to Airflow DAGs and deploy them to Google Cloud Composer.
+
+There are two build artifacts:
+
+1. DAG files with workflow definitions,
+1. Docker image with workflows code.
+
+There are four `build` commands:
+
+build-dags,build-image,build-package,build
+
+
+1. `build-dags` generates Airflow DAG files from all your workflows, one file for each workflow.
+1. `build-package` generates a PIP package from your project based on `project_setup.py`.
+1. `build-image` generates a Docker image with this package and all requirements.
+1. `build` simply runs `build-dags`, `build-package`, and `build-image`.
 
 // TODO 
 
 ## Deploying to GCP
 
 CLI `deploy` commands deploy your **workflows** to Google Cloud Composer.
-There are two artifacts which are deployed and should be built before using `deploy`:
-
-1. DAG files built by `biggerquery`,
-1. Docker image built by `biggerquery`. 
-
+On this stage, you should have two build artifacts created by the `bigflow build` command: DAG files and a Docker image.
 
 There are three `deploy` commands:
 
@@ -187,7 +318,7 @@ as long as you have a [Vault](https://www.vaultproject.io/) server for managing 
 
 
 Example of the `deploy-dags` command with `service_account` authentication (requires Vault):
- 
+
 ```bash 
 bgq deploy-dags --auth-method=service_account --vault-endpoint https://example.com/vault --vault-secret *****
 ```
@@ -196,16 +327,16 @@ bgq deploy-dags --auth-method=service_account --vault-endpoint https://example.c
 
 Deploy commands require a lot of configuration. You can pass all parameters directly as command line arguments,
 or save them in a `deployment_config.py` file.
- 
+
 For local development and for most CI/CD scenarios we recommend using a `deployment_config.py` file.
-This file has to contain a `biggerquery.Config` object stored in the `deployment_config` variable
+This file has to contain a [`bigflow.Config`](https://github.com/allegro/bigflow/blob/workflow-and-job-docs/docs/configuration.md) 
+object stored in the `deployment_config` variable
 and can be placed in a main folder of your project.
 
 `deployment_config.py` example:
 
 ```python
 from biggerquery import Config
-
 deployment_config = Config(name='dev',                    
                            properties={
                                'gcp_project_id': 'my_gcp_dev_project',
@@ -248,7 +379,7 @@ bgq deploy-dags --config dev
 
 Upload DAG files from a given dir  using `service_account` authentication.
 Configuration is specified via command line arguments:
- 
+
 ```bash  
 bgq deploy-dags \
 --dags-dir '/tmp/my_dags' \
@@ -259,7 +390,7 @@ bgq deploy-dags \
 --gcp-project-id my_gcp_dev_project \
 --clear-dags-folder
 ```
-  
+
 #### Deploy Docker image examples
 
 Upload a Docker image from a local repository using `local_account` authentication.

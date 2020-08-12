@@ -9,4 +9,14 @@ class HelloWorldJob:
         print(f'Hello world at {runtime}!')
 
 
-hello_world_workflow = Workflow(workflow_id='hello_world_workflow', definition=[HelloWorldJob()])
+class SayGoodbyeJob:
+    def __init__(self):
+        self.id = 'say_goodbye'
+
+    def run(self, runtime):
+        print(f'Goodbye!')
+
+hello_world_workflow = Workflow(workflow_id='hello_world_workflow',
+                                definition=[
+                                            HelloWorldJob(),
+                                            SayGoodbyeJob()])

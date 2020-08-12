@@ -1,0 +1,12 @@
+from bigflow.workflow import Workflow
+
+
+class SomeJob:
+    def __init__(self):
+        self.id = 'some_job'
+
+    def run(self, runtime):
+        print(f'I should process data with timestamps from: {runtime} 00:00 to {runtime} 23:59')
+
+daily_workflow = Workflow(workflow_id='daily_workflow',
+                                definition=[SomeJob()])
