@@ -132,8 +132,12 @@ as a part of the [Docs Examples](https://github.com/allegro/bigflow/tree/master/
 
 ### Setting the runtime parameter
 
-The most important parameter for a workflow is the `runtime`.
-Think about it more like a period than a point in time because batch workflows process data in batches based on timestamps.
+The most important parameter for a workflow is `runtime`.
+Batch workflows process data in batches, where batch means: all units of data (records, documents, or messages)
+having timestamps within a given period.
+The `runtime` parameter defines this period.
+
+When a workflow is deployed on Airflow/Composer, the `runtime` parameter is taken from Airflow `execution_date`.
 
 #### Workflow with daily scheduling
 When you run a workflow **daily**, `runtime` means: all data with timestamps within given day.
@@ -204,28 +208,94 @@ Output:
 I should process data with timestamps from: 2020-01-01 10:00:00 to 2020-01-01 10:59:59
 ``` 
 
-Run command requires you to provide one of those two parameters:
-* `--job <job id>` - use it to run a job by its id. You can set job id by setting `id` field in the object representing this job. 
-* `--workflow <workflow id>` - use it to run a workflow by its id. You can set workflow id using named parameter `workflow_id` (`bgq.Workflow(workflow_id="YOUR_ID", ...)`). 
-In both cases, id needs to be set and unique.
+#### Selecting environment configuration
 
-Run command also allows the following optional parameters:
-* `--runtime <runtime in format YYYY-MM-DD hh:mm:ss>` - use it to set the date and time when this job or workflow should be started. Example value: `2020-01-01 00:12:00`. The default is now. 
-* `--config <runtime>` - use it to configure environment name that should be used. Example: `dev`, `prod`. If not set, the default Config name will be used. This env name is applied to all biggerquery.Config objects that are defined by individual workflows as well as to deployment_config.py.
-* `--project_package <project_package>` - use it to set the main package of your project, only when project_setup.PROJECT_NAME not found. Example: `logistics_tasks`. The value does not affect when project_setup.PROJECT_NAME is set. Otherwise, it is required. 
+In BigFlow, project environments are configured by [`bigflow.Config`](https://github.com/allegro/bigflow/blob/workflow-and-job-docs/docs/configuration.md) objects.
 
-## Build to Airflow DAG
+Here we show how to create a workflow, which prints different messaged for each environment.
 
-// TODO 
+`docs/docs_examples/hello_config_workflow.py`: 
+
+```python
+from bigflow import Config
+from bigflow.workflow import Workflow
+
+
+config = Config(name='dev',
+                properties={
+                        'message_to_print': 'Message to print on DEV'
+                }).add_configuration(
+                name='prod',
+                properties={
+                       'message_to_print': 'Message to print on PROD'
+                })
+
+
+class HelloConfigJob:
+    def __init__(self, message_to_print):
+        self.id = 'hello_config_job'
+        self.message_to_print = message_to_print
+
+    def run(self, runtime):
+        print(self.message_to_print)
+
+
+hello_world_workflow = Workflow(workflow_id='hello_config_workflow',
+                                definition=[HelloConfigJob(config.resolve_property('message_to_print'))])
+```
+
+
+To select a required environment, use the `config` parameter.
+Execute this workflow with `dev` config:
+
+```shell
+bf run --workflow hello_config_workflow --config dev
+```
+
+Output:
+
+```text
+bf_env is : dev
+Message to print on DEV
+```
+
+and with `prod` config:
+
+```shell
+bf run --workflow hello_config_workflow --config prod
+```
+
+Output:
+
+```text
+bf_env is : prod
+Message to print on PROD
+```
+
+## Building Airflow DAGs
+
+One of the key features of BigFlow CLI is full automation of the build and deployment process.
+BigFlow can build your workflows to Airflow DAGs and deploy them to Google Cloud Composer.
+
+There are two build artifacts:
+
+1. DAG files with workflow definitions,
+1. Docker image with workflows code.
+
+There are four `build` commands:
+
+build-dags,build-image,build-package,build
+
+
+1. `build-dags` generates Airflow DAG files from all your workflows, one file for each workflow.
+1. `build-package` generates a PIP package from your project based on `project_setup.py`.
+1. `build-image` generates a Docker image with this package and all requirements.
+1. 'build' simply runs `build-dags`, `build-package`, and `build-image`.
 
 ## Deploying to GCP
 
 CLI `deploy` commands deploy your **workflows** to Google Cloud Composer.
-There are two artifacts which are deployed and should be built before using `deploy`:
-
-1. DAG files built by `biggerquery`,
-1. Docker image built by `biggerquery`. 
-
+On this stage, you should have two build artifacts created by the `bf build` command: DAG files and a Docker image.
 
 There are three `deploy` commands:
 
@@ -278,7 +348,8 @@ Deploy commands require a lot of configuration. You can pass all parameters dire
 or save them in a `deployment_config.py` file.
  
 For local development and for most CI/CD scenarios we recommend using a `deployment_config.py` file.
-This file has to contain a `biggerquery.Config` object stored in the `deployment_config` variable
+This file has to contain a [`bigflow.Config`](https://github.com/allegro/bigflow/blob/workflow-and-job-docs/docs/configuration.md) 
+object stored in the `deployment_config` variable
 and can be placed in a main folder of your project.
 
 `deployment_config.py` example:
