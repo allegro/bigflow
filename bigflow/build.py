@@ -12,7 +12,7 @@ import xmlrunner
 from .cli import walk_workflows, import_deployment_config, _valid_datetime
 from .dagbuilder import generate_dag_file
 from .resources import read_requirements, find_all_resources
-from .utils import resolve
+from .utils import resolve, now
 from .version import get_version
 from .utils import run_process
 
@@ -21,10 +21,6 @@ __all__ = [
     'project_setup',
     'auto_configuration'
 ]
-
-
-def now(template: str = "%Y-%m-%d %H:00:00"):
-    return datetime.now().strftime(template)
 
 
 def run_tests(build_dir: Path, test_package: Path):

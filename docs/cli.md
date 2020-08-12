@@ -51,7 +51,6 @@ bf run -h
 
 ## Running jobs and workflows
 
-
 `bf run` command lets you to run a job or a workflow for a given `runtime`,
 
 It simply takes your local source code and runs it directly on GCP, without deploying to

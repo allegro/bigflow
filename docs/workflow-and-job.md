@@ -97,16 +97,6 @@ The implementation looks like this:
 
 [Example 5](./docs_examples/workflow_and_job/example5.py)
 ```python
-from bigflow.workflow import Workflow
-from bigflow.workflow import Definition
-
-class Job(object):
-    def __init__(self, id):
-        self.id = id
-
-    def run(self, runtime):
-        print(runtime)
-
 job1, job2, job3, job4 = Job('1'), Job('2'), Job('3'), Job('4')
 
 graph_workflow = Workflow(workflow_id='graph_workflow', definition=Definition({
@@ -114,7 +104,7 @@ graph_workflow = Workflow(workflow_id='graph_workflow', definition=Definition({
     job2: (job4,),
     job3: (job4,)
 }))
-graph_workflow.run()
+graph_workflow.run()  # prints 1, 2, 3, 4
 ```
 
 The `Workflow` class has some additional parameters:
@@ -128,16 +118,15 @@ otherwise `YYYY-MM-DD`
 The `Workflow` class provides `run` and `run_job` methods. When you run a single job through the workflow class, 
 without providing the `runtime` parameter, the `Workflow` class will pass the current date time (local time) as default.
 
+[Example 6](./docs_examples/workflow_and_job/example6.py)
 ```python
 # Let's assume that now == '2020-01-02 01:11:00'
 simple_workflow = Workflow(
-    workflow_id='simple_workflow', 
+    workflow_id='simple_workflow',
     runtime_as_datetime=True,
-    definition=[SimpleJob('1')])
-simple_workflow.run_job('1')
->>> '2020-01-02 01:11:00'
-simple_workflow.run('1')
->>> '2020-01-02 01:11:00'
+    definition=[Job('1')])
+simple_workflow.run_job('1')  # prints '2020-01-02 01:11:00'
+simple_workflow.run('1')  # prints '2020-01-02 01:11:00'
 ```
 
 Local run ignores job parameters like `retry_count` and `retry_pause_sec`. It executes the workflow in a sequential (non-parallel) way.
