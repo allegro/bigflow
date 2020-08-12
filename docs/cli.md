@@ -3,10 +3,10 @@
 # BigFlow CLI
 
 BigFlow offers a command-line tool called `bf`.
-It lets you to run, build, and deploy your workflows from command-line on any machine with Python.
+It lets you run, build, and deploy your workflows from command-line on any machine with Python.
 
 `bf` is a recommended way of working with BigFlow
-for developing on local machine as well as for build and deployment automation on CI/CD servers.  
+for developing on a local machine as well as for build and deployment automation on CI/CD servers.  
 
 ## Installing `bf`
 
@@ -42,7 +42,7 @@ You should see the welcome message and the list of all `bf` commands:
 ```text
 Welcome to BiggerQuery CLI. Type: bf {run,deploy-dags,deploy-
 image,deploy,build,build-dags,build-image,build-package} -h to print detailed
-help for selected command.
+help for a selected command.
 ```
 
 Each command has its own set of arguments. Check it with `-h`, for example:
@@ -54,7 +54,7 @@ bf run -h
 ## Running jobs and workflows
 
 
-`bf run` command lets you to run a job or a workflow for a given `runtime`,
+`bf run` command lets you run a job or a workflow for a given `runtime`,
 
 It simply takes your local source code and runs it directly on GCP, without deploying to
 Composer. 
@@ -64,7 +64,8 @@ Typically, `bf run` is used for local development as a quick way to execute your
 
 * It's driven from a local machine. If you kill or suspend a `bf run` process, what happens on GCP is undefined.
 * It uses [local authentication](#authentication-methods) so it relies on permissions of your Google account.
-* It executes a job or workflow only once (on production environment you probably wants your workflows to be run periodically by Composer).
+* It executes a job or workflow only once
+  (while on production environment you probably want your workflows to be run periodically by Composer).
 
 **Here are a few examples**
 
@@ -135,7 +136,7 @@ The `runtime` parameter defines this period.
 When a workflow is deployed on Airflow/Composer, the `runtime` parameter is taken from Airflow `execution_date`.
 
 #### Workflow with daily scheduling
-When you run a workflow **daily**, `runtime` means: all data with timestamps within given day.
+When you run a workflow **daily**, `runtime` means all data with timestamps within a given day.
 For example:
 
 `docs/docs_examples/daily_workflow.py`:
@@ -165,7 +166,7 @@ I should process data with timestamps from: 2020-01-01 00:00 to 2020-01-01 23:59
 ``` 
 
 #### Workflow with hourly scheduling 
-When you run a workflow **hourly**, `runtime` means: all data with timestamps within given hour.
+When you run a workflow **hourly**, `runtime` means all data with timestamps within a given hour.
 For example:
 
 `docs/docs_examples/hourly_workflow.py`: 
@@ -255,7 +256,7 @@ Message to print on PROD
 
 ## Building Airflow DAGs
 
-One of the key features of BigFlow CLI is full automation of the build and deployment process.
+One of the key features of BigFlow CLI is the full automation of the build and deployment process.
 BigFlow can build your workflows to Airflow DAGs and deploy them to Google Cloud Composer.
 
 There are two build artifacts:
@@ -271,7 +272,9 @@ build-dags,build-image,build-package,build
 1. `build-dags` generates Airflow DAG files from all your workflows, one file for each workflow.
 1. `build-package` generates a PIP package from your project based on `project_setup.py`.
 1. `build-image` generates a Docker image with this package and all requirements.
-1. 'build' simply runs `build-dags`, `build-package`, and `build-image`.
+1. `build` simply runs `build-dags`, `build-package`, and `build-image`.
+
+// TODO 
 
 ## Deploying to GCP
 

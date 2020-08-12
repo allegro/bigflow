@@ -221,7 +221,7 @@ def cli_run(project_package: str,
 def _parse_args(project_name: Optional[str], args) -> Namespace:
     project_name_description = build_project_name_description(project_name)
     parser = argparse.ArgumentParser(description=f'Welcome to BigFlow CLI. {project_name_description}'
-                                                  '\nType: bf {run,deploy-dags,deploy-image,deploy,build,build-dags,build-image,build-package} -h to print detailed help for selected command.')
+                                                  '\nType: bf {run,deploy-dags,deploy-image,deploy,build,build-dags,build-image,build-package} -h to print detailed help for a selected command.')
     subparsers = parser.add_subparsers(dest='operation',
                                        required=True,
                                        help='bf command to execute')
