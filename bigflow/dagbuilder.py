@@ -25,7 +25,7 @@ def generate_dag_file(workdir: str,
     dag_deployment_id = get_dag_deployment_id(workflow.workflow_id, start_from, build_ver)
     dag_file_path = get_dags_output_dir(workdir) / (dag_deployment_id + '_dag.py')
 
-    if workflow.schedule_interval == '@daily':
+    if not workflow.runtime_as_datetime:
         start_from = start_from[:10]
         start_date_as_str = f'datetime.strptime("{start_from}", "%Y-%m-%d")'
     else:

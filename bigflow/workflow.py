@@ -3,7 +3,7 @@ from typing import Optional
 from .utils import now
 
 DEFAULT_SCHEDULE_INTERVAL = '@daily'
-
+# modyfikacja dagbuildera
 
 class Workflow(object):
     def __init__(self,
@@ -72,11 +72,7 @@ class WorkflowJob:
 
 
 class Definition:
-    def __init__(self, jobs):
-        if not len(jobs):
-            raise ValueError("Definition can't be empty.")
-        if not isinstance(jobs[0], WorkflowJob):
-            jobs = [WorkflowJob(job, job.id) for job in jobs]
+    def __init__(self, jobs: dict):
         self.job_graph = self._build_graph(jobs)
         self.job_order_resolver = JobOrderResolver(self.job_graph)
 
@@ -90,12 +86,18 @@ class Definition:
         if isinstance(jobs, list):
             job_graph = self._convert_list_to_graph(jobs)
         elif isinstance(jobs, dict):
-            job_graph = jobs
+            job_graph = {self._map_to_workflow_job(source_job): [self._map_to_workflow_job(tj) for tj in target_jobs]
+                         for source_job, target_jobs in jobs.items()}
         else:
             raise ValueError("Job graph has to be dict or list")
 
         JobGraphValidator(job_graph).validate()
         return job_graph
+
+    def _map_to_workflow_job(self, job):
+        if not isinstance(job, WorkflowJob):
+            job = WorkflowJob(job, job.id)
+        return job
 
     @staticmethod
     def _convert_list_to_graph(job_list):
