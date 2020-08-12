@@ -2,13 +2,13 @@
 
 # BigFlow CLI
 
-BigFlow offers a command-line tool called `bigflow`.
+BigFlow package offers a command-line tool called `bigflow`.
 It lets you run, build, and deploy your workflows from command-line on any machine with Python.
 
-`bigflow` CLI is the recommended way of working with BigFlow
-for developing on a local machine as well as for build and deployment automation on CI/CD servers.  
+BigFlow CLI is the recommended way of working with BigFlow projects
+on a local machine as well as for build and deployment automation on CI/CD servers.  
 
-## Installing `bigflow` CLI
+## Installing BigFlow CLI
 
 Prerequisites:
 
@@ -16,7 +16,7 @@ Prerequisites:
 2. [Google Cloud SDK](https://cloud.google.com/sdk/docs/downloads-interactive)  
 
 
-You can install the `bigflow` CLI tool globally but we recommend to 
+You can install the `bigflow` package globally but we recommend to 
 install it locally with `venv`, in your project's folder:
 
 ```bash
@@ -25,7 +25,7 @@ source .bigflow_env/bin/activate
 cd .bigflow_env
 ```
 
-Install the `bigflow` tool:
+Install the `bigflow` package:
 
 ```bash
 pip install bigflow
@@ -53,14 +53,11 @@ bigflow run -h
 
 ## Running jobs and workflows
 
+`bigflow run` command lets you run a job or a workflow for a given `runtime`.
+It runs your source code on your local machine (without deploying it to Airflow/Composer). 
 
-`bigflow run` command lets you run a job or a workflow for a given `runtime`,
-
-It simply takes your local source code and runs it directly on GCP, without deploying to
-Composer. 
-
-Typically, `bigflow run` is used for local development as a quick way to execute your code on GCP.
-`bigflow run` is not recommended for executing workflows on production, because:
+Typically, `bigflow run` is used for local development because it's the simplest way to execute a workflow.
+It's not recommended to be used on production, because:
 
 * It's driven from a local machine. If you kill or suspend a `bigflow run` process, what happens on GCP is undefined.
 * It uses [local authentication](#authentication-methods) so it relies on permissions of your Google account.
@@ -72,7 +69,7 @@ Typically, `bigflow run` is used for local development as a quick way to execute
 The example workflow is super simple. It consists of two jobs. The first one says Hello, and the second one says
 Goodbye. 
 
-`docs/docs_examples/hello_world_workflow.py`:
+[`hello_world_workflow.py`](docs_examples/hello_world_workflow.py):
 
 ```python
 from bigflow.workflow import Workflow
@@ -129,8 +126,8 @@ as a part of the [Docs Examples](https://github.com/allegro/bigflow/tree/master/
 ### Setting the runtime parameter
 
 The most important parameter for a workflow is `runtime`.
-Batch workflows process data in batches, where batch means: all units of data (records, documents, or messages)
-having timestamps within a given period.
+Bigflow workflows process data in batches, 
+where batch means: all units of data having timestamps within a given period.
 The `runtime` parameter defines this period.
 
 When a workflow is deployed on Airflow/Composer, the `runtime` parameter is taken from Airflow `execution_date`.
@@ -139,7 +136,7 @@ When a workflow is deployed on Airflow/Composer, the `runtime` parameter is take
 When you run a workflow **daily**, `runtime` means all data with timestamps within a given day.
 For example:
 
-`docs/docs_examples/daily_workflow.py`:
+[`daily_workflow.py`](docs_examples/daily_workflow.py):
 
 ```python
 from bigflow.workflow import Workflow
@@ -169,7 +166,7 @@ I should process data with timestamps from: 2020-01-01 00:00 to 2020-01-01 23:59
 When you run a workflow **hourly**, `runtime` means all data with timestamps within a given hour.
 For example:
 
-`docs/docs_examples/hourly_workflow.py`: 
+[`hourly_workflow.py`](docs_examples/hourly_workflow.py):
 
 ```python
 from bigflow.workflow import Workflow
@@ -203,7 +200,7 @@ In BigFlow, project environments are configured by [`bigflow.Config`](https://gi
 
 Here we show how to create a workflow, which prints different messaged for each environment.
 
-`docs/docs_examples/hello_config_workflow.py`: 
+[`hello_config_workflow.py`](docs_examples/hello_config_workflow.py):
 
 ```python
 from bigflow import Config
