@@ -125,74 +125,7 @@ as a part of the [Docs Examples](https://github.com/allegro/bigflow/tree/master/
 
 ### Setting the runtime parameter
 
-The most important parameter for a workflow is `runtime`.
-Bigflow workflows process data in batches, 
-where batch means: all units of data having timestamps within a given period.
-The `runtime` parameter defines this period.
-
-When a workflow is deployed on Airflow/Composer, the `runtime` parameter is taken from Airflow `execution_date`.
-
-#### Workflow with daily scheduling
-When you run a workflow **daily**, `runtime` means all data with timestamps within a given day.
-For example:
-
-[`daily_workflow.py`](docs_examples/daily_workflow.py):
-
-```python
-from bigflow.workflow import Workflow
-class SomeJob:
-    def __init__(self):
-        self.id = 'some_job'
-    def run(self, runtime):
-        print(f'I should process data with timestamps from: {runtime} 00:00 to {runtime} 23:59')
-daily_workflow = Workflow(workflow_id='daily_workflow',
-                                definition=[SomeJob()])
-```
-
-
-Run `daily_workflow` for batch date 2020-01-01:
-
-```shell
-bigflow run --workflow daily_workflow --runtime 2020-01-01
-```
-
-Output:
-
-```text
-I should process data with timestamps from: 2020-01-01 00:00 to 2020-01-01 23:59
-``` 
-
-#### Workflow with hourly scheduling 
-When you run a workflow **hourly**, `runtime` means all data with timestamps within a given hour.
-For example:
-
-[`hourly_workflow.py`](docs_examples/hourly_workflow.py):
-
-```python
-from bigflow.workflow import Workflow
-from datetime import datetime
-from datetime import timedelta
-class SomeJob:
-    def __init__(self):
-        self.id = 'some_job'
-    def run(self, runtime):
-        print(f'I should process data with timestamps from: {runtime} '
-              f'to {datetime.strptime(runtime, "%Y-%m-%d %H:%M:%S") + timedelta(minutes=59, seconds=59) }')
-hourly_workflow = Workflow(workflow_id='hourly_workflow',
-                                definition=[SomeJob()])
-```
-
-Run `hourly_workflow` for batch hour 2020-01-01 10:00:00:
-
-```shell
-bigflow run run --workflow hourly_workflow --runtime '2020-01-01 10:00:00'
-```
-
-Output:
-
-```text
-I should process data with timestamps from: 2020-01-01 10:00:00 to 2020-01-01 10:59:59
-``` 
+TODO
 
 #### Selecting environment configuration
 
