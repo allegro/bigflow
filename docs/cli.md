@@ -125,7 +125,7 @@ as a part of the [Docs Examples](https://github.com/allegro/bigflow/tree/master/
 
 ### Setting the runtime parameter
 
-TODO
+TODO Bartłomiej
 
 #### Selecting environment configuration
 
