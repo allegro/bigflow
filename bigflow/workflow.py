@@ -3,7 +3,7 @@ from typing import Optional
 from .utils import now
 
 DEFAULT_SCHEDULE_INTERVAL = '@daily'
-# modyfikacja dagbuildera
+
 
 class Workflow(object):
     def __init__(self,
