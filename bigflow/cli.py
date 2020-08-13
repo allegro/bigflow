@@ -491,18 +491,27 @@ def _cli_build_package():
 
 def _cli_build_dags(args):
     check_if_project_setup_exists()
-    cmd = 'python project_setup.py build_project --build-dags' + \
-          ((' --workflow ' + args.workflow) if args.workflow else '') + \
-          ((' --start-time ' + args.start_time) if args.start_time else '')
+    cmd = ['python', 'project_setup.py', 'build_project', '--build-dags']
+    if args.workflow:
+        cmd.append('--workflow')
+        cmd.append(args.workflow)
+    if args.start_time:
+        cmd.append('--start-time')
+        cmd.append(args.start_time)
     run_process(cmd)
 
 
 def _cli_build(args):
     check_if_project_setup_exists()
-    cmd = 'python project_setup.py build_project' + \
-          ((' --workflow ' + args.workflow) if args.workflow else '') + \
-          ((' --start-time ' + args.start_time) if args.start_time else '') + \
-          (' --export-image-to-file' if args.export_image_to_file else '')
+    cmd = ['python', 'project_setup.py', 'build_project']
+    if args.workflow:
+        cmd.append('--workflow')
+        cmd.append(args.workflow)
+    if args.start_time:
+        cmd.append('--start-time')
+        cmd.append(args.start_time)
+    if args.export_image_to_file:
+        cmd.append('--export-image-to-file')
     run_process(cmd)
 
 

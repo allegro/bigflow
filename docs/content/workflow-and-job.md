@@ -112,7 +112,7 @@ job1-->          -->job4
 
 The implementation:
 
-[`docs_examples/workflow_and_job/graph_workflow.py`](docs_examples/workflow_and_job/graph_workflow.py)
+[`examples/workflow_and_job/graph_workflow.py`](../examples/workflow_and_job/graph_workflow.py)
 ```python
 job1, job2, job3, job4 = Job('1'), Job('2'), Job('3'), Job('4')
 
@@ -135,7 +135,7 @@ Running job 4 at 2020-01-01
 The `Workflow` class provides the `run` and `run_job` methods. When you run a single job through the `Workflow.run_job` method, 
 without providing the `runtime` parameter, the `Workflow` class passes the current date-time (local time) as default.
 
-[`docs_examples/workflow_and_job/run_workflow_and_job.py`](docs_examples/workflow_and_job/run_workflow_and_job.py)
+[`examples/workflow_and_job/run_workflow_and_job.py`](../examples/workflow_and_job/run_workflow_and_job.py)
 ```python
 simple_workflow = Workflow(
     workflow_id='simple_workflow',
@@ -172,7 +172,7 @@ otherwise `YYYY-MM-DD`.
 When you run a workflow **daily**, `runtime` means all data with timestamps within a given day.
 For example:
 
-[`docs_examples/workflow_and_job/daily_workflow.py`](docs_examples/workflow_and_job/daily_workflow.py):
+[`examples/workflow_and_job/daily_workflow.py`](../examples/workflow_and_job/daily_workflow.py):
 ```python
 class DailyJob:
     def __init__(self):
@@ -200,7 +200,7 @@ I should process data with timestamps from: 2020-01-01 00:00 to 2020-01-01 23:59
 When you run a workflow **hourly**, `runtime` means all data with timestamps within a given hour.
 For example:
 
-[`docs_examples/workflow_and_job/hourly_workflow.py`](docs_examples/workflow_and_job/hourly_workflow.py):
+[`examples/workflow_and_job/hourly_workflow.py`](../examples/workflow_and_job/hourly_workflow.py):
 ```python
 class HourlyJob:
     def __init__(self):

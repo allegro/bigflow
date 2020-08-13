@@ -19,9 +19,10 @@ def now(template: str = "%Y-%m-%d %H:00:00"):
     return datetime.now().strftime(template)
 
 
-def run_process(cmd: str):
-    print(cmd)
-    process = subprocess.Popen(cmd.split(' '), stdout=subprocess.PIPE)
+def run_process(cmd):
+    if isinstance(cmd, str):
+        cmd = cmd.split(' ')
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
     for c in iter(lambda: process.stdout.read(1), b''):
         sys.stdout.write(c.decode('utf-8'))
 

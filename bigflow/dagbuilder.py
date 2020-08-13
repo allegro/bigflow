@@ -85,8 +85,8 @@ dag = DAG(
           docker_image = docker_repository+":"+build_ver,
           bf_job= workflow.workflow_id+"."+job.id,
           root_folder=root_package_name,
-          retries=job.retry_count,
-          retry_delay=job.retry_pause_sec)
+          retries=job.retry_count if hasattr(job, 'retry_count') else 3,
+          retry_delay=job.retry_pause_sec if hasattr(job, 'retry_pause_sec') else 60)
 )
 
         for d in dependencies:

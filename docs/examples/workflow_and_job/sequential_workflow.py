@@ -13,4 +13,5 @@ example_workflow = Workflow(
     workflow_id='example_workflow',
     definition=[Job('1'), Job('2')])
 
-example_workflow.run()
+if __name__ == '__main__':
+    example_workflow.run()

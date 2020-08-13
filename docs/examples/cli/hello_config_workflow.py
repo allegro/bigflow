@@ -21,5 +21,6 @@ class HelloConfigJob:
         print(self.message_to_print)
 
 
-hello_world_workflow = Workflow(workflow_id='hello_config_workflow',
-                                definition=[HelloConfigJob(config.resolve_property('message_to_print'))])
+hello_world_workflow = Workflow(
+    workflow_id='hello_config_workflow',
+    definition=[HelloConfigJob(config.resolve_property('message_to_print'))])
