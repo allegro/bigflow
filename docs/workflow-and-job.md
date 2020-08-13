@@ -103,9 +103,9 @@ The second one is passing the `Definition` object, which allows you to create a 
 Let us say that we want to create the following DAG:
     
 ```
-      |--job2--|
+       |--job2--|
 job1-->          -->job4 
-      |--job3--|
+       |--job3--|
 ```
 
 The implementation looks like this:
