@@ -1,92 +1,63 @@
-## Workflows and jobs
+# Workflow & job
 
-### Overview
+## Overview
 
-The basic BigFlow workflow is a series of jobs. Each job executes part of your processing logic. Job is a Python object. 
-It can execute anything that can be executed from the Python code, for example:
+BigFlow workflow is a series of jobs. Each job is a Python object which executes your data processing logic.
+It can execute anything that can be executed from Python code, for example:
 
 * Dataproc process
 * Apache Beam process
 * BigQuery query
-* Any Python code.
+* Any Python code
 
-The simplest workflow you can create, looks like this:
+The simplest workflow you can create looks like this:
 
+[`docs_examples/workflow_and_job/simple_workflow_and_job.py`](docs_examples/workflow_and_job/simple_workflow_and_job.py)
 ```python
 from bigflow.workflow import Workflow
 
-class HelloWorldJob:
+class SimpleJob:
     def __init__(self):
-        self.id = docs
+        self.id = 'simple_job'
 
     def run(self, runtime):
-        print(f'Hello world at {runtime}!')
+        print(f'Running a simple job')
 
-hello_world_workflow = Workflow(workflow_id='hello_world_workflow', definition=[HelloWorldJob()])
+simple_workflow = Workflow(workflow_id='simple_workflow', definition=[SimpleJob()])
 ```
 
-Now, you can run the `hello_world_workflow`:
+You can run this workflow within a Python module:
 
-```shell script
-bgf run --workflow hello_world_workflow
-```
-
-Or a single job:
-
-```shell script
-bgf run --job hello_world_workflow.hello_world
-```
-
-You can also run the workflow and job within the module:
-
+[`docs_examples/workflow_and_job/run_in_module.py`](docs_examples/workflow_and_job/run_in_module.py)
 ```python
-hello_world_workflow.run()
-hello_world_workflow.run_job('hello_world')
+simple_workflow.run()
+simple_workflow.run_job('simple_job')
 ```
 
-Finally, you can build and deploy created workflow to Cloud Composer:
+Output:
 
-```shell script
-bgf build;bgf deploy
+```text
+Running a simple job
+Running a simple job
 ```
 
-### Job
+Running workflows and jobs from a module is useful for debugging. In any other case we recommend using [BigFlow CLI](cli.md).
 
-Job is just an object that has a unique `id` and implements the `run` method.
+## Job
 
+A job is just an object with a unique `id` and the `run` method.
+
+The `id` parameter is a string that should be a valid Python variable name. For example — `'my_example_job'`, `'MY_EXAMPLE_JOB'`, `'job1234'`.
+
+The Job `run` method a single argument — `runtime`. The `runtime` parameter is a data-time string. 
+You can find more information about `runtime` and scheduling [workflow scheduling options](#workflow-scheduling-options).
+
+There are 2 additional parameters, that a job can supply to Airflow: `retry_count` and `retry_pause_sec`. The `retry_count` parameter
+determines how many times a job will be retried (in case of a failure). The `retry_pause_sec` parameter says how long the pause between retries should be.
+
+[`docs_examples/workflow_and_job/retriable_job.py`](docs_examples/workflow_and_job/retriable_job.py)
 ```python
-class SimpleJob:
-    def __init__(self, id):
-        self.id = id
-
-    def run(self, runtime):
-        print(runtime)
-
-job = SimpleJob('my_simple_job')
-```
-
-The `runtime` parameter represents a date and time of job execution. Let us say that your workflow runs every day at 7 am,
-starting from 2020-01-01. Then, the `run` method will be executed for each job with `runtime` 
-equals `"2020-01-01 07:00:00"`, `"2020-01-02 07:00:00"`, `"2020-01-03 07:00:00"` and so on.
-
-The `runtime` parameters is a string. It will be formatted as either `YYYY-MM-DD` or `YYYY-MM-DD hh-mm-ss`.
-It depends on the `Workflow` setup. By default, it will be date only - `YYYY-MM-DD`.
-
-When you run a single job through the workflow class, without providing the `runtime` parameter, the `Workflow` class
-will pass the current date time as default.
-
-```python
-# Let's assume that now == '2020-01-02 01:11:00'
-simple_workflow = Workflow(workflow_id='simple_workflow', definition=[SimpleJob('1'), SimpleJob('2')])
-hello_world_workflow.run_job('2')
->>> '2020-01-02 01:11:00'
-```
-
-There are 2 additional parameters, that job can supply - `retry_count` and `retry_pause_sec`. The `retry_count` parameter
-determines how many times a job will be retried. The `retry_pause_sec` sets how long the pause between retries should be.
-
-```python
-class SimpleJob:
+class SimpleRetriableJob:
     def __init__(self, id):
         self.id = id
         self.retry_count = 20
@@ -94,67 +65,161 @@ class SimpleJob:
 
     def run(self, runtime):
         print(runtime)
-
-job = SimpleJob('my_simple_job')
 ```
 
 ## Workflow
 
-The `Workflow` class arranges jobs into a DAG. There are 2 ways of specifying job arrangement. First one is passing a list
-of jobs to `Workflow`:
+The `Workflow` class takes 2 main parameters: `workflow_id` and `definition`.
 
+The `workflow_id` parameter is a string that should be a valid Python variable name. For example: `'my_example_workflow'`, `'MY_EXAMPLE_WORKFLOW'`, `'workflow1234'`.
+
+The `Workflow` class arranges jobs into a [DAG](https://en.wikipedia.org/wiki/Directed_acyclic_graph), through the `definition` parameter. 
+There are two ways of specifying job arrangement. When your jobs are executed sequentially, simply pass them in a list of jobs:
+
+[`docs_examples/workflow_and_job/sequential_workflow.py`](docs_examples/workflow_and_job/sequential_workflow.py)
 ```python
-from biggerquery.build import Workflow
+from bigflow.workflow import Workflow
 
 class Job(object):
     def __init__(self, id):
         self.id = id
-    
-    def run(self, runtime):
-        print(runtime)
 
-example_workflow = Workflow(definition=[Job('1'), Job('2')])
+    def run(self, runtime):
+        print(f'Running job {self.id} at {runtime}')
+
+example_workflow = Workflow(
+    workflow_id='example_workflow',
+    definition=[Job('1'), Job('2')])
+
+example_workflow.run()
 ```
 
-The second one is passing `Definition` object, it allows you to create a graph:
+Output:
+```text
+Running job 1 at 2020-01-01
+Running job 2 at 2020-01-01
+```
 
-```python
-from biggerquery.build import Workflow
-from biggerquery.build import Definition
-from biggerquery.build import WorkflowJob
+When some of your jobs are executed concurrently, pass them using the Definition object. It allows you to create a graph of jobs ([DAG](https://en.wikipedia.org/wiki/Directed_acyclic_graph)).
 
-class Job(object):
-    def __init__(self, id):
-        self.id = id
+Let us say that we want to create the following DAG:
     
-    def run(self, runtime):
-        print(runtime)
+```
+       /--job2--\
+job1-->          -->job4 
+       \--job3--/
+```
 
+The implementation:
+
+[`docs_examples/workflow_and_job/graph_workflow.py`](docs_examples/workflow_and_job/graph_workflow.py)
+```python
 job1, job2, job3, job4 = Job('1'), Job('2'), Job('3'), Job('4')
 
-Definition({
-    create_quality_metric_table_job: (calculate_box_quality_metric_job, calculate_offer_quality_metric_job)
-})
+graph_workflow = Workflow(workflow_id='graph_workflow', definition=Definition({
+    job1: (job2, job3),
+    job2: (job4,),
+    job3: (job4,)
+}))
+graph_workflow.run()
 ```
 
-## Local run
+As you can see below, the `Workflow.run` method executes jobs using the [pre-order traversal](https://www.geeksforgeeks.org/tree-traversals-inorder-preorder-and-postorder/):
+```text
+Running job 1 at 2020-01-01
+Running job 2 at 2020-01-01
+Running job 3 at 2020-01-01
+Running job 4 at 2020-01-01
+```
 
+The `Workflow` class provides the `run` and `run_job` methods. When you run a single job through the `Workflow.run_job` method, 
+without providing the `runtime` parameter, the `Workflow` class passes the current date-time (local time) as default.
 
-### Why not Airflow DAG?
+[`docs_examples/workflow_and_job/run_workflow_and_job.py`](docs_examples/workflow_and_job/run_workflow_and_job.py)
+```python
+simple_workflow = Workflow(
+    workflow_id='simple_workflow',
+    runtime_as_datetime=True,
+    definition=[Job('1')])
+simple_workflow.run_job('1')
+simple_workflow.run()
+simple_workflow.run_job('1', '1970-01-01')
+simple_workflow.run('1970-01-01')
+```
 
-We treat Airflow as a deployment platform only (possibly one of many). Build tool produces immutable, disposable DAG. We avoid dealing with
-Airflow state. We think that there are better places to store historical data
-about execution than the Airflow database. We don't want to deal with Airflow during development just as we don't want to deal
-with Kubernetes when we develop a service. Also, we have always tried do make an Airflow DAG as thin as possible, moving
-any logic possible to the processing job, leaving Airflow DAG as a scheduling configuration.
+The `Workflow.run` method ignores job parameters like `retry_count` and `retry_pause_sec`. It executes a workflow in a sequential (non-parallel) way.
+It's not used by Airflow.
 
-Pros:
+## Workflow scheduling options
 
-* Reduces required knowledge about Airflow to the level of being able to use Airflow UI
-* Reduces boilerplate code by providing reasonable defaults
-* Offers very easy to understand, stateless way of working with Airflow
+### The `runtime` parameter
 
-Cons:
+The most important parameter for a workflow is `runtime`. BigFlow workflows process data in batches, 
+where batch means: all units of data having timestamps within a given period. The `runtime` parameter defines this period.
 
-* It comes with the price of reducing Airflow features to the minimum that we find useful. That's why if you depend on advanced 
-Airflow mechanics or enjoy working with Airflow as a development tool, BigFlow is probably not for you.
+When a workflow is deployed on Airflow, the `runtime` parameter is taken from Airflow `execution_date`. 
+It will be formatted as either `YYYY-MM-DD` or `YYYY-MM-DD hh-mm-ss`. It depends on the `Workflow` setup.
+
+The `Workflow` class has two additional parameters. 
+
+* `schedule_interval` — Defines when a workflow should be run. It can be a cron expression or a "shortcut". 
+For example: `'@daily'`, `'@hourly'`, `'@once'`, `'0 0 * * 0'`.
+* `runtime_as_datetime` — Determines the `runtime` parameter format. If set as `True`, `runtime` will be `YYYY-MM-DD hh-mm-ss`, 
+otherwise `YYYY-MM-DD`.
+
+### Daily scheduling example
+
+When you run a workflow **daily**, `runtime` means all data with timestamps within a given day.
+For example:
+
+[`docs_examples/workflow_and_job/daily_workflow.py`](docs_examples/workflow_and_job/daily_workflow.py):
+```python
+class DailyJob:
+    def __init__(self):
+        self.id = 'daily_job'
+
+    def run(self, runtime):
+        print(f'I should process data with timestamps from: {runtime} 00:00 to {runtime} 23:59')
+
+daily_workflow = Workflow(
+    workflow_id='daily_workflow',
+    schedule_interval='@daily',
+    runtime_as_datetime=False,
+    definition=[DailyJob()])
+daily_workflow.run('2020-01-01')
+```
+
+Output:
+
+```text
+I should process data with timestamps from: 2020-01-01 00:00 to 2020-01-01 23:59
+``` 
+
+### Hourly scheduling example 
+
+When you run a workflow **hourly**, `runtime` means all data with timestamps within a given hour.
+For example:
+
+[`docs_examples/workflow_and_job/hourly_workflow.py`](docs_examples/workflow_and_job/hourly_workflow.py):
+```python
+class HourlyJob:
+    def __init__(self):
+        self.id = 'hourly_job'
+
+    def run(self, runtime):
+        print(f'I should process data with timestamps from: {runtime} '
+              f'to {datetime.strptime(runtime, "%Y-%m-%d %H:%M:%S") + timedelta(minutes=59, seconds=59) }')
+
+hourly_workflow = Workflow(
+    workflow_id='hourly_workflow',
+    runtime_as_datetime=True,
+    schedule_interval='@hourly',
+    definition=[HourlyJob()])
+hourly_workflow.run('2020-01-01 10:00:00')
+```
+
+Output:
+
+```text
+I should process data with timestamps from: 2020-01-01 10:00:00 to 2020-01-01 10:59:59
+``` 

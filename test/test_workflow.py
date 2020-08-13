@@ -10,7 +10,7 @@ class WorkflowTestCase(TestCase):
     def test_should_run_jobs(self):
         # given
         definition = [mock.Mock() for i in range(100)]
-        workflow = Workflow(definition=definition)
+        workflow = Workflow(workflow_id='test_workflow', definition=definition)
 
         # when
         workflow.run('2019-01-01')
@@ -25,7 +25,7 @@ class WorkflowTestCase(TestCase):
         setattr(first_job, 'id', 'first job')
 
         definition = [first_job] + [mock.Mock() for i in range(100)]
-        workflow = Workflow(definition=definition)
+        workflow = Workflow(workflow_id='test_workflow', definition=definition)
 
         # when
         workflow.run_job('first job', '2020-01-01')
@@ -39,13 +39,14 @@ class WorkflowTestCase(TestCase):
     def test_should_have_id_and_schedule_interval(self):
         # given
         workflow = Workflow(
+            workflow_id='test_workflow',
             definition=[],
             schedule_interval='@hourly',
-            dt_as_datetime=True)
+            runtime_as_datetime=True)
 
         # expected
         self.assertEqual(workflow.schedule_interval, '@hourly')
-        self.assertEqual(workflow.dt_as_datetime, True)
+        self.assertEqual(workflow.runtime_as_datetime, True)
 
     def test_should_throw_exception_when_circular_dependency_is_found(self):
         # given
@@ -119,7 +120,7 @@ class WorkflowTestCase(TestCase):
         #   job9         job8
 
         definition = Definition(job_graph)
-        workflow = Workflow(definition, schedule_interval='@hourly', dt_as_datetime=True)
+        workflow = Workflow(workflow_id='test_workflow', definition=definition, schedule_interval='@hourly', runtime_as_datetime=True)
 
         # expected
         self.assertEqual(list(workflow.build_sequential_order()), [job1, job5, job9, job2, job3, job6, job4, job7, job8])
@@ -150,7 +151,7 @@ class WorkflowTestCase(TestCase):
         #   job9         job8
 
         definition = Definition(job_graph)
-        workflow = Workflow(definition, schedule_interval='@hourly', dt_as_datetime=True)
+        workflow = Workflow(workflow_id='test_workflow', definition=definition, schedule_interval='@hourly', runtime_as_datetime=True)
 
         # expected
         self.assertEqual(workflow.build_sequential_order(), [job1, job5, job2, job3, job6, job9, job4, job7, job8])

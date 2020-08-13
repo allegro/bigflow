@@ -8,10 +8,15 @@ import shutil
 import logging
 from collections import namedtuple
 import functools
+from datetime import datetime
 
 from google.api_core.exceptions import BadRequest
 
 logger = logging.getLogger(__name__)
+
+
+def now(template: str = "%Y-%m-%d %H:00:00"):
+    return datetime.now().strftime(template)
 
 
 def run_process(cmd: str):

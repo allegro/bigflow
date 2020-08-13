@@ -66,7 +66,8 @@ class DagBuilderTestCase(TestCase):
             w_job1: (w_job2, w_job3),
             w_job2: (w_job3,)
         }
-        workflow = Workflow(workflow_id='my_workflow', definition=Definition(graph), schedule_interval='@hourly', description='test_workflow')
+        workflow = Workflow(workflow_id='my_workflow', runtime_as_datetime=True,
+                            definition=Definition(graph), schedule_interval='@hourly')
 
 
         # when
@@ -161,8 +162,7 @@ tjob3.set_upstream(tjob1)
         graph = {
             w_job1: ()
         }
-        workflow = Workflow(workflow_id='my_daily_workflow', definition=Definition(graph), schedule_interval='@daily',
-                            description='test_workflow')
+        workflow = Workflow(workflow_id='my_daily_workflow', definition=Definition(graph), schedule_interval='@daily')
 
         # when
         dag_file_path = generate_dag_file(workdir, docker_repository, workflow, '2020-07-01', '0.3.0', 'ca')
