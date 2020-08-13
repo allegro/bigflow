@@ -47,7 +47,7 @@ A job is just an object that has a unique `id` and implements the `run` method.
 
 The `id` parameter is a string that should be a valid Python variable name. For example - `'my_example_job'`, `'MY_EXAMPLE_JOB'`, `'job1234'`.
 
-The run method takes a single argument - `runtime`. The `runtime` parameter is a date-time in form of a string. 
+The run method takes a single argument - `runtime`. The `runtime` parameter is a date-time in the form of a string. 
 You can find more information about `runtime` and scheduling [in the chapter below](#workflow-scheduling-options).
 
 There are 2 additional parameters, that a job can supply - `retry_count` and `retry_pause_sec`. The `retry_count` parameter
