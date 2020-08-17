@@ -1,7 +1,12 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+import distutils.cmd
 import setuptools
+import subprocess
 import os
+from pathlib import Path
+
+from bigflow.build import clear_package_leftovers
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
@@ -11,6 +16,25 @@ with open(os.path.join('requirements', 'base.txt'), 'r') as base_requirements:
 
 with open(os.path.join('requirements', 'stackdriver_extras.txt'), 'r') as stackdriver_extras_requirements:
     stackdriver_extras_require = [l.strip() for l in stackdriver_extras_requirements.readlines()]
+
+
+class BuildAndInstallWheelCommand(distutils.cmd.Command):
+    description = 'BigFlow build.'
+    user_options = []
+
+    def initialize_options(self) -> None:
+        pass
+
+    def finalize_options(self) -> None:
+        pass
+
+    def run(self):
+        clear_package_leftovers(
+            Path(__file__).parent / 'dist',
+            Path(__file__).parent / 'bigflow.egg-info',
+            Path(__file__).parent / 'build')
+        self.run_command('bdist_wheel')
+        print(subprocess.getoutput('source env/bin/activate;pip install bigflow --find-links dist/'))
 
 
 setuptools.setup(
@@ -34,5 +58,8 @@ setuptools.setup(
     extras_require={
         'stackdriver': stackdriver_extras_require
     },
-    scripts=["bf"]
+    scripts=["bf"],
+    cmdclass={
+        'build_and_install_wheel': BuildAndInstallWheelCommand
+    }
 )

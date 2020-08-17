@@ -9,4 +9,6 @@ graph_workflow = Workflow(workflow_id='graph_workflow', definition=Definition({
     job2: (job4,),
     job3: (job4,)
 }))
-graph_workflow.run()
+
+if __name__ == '__main__':
+    graph_workflow.run()

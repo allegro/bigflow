@@ -1,5 +1,3 @@
-                  
-
 # BigFlow CLI
 
 BigFlow package offers a command-line tool called `bigflow`.
@@ -69,7 +67,7 @@ It's not recommended to be used on production, because:
 The example workflow is super simple. It consists of two jobs. The first one says Hello, and the second one says
 Goodbye. 
 
-[`hello_world_workflow.py`](docs_examples/hello_world_workflow.py):
+[`hello_world_workflow.py`](../examples/cli/hello_world_workflow.py):
 
 ```python
 from bigflow.workflow import Workflow
@@ -133,7 +131,7 @@ In BigFlow, project environments are configured by [`bigflow.Config`](https://gi
 
 Here we show how to create a workflow, which prints different messaged for each environment.
 
-[`hello_config_workflow.py`](docs_examples/hello_config_workflow.py):
+[`hello_config_workflow.py`](../examples/cli/hello_config_workflow.py):
 
 ```python
 from bigflow import Config
