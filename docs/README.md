@@ -2,11 +2,11 @@
 
 ## Installation
 
-In the bigflow project directory, run:
+In the **docs project directory**, run:
 
-`python setup.py build_and_install_wheel`
+`cd ..;python setup.py build_and_install_wheel`
 
-That command builds the bigflow package and installs it on your enviroment.
+That command builds the bigflow package and installs it on your environment.
 
 ## Usage
 
