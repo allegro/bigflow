@@ -264,12 +264,16 @@ def _valid_datetime(dt):
 def _add_build_dags_parser_arguments(parser):
     parser.add_argument('-w', '--workflow',
                         type=str,
-                        help="Id of a workflow to build. For example to run only this workflow: bigflow.Workflow(workflow_id='workflow1',"
-                             " definition=[ExampleJob('job1')]) you should use --w workflow1")
+                        help="Leave empty to build DAGs from all workflows. "
+                             "Set a workflow Id to build selected workflow only. "
+                             "For example to build only this workflow: bigflow.Workflow(workflow_id='workflow1',"
+                             " definition=[ExampleJob('job1')]) you should use --workflow workflow1")
     parser.add_argument('-t', '--start-time',
-                        help='Point of time from which a workflow should start working. '
-                             'For workflows triggered hourly -- datetime in format: Y-m-d H:M:S, for example 2020-01-01 00:00:00'
-                             'For workflows triggered daily -- datetime in format: Y-m-d, for example 2020-01-01',
+                        help='The first runtime of a workflow. '
+                             'For workflows triggered hourly -- datetime in format: Y-m-d H:M:S, for example 2020-01-01 00:00:00. '
+                             'For workflows triggered daily -- date in format: Y-m-d, for example 2020-01-01. '
+                             'If empty, current hour is used for hourly workflows and '
+                             'today for daily workflows. ',
                         type=_valid_datetime)
 
 
@@ -277,7 +281,8 @@ def _add_build_image_parser_arguments(parser):
     parser.add_argument('-e', '--export-image-to-file',
                         default=False,
                         action="store_true",
-                        help="If true, an image is exported to a *.tar file.")
+                        help="If set, an image is exported to a *.tar file. "
+                             "If empty, an image is loaded to a local Docker repository.")
 
 
 def _create_build_dags_parser(subparsers):
