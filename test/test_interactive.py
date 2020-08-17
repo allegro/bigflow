@@ -1,10 +1,10 @@
 from unittest import TestCase
 import mock
 
-from bigflow.interactive import InteractiveDatasetManager
-from bigflow.interactive import interactive_component
-from bigflow.job import DEFAULT_RETRY_COUNT
-from bigflow.job import DEFAULT_RETRY_PAUSE_SEC
+from bigflow.bigquery.interactive import InteractiveDatasetManager
+from bigflow.bigquery.interactive import interactive_component
+from bigflow.bigquery.job import DEFAULT_RETRY_COUNT
+from bigflow.bigquery.job import DEFAULT_RETRY_PAUSE_SEC
 
 
 class OperationLevelDatasetManagerTestCase(TestCase):

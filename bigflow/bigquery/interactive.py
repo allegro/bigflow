@@ -8,9 +8,9 @@ import pandas as pd
 from .job import Job
 from .job import DEFAULT_RETRY_COUNT
 from .job import DEFAULT_RETRY_PAUSE_SEC
-from .utils import not_none_or_error
-from .utils import log_syntax_error
-from .gcp_defaults import DEFAULT_LOCATION
+from .dataset_manager import DEFAULT_LOCATION
+from ..utils import not_none_or_error
+from ..utils import log_syntax_error
 
 
 DEFAULT_OPERATION_NAME = '__auto'
@@ -24,6 +24,7 @@ def interactive_component(**dependencies):
         return InteractiveComponent(standard_component,
                                     {dep_name: dep.config for dep_name, dep in dependencies.items()})
     return decorator
+
 
 class InteractiveDatasetManager(object):
     """Let's you run operations on a dataset, without the need of creating a component."""
@@ -380,3 +381,36 @@ class DatasetConfigInternal(object):
             'location': self.location
         }
         return config
+
+
+def sensor_component(table_alias, where_clause, ds=None):
+
+    def sensor(ds):
+        result = ds.collect('''
+        SELECT count(*) > 0 as table_ready
+        FROM `{%(table_alias)s}`
+        WHERE %(where_clause)s
+        ''' % {
+            'table_alias': table_alias,
+            'where_clause': where_clause
+        })
+
+        if not result.iloc[0]['table_ready']:
+            raise ValueError('{} is not ready'.format(table_alias))
+
+    sensor.__name__ = 'wait_for_{}'.format(table_alias)
+
+    return sensor if ds is None else interactive_component(ds=ds)(sensor)
+
+
+def add_label_component(table_name, labels, ds=None):
+
+    def add_label(ds):
+        table = ds.client.get_table("{}.{}.{}".format(ds.project_id, ds.dataset_name, table_name))
+        table.labels = labels
+        return ds.client.update_table(table, ["labels"])
+
+    if ds is None:
+        return add_label
+    else:
+        return interactive_component(ds=ds)(add_label)

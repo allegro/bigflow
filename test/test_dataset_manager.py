@@ -1,6 +1,6 @@
 from unittest import TestCase
-from bigflow.dataset_manager import handle_key_error
-from bigflow.dataset_manager import AliasNotFoundError
+from bigflow.bigquery.dataset_manager import handle_key_error
+from bigflow.bigquery.dataset_manager import AliasNotFoundError
 
 
 class HandleKeyErrorTestCase(TestCase):

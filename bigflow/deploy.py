@@ -7,6 +7,7 @@ import requests
 from typing import List
 from google.cloud import storage
 
+
 def os_call(cmd: List, input: str = None):
     print('executing cmd:', ' '.join(cmd))
     if input:

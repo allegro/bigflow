@@ -4,8 +4,8 @@ import tempfile
 import imp
 
 from bigflow.utils import AutoDeletedTmpFile
-from bigflow.interactive import DatasetConfigInternal
-from bigflow.job import Job
+from bigflow.bigquery.interactive import DatasetConfigInternal
+from bigflow.bigquery.job import Job
 
 
 class JobTestCase(TestCase):
