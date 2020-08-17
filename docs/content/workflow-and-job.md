@@ -12,7 +12,7 @@ It can execute anything that can be executed from Python code, for example:
 
 The simplest workflow you can create looks like this:
 
-[`docs_examples/workflow_and_job/simple_workflow_and_job.py`](docs_examples/workflow_and_job/simple_workflow_and_job.py)
+[`docs_examples/workflow_and_job/simple_workflow_and_job.py`](../examples/workflow_and_job/simple_workflow_and_job.py)
 ```python
 from bigflow.workflow import Workflow
 
@@ -28,7 +28,7 @@ simple_workflow = Workflow(workflow_id='simple_workflow', definition=[SimpleJob(
 
 You can run this workflow within a Python module:
 
-[`docs_examples/workflow_and_job/run_in_module.py`](docs_examples/workflow_and_job/run_in_module.py)
+[`docs_examples/workflow_and_job/run_in_module.py`](../examples/workflow_and_job/run_in_module.py)
 ```python
 simple_workflow.run()
 simple_workflow.run_job('simple_job')
@@ -55,7 +55,7 @@ You can find more information about `runtime` and scheduling [workflow schedulin
 There are 2 additional parameters, that a job can supply to Airflow: `retry_count` and `retry_pause_sec`. The `retry_count` parameter
 determines how many times a job will be retried (in case of a failure). The `retry_pause_sec` parameter says how long the pause between retries should be.
 
-[`docs_examples/workflow_and_job/retriable_job.py`](docs_examples/workflow_and_job/retriable_job.py)
+[`docs_examples/workflow_and_job/retriable_job.py`](../examples/workflow_and_job/retriable_job.py)
 ```python
 class SimpleRetriableJob:
     def __init__(self, id):
@@ -76,7 +76,7 @@ The `workflow_id` parameter is a string that should be a valid Python variable n
 The `Workflow` class arranges jobs into a [DAG](https://en.wikipedia.org/wiki/Directed_acyclic_graph), through the `definition` parameter. 
 There are two ways of specifying job arrangement. When your jobs are executed sequentially, simply pass them in a list of jobs:
 
-[`docs_examples/workflow_and_job/sequential_workflow.py`](docs_examples/workflow_and_job/sequential_workflow.py)
+[`docs_examples/workflow_and_job/sequential_workflow.py`](../examples/workflow_and_job/sequential_workflow.py)
 ```python
 from bigflow.workflow import Workflow
 

@@ -1,5 +1,3 @@
-                  
-
 # BigFlow CLI
 
 BigFlow package offers a command-line tool called `bigflow`.
