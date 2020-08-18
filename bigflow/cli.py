@@ -536,8 +536,8 @@ def cli(raw_args) -> None:
     elif operation == 'deploy-dags':
         _cli_deploy_dags(parsed_args)
     elif operation == 'deploy':
-        _cli_deploy_dags(parsed_args)
         _cli_deploy_image(parsed_args)
+        _cli_deploy_dags(parsed_args)
     elif operation == 'build-dags':
         _cli_build_dags(parsed_args)
     elif operation == 'build-image':
