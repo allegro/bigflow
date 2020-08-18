@@ -22,10 +22,10 @@ class BuildAndInstallWheelCommand(distutils.cmd.Command):
     description = 'BigFlow build.'
     user_options = []
 
-    def initialize_options(self) -> None:
+    def initialize_options(self):
         pass
 
-    def finalize_options(self) -> None:
+    def finalize_options(self):
         pass
 
     def run(self):
