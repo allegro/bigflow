@@ -235,8 +235,8 @@ Read more about `deployment_config.py` in
 The `build-dags` command takes two optional parameters:
 
 * `--start-time` &mdash; the first [runtime](workflow-and-job.md#the-runtime-parameter)
-  of your workflows. If empty, a `current hour` is used for hourly workflows and 
-  `today` for daily workflows.
+  of your workflows. If empty, a current hour (`datetime.datetime.now().replace(minute=0, second=0, microsecond=0)`)
+  is used for hourly workflows and `datetime.date.today()` for daily workflows.
 * `--workflow` &mdash;  
    Leave empty to build DAGs from all workflows.
    Set a workflow Id to build selected workflow only.
