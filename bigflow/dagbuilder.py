@@ -16,9 +16,7 @@ def generate_dag_file(workdir: str,
                       start_from: str,
                       build_ver: str,
                       root_package_name: str) -> str:
-    print('creating DAG file ...')
     print(f'start_from: {start_from}')
-    print(f'workdir: {workdir}')
     print(f'build_ver: {build_ver}')
     print(f'docker_repository: {docker_repository}')
 
@@ -97,7 +95,6 @@ dag = DAG(
     workflow.call_on_graph_nodes(build_dag_operator)
 
     dag_file_content = '\n'.join(dag_chunks) + '\n'
-    print (dag_file_content)
     dag_file_path.write_text(dag_file_content)
 
     return dag_file_path.as_posix()

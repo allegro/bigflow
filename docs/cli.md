@@ -11,7 +11,8 @@ on a local machine as well as for build and deployment automation on CI/CD serve
 Prerequisites:
 
 1. [Python](https://www.python.org/downloads/) 3.7
-2. [Google Cloud SDK](https://cloud.google.com/sdk/docs/downloads-interactive)  
+2. [Google Cloud SDK](https://cloud.google.com/sdk/docs/downloads-interactive)
+3. [Docker Engine](https://docs.docker.com/engine/install/)  
 
 
 You can install the `bigflow` package globally but we recommend to 
@@ -67,7 +68,7 @@ It's not recommended to be used on production, because:
 The example workflow is super simple. It consists of two jobs. The first one says Hello, and the second one says
 Goodbye. 
 
-[`hello_world_workflow.py`](../examples/cli/hello_world_workflow.py):
+[`hello_world_workflow.py`](examples/cli/hello_world_workflow.py):
 
 ```python
 from bigflow.workflow import Workflow
@@ -123,15 +124,28 @@ as a part of the [Docs Examples](https://github.com/allegro/bigflow/tree/master/
 
 ### Setting the runtime parameter
 
-TODO Bartłomiej
+When running a workflow or a job with CLI,
+[the runtime parameter](workflow-and-job.md#the-runtime-parameter) 
+is defaulted to now. You can set it to concrete value
+using the `--runtime` argument. For example:
 
-#### Selecting environment configuration
+```shell
+bigflow run --workflow hello_world_workflow --runtime '2020-08-01 10:00:00'
+```
+
+Output:
+```text
+Hello world at 2020-08-01 10:00:00!
+Goodbye!
+```
+
+### Selecting environment configuration
 
 In BigFlow, project environments are configured by [`bigflow.Config`](https://github.com/allegro/bigflow/blob/workflow-and-job-docs/docs/configuration.md) objects.
 
 Here we show how to create a workflow, which prints different messaged for each environment.
 
-[`hello_config_workflow.py`](../examples/cli/hello_config_workflow.py):
+[`hello_config_workflow.py`](examples/cli/hello_config_workflow.py):
 
 ```python
 from bigflow import Config
@@ -189,25 +203,146 @@ BigFlow can build your workflows to Airflow DAGs and deploy them to Google Cloud
 
 There are two build artifacts:
 
-1. DAG files with workflow definitions,
-1. Docker image with workflows code.
+1. Airflow DAG files with workflows definitions,
+1. Docker image with workflows computation code.
 
 There are four `build` commands:
 
-build-dags,build-image,build-package,build
-
-
-1. `build-dags` generates Airflow DAG files from all your workflows, one file for each workflow.
+1. `build-dags` generates Airflow DAG files from your workflows. 
+    DAG files are saved to the local `.dags` dir.
 1. `build-package` generates a PIP package from your project based on `project_setup.py`.
 1. `build-image` generates a Docker image with this package and all requirements.
 1. `build` simply runs `build-dags`, `build-package`, and `build-image`.
 
-// TODO 
+Start from getting detailed help: 
 
+```bash
+bigflow build-dags -h
+bigflow build-package -h
+bigflow build-image -h
+bigflow build -h
+```
+
+Before using `build` commands make sure that you have
+a valid `deployment_config.py` file.
+It should define the `docker_repository` parameter. 
+Read more about `deployment_config.py` in
+[Managing configuration in deployment_config.py](#managing-configuration-in-deployment_configpy).
+
+
+### Building DAG files
+
+The `build-dags` command takes two optional parameters:
+
+* `--start-time` &mdash; the first [runtime](workflow-and-job.md#the-runtime-parameter)
+  of your workflows. If empty, a current hour (`datetime.datetime.now().replace(minute=0, second=0, microsecond=0)`)
+  is used for hourly workflows and `datetime.date.today()` for daily workflows.
+* `--workflow` &mdash;  
+   Leave empty to build DAGs from all workflows.
+   Set a workflow Id to build selected workflow only.
+
+
+For example, build the DAG file for `hello_world_workflow` and given `start-time`:
+
+```shell
+bigflow build-dags --workflow hello_world_workflow --start-time '2020-08-01 10:00:00'
+```
+
+Output:
+
+```text
+Removing: /Users/me/bigflow/docs/.dags
+Generating DAG file for hello_world_workflow
+start_from: 2020-08-01 10:00:00
+build_ver: 0.6.0-bgqdev067a90ae
+docker_repository: eu.gcr.io/docker_repository_project/my-project
+dag_file_path: /Users/me/bigflow/docs/.dags/hello_world_workflow__v0_6_0_bgqdev067a90ae__2020_08_01_10_00_00_dag.py
+```
+
+Build DAG files for all workflows with default `start-time`:
+
+```shell
+bigflow build-dags
+```
+
+### Building PIP package
+
+Call the `build-package` command to build a PIP package from your project.
+The command requires no parameters, all configuration is taken from `project_setup.py`. 
+Your PIP package is saved to a `wheel` file in `dist` dir. For example:
+
+```shell
+bigflow build-package
+```
+
+### Building Docker image
+
+The `build-image` command builds 
+a Docker image with Python, your project's PIP package, and
+all requirements. It has one optional parameter :
+
+* `--export-image-to-file` &mdash; If set, an image is exported to a `tar` file.
+  If empty, an image is loaded to a local Docker repository.
+                             
+For example, build a Docker image to a local registry:
+
+```shell
+bigflow build-image
+```               
+       
+Output:       
+                  
+```text
+Successfully built dad5352cd6b1
+Successfully tagged eu.gcr.io/docker_repository_project/my-project:0.6.0-bgqdev067a90ae
+```                  
+                  
+Check if the image is loaded to your local registry:
+
+```shell
+docker images
+```          
+
+Output:
+
+```text
+REPOSITORY                                           TAG                    IMAGE ID            CREATED             SIZE
+eu.gcr.io/docker_repository_project/my-project       0.6.0-bgqdev067a90ae   dad5352cd6b1        1 minute ago        909MB
+```                 
+
+Build a Docker image to a `tar` file, which can be used as a build artifact
+on your CI/CD server:
+
+```shell
+bigflow build-image --export-image-to-file
+``` 
+
+Output:
+
+```text
+Successfully built be079fe2ac51
+Successfully tagged eu.gcr.io/docker_repository_project/my-project:0.6.0-bgqdev067a90ae
+Exporting the image to file: image/image-0.6.0-bgqdev067a90ae.tar
+Removing the image from the local registry
+```
+
+### Build all
+
+The `build` command builds both artifacts (DAG files and a Docker image)
+by running `build-dags`, `build-package`, and `build-image` commands.
+
+To build your project with a single command, type:
+
+```shell
+bigflow build
+``` 
+ 
 ## Deploying to GCP
 
 CLI `deploy` commands deploy your **workflows** to Google Cloud Composer.
-On this stage, you should have two build artifacts created by the `bigflow build` command: DAG files and a Docker image.
+On this stage, you should have two build artifacts created by the 
+[`bigflow build` command](#building-airflow-dags) &mdash;
+DAG files and a Docker image.
 
 There are three `deploy` commands:
 
@@ -218,12 +353,12 @@ There are three `deploy` commands:
 1. `deploy` simply runs both `deploy-dags` and `deploy-image`.  
 
 
-Start your work from reading detailed help: 
+Start from getting detailed help: 
 
 ```bash
-bgq deploy-dags -h
-bgq deploy-image -h
-bgq deploy -h
+bigflow deploy-dags -h
+bigflow deploy-image -h
+bigflow deploy -h
 ```
 
 #### Authentication methods
@@ -241,7 +376,7 @@ gcloud info
 Example of the `deploy-dags` command with `local_account` authentication:
 
 ```bash
-bgq deploy-dags 
+bigflow deploy-dags 
 ```
 
 **`service_account` method** allows you to authenticate with a [service account](https://cloud.google.com/iam/docs/service-accounts) 
@@ -251,7 +386,7 @@ as long as you have a [Vault](https://www.vaultproject.io/) server for managing 
 Example of the `deploy-dags` command with `service_account` authentication (requires Vault):
 
 ```bash 
-bgq deploy-dags --auth-method=service_account --vault-endpoint https://example.com/vault --vault-secret *****
+bigflow deploy-dags --auth-method=service_account --vault-endpoint https://example.com/vault --vault-secret *****
 ```
 
 #### Managing configuration in deployment_config.py
@@ -285,18 +420,18 @@ Having that, you can run extremely concise `deploy` command, for example:
 
 
 ```bash 
-bgq deploy-dags --config dev
-bgq deploy-dags --config prod
+bigflow deploy-dags --config dev
+bigflow deploy-dags --config prod
 ```
 
-or even `bgq deploy-dags`, because env `dev` is the default one in this case.
+or even `bigflow deploy-dags`, because env `dev` is the default one in this case.
 
 **Important**. By default, the `deployment_config.py` file is located in a main directory of your project,
-so `bgq` expects it exists under this path: `{current_dir}/deployment_config.py`.
+so `bigflow` expects it exists under this path: `{current_dir}/deployment_config.py`.
 You can change this location by setting the `deployment-config-path` parameter:
 
 ```bash
-bgq deploy-dags --deployment-config-path '/tmp/my_deployment_config.py'
+bigflow deploy-dags --deployment-config-path '/tmp/my_deployment_config.py'
 ```
 
 #### Deploy DAG files examples
@@ -305,14 +440,14 @@ Upload DAG files from `{current_dir}/.dags` to a `dev` Composer using `local_acc
 Configuration is taken from `{current_dir}/deployment_config.py`: 
 
 ```bash
-bgq deploy-dags --config dev
+bigflow deploy-dags --config dev
 ```
 
 Upload DAG files from a given dir  using `service_account` authentication.
 Configuration is specified via command line arguments:
 
 ```bash  
-bgq deploy-dags \
+bigflow deploy-dags \
 --dags-dir '/tmp/my_dags' \
 --auth-method=service_account \
 --vault-secret ***** \
@@ -328,14 +463,14 @@ Upload a Docker image from a local repository using `local_account` authenticati
 Configuration is taken from `{current_dir}/deployment_config.py`:
 
 ```bash
-bgq deploy-image --version 1.0 --config dev
+bigflow deploy-image --version 1.0 --config dev
 ```
 
 Upload a Docker image exported to a `.tar` file using `service_account` authentication.
 Configuration is specified via command line arguments:
 
 ```bash
-bgq deploy-image \
+bigflow deploy-image \
 --image-tar-path '/tmp/image-0.1.0-tar' \
 --docker-repository 'eu.gcr.io/my_gcp_dev_project/my_project' \
 --auth-method=service_account \
@@ -349,20 +484,20 @@ Upload DAG files from `{current_dir}/.dags` dir and a Docker image from a local 
 Configuration is taken from `{current_dir}/deployment_config.py`:
 
 ```bash
-bgq deploy --version 1.0 --config dev
+bigflow deploy --version 1.0 --config dev
 ```
 
 The same, but configuration is taken from a given file:
 
 ```bash
-bgq deploy --version 1.0 --config dev --deployment-config-path '/tmp/my_deployment_config.py'
+bigflow deploy --version 1.0 --config dev --deployment-config-path '/tmp/my_deployment_config.py'
 ```
 
 Upload DAG files from a given dir and a Docker image exported to a `.tar` file using `service_account` authentication.
 Configuration is specified via command line arguments:
 
 ```bash
-bgq deploy \
+bigflow deploy \
 --image-tar-path '/tmp/image-0.1.0-tar' \
 --dags-dir '/tmp/my_dags' \
 --docker-repository 'eu.gcr.io/my_gcp_dev_project/my_project' \
