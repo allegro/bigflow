@@ -10,7 +10,7 @@ from bigflow.bigquery.job import Job
 
 class JobTestCase(TestCase):
 
-    @mock.patch('bigflow.job.create_dataset_manager')
+    @mock.patch('bigflow.bigquery.job.create_dataset_manager')
     def test_should_run_bigflow_component(self, create_dataset_manager_mock):
 
         # given

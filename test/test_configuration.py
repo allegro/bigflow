@@ -1,7 +1,8 @@
 import os
 from unittest import TestCase
 
-from bigflow.configuration import Config, DatasetConfig
+from bigflow.configuration import Config
+from bigflow.bigquery.dataset_configuration import DatasetConfig
 
 
 class TestConfig(TestCase):
