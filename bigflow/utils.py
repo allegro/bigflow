@@ -23,8 +23,12 @@ def run_process(cmd):
     if isinstance(cmd, str):
         cmd = cmd.split(' ')
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    result_output = ''
     for c in iter(lambda: process.stdout.read(1), b''):
+        l = c.decode('utf-8')
         sys.stdout.write(c.decode('utf-8'))
+        result_output += l
+    return result_output
 
 
 def resolve(path: Path):
