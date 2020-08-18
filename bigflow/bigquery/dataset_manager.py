@@ -4,7 +4,9 @@ import functools
 
 from google.cloud import bigquery
 
-from .gcp_defaults import DEFAULT_LOCATION
+DEFAULT_REGION = 'europe-west1'
+DEFAULT_MACHINE_TYPE = 'n1-standard-1'
+DEFAULT_LOCATION = 'EU'
 
 
 class AliasNotFoundError(ValueError):

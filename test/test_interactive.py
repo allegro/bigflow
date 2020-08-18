@@ -1,15 +1,15 @@
 from unittest import TestCase
 import mock
 
-from bigflow.interactive import InteractiveDatasetManager
-from bigflow.interactive import interactive_component
-from bigflow.job import DEFAULT_RETRY_COUNT
-from bigflow.job import DEFAULT_RETRY_PAUSE_SEC
+from bigflow.bigquery.interactive import InteractiveDatasetManager
+from bigflow.bigquery.interactive import interactive_component
+from bigflow.bigquery.job import DEFAULT_RETRY_COUNT
+from bigflow.bigquery.job import DEFAULT_RETRY_PAUSE_SEC
 
 
 class OperationLevelDatasetManagerTestCase(TestCase):
 
-    @mock.patch('bigflow.job.create_dataset_manager')
+    @mock.patch('bigflow.bigquery.job.create_dataset_manager')
     def test_should_preserve_dataset_order(self, create_dataset_manager_mock):
         # given
         create_dataset_manager_mock.side_effect = lambda **kwargs: (None, {'dependency_kwargs': kwargs})
@@ -35,7 +35,7 @@ class OperationLevelDatasetManagerTestCase(TestCase):
         # then
         job.run('2019-01-01')
 
-    @mock.patch('bigflow.job.create_dataset_manager')
+    @mock.patch('bigflow.bigquery.job.create_dataset_manager')
     def test_should_pass_all_arguments_to_core_dataset_manager_on_run(self, create_dataset_manager_mock):
         # given
         fake_dataset_manager = mock.Mock()
@@ -77,7 +77,7 @@ class OperationLevelDatasetManagerTestCase(TestCase):
                 table_name='some table', df='some dataframe', partitioned=False, custom_run_datetime='2019-12-12')
         ])
 
-    @mock.patch('bigflow.job.create_dataset_manager')
+    @mock.patch('bigflow.bigquery.job.create_dataset_manager')
     def test_should_run_specified_operation(self, create_dataset_manager_mock):
         # given
         dataset_manager_mock = mock.Mock()
@@ -104,7 +104,7 @@ class OperationLevelDatasetManagerTestCase(TestCase):
             custom_run_datetime=None,
             partitioned=True)])
 
-    @mock.patch('bigflow.job.create_dataset_manager')
+    @mock.patch('bigflow.bigquery.job.create_dataset_manager')
     def test_should_peek_operation_results(self, create_dataset_manager_mock):
         # given
         dataset_manager_mock = mock.Mock()
@@ -142,7 +142,7 @@ class OperationLevelDatasetManagerTestCase(TestCase):
             'collect sql 5\nLIMIT 1000')
 
 
-    @mock.patch('bigflow.job.create_dataset_manager')
+    @mock.patch('bigflow.bigquery.job.create_dataset_manager')
     def test_should_allow_setting_peek_limit(self, create_dataset_manager_mock):
         # given
         dataset_manager_mock = mock.Mock()
@@ -169,7 +169,7 @@ class OperationLevelDatasetManagerTestCase(TestCase):
 
 class InteractiveComponentToJobTestCase(TestCase):
 
-    @mock.patch('bigflow.job.create_dataset_manager')
+    @mock.patch('bigflow.bigquery.job.create_dataset_manager')
     def test_should_pass_configuration_to_job(self, create_dataset_manager_mock):
         # given
 
@@ -204,7 +204,7 @@ class InteractiveComponentToJobTestCase(TestCase):
         self.assertEqual(job.dependency_configuration, {'ds': default_dataset.config})
         job.run('2019-01-01')
 
-    @mock.patch('bigflow.job.create_dataset_manager')
+    @mock.patch('bigflow.bigquery.job.create_dataset_manager')
     def test_should_turn_component_to_job_with_redefined_dependencies(self, create_dataset_manager_mock):
         create_dataset_manager_mock.side_effect = lambda **kwargs: (None, {'dependency_kwargs': kwargs})
 
@@ -244,7 +244,7 @@ class InteractiveComponentToJobTestCase(TestCase):
         # then
         job.run('2019-01-01')
 
-    @mock.patch('bigflow.job.create_dataset_manager')
+    @mock.patch('bigflow.bigquery.job.create_dataset_manager')
     def test_should_not_mutate_dependency_configuration_when_redefining_dependencies(self, create_dataset_manager_mock):
         create_dataset_manager_mock.side_effect = lambda **kwargs: (None, {'dependency_kwargs': kwargs})
 
@@ -267,7 +267,7 @@ class InteractiveComponentToJobTestCase(TestCase):
         standard_component.to_job(dependencies_override={'ds': modified_dataset})
         standard_component.to_job().run('2019-01-01')
 
-    @mock.patch('bigflow.job.create_dataset_manager')
+    @mock.patch('bigflow.bigquery.job.create_dataset_manager')
     def test_should_wrap_each_dependency_into_operation_level_dataset_manager(self, create_dataset_manager_mock):
         # given
         create_dataset_manager_mock.side_effect = lambda **kwargs: (None, {'dependency_kwargs': kwargs})
@@ -286,7 +286,7 @@ class InteractiveComponentToJobTestCase(TestCase):
 
 class InteractiveComponentRunTestCase(TestCase):
 
-    @mock.patch('bigflow.job.create_dataset_manager')
+    @mock.patch('bigflow.bigquery.job.create_dataset_manager')
     def test_should_wrap_each_dependency_into_operation_level_dataset_manager(self, create_dataset_manager_mock):
         # given
         create_dataset_manager_mock.side_effect = lambda **kwargs: (None, {'dependency_kwargs': kwargs})
@@ -312,7 +312,7 @@ class InteractiveComponentRunTestCase(TestCase):
         # when 2
         fake_component.run('2019-01-01', operation_name='some_operation')
 
-    @mock.patch('bigflow.job.create_dataset_manager')
+    @mock.patch('bigflow.bigquery.job.create_dataset_manager')
     def test_should_pass_configuration_to_job(self, create_dataset_manager_mock):
         # given
         create_dataset_manager_mock.side_effect = lambda **kwargs: (None, {'dependency_kwargs': kwargs})
@@ -332,7 +332,7 @@ class InteractiveComponentRunTestCase(TestCase):
 
 class InteractiveComponentPeekTestCase(TestCase):
 
-    @mock.patch('bigflow.job.create_dataset_manager')
+    @mock.patch('bigflow.bigquery.job.create_dataset_manager')
     def test_should_wrap_each_dependency_into_operation_level_dataset_manager(self, create_dataset_manager_mock):
         # given
         create_dataset_manager_mock.side_effect = lambda **kwargs: (None, mock.MagicMock())
@@ -349,7 +349,7 @@ class InteractiveComponentPeekTestCase(TestCase):
         # when
         fake_component.peek('2019-01-01', operation_name='some_operation', limit=100)
 
-    @mock.patch('bigflow.job.create_dataset_manager')
+    @mock.patch('bigflow.bigquery.job.create_dataset_manager')
     def test_should_pass_configuration_to_job(self, create_dataset_manager_mock):
         # given
         def fake_dataset_manager(kwargs):
@@ -374,7 +374,7 @@ class InteractiveComponentPeekTestCase(TestCase):
         # when
         fake_component.peek('2019-01-01', operation_name='some_operation')
 
-    @mock.patch('bigflow.job.create_dataset_manager')
+    @mock.patch('bigflow.bigquery.job.create_dataset_manager')
     def test_should_return_peeked_operation_result(self, create_dataset_manager_mock):
         # given
         def fake_dataset_manager(kwargs):
@@ -397,7 +397,7 @@ class InteractiveComponentPeekTestCase(TestCase):
         # then
         self.assertEqual(peek_result, 'peeked_value')
 
-    @mock.patch('bigflow.job.create_dataset_manager')
+    @mock.patch('bigflow.bigquery.job.create_dataset_manager')
     def test_should_not_allow_peeking_with_none_argument(self, create_dataset_manager_mock):
         # given
         create_dataset_manager_mock.side_effect = lambda **kwargs: (None, mock.Mock())
@@ -422,7 +422,7 @@ class InteractiveComponentPeekTestCase(TestCase):
             # when
             fake_component.peek(None)
 
-    @mock.patch('bigflow.job.create_dataset_manager')
+    @mock.patch('bigflow.bigquery.job.create_dataset_manager')
     def test_should_throw_error_when_operation_not_found(self, create_dataset_manager_mock):
         # given
         create_dataset_manager_mock.side_effect = lambda **kwargs: (None, mock.Mock())
@@ -440,7 +440,7 @@ class InteractiveComponentPeekTestCase(TestCase):
 
 class InteractiveDatasetManagerTestCase(TestCase):
 
-    @mock.patch('bigflow.job.create_dataset_manager')
+    @mock.patch('bigflow.bigquery.job.create_dataset_manager')
     def test_should_create_component_for_specified_operation(self, create_dataset_manager_mock):
         # given
         dataset_manager_mock = mock.Mock()

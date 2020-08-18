@@ -2,25 +2,41 @@ from pathlib import Path
 
 from google.cloud.storage import Bucket
 from google.oauth2 import credentials
-from subprocess import run
+from subprocess import run, CompletedProcess
 import requests
 from typing import List
 from google.cloud import storage
 
-def os_call(cmd: List, input: str = None):
+from .utils import run_process
+
+
+def os_call(cmd: List, input: str = None) -> CompletedProcess:
     print('executing cmd:', ' '.join(cmd))
     if input:
-        run(cmd, check=True, input=input, encoding='ascii')
+        result = run(cmd, check=True, input=input, encoding='ascii')
     else:
-        run(cmd, check=True)
+        result = run(cmd, check=True)
     print('')
+    return result
 
 
-def load_image_from_tar(image_tar_path: str):
-    os_call(['docker', 'load', '-i', image_tar_path])
+def load_image_from_tar(image_tar_path: str) -> str:
+    for line in run_process(['docker', 'load', '-i', image_tar_path]).split('\n'):
+        if 'Loaded image ID:' in line:
+            return line.split(' ')[-1].split(':')[-1]
+    raise ValueError(f"Can't load image: {image_tar_path}")
 
 
-def deploy_docker_image(build_ver: str, docker_repository: str, auth_method: str = 'local_account', vault_endpoint: str = None, vault_secret: str = None):
+def tag_image(image_id, repository, tag):
+    os_call(['docker', 'tag', image_id, f'{repository}:{tag}'])
+
+
+def deploy_docker_image(
+        build_ver: str,
+        docker_repository: str,
+        auth_method: str = 'local_account',
+        vault_endpoint: str = None,
+        vault_secret: str = None):
     docker_image = docker_repository + ":" + build_ver
     print(f"Deploying docker image tag={docker_image} auth_method={auth_method}")
 

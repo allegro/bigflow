@@ -13,7 +13,7 @@ import bigflow as bf
 from typing import Optional
 
 from bigflow import Config
-from bigflow.deploy import deploy_dags_folder, deploy_docker_image, load_image_from_tar
+from bigflow.deploy import deploy_dags_folder, deploy_docker_image, load_image_from_tar, tag_image
 from bigflow.resources import find_file
 from .utils import run_process
 
@@ -317,7 +317,7 @@ def _create_run_parser(subparsers, project_name):
     _add_parsers_common_arguments(parser)
 
     if project_name is None:
-        parser.add_argument('--project_package',
+        parser.add_argument('--project-package',
                             required=True,
                             type=str,
                             help='The main package of your project. '
@@ -359,6 +359,7 @@ def _add_deploy_parsers_common_arguments(parser):
                              'If not set, {current_dir}/deployment_config.py will be used.')
 
     _add_parsers_common_arguments(parser)
+
 
 def _create_deploy_parser(subparsers):
     parser = subparsers.add_parser('deploy',
@@ -469,15 +470,17 @@ def _load_image_from_tar(image_tar_path: str):
 
 
 def _cli_deploy_image(args):
+    docker_repository = _resolve_property(args, 'docker_repository')
     if args.image_tar_path:
         build_ver = _decode_version_number_from_file_name(Path(args.image_tar_path))
-        load_image_from_tar(args.image_tar_path)
+        image_id = load_image_from_tar(args.image_tar_path)
+        tag_image(image_id, docker_repository, build_ver)
     else:
         build_ver = args.version
 
     deploy_docker_image(build_ver=build_ver,
                         auth_method=args.auth_method,
-                        docker_repository=_resolve_property(args, 'docker_repository'),
+                        docker_repository=docker_repository,
                         vault_endpoint=_resolve_vault_endpoint(args),
                         vault_secret=args.vault_secret)
 
@@ -538,8 +541,8 @@ def cli(raw_args) -> None:
     elif operation == 'deploy-dags':
         _cli_deploy_dags(parsed_args)
     elif operation == 'deploy':
-        _cli_deploy_dags(parsed_args)
         _cli_deploy_image(parsed_args)
+        _cli_deploy_dags(parsed_args)
     elif operation == 'build-dags':
         _cli_build_dags(parsed_args)
     elif operation == 'build-image':

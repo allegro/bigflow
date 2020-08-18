@@ -2,7 +2,7 @@ from unittest import TestCase
 from unittest import main
 import pandas as pd
 import mock
-from bigflow.user_commons.sensor import sensor_component
+from bigflow.bigquery.interactive import sensor_component
 
 YESTERDAY_WHERE_CLAUSE = "DATE(%(partitioning_column)s) = DATE(TIMESTAMP_ADD(TIMESTAMP('{dt} UTC'), INTERVAL -24 HOUR))"
 

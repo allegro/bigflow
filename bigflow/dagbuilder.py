@@ -71,7 +71,7 @@ dag = DAG(
     task_id='{task_id}',
     name='{task_id}',
     cmds=['bf'],
-    arguments=['run', '--job', '{bf_job}', '--runtime', '{{{{ execution_date.strftime("%Y-%m-%d %H:%M:%S") }}}}', '--root', '{root_folder}', '--config', '{{{{var.value.env}}}}'],
+    arguments=['run', '--job', '{bf_job}', '--runtime', '{{{{ execution_date.strftime("%Y-%m-%d %H:%M:%S") }}}}', '--project-package', '{root_folder}', '--config', '{{{{var.value.env}}}}'],
     namespace='default',
     image='{docker_image}',
     is_delete_operator_pod=True,
@@ -84,8 +84,7 @@ dag = DAG(
           bf_job= workflow.workflow_id+"."+job.id,
           root_folder=root_package_name,
           retries=job.retry_count if hasattr(job, 'retry_count') else 3,
-          retry_delay=job.retry_pause_sec if hasattr(job, 'retry_pause_sec') else 60)
-)
+          retry_delay=job.retry_pause_sec if hasattr(job, 'retry_pause_sec') else 60))
 
         for d in dependencies:
             up_job_var = "t" + str(get_job(d).id)

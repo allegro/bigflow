@@ -3,7 +3,6 @@ from pathlib import Path
 import subprocess
 import shutil
 import distutils.cmd
-from datetime import datetime
 import setuptools
 import unittest
 
