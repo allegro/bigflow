@@ -219,8 +219,7 @@ def cli_run(project_package: str,
 
 
 def _parse_args(project_name: Optional[str], args) -> Namespace:
-    project_name_description = build_project_name_description(project_name)
-    parser = argparse.ArgumentParser(description=f'Welcome to BigFlow CLI. {project_name_description}'
+    parser = argparse.ArgumentParser(description=f'Welcome to BigFlow CLI.'
                                                   '\nType: bigflow {run,deploy-dags,deploy-image,deploy,build,build-dags,build-image,build-package} -h to print detailed help for a selected command.')
     subparsers = parser.add_subparsers(dest='operation',
                                        required=True,
@@ -486,19 +485,19 @@ def _cli_deploy_image(args):
 
 
 def _cli_build_image(args):
-    check_if_project_setup_exists()
+    validate_project_setup()
     cmd = 'python project_setup.py build_project --build-image' + (' --export-image-to-file' if args.export_image_to_file else '')
     run_process(cmd)
 
 
 def _cli_build_package():
-    check_if_project_setup_exists()
+    validate_project_setup()
     cmd = 'python project_setup.py build_project --build-package'
     run_process(cmd)
 
 
 def _cli_build_dags(args):
-    check_if_project_setup_exists()
+    validate_project_setup()
     cmd = ['python', 'project_setup.py', 'build_project', '--build-dags']
     if args.workflow:
         cmd.append('--workflow')
@@ -509,8 +508,16 @@ def _cli_build_dags(args):
     run_process(cmd)
 
 
-def _cli_build(args):
+def validate_project_setup():
     check_if_project_setup_exists()
+    cmd = ['python', 'project_setup.py', 'build_project', '--validate-setup']
+    output = run_process(cmd)
+    if 'BigFlow setup is valid.' not in output:
+        raise ValueError('The project_setup.py is invalid. Check the documentation how to create a valid project_setup.py: https://github.com/allegro/bigflow/blob/master/docs/build.md')
+
+
+def _cli_build(args):
+    validate_project_setup()
     cmd = ['python', 'project_setup.py', 'build_project']
     if args.workflow:
         cmd.append('--workflow')

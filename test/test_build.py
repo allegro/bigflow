@@ -7,7 +7,7 @@ from bigflow.cli import walk_module_files
 from bigflow.version import get_version
 from bigflow.build import now, get_docker_image_id, build_docker_image_tag, \
     clear_image_leftovers, clear_package_leftovers, clear_dags_leftovers, auto_configuration, \
-    get_docker_repository_from_deployment_config, project_setup, secure_get_version
+    get_docker_repository_from_deployment_config, project_setup, secure_get_version, VALIDATION_MESSAGE
 from example_project.project_setup import DOCKER_REPOSITORY, PROJECT_NAME
 
 TEST_PROJECT_PATH = Path(__file__).parent / 'example_project'
@@ -146,6 +146,13 @@ class BuildProjectE2E(SetupTestCase):
         self.assertFalse(package_leftovers_exist())
         self.assertFalse(image_leftovers_exist())
         self.assertFalse(dags_leftovers_exist())
+
+    def test_should_validate_project_setup(self):
+        # when
+        output = self.test_project.run_build('python project_setup.py build_project --validate-setup')
+
+        # then
+        self.assertTrue(VALIDATION_MESSAGE in output)
 
 
 class BuildPackageCommandE2E(SetupTestCase):

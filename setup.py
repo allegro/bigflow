@@ -58,7 +58,7 @@ setuptools.setup(
     extras_require={
         'stackdriver': stackdriver_extras_require
     },
-    scripts=["bf"],
+    scripts=["scripts/bf", "scripts/bigflow"],
     cmdclass={
         'build_and_install_wheel': BuildAndInstallWheelCommand
     }
