@@ -3,11 +3,11 @@ import json
 from pathlib import Path
 import subprocess
 from unittest import TestCase, mock
-from bigflow.cli import walk_module_files
+from bigflow.cli import walk_module_files, SETUP_VALIDATION_MESSAGE
 from bigflow.version import get_version
 from bigflow.build import now, get_docker_image_id, build_docker_image_tag, \
     clear_image_leftovers, clear_package_leftovers, clear_dags_leftovers, auto_configuration, \
-    get_docker_repository_from_deployment_config, project_setup, secure_get_version, VALIDATION_MESSAGE
+    get_docker_repository_from_deployment_config, project_setup, secure_get_version
 from example_project.project_setup import DOCKER_REPOSITORY, PROJECT_NAME
 
 TEST_PROJECT_PATH = Path(__file__).parent / 'example_project'
@@ -149,10 +149,10 @@ class BuildProjectE2E(SetupTestCase):
 
     def test_should_validate_project_setup(self):
         # expected
-        self.assertTrue(VALIDATION_MESSAGE in self.test_project.run_build('python project_setup.py build_project'))
-        self.assertTrue(VALIDATION_MESSAGE in self.test_project.run_build('python project_setup.py build_project --build-dags'))
-        self.assertTrue(VALIDATION_MESSAGE in self.test_project.run_build('python project_setup.py build_project --build-image'))
-        self.assertTrue(VALIDATION_MESSAGE in self.test_project.run_build('python project_setup.py build_project --build-package'))
+        self.assertTrue(SETUP_VALIDATION_MESSAGE in self.test_project.run_build('python project_setup.py build_project'))
+        self.assertTrue(SETUP_VALIDATION_MESSAGE in self.test_project.run_build('python project_setup.py build_project --build-dags'))
+        self.assertTrue(SETUP_VALIDATION_MESSAGE in self.test_project.run_build('python project_setup.py build_project --build-image'))
+        self.assertTrue(SETUP_VALIDATION_MESSAGE in self.test_project.run_build('python project_setup.py build_project --build-package'))
 
 
 class BuildPackageCommandE2E(SetupTestCase):
