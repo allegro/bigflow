@@ -154,7 +154,6 @@ def find_root_package(project_name: Optional[str], project_dir: Optional[str]) -
     if project_name is not None:
         return Path(project_name)
     else:
-        print(f'The project_setup.PROJECT_NAME not found. Looking for the root module in {project_dir}')
         root_module = import_module(project_dir)
         return Path(root_module.__file__.replace('__init__.py', ''))
 
@@ -538,7 +537,7 @@ def check_if_project_setup_exists():
 
 def validate_project_setup():
     check_if_project_setup_exists()
-    cmd = ['python', 'project_setup.py', 'build_project', '--validate-setup']
+    cmd = ['python', 'project_setup.py', 'build_project', '--validate-project-setup']
     output = run_process(cmd)
     if SETUP_VALIDATION_MESSAGE not in output:
         raise ValueError('The project_setup.py is invalid. Check the documentation how to create a valid project_setup.py: https://github.com/allegro/bigflow/blob/master/docs/build.md')

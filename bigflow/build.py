@@ -134,6 +134,7 @@ def build_command(
             ('start-time=', None, 'DAGs start time -- given in local timezone, for example: 2020-06-27 15:00:00'),
             ('workflow=', None, 'The workflow that you want to build DAG for.'),
             ('export-image-to-file', None, 'If used, builder will save the Docker image to tar and remove image from the local registry.'),
+            ('validate-project-setup', None, 'If used, echoes a message that can be used by the CLI to determine if the setup is working.'),
         ]
 
         def initialize_options(self) -> None:
@@ -143,6 +144,7 @@ def build_command(
             self.build_image = False
             self.workflow = None
             self.export_image_to_file = False
+            self.validate_project_setup = False
 
         def should_run_whole_build(self):
             return not self.build_dags and not self.build_package and not self.build_image
@@ -151,7 +153,10 @@ def build_command(
             pass
 
         def run(self) -> None:
-            print(SETUP_VALIDATION_MESSAGE)
+            if self.validate_project_setup:
+                print(SETUP_VALIDATION_MESSAGE)
+                return
+
             _valid_datetime(self.start_time)
             if self.build_package or self.should_run_whole_build():
                 print('Building the pip package')

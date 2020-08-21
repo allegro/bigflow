@@ -149,10 +149,10 @@ class BuildProjectE2E(SetupTestCase):
 
     def test_should_validate_project_setup(self):
         # expected
-        self.assertTrue(SETUP_VALIDATION_MESSAGE in self.test_project.run_build('python project_setup.py build_project'))
-        self.assertTrue(SETUP_VALIDATION_MESSAGE in self.test_project.run_build('python project_setup.py build_project --build-dags'))
-        self.assertTrue(SETUP_VALIDATION_MESSAGE in self.test_project.run_build('python project_setup.py build_project --build-image'))
-        self.assertTrue(SETUP_VALIDATION_MESSAGE in self.test_project.run_build('python project_setup.py build_project --build-package'))
+        self.assertTrue(SETUP_VALIDATION_MESSAGE in self.test_project.run_build('python project_setup.py build_project --validate-project-setup'))
+        self.assertTrue(SETUP_VALIDATION_MESSAGE in self.test_project.run_build('python project_setup.py build_project --build-dags --validate-project-setup'))
+        self.assertTrue(SETUP_VALIDATION_MESSAGE in self.test_project.run_build('python project_setup.py build_project --build-image --validate-project-setup'))
+        self.assertTrue(SETUP_VALIDATION_MESSAGE in self.test_project.run_build('python project_setup.py build_project --build-package --validate-project-setup'))
 
 
 class BuildPackageCommandE2E(SetupTestCase):
