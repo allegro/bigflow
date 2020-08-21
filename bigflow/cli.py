@@ -17,6 +17,8 @@ from bigflow.deploy import deploy_dags_folder, deploy_docker_image, load_image_f
 from bigflow.resources import find_file
 from .utils import run_process
 
+SETUP_VALIDATION_MESSAGE = 'BigFlow setup is valid.'
+
 
 def resolve(path: Path) -> str:
     return str(path.absolute())
