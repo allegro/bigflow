@@ -148,11 +148,11 @@ class BuildProjectE2E(SetupTestCase):
         self.assertFalse(dags_leftovers_exist())
 
     def test_should_validate_project_setup(self):
-        # when
-        output = self.test_project.run_build('python project_setup.py build_project --validate-setup')
-
-        # then
-        self.assertTrue(VALIDATION_MESSAGE in output)
+        # expected
+        self.assertTrue(VALIDATION_MESSAGE in self.test_project.run_build('python project_setup.py build_project --validate-setup'))
+        self.assertTrue(VALIDATION_MESSAGE in self.test_project.run_build('python project_setup.py build_project --build-dags --validate-setup'))
+        self.assertTrue(VALIDATION_MESSAGE in self.test_project.run_build('python project_setup.py build_project --build-image --validate-setup'))
+        self.assertTrue(VALIDATION_MESSAGE in self.test_project.run_build('python project_setup.py build_project --build-package --validate-setup'))
 
 
 class BuildPackageCommandE2E(SetupTestCase):

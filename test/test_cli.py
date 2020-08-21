@@ -306,7 +306,8 @@ from bigflow import Config
 deployment_config = Config(name='dev',
                            properties={
                                'gcp_project_id': 'my-gcp-project-id',
-                               'dags_bucket': 'my-dags-bucket'
+                               'dags_bucket': 'my-dags-bucket',
+                               'vault_secret': 'secret'
                            })
         ''')
 
@@ -320,7 +321,7 @@ deployment_config = Config(name='dev',
                                                    dags_dir=self._expected_default_dags_dir(),
                                                    project_id='my-gcp-project-id',
                                                    vault_endpoint=None,
-                                                   vault_secret=None)
+                                                   vault_secret='secret')
 
         dc_file.unlink()
 
@@ -334,12 +335,14 @@ from bigflow import Config
 deployment_config = Config(name='dev',
                           properties={
                               'gcp_project_id': 'my-gcp-dev-project-id',
-                              'dags_bucket': 'my-dags-dev-bucket'
+                              'dags_bucket': 'my-dags-dev-bucket',
+                              'vault_secret': 'secret-dev'
                           })\
     .add_configuration(name='prod', 
                           properties={
                               'gcp_project_id': 'my-gcp-prod-project-id',
-                              'dags_bucket': 'my-dags-prod-bucket'
+                              'dags_bucket': 'my-dags-prod-bucket',
+                              'vault_secret': 'secret-prod'
                           })                          
                           
         ''')
@@ -354,7 +357,7 @@ deployment_config = Config(name='dev',
                                                    dags_dir=self._expected_default_dags_dir(),
                                                    project_id='my-gcp-dev-project-id',
                                                    vault_endpoint=None,
-                                                   vault_secret=None)
+                                                   vault_secret='secret-dev')
 
         # when
         cli(['deploy-dags', '--config', 'dev'])
@@ -366,7 +369,7 @@ deployment_config = Config(name='dev',
                                                    dags_dir=self._expected_default_dags_dir(),
                                                    project_id='my-gcp-dev-project-id',
                                                    vault_endpoint=None,
-                                                   vault_secret=None)
+                                                   vault_secret='secret-dev')
 
         # when
         cli(['deploy-dags', '--config', 'prod'])
@@ -378,7 +381,7 @@ deployment_config = Config(name='dev',
                                                    dags_dir=self._expected_default_dags_dir(),
                                                    project_id='my-gcp-prod-project-id',
                                                    vault_endpoint=None,
-                                                   vault_secret=None)
+                                                   vault_secret='secret-prod')
 
         dc_file.unlink()
 
@@ -393,7 +396,8 @@ deployment_config = Config(name='dev',
                         properties={
                                'gcp_project_id': 'my-another-gcp-project-id',
                                'vault_endpoint': 'my-another-vault-endpoint',
-                               'dags_bucket': 'my-another-dags-bucket'
+                               'dags_bucket': 'my-another-dags-bucket',
+                               'vault_secret': 'secrett'
                         })
         ''')
 
@@ -401,8 +405,7 @@ deployment_config = Config(name='dev',
         cli(['deploy-dags',
              '--deployment-config-path', dc_file.as_posix(),
              '--dags-dir', '/tmp/my-dags-dir',
-             '--auth-method', 'service_account',
-             '--vault-secret', 'secrett'
+             '--auth-method', 'service_account'
             ])
 
         #then
@@ -539,8 +542,6 @@ deployment_config = Config(name='dev',
         # when
         cli(['deploy', '-v', '0.0.2'])
 
-
-
         # then
         deploy_dags_folder_mock.assert_called_with(auth_method='local_account',
                                                    clear_dags_folder=False,
@@ -608,6 +609,20 @@ deployment_config = Config(name='dev',
         # then
         _cli_build_image_mock.assert_called_with(Namespace(operation='build-image', export_image_to_file=True))
 
+    @mock.patch('bigflow.cli.run_process')
+    @mock.patch('bigflow.cli.validate_project_setup')
+    def test_should_call_build_command_through_CLI(
+            self, validate_project_setup_mock, run_process_mock):
+        # given
+        validate_project_setup_mock.return_value = '.'
+
+        # when
+        cli(['build'])
+
+        # then
+        self.assertEqual(run_process_mock.call_count, 1)
+        run_process_mock.assert_any_call('python project_setup.py build_project'.split(' '))
+
     @mock.patch('bigflow.cli._cli_build_package')
     def test_should_call_cli_build_package_command(self, _cli_build_package_mock):
         # when
@@ -645,25 +660,9 @@ deployment_config = Config(name='dev',
         _cli_build_mock.assert_called_with(Namespace(operation='build', export_image_to_file=True,
                                                      start_time='2020-01-01 00:00:00', workflow='some_workflow'))
 
-    @mock.patch('bigflow.cli.check_if_project_setup_exists')
     @mock.patch('bigflow.cli.run_process')
-    def test_should_call_build_command_through_CLI(self, run_process_mock, check_if_project_setup_exists_mock):
-        # given
-        check_if_project_setup_exists_mock.return_value = TEST_PROJECT_PATH
-
-        # when
-        cli(['build'])
-
-        # then
-        self.assertEqual(run_process_mock.call_count, 1)
-        run_process_mock.assert_any_call('python project_setup.py build_project --build-dags --build-image --build-package'.format(str(TEST_PROJECT_PATH)))
-
-    @mock.patch('bigflow.cli.check_if_project_setup_exists')
-    @mock.patch('bigflow.cli.run_process')
-    def test_should_call_build_package_command_through_CLI(self, run_process_mock, check_if_project_setup_exists_mock):
-        # given
-        check_if_project_setup_exists_mock.return_value = TEST_PROJECT_PATH
-
+    @mock.patch('bigflow.cli.validate_project_setup')
+    def test_should_call_build_package_command_through_CLI(self, validate_project_setup_mock, run_process_mock):
         # when
         cli(['build-package'])
 
@@ -671,12 +670,10 @@ deployment_config = Config(name='dev',
         self.assertEqual(run_process_mock.call_count, 1)
         run_process_mock.assert_any_call('python project_setup.py build_project --build-package')
 
-    @mock.patch('bigflow.cli.check_if_project_setup_exists')
     @mock.patch('bigflow.cli.run_process')
-    def test_should_call_build_command_through_CLI(self, run_process_mock, check_if_project_setup_exists_mock):
-        # given
-        check_if_project_setup_exists_mock.return_value = TEST_PROJECT_PATH
-
+    @mock.patch('bigflow.cli.find_file')
+    @mock.patch('bigflow.cli.validate_project_setup')
+    def test_should_call_build_image_command_through_CLI(self, validate_project_setup_mock, find_file_mock, run_process_mock):
         # when
         cli(['build-image'])
 
@@ -684,18 +681,28 @@ deployment_config = Config(name='dev',
         self.assertEqual(run_process_mock.call_count, 1)
         run_process_mock.assert_any_call('python project_setup.py build_project --build-image')
 
-    @mock.patch('bigflow.cli.check_if_project_setup_exists')
     @mock.patch('bigflow.cli.run_process')
-    def test_should_call_build_dags_command_through_CLI(self, run_process_mock, check_if_project_setup_exists_mock):
-        # given
-        check_if_project_setup_exists_mock.return_value = TEST_PROJECT_PATH
-
+    @mock.patch('bigflow.cli.validate_project_setup')
+    def test_should_call_build_dags_command_through_CLI(self, validate_project_setup_mock, run_process_mock):
         # when
         cli(['build-dags'])
 
         # then
         self.assertEqual(run_process_mock.call_count, 1)
         run_process_mock.assert_any_call('python project_setup.py build_project --build-dags'.split(' '))
+
+    @mock.patch('bigflow.cli.run_process')
+    @mock.patch('bigflow.cli.validate_project_setup')
+    def test_should_validate_project_setup_before_build(
+            self, validate_project_setup_mock, run_process_mock):
+        # when
+        cli(['build'])
+        cli(['build-image'])
+        cli(['build-dags'])
+        cli(['build-package'])
+
+        # then
+        self.assertEqual(validate_project_setup_mock.call_count, 4)
 
     def _expected_default_dags_dir(self):
         return (Path(os.getcwd()) / '.dags').as_posix()
@@ -707,3 +714,17 @@ deployment_config = Config(name='dev',
         f.write_text(content)
         return f
 
+
+class ValidateProjectSetupTestCase(TestCase):
+
+    @mock.patch('bigflow.cli.check_if_project_setup_exists')
+    @mock.patch('bigflow.cli.run_process')
+    def test_should_raise_error_if_no_expected_message_found_in_setup_output(
+            self, run_process_mock, check_if_project_setup_exists_mock):
+        # given
+        run_process_mock.return_value = 'Unexpected message'
+
+        # then
+        with self.assertRaises(ValueError) as e:
+            # when
+            validate_project_setup()

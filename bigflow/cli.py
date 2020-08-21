@@ -454,12 +454,16 @@ def _resolve_property(args, property_name):
 
 
 def _cli_deploy_dags(args):
+    try:
+        vault_secret = _resolve_property(args, 'vault_secret')
+    except ValueError:
+        vault_secret = None
     deploy_dags_folder(dags_dir=_resolve_dags_dir(args),
                        dags_bucket=_resolve_property(args, 'dags_bucket'),
                        clear_dags_folder=args.clear_dags_folder,
                        auth_method=args.auth_method,
                        vault_endpoint=_resolve_vault_endpoint(args),
-                       vault_secret=args.vault_secret,
+                       vault_secret=vault_secret,
                        project_id=_resolve_property(args, 'gcp_project_id')
                        )
 
@@ -470,6 +474,10 @@ def _load_image_from_tar(image_tar_path: str):
 
 def _cli_deploy_image(args):
     docker_repository = _resolve_property(args, 'docker_repository')
+    try:
+        vault_secret = _resolve_property(args, 'vault_secret')
+    except ValueError:
+        vault_secret = None
     if args.image_tar_path:
         build_ver = _decode_version_number_from_file_name(Path(args.image_tar_path))
         image_id = load_image_from_tar(args.image_tar_path)
@@ -481,7 +489,7 @@ def _cli_deploy_image(args):
                         auth_method=args.auth_method,
                         docker_repository=docker_repository,
                         vault_endpoint=_resolve_vault_endpoint(args),
-                        vault_secret=args.vault_secret)
+                        vault_secret=vault_secret)
 
 
 def _cli_build_image(args):
@@ -508,14 +516,6 @@ def _cli_build_dags(args):
     run_process(cmd)
 
 
-def validate_project_setup():
-    check_if_project_setup_exists()
-    cmd = ['python', 'project_setup.py', 'build_project', '--validate-setup']
-    output = run_process(cmd)
-    if 'BigFlow setup is valid.' not in output:
-        raise ValueError('The project_setup.py is invalid. Check the documentation how to create a valid project_setup.py: https://github.com/allegro/bigflow/blob/master/docs/build.md')
-
-
 def _cli_build(args):
     validate_project_setup()
     cmd = ['python', 'project_setup.py', 'build_project']
@@ -532,6 +532,14 @@ def _cli_build(args):
 
 def check_if_project_setup_exists():
     find_file('project_setup.py', Path('.'), 1)
+
+
+def validate_project_setup():
+    check_if_project_setup_exists()
+    cmd = ['python', 'project_setup.py', 'build_project', '--validate-setup']
+    output = run_process(cmd)
+    if 'BigFlow setup is valid.' not in output:
+        raise ValueError('The project_setup.py is invalid. Check the documentation how to create a valid project_setup.py: https://github.com/allegro/bigflow/blob/master/docs/build.md')
 
 
 def cli(raw_args) -> None:
