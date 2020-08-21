@@ -540,7 +540,7 @@ def validate_project_setup():
     check_if_project_setup_exists()
     cmd = ['python', 'project_setup.py', 'build_project', '--validate-setup']
     output = run_process(cmd)
-    if 'BigFlow setup is valid.' not in output:
+    if SETUP_VALIDATION_MESSAGE not in output:
         raise ValueError('The project_setup.py is invalid. Check the documentation how to create a valid project_setup.py: https://github.com/allegro/bigflow/blob/master/docs/build.md')
 
 
