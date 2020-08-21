@@ -39,7 +39,7 @@ class BuildAndInstallWheelCommand(distutils.cmd.Command):
 
 setuptools.setup(
     name="bigflow",
-    version="1.0.dev3",
+    version="1.0.dev4",
     author=u"Chi",
     author_email="chibox-team@allegrogroup.com",
     description="BigQuery client wrapper with clean API",
@@ -58,7 +58,7 @@ setuptools.setup(
     extras_require={
         'stackdriver': stackdriver_extras_require
     },
-    scripts=["bf"],
+    scripts=["scripts/bf", "scripts/bigflow"],
     cmdclass={
         'build_and_install_wheel': BuildAndInstallWheelCommand
     }

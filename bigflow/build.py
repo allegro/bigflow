@@ -8,12 +8,13 @@ import unittest
 
 import xmlrunner
 
-from .cli import walk_workflows, import_deployment_config, _valid_datetime
+from .cli import walk_workflows, import_deployment_config, _valid_datetime, SETUP_VALIDATION_MESSAGE
 from .dagbuilder import generate_dag_file
 from .resources import read_requirements, find_all_resources
 from .utils import resolve, now
 from .version import get_version
 from .utils import run_process
+
 
 
 __all__ = [
@@ -150,6 +151,7 @@ def build_command(
             pass
 
         def run(self) -> None:
+            print(SETUP_VALIDATION_MESSAGE)
             _valid_datetime(self.start_time)
             if self.build_package or self.should_run_whole_build():
                 print('Building the pip package')

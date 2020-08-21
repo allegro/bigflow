@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 import subprocess
 from unittest import TestCase, mock
-from bigflow.cli import walk_module_files
+from bigflow.cli import walk_module_files, SETUP_VALIDATION_MESSAGE
 from bigflow.version import get_version
 from bigflow.build import now, get_docker_image_id, build_docker_image_tag, \
     clear_image_leftovers, clear_package_leftovers, clear_dags_leftovers, auto_configuration, \
@@ -146,6 +146,13 @@ class BuildProjectE2E(SetupTestCase):
         self.assertFalse(package_leftovers_exist())
         self.assertFalse(image_leftovers_exist())
         self.assertFalse(dags_leftovers_exist())
+
+    def test_should_validate_project_setup(self):
+        # expected
+        self.assertTrue(SETUP_VALIDATION_MESSAGE in self.test_project.run_build('python project_setup.py build_project'))
+        self.assertTrue(SETUP_VALIDATION_MESSAGE in self.test_project.run_build('python project_setup.py build_project --build-dags'))
+        self.assertTrue(SETUP_VALIDATION_MESSAGE in self.test_project.run_build('python project_setup.py build_project --build-image'))
+        self.assertTrue(SETUP_VALIDATION_MESSAGE in self.test_project.run_build('python project_setup.py build_project --build-package'))
 
 
 class BuildPackageCommandE2E(SetupTestCase):
