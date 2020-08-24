@@ -41,11 +41,14 @@ class Project:
         rmtree(self.project_dir, ignore_errors=True)
 
     def run_cmd(self, cmd):
-        return subprocess.getoutput(f'cd {self.project_dir};{cmd}')
+        result = subprocess.getoutput(f'cd {self.project_dir};{cmd}')
+        print(result)
+        return result
 
     def get_version(self):
         get_version_cmd = f"""python -c 'import sys;sys.path.insert(0, "{BIGFLOW_PATH}");from bigflow.version import get_version;print(get_version())'"""
         result = subprocess.getoutput(f'cd {self.project_dir};{get_version_cmd}')
+        print(result)
         return result
 
 
