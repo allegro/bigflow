@@ -7,6 +7,10 @@ from bigflow.dagbuilder import get_dags_output_dir, clear_dags_output_dir
 from bigflow.deploy import deploy_dags_folder, get_vault_token
 
 
+class MetaTest(TestCase):
+    pass
+
+
 class DeployTestCase(TestCase):
 
     def test_should_clear_GCS_DAGs_folder(self):
