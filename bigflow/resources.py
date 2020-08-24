@@ -11,7 +11,8 @@ __all__ = [
     'get_resource_absolute_path',
     'find_setup',
     'create_file_if_not_exists',
-    'create_setup_body'
+    'create_setup_body',
+    'find_or_create_setup_for_main_project_package'
 ]
 
 
@@ -128,3 +129,7 @@ setuptools.setup(
         packages=setuptools.find_namespace_packages(include=["{project_name}.*"])
 )
 '''
+
+
+def find_or_create_setup_for_main_project_package(project_name: str, search_start_file: Path) -> Path:
+    return create_file_if_not_exists(find_file(project_name, Path(search_start_file)).parent / 'setup.py', create_setup_body(project_name))

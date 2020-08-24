@@ -5,6 +5,7 @@ import shutil
 import distutils.cmd
 import setuptools
 import unittest
+from setuptools import setup
 
 import xmlrunner
 
@@ -16,10 +17,10 @@ from .version import get_version
 from .utils import run_process
 
 
-
 __all__ = [
     'project_setup',
-    'auto_configuration'
+    'auto_configuration',
+    'default_project_setup'
 ]
 
 
@@ -112,6 +113,12 @@ def export_image_to_file(tag, image_dir, version):
     remove_docker_image_from_local_registry(tag)
 
 
+class MetaCommand(type):
+    # For test_build
+    def __eq__(self, other):
+        return isinstance(other, MetaCommand)
+
+
 def build_command(
         root_package: Path,
         project_dir: Path,
@@ -125,7 +132,7 @@ def build_command(
         docker_repository: str,
         version: str):
 
-    class BuildCommand(distutils.cmd.Command):
+    class BuildCommand(distutils.cmd.Command, metaclass=MetaCommand):
         description = 'BigFlow project build.'
         user_options = [
             ('build-dags', None, 'Builds the DAG files.'),
@@ -311,3 +318,7 @@ def project_setup(
                 version)
         }
     }
+
+
+def default_project_setup(project_name, project_dir: Path = Path('.').parent):
+    return setup(**project_setup(**auto_configuration(project_name, project_dir=project_dir)))

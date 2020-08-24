@@ -4,10 +4,9 @@ from pathlib import Path
 import subprocess
 from unittest import TestCase, mock
 from bigflow.cli import walk_module_files, SETUP_VALIDATION_MESSAGE
-from bigflow.version import get_version
 from bigflow.build import now, get_docker_image_id, build_docker_image_tag, \
     clear_image_leftovers, clear_package_leftovers, clear_dags_leftovers, auto_configuration, \
-    get_docker_repository_from_deployment_config, project_setup, secure_get_version
+    get_docker_repository_from_deployment_config, project_setup, secure_get_version, default_project_setup
 from example_project.project_setup import DOCKER_REPOSITORY, PROJECT_NAME
 
 TEST_PROJECT_PATH = Path(__file__).parent / 'example_project'
@@ -238,8 +237,10 @@ class BuildImageCommandE2E(SetupTestCase):
 
 
 class AutoConfigurationTestCase(TestCase):
-    def test_should_produce_default_configuration_for_project_setup(self):
+    @mock.patch('bigflow.build.get_version')
+    def test_should_produce_default_configuration_for_project_setup(self, get_version_mock):
         # given
+        get_version_mock.return_value = '0.1.0'
         project_dir = Path(__file__).parent / 'example_project'
 
         # expected
@@ -255,7 +256,7 @@ class AutoConfigurationTestCase(TestCase):
             'image_dir': project_dir / 'image',
             'eggs_dir': project_dir / 'example_project.egg-info',
             'deployment_config_file': project_dir / 'deployment_config.py',
-            'version': get_version(),
+            'version': '0.1.0',
             'resources_dir': project_dir / 'resources',
             'project_requirements_file': project_dir / 'resources' / 'requirements.txt'
         })
@@ -282,6 +283,18 @@ class AutoConfigurationTestCase(TestCase):
 
         # expected
         self.assertTrue(project_setup(**auto_configuration('example_project', project_dir)))
+
+    @mock.patch('bigflow.build.get_version')
+    @mock.patch('bigflow.build.setup')
+    def test_should_produce_default_project_setup_using_autoconfiguration(self, setup_mock, get_version_mock):
+        # given
+        get_version_mock.return_value = '0.1.0'
+
+        # when
+        default_project_setup('example_project',  Path(__file__).parent / 'example_project')
+
+        # then
+        setup_mock.assert_called_with(**project_setup(**auto_configuration('example_project',  Path(__file__).parent / 'example_project')))
 
     def get_version_error(self):
         raise RuntimeError('get_version error')

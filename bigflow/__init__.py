@@ -1,15 +1,19 @@
 from . import bigquery
 from . import resources
+from . import monitoring
 from .workflow import Workflow, Definition
 from .configuration import Config
-from .monitoring import meter_job_run_failures, MonitoringConfig
+from .build import default_project_setup
 
 __all__ = [
-    'bigquery',
-    'resources',
+    # core
     'Workflow',
     'Definition',
     'Config',
-    'meter_job_run_failures',
-    'MonitoringConfig',
+    'default_project_setup',
+    'resources',
+
+    # extras
+    'bigquery',
+    'monitoring',
 ]

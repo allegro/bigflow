@@ -5,21 +5,20 @@ from pathlib import Path
 import mock
 from unittest import TestCase
 from bigflow.bigquery.job import Job
-from bigflow.dagbuilder import get_dags_output_dir, clear_dags_output_dir, generate_dag_file, get_timezone_offset_seconds
-from bigflow.workflow import WorkflowJob, Workflow, Definition
+from bigflow.dagbuilder import get_dags_output_dir, clear_dags_output_dir, generate_dag_file
+from bigflow.workflow import WorkflowJob, Workflow, Definition, get_timezone_offset_seconds, hourly_start_time
 
 
 class DagBuilderTestCase(TestCase):
 
     def test_should_get_DAGs_output_dir(self):
-
         # given
         workdir = os.path.dirname(__file__)
 
         # when
         dags_dir = get_dags_output_dir(workdir)
 
-        #then
+        # then
         self.assertEqual(dags_dir.as_posix(), workdir + "/.dags")
 
     def test_should_clear_DAGs_output_dir(self):
@@ -32,7 +31,7 @@ class DagBuilderTestCase(TestCase):
         # when
         clear_dags_output_dir(workdir)
 
-        #then
+        # then
         self.assertFalse(f.exists())
 
     def test_should_generate_DAG_file_from_workflow_with_hourly_scheduling(self):
@@ -66,14 +65,16 @@ class DagBuilderTestCase(TestCase):
             w_job1: (w_job2, w_job3),
             w_job2: (w_job3,)
         }
-        workflow = Workflow(workflow_id='my_workflow', runtime_as_datetime=True,
-                            definition=Definition(graph), schedule_interval='@hourly')
-
+        workflow = Workflow(
+            workflow_id='my_workflow',
+            definition=Definition(graph),
+            start_time_expression_factory=hourly_start_time,
+            schedule_interval='@hourly')
 
         # when
         dag_file_path = generate_dag_file(workdir, docker_repository, workflow, '2020-07-01 10:00:00', '0.3.0', 'ca')
 
-        #then
+        # then
         self.assertEqual(dag_file_path, workdir + '/.dags/my_workflow__v0_3_0__2020_07_01_10_00_00_dag.py')
 
         dag_file_content = Path(dag_file_path).read_text()
@@ -145,7 +146,6 @@ tjob3.set_upstream(tjob1)
 
         self.assert_files_are_equal(expected_dag_content, dag_file_content)
 
-
     def test_should_generate_DAG_file_from_workflow_with_daily_scheduling(self):
         # given
         workdir = os.path.dirname(__file__)
@@ -162,7 +162,10 @@ tjob3.set_upstream(tjob1)
         graph = {
             w_job1: ()
         }
-        workflow = Workflow(workflow_id='my_daily_workflow', definition=Definition(graph), schedule_interval='@daily')
+        workflow = Workflow(
+            workflow_id='my_daily_workflow',
+            definition=Definition(graph),
+            schedule_interval='@daily')
 
         # when
         dag_file_path = generate_dag_file(workdir, docker_repository, workflow, '2020-07-01', '0.3.0', 'ca')
@@ -180,7 +183,7 @@ from airflow.contrib.operators import kubernetes_pod_operator
 default_args = {
             'owner': 'airflow',
             'depends_on_past': True,
-            'start_date': datetime.strptime("2020-07-01", "%Y-%m-%d"),
+            'start_date': datetime.strptime("2020-07-01", "%Y-%m-%d") - (timedelta(hours=24)),
             'email_on_failure': False,
             'email_on_retry': False,
             'execution_timeout': timedelta(minutes=90)

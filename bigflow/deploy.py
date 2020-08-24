@@ -121,6 +121,7 @@ def get_vault_token(vault_endpoint: str, vault_secret: str):
     response = requests.get(vault_endpoint, headers=headers, verify=False)
 
     if response.status_code != 200:
+        print(response.text)
         raise ValueError(
             'Could not get vault token, response code: {}'.format(
                 response.status_code))

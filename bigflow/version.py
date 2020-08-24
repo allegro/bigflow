@@ -1,46 +1,64 @@
 import re
+from typing import Optional
+from uuid import uuid1
 import subprocess
 
-from better_setuptools_git_version import is_head_at_tag
 from better_setuptools_git_version import get_tag
 from better_setuptools_git_version import get_version as base_get_version
 
 VERSION_PATTERN = re.compile(r'^(\d+\.)?(\d+\.)?(\w+)$')
 
 __all__ = [
-    'get_version'
+    'get_version',
+    'release'
 ]
 
-
-def git_tag_command(tag: str) -> None:
-    print(f'setting git tag {tag}')
-    print(subprocess.getoutput(f'git tag {tag}'))
-    print(subprocess.getoutput('git push origin --tags'))
+STARTING_VERSION = '0.1.0'
 
 
-def set_next_version_tag() -> None:
+def get_version() -> str:
+    """
+    case 1: no .git / no commits / error
+        0.1.0 + uuid
+    case 2: no tags:
+        0.1.0 + {uuid if dirty}
+    case 2: tag on head
+        tag + {uuid if dirty}
+    case 4: tag not on head
+        last tag + sha + {uuid if dirty}
+    """
+    result = base_get_version(
+        template="{tag}SHA{sha}",
+        starting_version=STARTING_VERSION).replace('+dirty', f'SNAPSHOT{short_uuid()}')
+    if not VERSION_PATTERN.match(result):
+        return f'{STARTING_VERSION}SNAPSHOT{short_uuid()}'
+    if result == STARTING_VERSION:
+        return f"{STARTING_VERSION}SNAPSHOT{short_uuid()}"
+    return result
+
+
+def short_uuid():
+    return str(uuid1()).replace("-", "")[:8]
+
+
+def release(repository_key_pem_file_path: Optional[str] = None) -> None:
     latest_tag = get_tag()
     if latest_tag:
         tag = bump_minor(latest_tag)
     else:
         tag = '0.1.0'
-    git_tag_command(tag)
+    push_tag(tag, repository_key_pem_file_path)
 
 
-def is_dirty():
-    return 'dirty' in subprocess.getoutput("git diff --quiet || echo 'dirty'")
-
-
-def raise_error_if_dirty_master():
-    if is_master() and is_dirty():
-        raise ValueError("Can't work on a dirty master.")
-
-
-def get_version() -> str:
-    raise_error_if_dirty_master()
-    if is_master() and not is_head_at_tag(get_tag()):
-        set_next_version_tag()
-    return base_get_version(template="{tag}dev{sha}").replace('+dirty', '')
+def push_tag(tag, repository_key_pem_file_path: Optional[str] = None) -> None:
+    print(f'Setting and pushing tag: {tag}')
+    print(subprocess.getoutput(f'git tag {tag}'))
+    if repository_key_pem_file_path is not None:
+        print(f'Pushing using the specified pem: {repository_key_pem_file_path}')
+        print(subprocess.getoutput(
+            f"GIT_SSH_COMMAND='ssh -i {repository_key_pem_file_path} -o IdentitiesOnly=yes' git push origin {tag}"))
+    else:
+        print(subprocess.getoutput('git push origin --tags'))
 
 
 def bump_minor(version: str) -> str:
@@ -49,7 +67,3 @@ def bump_minor(version: str) -> str:
     major, minor, patch = version.split('.')
     minor = str(int(minor) + 1)
     return f'{major}.{minor}.0'
-
-
-def is_master() -> bool:
-    return subprocess.getoutput('git rev-parse --abbrev-ref HEAD') == 'master'
