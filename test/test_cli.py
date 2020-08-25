@@ -3,7 +3,6 @@ import mock
 
 from bigflow.cli import *
 from bigflow.cli import _decode_version_number_from_file_name
-from test.test_build import TEST_PROJECT_PATH
 
 
 class CliTestCase(TestCase):

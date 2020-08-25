@@ -41,12 +41,10 @@ class WorkflowTestCase(TestCase):
         workflow = Workflow(
             workflow_id='test_workflow',
             definition=[],
-            schedule_interval='@hourly',
-            runtime_as_datetime=True)
+            schedule_interval='@hourly')
 
         # expected
         self.assertEqual(workflow.schedule_interval, '@hourly')
-        self.assertEqual(workflow.runtime_as_datetime, True)
 
     def test_should_throw_exception_when_circular_dependency_is_found(self):
         # given
@@ -120,7 +118,7 @@ class WorkflowTestCase(TestCase):
         #   job9         job8
 
         definition = Definition(job_graph)
-        workflow = Workflow(workflow_id='test_workflow', definition=definition, schedule_interval='@hourly', runtime_as_datetime=True)
+        workflow = Workflow(workflow_id='test_workflow', definition=definition, schedule_interval='@hourly')
 
         # expected
         self.assertEqual(list(workflow.build_sequential_order()), [job1, job5, job9, job2, job3, job6, job4, job7, job8])
@@ -151,7 +149,7 @@ class WorkflowTestCase(TestCase):
         #   job9         job8
 
         definition = Definition(job_graph)
-        workflow = Workflow(workflow_id='test_workflow', definition=definition, schedule_interval='@hourly', runtime_as_datetime=True)
+        workflow = Workflow(workflow_id='test_workflow', definition=definition, schedule_interval='@hourly')
 
         # expected
         self.assertEqual(workflow.build_sequential_order(), [job1, job5, job2, job3, job6, job9, job4, job7, job8])

@@ -22,12 +22,7 @@ def generate_dag_file(workdir: str,
 
     dag_deployment_id = get_dag_deployment_id(workflow.workflow_id, start_from, build_ver)
     dag_file_path = get_dags_output_dir(workdir) / (dag_deployment_id + '_dag.py')
-
-    if not workflow.runtime_as_datetime:
-        start_from = start_from[:10]
-        start_date_as_str = f'datetime.strptime("{start_from}", "%Y-%m-%d")'
-    else:
-        start_date_as_str = f'datetime.strptime("{start_from}", "%Y-%m-%d %H:%M:%S") - (timedelta(seconds={get_timezone_offset_seconds()}))'
+    start_date_as_str = workflow.start_time_expression_factory(start_from)
 
     print(f'dag_file_path: {dag_file_path.resolve()}')
 
@@ -90,7 +85,6 @@ dag = DAG(
             up_job_var = "t" + str(get_job(d).id)
             dag_chunks.append("{job_var}.set_upstream({up_job_var})".format(job_var=job_var, up_job_var=up_job_var))
 
-
     workflow.call_on_graph_nodes(build_dag_operator)
 
     dag_file_content = '\n'.join(dag_chunks) + '\n'
@@ -107,10 +101,6 @@ def get_dag_deployment_id(workflow_name: str,
         ver=build_ver.replace('.','_').replace('-','_'),
         start_from=datetime.strptime(start_from, "%Y-%m-%d" if len(start_from) <= 10 else "%Y-%m-%d %H:%M:%S").strftime('%Y_%m_%d_%H_%M_%S')
     )
-
-
-def get_timezone_offset_seconds() -> str:
-    return str(datetime.now().astimezone().tzinfo.utcoffset(None).seconds)
 
 
 def get_dags_output_dir(workdir: str) -> Path:

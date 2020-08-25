@@ -1,9 +1,6 @@
 from unittest import TestCase
 import mock
-import tempfile
-import imp
 
-from bigflow.utils import AutoDeletedTmpFile
 from bigflow.bigquery.interactive import DatasetConfigInternal
 from bigflow.bigquery.job import Job
 
@@ -60,28 +57,3 @@ class JobTestCase(TestCase):
 
         # when
         job.run('2019-01-01')
-
-    def setup_temporary_beam_component(self):
-        tmp_module = tempfile.NamedTemporaryFile(delete=False, suffix='.py')
-        tmp_module.write(b'''
-def run(dependency_beam_manager):
-    dependency_beam_manager['extras']['test_case'].assertEqual(dependency_beam_manager, {
-        'project_id': 'some_project_id',
-        'dataset_name': 'some_dataset',
-        'internal_tables': ['some_internal_table'],
-        'external_tables': {'some_external_table': 'some.external.table'},
-        'extras': {'extra_param': 'some-extra-param', 'test_case': dependency_beam_manager['extras']['test_case']},
-        'requirements_file_path': '/requirements.txt',
-        'dataflow_bucket': 'dataflow_bucket',
-        'region': 'europe-west',
-        'machine_type': 'standard',
-        'runtime': '2019-01-01',
-        'credentials': None,
-        'location': 'EU'
-    })
-
-if __name__ == '__main__':
-    run(**globals()['dependencies'])''')
-        tmp_module.close()
-        self._tmp_module_file = AutoDeletedTmpFile(tmp_module)
-        return imp.load_source(tmp_module.name.split('/')[0], tmp_module.name)

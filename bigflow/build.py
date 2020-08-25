@@ -5,6 +5,7 @@ import shutil
 import distutils.cmd
 import setuptools
 import unittest
+from setuptools import setup
 
 import xmlrunner
 
@@ -16,10 +17,10 @@ from .version import get_version
 from .utils import run_process
 
 
-
 __all__ = [
     'project_setup',
-    'auto_configuration'
+    'auto_configuration',
+    'default_project_setup'
 ]
 
 
@@ -311,3 +312,7 @@ def project_setup(
                 version)
         }
     }
+
+
+def default_project_setup(project_name, project_dir: Path = Path('.').parent):
+    return setup(**project_setup(**auto_configuration(project_name, project_dir=project_dir)))

@@ -1,8 +1,21 @@
 from collections import OrderedDict
 from typing import Optional
+from datetime import datetime
 from .utils import now
 
 DEFAULT_SCHEDULE_INTERVAL = '@daily'
+
+
+def get_timezone_offset_seconds() -> str:
+    return str(datetime.now().astimezone().tzinfo.utcoffset(None).seconds)
+
+
+def hourly_start_time(start_time: str) -> str:
+    return f'datetime.strptime("{start_time}", "%Y-%m-%d %H:%M:%S") - (timedelta(seconds={get_timezone_offset_seconds()}))'
+
+
+def daily_start_time(start_time: str) -> str:
+    return f'datetime.strptime("{start_time}", "%Y-%m-%d") - (timedelta(hours=24))'
 
 
 class Workflow(object):
@@ -10,11 +23,11 @@ class Workflow(object):
                  workflow_id,
                  definition,
                  schedule_interval=DEFAULT_SCHEDULE_INTERVAL,
-                 runtime_as_datetime=False):
+                 start_time_expression_factory=daily_start_time):
         self.definition = self._parse_definition(definition)
         self.schedule_interval = schedule_interval
-        self.runtime_as_datetime = runtime_as_datetime
         self.workflow_id = workflow_id
+        self.start_time_expression_factory = start_time_expression_factory
 
     def run(self, runtime: Optional[str] = None):
         if runtime is None:
@@ -33,7 +46,7 @@ class Workflow(object):
             raise ValueError(f'Job {job_id} not found.')
 
     def _auto_runtime(self):
-        return now("%Y-%m-%d %H:%M:%S" if self.runtime_as_datetime else "%Y-%m-%d")
+        return now("%Y-%m-%d %H:%M:%S")
 
     def build_sequential_order(self):
         return self.definition.sequential_order()

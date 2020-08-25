@@ -121,3 +121,26 @@ setuptools.setup(
         packages=setuptools.find_namespace_packages(include=["example_project.*"])
 )
 ''')
+
+
+class FindOrCreateSetupForMainProjectPackageTestCase(TestCase):
+    def setUp(self):
+        self.setup_py = Path(__file__).parent / 'example_project' / 'setup.py'
+        if self.setup_py.exists():
+              os.remove(self.setup_py)
+
+    def test_should_find_setup_if_exists_or_create_it_next_to_main_package(self):
+        # when does not exist
+        path = find_or_create_setup_for_main_project_package(
+            'main_package', Path(__file__).parent / 'example_project' / 'main_package' / 'job.py')
+
+        # then
+        self.assertTrue(self.setup_py.exists())
+        self.assertEqual(path, self.setup_py)
+
+        # when already exists
+        path = find_or_create_setup_for_main_project_package(
+            'main_package', Path(__file__).parent / 'example_project' / 'main_package' / 'job.py')
+
+        # then
+        self.assertEqual(path, self.setup_py)
