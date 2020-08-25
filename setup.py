@@ -17,6 +17,9 @@ with open(os.path.join('requirements', 'base.txt'), 'r') as base_requirements:
 with open(os.path.join('requirements', 'stackdriver_extras.txt'), 'r') as stackdriver_extras_requirements:
     stackdriver_extras_require = [l.strip() for l in stackdriver_extras_requirements.readlines()]
 
+with open(os.path.join('requirements', 'bigquery_extras.txt'), 'r') as bigquery_extras_requirements:
+    bigquery_extras_require = [l.strip() for l in bigquery_extras_requirements.readlines()]
+
 
 class BuildAndInstallWheelCommand(distutils.cmd.Command):
     description = 'BigFlow build.'
@@ -48,7 +51,7 @@ setuptools.setup(
     url="https://github.com/allegro/bigflow",
     packages=setuptools.find_packages(exclude=('test', 'e2e')),
     data_files=[
-        ('requirements', ['requirements/base.txt', 'requirements/stackdriver_extras.txt']),
+        ('requirements', ['requirements/base.txt', 'requirements/stackdriver_extras.txt', 'reqeuirements/bigquery_extras.txt']),
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
@@ -56,7 +59,8 @@ setuptools.setup(
     ],
     install_requires=install_requires,
     extras_require={
-        'stackdriver': stackdriver_extras_require
+        'stackdriver': stackdriver_extras_require,
+        'bigquery': bigquery_extras_require
     },
     scripts=["scripts/bf", "scripts/bigflow"],
     cmdclass={
