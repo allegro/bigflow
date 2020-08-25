@@ -22,7 +22,10 @@ TAG_ON_HEAD_DIRTY_VERSION_PATTERN = re.compile(r'^\d+\.\d+\.\d+SNAPSHOT\w+$')
 TAG_NOT_ON_HEAD_VERSION_PATTERN = re.compile(r'^\d+\.\d+\.\d+SHA\w+$')
 TAG_NOT_ON_HEAD_DIRTY_VERSION_PATTERN = re.compile(r'^\d+\.\d+\.\d+SHA\w+SNAPSHOT\w+$')
 
-BIGFLOW_PATH = resolve(Path(__file__).parent.parent / 'bigflow')
+here = str(Path(__file__).absolute()).split(os.sep)
+bf_path_index = here.index('bigflow')
+bf_path_parts = here[:bf_path_index + 1]
+BIGFLOW_PATH = os.path.join(os.sep, *bf_path_parts)
 
 
 class Project:
