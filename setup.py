@@ -51,7 +51,7 @@ setuptools.setup(
     url="https://github.com/allegro/bigflow",
     packages=setuptools.find_packages(exclude=('test', 'e2e')),
     data_files=[
-        ('requirements', ['requirements/base.txt', 'requirements/stackdriver_extras.txt', 'reqeuirements/bigquery_extras.txt']),
+        ('requirements', ['requirements/base.txt', 'requirements/stackdriver_extras.txt', 'requirements/bigquery_extras.txt']),
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
