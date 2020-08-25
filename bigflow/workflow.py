@@ -15,7 +15,7 @@ def hourly_start_time(start_time: str) -> str:
 
 
 def daily_start_time(start_time: str) -> str:
-    return f'datetime.strptime("{start_time}", "%Y-%m-%d") - (timedelta(hours=24))'
+    return f'datetime.strptime("{start_time[:10]}", "%Y-%m-%d") - (timedelta(hours=24))'
 
 
 class Workflow(object):
