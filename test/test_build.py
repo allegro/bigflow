@@ -286,9 +286,11 @@ class AutoConfigurationTestCase(TestCase):
 
     @mock.patch('bigflow.build.get_version')
     @mock.patch('bigflow.build.setup')
-    def test_should_produce_default_project_setup_using_autoconfiguration(self, setup_mock, get_version_mock):
+    @mock.patch('bigflow.build.build_command')
+    def test_should_produce_default_project_setup_using_autoconfiguration(self, build_command_mock, setup_mock, get_version_mock):
         # given
         get_version_mock.return_value = '0.1.0'
+        build_command_mock.return_value = 1
 
         # when
         default_project_setup('example_project',  Path(__file__).parent / 'example_project')

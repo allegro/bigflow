@@ -113,12 +113,6 @@ def export_image_to_file(tag, image_dir, version):
     remove_docker_image_from_local_registry(tag)
 
 
-class MetaCommand(type):
-    # For test_build
-    def __eq__(self, other):
-        return isinstance(other, MetaCommand)
-
-
 def build_command(
         root_package: Path,
         project_dir: Path,
@@ -132,7 +126,7 @@ def build_command(
         docker_repository: str,
         version: str):
 
-    class BuildCommand(distutils.cmd.Command, metaclass=MetaCommand):
+    class BuildCommand(distutils.cmd.Command):
         description = 'BigFlow project build.'
         user_options = [
             ('build-dags', None, 'Builds the DAG files.'),
