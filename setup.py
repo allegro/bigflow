@@ -14,12 +14,6 @@ with open("README.md", "r") as fh:
 with open(os.path.join('requirements', 'base.txt'), 'r') as base_requirements:
     install_requires = [l.strip() for l in base_requirements.readlines()]
 
-with open(os.path.join('requirements', 'stackdriver_extras.txt'), 'r') as stackdriver_extras_requirements:
-    stackdriver_extras_require = [l.strip() for l in stackdriver_extras_requirements.readlines()]
-
-with open(os.path.join('requirements', 'bigquery_extras.txt'), 'r') as bigquery_extras_requirements:
-    bigquery_extras_require = [l.strip() for l in bigquery_extras_requirements.readlines()]
-
 
 class BuildAndInstallWheelCommand(distutils.cmd.Command):
     description = 'BigFlow build.'
@@ -42,7 +36,7 @@ class BuildAndInstallWheelCommand(distutils.cmd.Command):
 
 setuptools.setup(
     name="bigflow",
-    version="1.0.dev12",
+    version="1.0.dev13",
     author=u"Chi",
     author_email="chibox-team@allegrogroup.com",
     description="BigQuery client wrapper with clean API",
@@ -51,17 +45,13 @@ setuptools.setup(
     url="https://github.com/allegro/bigflow",
     packages=setuptools.find_packages(exclude=('test', 'e2e')),
     data_files=[
-        ('requirements', ['requirements/base.txt', 'requirements/stackdriver_extras.txt', 'requirements/bigquery_extras.txt']),
+        ('requirements', ['requirements/base.txt']),
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
         "Operating System :: OS Independent",
     ],
     install_requires=install_requires,
-    extras_require={
-        'stackdriver': stackdriver_extras_require,
-        'bigquery': bigquery_extras_require
-    },
     scripts=["scripts/bf", "scripts/bigflow"],
     cmdclass={
         'build_and_install_wheel': BuildAndInstallWheelCommand
