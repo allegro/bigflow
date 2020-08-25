@@ -1,5 +1,2 @@
 setuptools==45.2.0
-mock==2.0.0
-responses==0.10.15
 better-setuptools-git-version==1.0.5
-unittest-xml-reporting==3.0.2
