@@ -15,6 +15,7 @@ from typing import Optional
 from bigflow import Config
 from bigflow.deploy import deploy_dags_folder, deploy_docker_image, load_image_from_tar, tag_image
 from bigflow.resources import find_file
+from bigflow.version import get_version
 from .utils import run_process
 
 SETUP_VALIDATION_MESSAGE = 'BigFlow setup is valid.'
@@ -128,7 +129,6 @@ def execute_workflow(root_package: Path, workflow_id: str, runtime=None):
 
 def read_project_name_from_setup() -> Optional[str]:
     try:
-        print(os.getcwd())
         sys.path.insert(1, os.getcwd())
         import project_setup
         return project_setup.PROJECT_NAME
@@ -235,6 +235,8 @@ def _parse_args(project_name: Optional[str], args) -> Namespace:
     _create_build_image_parser(subparsers)
     _create_build_package_parser(subparsers)
     _create_build_parser(subparsers)
+
+    _create_project_version_parser(subparsers)
 
     return parser.parse_args(args)
 
@@ -387,6 +389,9 @@ def _create_deploy_dags_parser(subparsers):
     _add_deploy_dags_parser_arguments(parser)
     _add_deploy_parsers_common_arguments(parser)
 
+
+def _create_project_version_parser(subparsers):
+    subparsers.add_parser('project-version', description='Prints project version')
 
 def _add_deploy_image_parser_argumentss(parser):
     group = parser.add_mutually_exclusive_group()
@@ -543,6 +548,10 @@ def validate_project_setup():
         raise ValueError('The project_setup.py is invalid. Check the documentation how to create a valid project_setup.py: https://github.com/allegro/bigflow/blob/master/docs/build.md')
 
 
+def _cli_project_version(args):
+    print(get_version())
+
+
 def cli(raw_args) -> None:
     project_name = read_project_name_from_setup()
     parsed_args = _parse_args(project_name, raw_args)
@@ -567,5 +576,7 @@ def cli(raw_args) -> None:
         _cli_build_package()
     elif operation == 'build':
         _cli_build(parsed_args)
+    elif operation == 'project-version':
+        _cli_project_version(parsed_args)
     else:
         raise ValueError(f'Operation unknown - {operation}')
