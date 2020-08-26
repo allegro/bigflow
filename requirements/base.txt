@@ -1,7 +1,6 @@
 mock==2.0.0
 responses==0.10.15
-better-setuptools-git-version==1.0.5
-unittest-xml-reporting==3.0.2
-apache-beam[gcp]==2.23
 google-resumable-media==0.5.0
 googleapis-common-protos==1.6.0
+better-setuptools-git-version==1.0.5
+unittest-xml-reporting==3.0.2
