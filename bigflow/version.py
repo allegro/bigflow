@@ -3,8 +3,6 @@ from typing import Optional
 from uuid import uuid1
 import subprocess
 
-from better_setuptools_git_version import get_tag
-from better_setuptools_git_version import get_version as base_get_version
 
 VERSION_PATTERN = re.compile(r'^(\d+\.)?(\d+\.)?(\w+)$')
 
@@ -27,14 +25,7 @@ def get_version() -> str:
     case 4: tag not on head
         last tag + sha + {uuid if dirty}
     """
-    result = base_get_version(
-        template="{tag}SHA{sha}",
-        starting_version=STARTING_VERSION).replace('+dirty', f'SNAPSHOT{short_uuid()}')
-    if not VERSION_PATTERN.match(result):
-        return f'{STARTING_VERSION}SNAPSHOT{short_uuid()}'
-    if result == STARTING_VERSION:
-        return f"{STARTING_VERSION}SNAPSHOT{short_uuid()}"
-    return result
+    return f"{STARTING_VERSION}SNAPSHOT{short_uuid()}"
 
 
 def short_uuid():
@@ -42,7 +33,7 @@ def short_uuid():
 
 
 def release(repository_key_pem_file_path: Optional[str] = None) -> None:
-    latest_tag = get_tag()
+    latest_tag = f"{STARTING_VERSION}SNAPSHOT{short_uuid()}"
     if latest_tag:
         tag = bump_minor(latest_tag)
     else:
