@@ -1,0 +1,7 @@
+-r requirements/base.txt
+-r requirements/stackdriver_extras.txt
+-r requirements/bigquery_extras.txt
+setuptools==45.2.0
+wheel
+twine
+freezegun
