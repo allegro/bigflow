@@ -78,7 +78,7 @@ class DagBuilderTestCase(TestCase):
         self.assertEqual(dag_file_path, workdir + '/.dags/my_workflow__v0_3_0__2020_07_01_10_00_00_dag.py')
 
         dag_file_content = Path(dag_file_path).read_text()
-        expected_dag_content = '''
+        expected_dag_content = '''    
 from airflow import DAG
 from datetime import timedelta
 from datetime import datetime
@@ -111,7 +111,7 @@ tjob1 = kubernetes_pod_operator.KubernetesPodOperator(
     is_delete_operator_pod=True,
     retries=10,
     retry_delay= timedelta(seconds=20),
-    dag=dag)
+    dag=dag)            
 
 
 tjob2 = kubernetes_pod_operator.KubernetesPodOperator(
@@ -124,7 +124,7 @@ tjob2 = kubernetes_pod_operator.KubernetesPodOperator(
     is_delete_operator_pod=True,
     retries=100,
     retry_delay= timedelta(seconds=200),
-    dag=dag)
+    dag=dag)            
 
 tjob2.set_upstream(tjob1)
 
@@ -138,7 +138,7 @@ tjob3 = kubernetes_pod_operator.KubernetesPodOperator(
     is_delete_operator_pod=True,
     retries=100,
     retry_delay= timedelta(seconds=200),
-    dag=dag)
+    dag=dag)            
 
 tjob3.set_upstream(tjob2)
 tjob3.set_upstream(tjob1)
@@ -174,7 +174,7 @@ tjob3.set_upstream(tjob1)
         self.assertEqual(dag_file_path, workdir + '/.dags/my_daily_workflow__v0_3_0__2020_07_01_00_00_00_dag.py')
 
         dag_file_content = Path(dag_file_path).read_text()
-        expected_dag_content = '''
+        expected_dag_content = '''    
 from airflow import DAG
 from datetime import timedelta
 from datetime import datetime
@@ -207,7 +207,7 @@ tjob1 = kubernetes_pod_operator.KubernetesPodOperator(
     is_delete_operator_pod=True,
     retries=10,
     retry_delay= timedelta(seconds=20),
-    dag=dag)
+    dag=dag)            
 
 '''
         self.assert_files_are_equal(expected_dag_content, dag_file_content)
