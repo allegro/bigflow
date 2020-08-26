@@ -1,52 +1,32 @@
 from collections import OrderedDict
-from typing import Optional
-from datetime import datetime
-from .utils import now
 
 DEFAULT_SCHEDULE_INTERVAL = '@daily'
 
 
-def get_timezone_offset_seconds() -> str:
-    return str(datetime.now().astimezone().tzinfo.utcoffset(None).seconds)
-
-
-def hourly_start_time(start_time: str) -> str:
-    return f'datetime.strptime("{start_time}", "%Y-%m-%d %H:%M:%S") - (timedelta(seconds={get_timezone_offset_seconds()}))'
-
-
-def daily_start_time(start_time: str) -> str:
-    return f'datetime.strptime("{start_time[:10]}", "%Y-%m-%d") - (timedelta(hours=24))'
-
-
 class Workflow(object):
     def __init__(self,
-                 workflow_id,
                  definition,
                  schedule_interval=DEFAULT_SCHEDULE_INTERVAL,
-                 start_time_expression_factory=daily_start_time):
+                 dt_as_datetime=False,
+                 workflow_id='default_workflow',
+                 **kwargs):
         self.definition = self._parse_definition(definition)
         self.schedule_interval = schedule_interval
+        self.dt_as_datetime = dt_as_datetime
         self.workflow_id = workflow_id
-        self.start_time_expression_factory = start_time_expression_factory
+        self.kwargs = kwargs
 
-    def run(self, runtime: Optional[str] = None):
-        if runtime is None:
-            runtime = self._auto_runtime()
+    def run(self, runtime):
         for job in self.build_sequential_order():
             job.run(runtime=runtime)
 
-    def run_job(self, job_id, runtime: Optional[str] = None):
-        if runtime is None:
-            runtime = self._auto_runtime()
+    def run_job(self, job_id, runtime):
         for job_wrapper in self.build_sequential_order():
             if job_wrapper.job.id == job_id:
                 job_wrapper.job.run(runtime)
                 break
         else:
             raise ValueError(f'Job {job_id} not found.')
-
-    def _auto_runtime(self):
-        return now("%Y-%m-%d %H:%M:%S")
 
     def build_sequential_order(self):
         return self.definition.sequential_order()
@@ -85,7 +65,7 @@ class WorkflowJob:
 
 
 class Definition:
-    def __init__(self, jobs: dict):
+    def __init__(self, jobs):
         self.job_graph = self._build_graph(jobs)
         self.job_order_resolver = JobOrderResolver(self.job_graph)
 
@@ -99,18 +79,12 @@ class Definition:
         if isinstance(jobs, list):
             job_graph = self._convert_list_to_graph(jobs)
         elif isinstance(jobs, dict):
-            job_graph = {self._map_to_workflow_job(source_job): [self._map_to_workflow_job(tj) for tj in target_jobs]
-                         for source_job, target_jobs in jobs.items()}
+            job_graph = jobs
         else:
             raise ValueError("Job graph has to be dict or list")
 
         JobGraphValidator(job_graph).validate()
         return job_graph
-
-    def _map_to_workflow_job(self, job):
-        if not isinstance(job, WorkflowJob):
-            job = WorkflowJob(job, job.id)
-        return job
 
     @staticmethod
     def _convert_list_to_graph(job_list):
