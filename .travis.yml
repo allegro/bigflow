@@ -10,3 +10,6 @@ install:
   - pip install -r requirements.txt
   - pip install -r test/requirements.txt
 
+script:
+  - python -m unittest discover -s bigflow -t . -p '*.py'
+  - python -m unittest discover -s test -p '*.py'
