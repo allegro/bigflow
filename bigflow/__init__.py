@@ -1,4 +1,3 @@
-from . import bigquery
 from . import resources
 from .workflow import Workflow, Definition
 from .configuration import Config
@@ -13,5 +12,4 @@ __all__ = [
     'resources',
 
     # extras
-    'bigquery',
 ]
