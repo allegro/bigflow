@@ -39,7 +39,7 @@ class BuildAndInstallWheelCommand(distutils.cmd.Command):
 
 setuptools.setup(
     name="bigflow",
-    version="1.0.dev8",
+    version="1.0.dev12",
     author=u"Chi",
     author_email="chibox-team@allegrogroup.com",
     description="BigQuery client wrapper with clean API",
