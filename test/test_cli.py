@@ -703,6 +703,14 @@ deployment_config = Config(name='dev',
         # then
         self.assertEqual(validate_project_setup_mock.call_count, 4)
 
+    @mock.patch('bigflow.cli.get_version')
+    def test_should_call_cli_project_version_command(self, get_version):
+        # when
+        cli(['project-version'])
+
+        # then
+        get_version.assert_called_once()
+
     def _expected_default_dags_dir(self):
         return (Path(os.getcwd()) / '.dags').as_posix()
 
