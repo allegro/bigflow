@@ -2,10 +2,8 @@ import subprocess
 import sys
 from pathlib import Path
 import logging
-import functools
 from datetime import datetime
 
-from google.api_core.exceptions import BadRequest
 
 logger = logging.getLogger(__name__)
 
@@ -37,21 +35,6 @@ def not_none_or_error(arg_value, arg_name):
 
 class ExtrasRequiredError(ImportError):
     pass
-
-
-def log_syntax_error(method):
-
-    @functools.wraps(method)
-    def decorated(*args, **kwargs):
-        try:
-            return method(*args, **kwargs)
-        except BadRequest as e:
-            if 'Syntax error' in e.message:
-                logger.error(e.message)
-            else:
-                raise e
-
-    return decorated
 
 
 def merge_dicts(dict1, dict2):

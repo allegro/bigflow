@@ -1,22 +1,40 @@
 from __future__ import absolute_import
 
+import functools
 from inspect import getfullargspec
 import hashlib
+import logging
 
 import pandas as pd
+from google.api_core.exceptions import BadRequest
 
 from .job import Job
 from .job import DEFAULT_RETRY_COUNT
 from .job import DEFAULT_RETRY_PAUSE_SEC
 from .dataset_manager import DEFAULT_LOCATION
 from ..utils import not_none_or_error
-from ..utils import log_syntax_error
 
+logger = logging.getLogger(__name__)
 
 DEFAULT_OPERATION_NAME = '__auto'
 DEFAULT_PEEK_LIMIT = 1000
 DEFAULT_RUNTIME = '1970-01-01'
 INLINE_COMPONENT_DATASET_ALIAS = '_inline_component_dataset'
+
+
+def log_syntax_error(method):
+
+    @functools.wraps(method)
+    def decorated(*args, **kwargs):
+        try:
+            return method(*args, **kwargs)
+        except BadRequest as e:
+            if 'Syntax error' in e.message:
+                logger.error(e.message)
+            else:
+                raise e
+
+    return decorated
 
 
 def interactive_component(**dependencies):
