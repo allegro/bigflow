@@ -13,5 +13,5 @@ try:
         'Job'
     ]
 except ImportError:
-    pass
+    __all__ = []
 
