@@ -38,8 +38,5 @@ setuptools.setup(
         'monitoring': monitoring_extras_require,
         'bigquery': bigquery_extras_require
     },
-    scripts=["scripts/bf", "scripts/bigflow"],
-    cmdclass={
-        'build_and_install_wheel': BuildAndInstallWheelCommand
-    }
+    scripts=["scripts/bf", "scripts/bigflow"]
 )
