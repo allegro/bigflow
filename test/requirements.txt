@@ -1,1 +1,4 @@
 apache-airflow==1.10.11
+six==1.14.0
+dill==0.3.0
+nose==1.3.7
