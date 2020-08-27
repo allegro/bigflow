@@ -6,7 +6,7 @@ import subprocess
 import os
 from pathlib import Path
 
-from bigflow.build import clear_package_leftovers
+from bigflow.clear_methods import clear_package_leftovers
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
@@ -42,7 +42,7 @@ class BuildAndInstallWheelCommand(distutils.cmd.Command):
 
 setuptools.setup(
     name="bigflow",
-    version="1.0.dev17",
+    version="1.0.dev18",
     author=u"Chi",
     author_email="chibox-team@allegrogroup.com",
     description="BigQuery client wrapper with clean API",
