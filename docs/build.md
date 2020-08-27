@@ -71,11 +71,57 @@ get_resource_absolute_path('requirements.txt', Path(__file__))
 
 The two remaining files - `Dockerfile` and `deployment_config.py` don't take a part in the Python package build process.
 
-Because a BigFlow project is mainly a standard Python package, we suggest to go through the [official Python packaging tutorial](https://packaging.python.org/tutorials/packaging-projects/).
+Because a BigFlow project is mainly a standard Python package, we suggest to go through the 
+[official Python packaging tutorial](https://packaging.python.org/tutorials/packaging-projects/).
 
-### Builder
+### Package builder
+
+The `bf build-package` command takes 3 steps to build a Python package from your project:
+
+1. Cleans leftovers from a previous build.
+1. Runs tests from the `test` package and generates JUnit xml report, 
+using the [`unittest-xml-reporting`](https://pypi.org/project/unittest-xml-reporting/) package. You can find the generated report
+inside the `project_dir/build/junit-reports` directory.
+1. Finally, `bf build-package` runs the `bdist_wheel` setuptools command. It generates a `.whl` package that you can
+upload to `pypi` or install locally - `pip install your_generated_package.whl`.
 
 ### Project versioning
+
+Artifacts, like Python packages and Docker images, need to be versioned. BigFlow provides automatic versioning based on 
+the git tags system. There are 2 commands you need to know.
+
+The `bigflow project-version` command prints the current version of your project:
+
+```
+bigflow project-version
+>>> 0.34.0
+```
+
+As you can see, the version scheme is a standard Python package version scheme:
+
+`<major>.<minor>.<patch>`
+
+If BigFlow finds a tag on the current commit, it uses it as a current project version. If there are commits after the last tag,
+it creates a snapshot version with the following scheme:
+
+`<major>.<minor>.<patch><snapshot_id>`
+
+For example:
+
+```
+bigflow project-version
+>>> 0.34.0SHAdee9af83SNAPSHOT8650450a
+```
+
+If you are ready to release new version, you don't have to set the new tag manually. You can use the `bigflow release` command:
+
+```
+bigflow project-version
+>>> 0.34.0SHAdee9af83SNAPSHOT8650450a
+bigflow release
+bigflow project-version
+>>> 0.35.0
+```
 
 ## Image
 
