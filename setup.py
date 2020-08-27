@@ -1,12 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-import distutils.cmd
 import setuptools
-import subprocess
 import os
-from pathlib import Path
-
-from bigflow.clear_methods import clear_package_leftovers
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
@@ -19,25 +14,6 @@ with open(os.path.join('requirements', 'monitoring_extras.txt'), 'r') as monitor
 
 with open(os.path.join('requirements', 'bigquery_extras.txt'), 'r') as bigquery_extras_requirements:
     bigquery_extras_require = [l.strip() for l in bigquery_extras_requirements.readlines()]
-
-
-class BuildAndInstallWheelCommand(distutils.cmd.Command):
-    description = 'BigFlow build.'
-    user_options = []
-
-    def initialize_options(self):
-        pass
-
-    def finalize_options(self):
-        pass
-
-    def run(self):
-        clear_package_leftovers(
-            Path(__file__).parent / 'dist',
-            Path(__file__).parent / 'bigflow.egg-info',
-            Path(__file__).parent / 'build')
-        self.run_command('bdist_wheel')
-        print(subprocess.getoutput('source env/bin/activate;pip install bigflow --find-links dist/'))
 
 
 setuptools.setup(

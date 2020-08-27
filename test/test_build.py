@@ -4,10 +4,10 @@ from pathlib import Path
 import subprocess
 from unittest import TestCase, mock
 
-from bigflow.clear_methods import clear_image_leftovers, clear_dags_leftovers, clear_package_leftovers
 from bigflow.cli import walk_module_files, SETUP_VALIDATION_MESSAGE
 from bigflow.build import now, get_docker_image_id, build_docker_image_tag, auto_configuration, \
-    get_docker_repository_from_deployment_config, project_setup, secure_get_version, default_project_setup
+    get_docker_repository_from_deployment_config, project_setup, secure_get_version, default_project_setup, \
+    clear_image_leftovers, clear_dags_leftovers, clear_package_leftovers
 from example_project.project_setup import DOCKER_REPOSITORY, PROJECT_NAME
 
 TEST_PROJECT_PATH = Path(__file__).parent / 'example_project'

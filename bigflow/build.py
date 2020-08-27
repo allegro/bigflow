@@ -9,7 +9,6 @@ from setuptools import setup
 
 import xmlrunner
 
-from .clear_methods import clear_image_leftovers, clear_dags_leftovers, clear_package_leftovers
 from .cli import walk_workflows, import_deployment_config, _valid_datetime, SETUP_VALIDATION_MESSAGE
 from .dagbuilder import generate_dag_file
 from .resources import read_requirements, find_all_resources
@@ -173,6 +172,22 @@ def build_command(
                     self.export_image_to_file)
 
     return BuildCommand
+
+
+def clear_image_leftovers(image_dir: Path):
+    print(f'Removing: {str(image_dir.absolute())}')
+    shutil.rmtree(image_dir, ignore_errors=True)
+
+
+def clear_dags_leftovers(dags_dir: Path):
+    print(f'Removing: {str(dags_dir.absolute())}')
+    shutil.rmtree(dags_dir, ignore_errors=True)
+
+
+def clear_package_leftovers(dist_dir: Path, eggs_dir: Path, build_dir: Path):
+    for to_delete in [build_dir, dist_dir, eggs_dir]:
+        print(f'Removing: {str(to_delete.absolute())}')
+        shutil.rmtree(to_delete, ignore_errors=True)
 
 
 def get_docker_repository_from_deployment_config(deployment_config_file: Path):
