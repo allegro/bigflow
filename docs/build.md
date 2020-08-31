@@ -70,13 +70,24 @@ along the `project_package` (so you can access these files after installation, f
 inside the `project_directory` won't be available for the `project_package`. `resources` can't be nested. So you can't
 have a directory inside the `resources` directory.
 
-There is a special function that allows you to access files from the `resources` directory, being inside the `project_package`:
+There is a special function that allows you to access files from the `resources` directory, being inside the `project_package`.
 
+[`resources.py`](examples/project_structure_and_build/resources_workflow.py)
 ```python
-from pathlib import Path
-from bigflow.resources import get_resource_absolute_path
+with open(get_resource_absolute_path('example_resource.txt', Path(__file__))) as f:
+    print(f.read())
+```
 
-get_resource_absolute_path('requirements.txt', Path(__file__))
+Run the example above, using the following command:
+
+```shell script
+bigflow run --workflow resources_workflow
+```
+
+Result:
+
+```
+Welcome inside the example resource!
 ```
 
 The two remaining files - `Dockerfile` and `deployment_config.py` don't take a part in the Python package build process.
@@ -162,7 +173,7 @@ RUN for i in /dist/*.whl; do pip install $i; done
 As you can see, the basic image installs the generated Python package. With the installed package, you can run a workflow or a job
 from the Docker environment.
 
-Run the `bigflow build-image` command inside the `docs` project. Next, run the following command to run the example workflow from the docker :
+Run the `bigflow build-image` command inside the `docs` project. Next, run the following command to run the example workflow from the docker:
 
 ```shell script
 docker run bigflow-docs:0.1.0 bigflow run --job hello_world_workflow.hello_world
@@ -184,7 +195,7 @@ To see how it works, go to the `docs` project and run the `bigflow build-dags` c
 bf build-dags
 ```
 
-One of the generated DAGs, for the `hello_world_workflow` workflow, looks like this:
+One of the generated DAGs, for the [`resources.py`](examples/project_structure_and_build/resources_workflow.py) workflow, looks like this:
 
 ```python
 from airflow import DAG
@@ -202,37 +213,22 @@ default_args = {
 }
 
 dag = DAG(
-    'hello_world_workflow__v0_1_0__2020_08_31_10_00_00',
+    'resources_workflow__v0_1_0__2020_08_31_15_00_00',
     default_args=default_args,
     max_active_runs=1,
     schedule_interval='@daily'
 )
 
 
-thello_world = kubernetes_pod_operator.KubernetesPodOperator(
-    task_id='hello-world',
-    name='hello-world',
+tprint_resource_job = kubernetes_pod_operator.KubernetesPodOperator(
+    task_id='print-resource-job',
+    name='print-resource-job',
     cmds=['bf'],
-    arguments=['run', '--job', 'hello_world_workflow.hello_world', '--runtime', '{{ execution_date.strftime("%Y-%m-%d %H:%M:%S") }}', '--project-package', 'examples', '--config', '{{var.value.env}}'],
+    arguments=['run', '--job', 'resources_workflow.print_resource_job', '--runtime', '{{ execution_date.strftime("%Y-%m-%d %H:%M:%S") }}', '--project-package', 'examples', '--config', '{{var.value.env}}'],
     namespace='default',
     image='eu.gcr.io/docker_repository_project/my-project:0.1.0',
     is_delete_operator_pod=True,
     retries=3,
     retry_delay= timedelta(seconds=60),
     dag=dag)            
-
-
-tsay_goodbye = kubernetes_pod_operator.KubernetesPodOperator(
-    task_id='say-goodbye',
-    name='say-goodbye',
-    cmds=['bf'],
-    arguments=['run', '--job', 'hello_world_workflow.say_goodbye', '--runtime', '{{ execution_date.strftime("%Y-%m-%d %H:%M:%S") }}', '--project-package', 'examples', '--config', '{{var.value.env}}'],
-    namespace='default',
-    image='eu.gcr.io/docker_repository_project/my-project:0.1.0',
-    is_delete_operator_pod=True,
-    retries=3,
-    retry_delay= timedelta(seconds=60),
-    dag=dag)            
-
-tsay_goodbye.set_upstream(thello_world)
 ```
