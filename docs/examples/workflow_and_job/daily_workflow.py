@@ -12,7 +12,6 @@ class DailyJob:
 daily_workflow = Workflow(
     workflow_id='daily_workflow',
     schedule_interval='@daily',
-    runtime_as_datetime=False,
     definition=[DailyJob()])
 
 if __name__ == '__main__':

@@ -2,6 +2,9 @@
 
 ## Overview
 
+In this chapter, you will get to know the anatomy of the standard BigFlow project, artifacts, and CLI commands. If you are interested
+in the details of the interface itself, go to [the CLI chapter](./cli.md).
+
 The BigFlow build system packages your processing logic into a Docker image. Thanks to this approach, you can create any
 environment you want for your pipelines. What is more, you don't need to worry about clashes with the Cloud Composer (Airflow) dependencies.
 
@@ -17,7 +20,14 @@ Produced DAG consists only of [`KubernetesPodOperator`](https://airflow.apache.o
 execute operations on the produced image.
 
 To build a project you need to use the `bigflow build` command. The documentation you are reading is also a valid BigFlow
-project. Go to the `docs` directory and run the `build` command to see how the build process works.
+project. Go to the `docs` directory and run the `bigflow build` command to see how the build process works. The `bigflow build`
+command should produce three artifacts:
+
+* The `dist` directory with a Python package
+* The `image` directory with a deployment configuration and, optionally, with a Docker image as `.tar`
+* The `build` directory with JUnit test results
+
+The `bigflow build` command uses three subcommands to generate all the artifacts: `bigflow build-package`, `bigflow build-image`, `bigflow build-dags`.
 
 Now, let us go through each building element in detail, starting from the Python package.
 
@@ -48,7 +58,7 @@ The `project_package` is used to create a standard Python package that can be in
 The `project_setup.py` is the build script for the project. It turns the `project_package` into a `.whl` package. 
 It's based on the standard Python tool - [setuptool](https://packaging.python.org/key_projects/#setuptools).
 
-There is also a special variable `PROJECT_NAME` inside the `project_setup.py`. In the example project, it should be 
+There is also a special variable - `PROJECT_NAME` inside the `project_setup.py`. In the example project, it should be 
 `PROJECT_NAME = 'project_package'`. It tells BigFlow CLI, which package inside the `project_dir` is the main package with
 your processing logic and workflows.
 
@@ -75,17 +85,17 @@ Because a BigFlow project is mainly a standard Python package, we suggest going 
 
 ### Package builder
 
-The `bf build-package` command takes 3 steps to build a Python package from your project:
+The `bigflow build-package` command takes 3 steps to build a Python package from your project:
 
 1. Cleans leftovers from a previous build.
 1. Runs tests from the `test` package and generates JUnit xml report, 
 using the [`unittest-xml-reporting`](https://pypi.org/project/unittest-xml-reporting/) package. You can find the generated report
 inside the `project_dir/build/junit-reports` directory.
-1. Finally, `bf build-package` runs the `bdist_wheel` setup tools command. It generates a `.whl` package that you can
+1. Finally, `bigflow build-package` runs the `bdist_wheel` setup tools command. It generates a `.whl` package that you can
 upload to `pypi` or install locally - `pip install your_generated_package.whl`.
 
 Go to the `docs` project and run the `bigflow build-package` command to observe the result. Now you can install the 
-generated package using `pip install dist/<whl_package_file_name>.whl`. After you install the `.whl` file, you can
+generated package using `pip install dist/examples-0.1.0-py3-none-any.whl`. After you install the `.whl` file, you can
 run jobs and workflows from the `docs/examples` package. They are now installed in your virtual env, so you can run them
 anywhere in your directory tree, for example:
 
@@ -167,8 +177,61 @@ BigFlow generates Airflow DAGs from workflows that can be found in your project.
 
 A generated DAG utilizes only the [`KubernetesPodOperator`](https://airflow.apache.org/docs/stable/_api/airflow/contrib/operators/kubernetes_pod_operator/index.html).
 
-To see how it works, go to the docs project and run the `build-dags` command:
+To see how it works, go to the `docs` project and run the `bigflow build-dags` command:
 
 ```shell script
 bf build-dags
+```
+
+One of the generated DAGs, for the `hello_world_workflow` workflow, looks like this:
+
+```python
+from airflow import DAG
+from datetime import timedelta
+from datetime import datetime
+from airflow.contrib.operators import kubernetes_pod_operator
+
+default_args = {
+            'owner': 'airflow',
+            'depends_on_past': True,
+            'start_date': datetime.strptime("2020-08-31", "%Y-%m-%d") - (timedelta(hours=24)),
+            'email_on_failure': False,
+            'email_on_retry': False,
+            'execution_timeout': timedelta(minutes=90)
+}
+
+dag = DAG(
+    'hello_world_workflow__v0_1_0__2020_08_31_10_00_00',
+    default_args=default_args,
+    max_active_runs=1,
+    schedule_interval='@daily'
+)
+
+
+thello_world = kubernetes_pod_operator.KubernetesPodOperator(
+    task_id='hello-world',
+    name='hello-world',
+    cmds=['bf'],
+    arguments=['run', '--job', 'hello_world_workflow.hello_world', '--runtime', '{{ execution_date.strftime("%Y-%m-%d %H:%M:%S") }}', '--project-package', 'examples', '--config', '{{var.value.env}}'],
+    namespace='default',
+    image='eu.gcr.io/docker_repository_project/my-project:0.1.0',
+    is_delete_operator_pod=True,
+    retries=3,
+    retry_delay= timedelta(seconds=60),
+    dag=dag)            
+
+
+tsay_goodbye = kubernetes_pod_operator.KubernetesPodOperator(
+    task_id='say-goodbye',
+    name='say-goodbye',
+    cmds=['bf'],
+    arguments=['run', '--job', 'hello_world_workflow.say_goodbye', '--runtime', '{{ execution_date.strftime("%Y-%m-%d %H:%M:%S") }}', '--project-package', 'examples', '--config', '{{var.value.env}}'],
+    namespace='default',
+    image='eu.gcr.io/docker_repository_project/my-project:0.1.0',
+    is_delete_operator_pod=True,
+    retries=3,
+    retry_delay= timedelta(seconds=60),
+    dag=dag)            
+
+tsay_goodbye.set_upstream(thello_world)
 ```

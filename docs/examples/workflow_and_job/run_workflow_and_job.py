@@ -3,7 +3,6 @@ from .sequential_workflow import Job
 
 simple_workflow = Workflow(
     workflow_id='simple_workflow',
-    runtime_as_datetime=True,
     definition=[Job('1')])
 
 if __name__ == '__main__':
