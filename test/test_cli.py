@@ -337,13 +337,13 @@ deployment_config = Config(name='dev',
                               'dags_bucket': 'my-dags-dev-bucket',
                               'vault_secret': 'secret-dev'
                           })\
-    .add_configuration(name='prod', 
+    .add_configuration(name='prod',
                           properties={
                               'gcp_project_id': 'my-gcp-prod-project-id',
                               'dags_bucket': 'my-dags-prod-bucket',
                               'vault_secret': 'secret-prod'
-                          })                          
-                          
+                          })
+
         ''')
 
         # when
@@ -476,7 +476,7 @@ from bigflow import Config
 deployment_config = Config(name='dev',
                          properties={
                              'docker_repository': 'my-another-docker-repository' ,
-                             'vault_endpoint' : 'my-another-vault-endpoint'   
+                             'vault_endpoint' : 'my-another-vault-endpoint'
                          })
         ''')
 
@@ -702,6 +702,14 @@ deployment_config = Config(name='dev',
 
         # then
         self.assertEqual(validate_project_setup_mock.call_count, 4)
+
+    @mock.patch('bigflow.cli.get_version')
+    def test_should_call_cli_project_version_command(self, get_version):
+        # when
+        cli(['project-version'])
+
+        # then
+        get_version.assert_called_once()
 
     def _expected_default_dags_dir(self):
         return (Path(os.getcwd()) / '.dags').as_posix()
