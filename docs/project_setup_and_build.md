@@ -189,11 +189,7 @@ BigFlow generates Airflow DAGs from workflows that can be found in your project.
 
 A generated DAG utilizes only the [`KubernetesPodOperator`](https://airflow.apache.org/docs/stable/_api/airflow/contrib/operators/kubernetes_pod_operator/index.html).
 
-To see how it works, go to the `docs` project and run the `bigflow build-dags` command:
-
-```shell script
-bf build-dags
-```
+To see how it works, go to the `docs` project and run the `bigflow build-dags` command.
 
 One of the generated DAGs, for the [`resources.py`](examples/project_structure_and_build/resources_workflow.py) workflow, looks like this:
 
