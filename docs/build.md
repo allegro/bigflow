@@ -53,7 +53,8 @@ project_dir/
 
 Let us start with `project_package`. It's a Python package that contains the processing logic of your pipelines.
 It also contains `Workflow` objects, that arranges parts of your processing logic into a [DAG](https://en.wikipedia.org/wiki/Directed_acyclic_graph).
-The `project_package` is used to create a standard Python package that can be installed using `pip`. For example, `pip install project_package`.
+Read the [Workflow & Job chapter](./workflow-and-job.md) to learn more about workflows and jobs.
+The `project_package` is used to create a standard Python package that can be installed using `pip`.
 
 The `project_setup.py` is the build script for the project. It turns the `project_package` into a `.whl` package. 
 It's based on the standard Python tool - [setuptool](https://packaging.python.org/key_projects/#setuptools).
