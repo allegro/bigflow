@@ -165,4 +165,10 @@ You can, of course, modify the image to your own needs.
 
 BigFlow generates Airflow DAGs from workflows that can be found in your project.
 
-A generated DAG utilizes only
+A generated DAG utilizes only the [`KubernetesPodOperator`](https://airflow.apache.org/docs/stable/_api/airflow/contrib/operators/kubernetes_pod_operator/index.html).
+
+To see how it works, go to the docs project and run the `build-dags` command:
+
+```shell script
+bf build-dags
+```
