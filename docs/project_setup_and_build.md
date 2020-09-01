@@ -51,7 +51,7 @@ project_dir/
 ```
 
 Let us start with the `project_package`. It's the Python package which contains the processing logic of your workflows.
-It also contains `Workflow` objects, that arranges parts of your processing logic into a [DAG](https://en.wikipedia.org/wiki/Directed_acyclic_graph).
+It also contains `Workflow` objects, which arranges parts of your processing logic into a [DAG](https://en.wikipedia.org/wiki/Directed_acyclic_graph).
 Read the [Workflow & Job chapter](./workflow-and-job.md) to learn more about workflows and jobs.
 The `project_package` is used to create a standard Python package that can be installed using `pip`.
 
