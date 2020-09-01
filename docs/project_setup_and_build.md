@@ -56,9 +56,9 @@ a [DAG](https://en.wikipedia.org/wiki/Directed_acyclic_graph) (read the [Workflo
 The `project_package` is used to create a standard Python package that can be installed using `pip`.
 
 The `project_setup.py` is the build script for the project. It turns the `project_package` into a `.whl` package. 
-It's based on the standard Python tool - [setuptool](https://packaging.python.org/key_projects/#setuptools).
+It's based on the standard Python tool  — [setuptool](https://packaging.python.org/key_projects/#setuptools).
 
-There is also a special variable - `PROJECT_NAME` inside the `project_setup.py`. In the example project, it should be 
+There is also a special variable  — `PROJECT_NAME` inside the `project_setup.py`. In the example project, it should be 
 `PROJECT_NAME = 'project_package'`. It tells BigFlow CLI, which package inside the `project_dir` is the main package with
 your processing logic and workflows.
 
@@ -89,7 +89,7 @@ Result:
 Welcome inside the example resource!
 ```
 
-The two remaining files - `Dockerfile` and `deployment_config.py` don't take a part in the Python package build process.
+The two remaining files  — `Dockerfile` and `deployment_config.py` don't take a part in the Python package build process.
 
 Because a BigFlow project is mainly a standard Python package, we suggest going through the 
 [official Python packaging tutorial](https://packaging.python.org/tutorials/packaging-projects/).
