@@ -41,22 +41,22 @@ def short_uuid():
     return str(uuid1()).replace("-", "")[:8]
 
 
-def release(identity_file: Optional[str] = None) -> None:
+def release(repository_key_pem_file_path: Optional[str] = None) -> None:
     latest_tag = get_tag()
     if latest_tag:
         tag = bump_minor(latest_tag)
     else:
         tag = '0.1.0'
-    push_tag(tag, identity_file)
+    push_tag(tag, repository_key_pem_file_path)
 
 
-def push_tag(tag, identity_file: Optional[str] = None) -> None:
+def push_tag(tag, repository_key_pem_file_path: Optional[str] = None) -> None:
     print(f'Setting and pushing tag: {tag}')
     print(subprocess.getoutput(f'git tag {tag}'))
-    if identity_file is not None:
-        print(f'Pushing using the specified identity_file: {identity_file}')
+    if repository_key_pem_file_path is not None:
+        print(f'Pushing using the specified pem: {repository_key_pem_file_path}')
         print(subprocess.getoutput(
-            f"GIT_SSH_COMMAND='ssh -i {identity_file} -o IdentitiesOnly=yes' git push origin {tag}"))
+            f"GIT_SSH_COMMAND='ssh -i {repository_key_pem_file_path} -o IdentitiesOnly=yes' git push origin {tag}"))
     else:
         print(subprocess.getoutput('git push origin --tags'))
 
