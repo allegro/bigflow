@@ -34,7 +34,7 @@ Now, let us go through each building element in detail, starting from the Python
 
 ### Project structure
 
-A example BigFlow project, with the standard structure, looks like this:
+An example BigFlow project, with the standard structure, looks like this:
 
 ```
 project_dir/
