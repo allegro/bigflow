@@ -16,7 +16,7 @@ Next, the package is closed into a Docker image with fixed Python version. Final
 
 A single DAG is generated based on the `bigflow.workflow.Workflow` class. 
 Produced DAG consists only of [`KubernetesPodOperator`](https://airflow.apache.org/docs/stable/_api/airflow/contrib/operators/kubernetes_pod_operator/index.html) objects, which
-execute operations on the produced image.
+execute operations on a Docker image.
 
 To build a project you need to use the `bigflow build` command. The documentation you are reading is also a valid BigFlow
 project. Go to the `docs` directory and run the `bigflow build` command to see how the build process works. The `bigflow build`
