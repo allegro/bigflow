@@ -11,7 +11,7 @@ The scheme of a BigFlow deployment artifacts looks like this:
 
 ![BigFlow artifact scheme](./images/bigflow-artifact.png)
 
-As you can see, your project is turned into a standard Python package (that you can, for example, upload to [pypi](https://pypi.org/) or install locally using `pip`). 
+Your project is turned into a standard Python package (that you can, for example, upload to [pypi](https://pypi.org/) or install locally using `pip`). 
 Next, the package is installed on the Docker image. Finally, there are Airflow DAGs that utilize the produced image.
 
 A single DAG is generated based on the `bigflow.workflow.Workflow` class. 
