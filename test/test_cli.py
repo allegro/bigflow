@@ -711,6 +711,39 @@ deployment_config = Config(name='dev',
         # then
         get_version.assert_called_once()
 
+    @mock.patch('bigflow.cli.get_version')
+    def test_should_call_cli_project_version_command_by_alias(self, get_version):
+        # when
+        cli(['pv'])
+
+        # then
+        get_version.assert_called_once()
+
+    @mock.patch('bigflow.cli.release')
+    def test_should_call_cli_release_command_with_no_args(self, release):
+        # when
+        cli(['release'])
+
+        # then
+        release.assert_called_once_with(None)
+
+
+    @mock.patch('bigflow.cli.release')
+    def test_should_call_cli_release_command_with_identity_file(self, release):
+        # when
+        cli(['release', '--ssh_identity_file', 'path/to/identity_file'])
+
+        # then
+        release.assert_called_once_with('path/to/identity_file')
+
+    @mock.patch('bigflow.cli.release')
+    def test_should_call_cli_release_command_with_identity_file_parameter_shortcut(self, release):
+        # when
+        cli(['release', '-i', 'path/to/identity_file'])
+
+        # then
+        release.assert_called_once_with('path/to/identity_file')
+
     def _expected_default_dags_dir(self):
         return (Path(os.getcwd()) / '.dags').as_posix()
 
