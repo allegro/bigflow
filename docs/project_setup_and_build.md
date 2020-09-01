@@ -12,7 +12,7 @@ The scheme of a BigFlow deployment artifacts looks like this:
 ![BigFlow artifact scheme](./images/bigflow-artifact.png)
 
 Your project is turned into a standard Python package (which can be uploaded to [pypi](https://pypi.org/) or installed locally using `pip`). 
-Next, the package is installed on the Docker image. Finally, there are Airflow DAGs that utilize the produced image.
+Next, the package is installed on the Docker image. Finally, there are Airflow DAGs that uses this image.
 
 A single DAG is generated based on the `bigflow.workflow.Workflow` class. 
 Produced DAG consists only of [`KubernetesPodOperator`](https://airflow.apache.org/docs/stable/_api/airflow/contrib/operators/kubernetes_pod_operator/index.html) objects, which
