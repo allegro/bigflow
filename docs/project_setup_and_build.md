@@ -12,7 +12,7 @@ The scheme of a BigFlow deployment artifacts looks like this:
 ![BigFlow artifact scheme](./images/bigflow-artifact.png)
 
 Your project is turned into a standard Python package (which can be uploaded to [pypi](https://pypi.org/) or installed locally using `pip`). 
-Next, the package is closed into a Docker image with fixed Python version. Finally, there are Airflow DAGs that uses this image.
+Next, the package is closed into a Docker image with fixed Python version. Finally, there are Airflow DAGs which use this image.
 
 From each of your [workflows](./workflow-and-job.md#workflow), BigFlow generates a DAG file. 
 Produced DAG consists only of [`KubernetesPodOperator`](https://airflow.apache.org/docs/stable/_api/airflow/contrib/operators/kubernetes_pod_operator/index.html) objects, which
@@ -51,8 +51,8 @@ project_dir/
 ```
 
 Let us start with the `project_package`. It's the Python package which contains the processing logic of your workflows.
-It also contains `Workflow` objects, which arranges parts of your processing logic into a [DAG](https://en.wikipedia.org/wiki/Directed_acyclic_graph).
-Read the [Workflow & Job chapter](./workflow-and-job.md) to learn more about workflows and jobs.
+It also contains `Workflow` objects, which arranges parts of your processing logic into 
+a [DAG](https://en.wikipedia.org/wiki/Directed_acyclic_graph) (read the [Workflow & Job chapter](./workflow-and-job.md) to learn more about workflows and jobs).
 The `project_package` is used to create a standard Python package that can be installed using `pip`.
 
 The `project_setup.py` is the build script for the project. It turns the `project_package` into a `.whl` package. 
