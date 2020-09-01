@@ -55,7 +55,7 @@ It also contains `Workflow` objects, which arranges parts of your processing log
 a [DAG](https://en.wikipedia.org/wiki/Directed_acyclic_graph) (read the [Workflow & Job chapter](./workflow-and-job.md) to learn more about workflows and jobs).
 The `project_package` is used to create a standard Python package that can be installed using `pip`.
 
-The `project_setup.py` is the build script for the project. It turns the `project_package` into a `.whl` package. 
+`project_setup.py` is the build script for the project. It turns the `project_package` into a `.whl` package. 
 It's based on the standard Python tool  — [setuptool](https://packaging.python.org/key_projects/#setuptools).
 
 There is also the special variable  — `PROJECT_NAME` inside the `project_setup.py`. In the example project, it should be 
