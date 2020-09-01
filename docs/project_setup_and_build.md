@@ -18,7 +18,7 @@ From each of your [workflows](./workflow-and-job.md#workflow), BigFlow generates
 Produced DAG consists only of [`KubernetesPodOperator`](https://airflow.apache.org/docs/stable/_api/airflow/contrib/operators/kubernetes_pod_operator/index.html) objects, which
 execute operations on a Docker image.
 
-To build a project you need to use the `bigflow build` command. The documentation you are reading is also a valid BigFlow
+To build a project you need to use the [`bigflow build`](./cli.md#building-airflow-dags) command. The documentation you are reading is also a valid BigFlow
 project. Go to the `docs` directory and run the `bigflow build` command to see how the build process works. The `bigflow build`
 command should produce three artifacts:
 
@@ -26,7 +26,7 @@ command should produce three artifacts:
 * The `image` directory with a deployment configuration and, optionally, with a Docker image as `.tar`
 * The `build` directory with JUnit test results
 
-The `bigflow build` command uses three subcommands to generate all the artifacts: `bigflow build-package`, `bigflow build-image`, `bigflow build-dags`.
+The `bigflow build` command uses three subcommands to generate all the artifacts: [`bigflow build-package`](./cli.md#building-pip-package), [`bigflow build-image`](./cli.md#building-docker-image), [`bigflow build-dags`](./cli.md#building-dag-files).
 
 Now, let us go through each building element in detail, starting from the Python package.
 
