@@ -15,7 +15,7 @@ from typing import Optional
 from bigflow import Config
 from bigflow.deploy import deploy_dags_folder, deploy_docker_image, load_image_from_tar, tag_image
 from bigflow.resources import find_file
-from bigflow.version import get_version
+from bigflow.version import get_version, release
 from .utils import run_process
 
 SETUP_VALIDATION_MESSAGE = 'BigFlow setup is valid.'
@@ -237,6 +237,7 @@ def _parse_args(project_name: Optional[str], args) -> Namespace:
     _create_build_parser(subparsers)
 
     _create_project_version_parser(subparsers)
+    _create_release_parser(subparsers)
 
     return parser.parse_args(args)
 
@@ -369,7 +370,7 @@ def _create_deploy_parser(subparsers):
                                                'to Composer and uploads Docker image to Container Registry.')
 
     _add_deploy_dags_parser_arguments(parser)
-    _add_deploy_image_parser_argumentss(parser)
+    _add_deploy_image_parser_arguments(parser)
     _add_deploy_parsers_common_arguments(parser)
 
 
@@ -378,7 +379,7 @@ def _create_deploy_image_parser(subparsers):
                                    description='Uploads Docker image to Container Registry.'
                                    )
 
-    _add_deploy_image_parser_argumentss(parser)
+    _add_deploy_image_parser_arguments(parser)
     _add_deploy_parsers_common_arguments(parser)
 
 
@@ -391,9 +392,17 @@ def _create_deploy_dags_parser(subparsers):
 
 
 def _create_project_version_parser(subparsers):
-    subparsers.add_parser('project-version', description='Prints project version')
+    subparsers.add_parser('project-version', aliases=['pv'], description='Prints project version')
 
-def _add_deploy_image_parser_argumentss(parser):
+def _create_release_parser(subparsers):
+    parser = subparsers.add_parser('release', description='Sets up new release tag')
+    parser.add_argument('-i', '--ssh_identity_file',
+                        type=str,
+                        help="Path to the identity file, used to authorize push to remote repository"
+                             " If not specified, default ssh configuration will be used.")
+
+
+def _add_deploy_image_parser_arguments(parser):
     group = parser.add_mutually_exclusive_group()
     group.required = True
     group.add_argument('-v', '--version',
@@ -552,6 +561,10 @@ def _cli_project_version(args):
     print(get_version())
 
 
+def _cli_release(args):
+    release(args.ssh_identity_file)
+
+
 def cli(raw_args) -> None:
     project_name = read_project_name_from_setup()
     parsed_args = _parse_args(project_name, raw_args)
@@ -576,7 +589,9 @@ def cli(raw_args) -> None:
         _cli_build_package()
     elif operation == 'build':
         _cli_build(parsed_args)
-    elif operation == 'project-version':
+    elif operation == 'project-version' or operation == 'pv':
         _cli_project_version(parsed_args)
+    elif operation == 'release':
+        _cli_release(parsed_args)
     else:
         raise ValueError(f'Operation unknown - {operation}')
