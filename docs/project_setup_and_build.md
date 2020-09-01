@@ -14,7 +14,7 @@ The scheme of a BigFlow deployment artifacts looks like this:
 Your project is turned into a standard Python package (which can be uploaded to [pypi](https://pypi.org/) or installed locally using `pip`). 
 Next, the package is closed into a Docker image with fixed Python version. Finally, there are Airflow DAGs that uses this image.
 
-A single DAG is generated based on the `bigflow.workflow.Workflow` class. 
+From each of your [workflows](./workflow-and-job.md#workflow), BigFlow generates a DAG file. 
 Produced DAG consists only of [`KubernetesPodOperator`](https://airflow.apache.org/docs/stable/_api/airflow/contrib/operators/kubernetes_pod_operator/index.html) objects, which
 execute operations on a Docker image.
 
