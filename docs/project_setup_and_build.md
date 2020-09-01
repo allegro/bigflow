@@ -72,7 +72,7 @@ have a directory inside the `resources` directory.
 
 There is a special function that allows you to access files from the `resources` directory, being inside the `project_package`.
 
-[`resources.py`](examples/project_structure_and_build/resources_workflow.py)
+[**`resources.py`**](examples/project_structure_and_build/resources_workflow.py)
 ```python
 with open(get_resource_absolute_path('example_resource.txt', Path(__file__))) as f:
     print(f.read())
