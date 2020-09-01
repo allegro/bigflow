@@ -59,7 +59,7 @@ The `project_package` is used to create a standard Python package that can be in
 It's based on the standard Python tool  — [setuptool](https://packaging.python.org/key_projects/#setuptools).
 
 There is also the special variable  — `PROJECT_NAME` inside the `project_setup.py`. In the example project, it is 
-`PROJECT_NAME = 'project_package'`. It tells BigFlow CLI, which package inside the `project_dir` is the main package with
+`PROJECT_NAME = 'project_package'`. It tells BigFlow CLI which package inside the `project_dir` is the main package with
 your processing logic and workflows.
 
 You can put your tests into the `test` package. The `bigflow build-package` command runs tests automatically, before trying to build the package.
