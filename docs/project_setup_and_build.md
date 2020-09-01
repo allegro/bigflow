@@ -5,7 +5,7 @@
 In this chapter, you will get to know the anatomy of the standard BigFlow project, deployment artifacts, and [CLI commands](./cli.md).
 
 The BigFlow build command packages your processing code into a Docker image. Thanks to this approach, you can create any
-environment you want for your pipelines. What is more, you don't need to worry about clashes with the Cloud Composer (Airflow) dependencies.
+environment you want for your pipelines. What is more, you don't need to worry about dependencies clashes on the Cloud Composer (Airflow).
 
 The scheme of a BigFlow artifact looks like this:
 
