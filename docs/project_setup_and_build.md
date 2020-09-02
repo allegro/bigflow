@@ -170,6 +170,8 @@ To run a job in a desired environment, BigFlow makes use of Docker. Each job is 
 which runs a Docker image built from your project. The default [`Dockerfile`](https://docs.docker.com/engine/reference/builder/)
 generated from the scaffolding tool looks like this:
 
+[**`Dockerfile`**](Dockerfile)
+
 ```dockerfile
 FROM python:3.7
 COPY ./dist /dist
@@ -181,7 +183,8 @@ RUN for i in /dist/*.whl; do pip install $i; done
 The basic image installs the generated Python package. With the installed package, you can run a workflow or a job
 from a Docker environment.
 
-Run the `bigflow build-image` command inside the [`docs`](../docs) project. Next, run the following command to run the example workflow from the docker:
+Run the `bigflow build-image` command inside the [`docs`](../docs) project. To build the example image, run the 
+following command to run the example workflow from the docker:
 
 ```shell script
 docker run bigflow-docs:0.1.0 bigflow run --job hello_world_workflow.hello_world
