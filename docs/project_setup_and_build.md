@@ -192,8 +192,6 @@ docker run bigflow-docs:0.1.0 bigflow run --job hello_world_workflow.hello_world
 
 And that's how jobs are being run after deployment, from a generated DAG. 
 
-You can, of course, modify the image to your own needs.
-
 ## DAG
 
 BigFlow generates Airflow DAGs from workflows that can be found in your project.
