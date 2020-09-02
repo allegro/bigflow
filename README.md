@@ -6,12 +6,8 @@
 1. [Getting started](#getting-started)
 1. [Help me](#help-me)
 1. [CLI](./docs/cli.md)
-    1. run
-    1. build
-    1. deploy
-    1. start-project
 1. [Configuration](./docs/configuration.md)
-1. Build
+1. [Project setup and build](./docs/project_setup_and_build.md)
 1. Deployment
     1. Cloud Composer
     1. Kubernetes

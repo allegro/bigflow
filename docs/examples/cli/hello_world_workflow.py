@@ -16,7 +16,9 @@ class SayGoodbyeJob:
     def run(self, runtime):
         print(f'Goodbye!')
 
-hello_world_workflow = Workflow(workflow_id='hello_world_workflow',
-                                definition=[
-                                            HelloWorldJob(),
-                                            SayGoodbyeJob()])
+
+hello_world_workflow = Workflow(
+    workflow_id='hello_world_workflow',
+    definition=[
+        HelloWorldJob(),
+        SayGoodbyeJob()])

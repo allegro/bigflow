@@ -1,4 +1,5 @@
-from bigflow.workflow import Workflow
+from bigflow.workflow import Workflow, hourly_start_time
+
 from datetime import datetime
 from datetime import timedelta
 
@@ -14,8 +15,8 @@ class HourlyJob:
 
 hourly_workflow = Workflow(
     workflow_id='hourly_workflow',
-    runtime_as_datetime=True,
     schedule_interval='@hourly',
+    start_time_expression_factory=hourly_start_time,
     definition=[HourlyJob()])
 
 if __name__ == '__main__':
