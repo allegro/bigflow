@@ -12,7 +12,7 @@ The schema of a BigFlow artifacts looks like this:
 ![BigFlow artifact scheme](./images/bigflow-artifact.png)
 
 Your project is turned into a standard Python package (which can be uploaded to [pypi](https://pypi.org/) or installed locally using `pip`). 
-Next, the package is closed into a Docker image with fixed Python version. Finally, there are Airflow DAGs which use this image.
+Next, the package is installed on a Docker image with fixed Python version. Finally, there are Airflow DAGs which use this image.
 
 From each of your [workflows](./workflow-and-job.md#workflow), BigFlow generates a DAG file. 
 Produced DAG consists only of [`KubernetesPodOperator`](https://airflow.apache.org/docs/stable/_api/airflow/contrib/operators/kubernetes_pod_operator/index.html) objects, which
