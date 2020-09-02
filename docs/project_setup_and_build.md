@@ -19,7 +19,7 @@ Produced DAG consists only of [`KubernetesPodOperator`](https://airflow.apache.o
 execute operations on a Docker image.
 
 To build a project you need to use the [`bigflow build`](./cli.md#building-airflow-dags) command. The documentation you are reading is also a valid BigFlow
-project. Go to the `docs` directory and run the `bigflow build` command to see how the build process works. 
+project. Go to the [`docs`](../docs) directory and run the `bigflow build` command to see how the build process works. 
 
 There are two types of artifacts which BigFlow produces:
 
@@ -31,7 +31,7 @@ The `bigflow build` command should produce:
 * The `dist` directory with a **Python package** (intermediate artifact)
 * The `build` directory with **JUnit test results** (intermediate artifact)
 * The `image` directory with a **deployment configuration** and **Docker image** as `.tar` (deployment artifact)
-* The `.dags` directory with Airflow DAGs, generated from workflows (deployment artifact)
+* The `.dags` directory with Airflow **DAGs**, generated from workflows (deployment artifact)
 
 The `bigflow build` command uses three subcommands to generate all the 
 artifacts: [`bigflow build-package`](./cli.md#building-pip-package), [`bigflow build-image`](./cli.md#building-docker-image), [`bigflow build-dags`](./cli.md#building-dag-files).
@@ -180,7 +180,7 @@ RUN for i in /dist/*.whl; do pip install $i; done
 As you can see, the basic image installs the generated Python package. With the installed package, you can run a workflow or a job
 from the Docker environment.
 
-Run the `bigflow build-image` command inside the `docs` project. Next, run the following command to run the example workflow from the docker:
+Run the `bigflow build-image` command inside the [`docs`](../docs) project. Next, run the following command to run the example workflow from the docker:
 
 ```shell script
 docker run bigflow-docs:0.1.0 bigflow run --job hello_world_workflow.hello_world
@@ -196,7 +196,7 @@ BigFlow generates Airflow DAGs from workflows that can be found in your project.
 
 A generated DAG utilizes only the [`KubernetesPodOperator`](https://airflow.apache.org/docs/stable/_api/airflow/contrib/operators/kubernetes_pod_operator/index.html).
 
-To see how it works, go to the `docs` project and run the `bigflow build-dags` command.
+To see how it works, go to the [`docs`](../docs) project and run the `bigflow build-dags` command.
 
 One of the generated DAGs, for the [`resources.py`](examples/project_structure_and_build/resources_workflow.py) workflow, looks like this:
 
