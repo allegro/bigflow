@@ -115,7 +115,7 @@ upload to `pypi` or install locally - `pip install your_generated_package.whl`.
 
 Go to the [`docs`](../docs) project and run the `bigflow build-package` command to observe the result. Now you can install the 
 generated package using `pip install dist/examples-0.1.0-py3-none-any.whl`. After you install the `.whl` file, you can
-run jobs and workflows from the `docs/examples` package. They are now installed in your virtual env, so you can run them
+run jobs and workflows from the `docs/examples` package. They are now installed in your virtual environment, so you can run them
 anywhere in your directory tree, for example:
 
 ```shell script
