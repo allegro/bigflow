@@ -104,7 +104,7 @@ Because a BigFlow project is a standard Python package, we suggest going through
 
 ### Package builder
 
-The `bigflow build-package` command takes 3 steps to build a Python package from your project:
+The `bigflow build-package` command takes three steps to build a Python package from your project:
 
 1. Cleans leftovers from a previous build.
 1. Runs tests from the `test` package and generates JUnit xml report, 
@@ -128,8 +128,8 @@ works as you expect in the form of a package (and not just as a package in your 
 
 ### Project versioning
 
-Artifacts, like Python packages and Docker images, need to be versioned. BigFlow provides automatic versioning based on 
-the git tags system. There are 2 commands you need to know.
+Deployment artifacts, like Docker images, need to be versioned. BigFlow provides automatic versioning based on 
+the git tags system. There are two commands you need to know.
 
 The `bigflow project-version` command prints the current version of your project:
 
