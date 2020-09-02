@@ -166,8 +166,8 @@ bigflow project-version
 
 ## Docker image
 
-To run a job in a desired environment, BigFlow makes use of Docker. Each job is executed from a Docker container, made
-from your project Docker image. The default image generated from the scaffolding tool looks like this:
+To run a job in a desired environment, BigFlow makes use of Docker. Each job is executed from a Docker container, 
+which runs a Docker image built from your project. The default image generated from the scaffolding tool looks like this:
 
 ```dockerfile
 FROM python:3.7
