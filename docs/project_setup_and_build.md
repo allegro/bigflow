@@ -2,17 +2,22 @@
 
 ## Overview
 
-In this chapter, you will get to know the anatomy of the standard BigFlow project, deployment artifacts, and [CLI commands](./cli.md).
+In this chapter, you will get to know the anatomy of a standard BigFlow project, deployment artifacts, and [CLI commands](./cli.md).
 
 The BigFlow build command packages your processing code into a Docker image. Thanks to this approach, you can create any
 environment you want for your workflows. What is more, you don't need to worry about dependencies clashes on the Cloud Composer (Airflow).
 
-The schema of a BigFlow artifacts looks like this:
+There are two types of artifacts which BigFlow produces:
+
+* Deployment artifact — that's a final build product which you deploy
+* Intermediate artifact — an element of a deployment artifact, or a by-product, typically useful for debugging
+
+The schema of a BigFlow deployment artifacts looks like this:
 
 ![BigFlow artifact schema](./images/bigflow-artifact.png)
 
 Your project is turned into a standard Python package (which can be uploaded to [pypi](https://pypi.org/) or installed locally using `pip`). 
-Next, the package is installed on a Docker image with fixed Python version. Finally, there are Airflow DAGs which use this image.
+Next, the package is installed on a Docker image with a fixed Python version. Finally, there are Airflow DAGs which use this image.
 
 From each of your [workflows](./workflow-and-job.md#workflow), BigFlow generates a DAG file. 
 Every produced DAG consists only of [`KubernetesPodOperator`](https://airflow.apache.org/docs/stable/_api/airflow/contrib/operators/kubernetes_pod_operator/index.html) objects, which
@@ -20,11 +25,6 @@ executes operations on a Docker image.
 
 To build a project you need to use the [`bigflow build`](./cli.md#building-airflow-dags) command. The documentation, you are reading, is also a valid BigFlow
 project. Go to the [`docs`](../docs) directory and run the `bigflow build` command to see how the build process works. 
-
-There are two types of artifacts which BigFlow produces:
-
-* Deployment artifact — that's a final build product which you deploy or a thing that is necessary for deployment
-* Intermediate artifact — a element of a deployment artifact or a by-product, typically useful for debugging
 
 The `bigflow build` command should produce:
 
@@ -237,3 +237,8 @@ print_resource_job = kubernetes_pod_operator.KubernetesPodOperator(
     dag=dag)
 ```
 
+Every [job](./workflow-and-job.md#job) in a [workflow](./workflow-and-job.md#workflow) maps to 
+[`KubernetesPodOperator`](https://airflow.apache.org/docs/stable/_api/airflow/contrib/operators/kubernetes_pod_operator/index.html).
+BigFlow sets a reasonable default values for the required operator arguments. You can modify 
+[some of them](./workflow-and-job.md#job), by setting properties on a job. 
+Similarly, you can modify a DAG properties, by setting [properties on a workflow](./workflow-and-job.md#workflow-scheduling-options).
