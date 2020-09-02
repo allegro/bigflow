@@ -107,7 +107,7 @@ Because every BigFlow project is a standard Python package, we suggest going thr
 The `bigflow build-package` command takes three steps to build a Python package from your project:
 
 1. Cleans leftovers from a previous build.
-1. Runs tests from the `test` package and generates JUnit xml report, 
+1. Runs tests from the `test` package and generates a JUnit xml report, 
 using the [`unittest-xml-reporting`](https://pypi.org/project/unittest-xml-reporting/) package. You can find the generated report
 inside the `project_dir/build/junit-reports` directory.
 1. Finally, `bigflow build-package` runs the `bdist_wheel` setup tools command. It generates a `.whl` package that you can
