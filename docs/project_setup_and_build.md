@@ -138,7 +138,7 @@ bigflow project-version
 >>> 0.34.0
 ```
 
-As you can see, the version scheme is a standard Python package version scheme:
+BigFlow follows the standard [semver](https://en.wikipedia.org/wiki/Software_versioning) schema:
 
 `<major>.<minor>.<patch>`
 
