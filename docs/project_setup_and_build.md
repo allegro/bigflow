@@ -77,7 +77,7 @@ along the `project_package` (so you can access these files after installation, f
 inside the `project_directory` won't be available in the `project_package`. `resources` can't be nested. So you can't
 have a directory inside the `resources` directory.
 
-The `get_resource_absolute_path` function allows you to access files from the `resources` directory, being inside the `project_package`.
+The `get_resource_absolute_path` function allows you to access files from the `resources` directory.
 
 [**`resources.py`**](examples/project_structure_and_build/resources_workflow.py)
 ```python
