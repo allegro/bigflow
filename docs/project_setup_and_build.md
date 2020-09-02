@@ -74,7 +74,7 @@ You can put your tests into the `test` package. The `bigflow build-package` comm
 
 The `resources` directory contains non-Python files. That is the only directory that will be packaged
 along the `project_package` (so you can access these files after installation, from the `project_package`). Any other files
-inside the `project_directory` won't be available for the `project_package`. `resources` can't be nested. So you can't
+inside the `project_directory` won't be available in the `project_package`. `resources` can't be nested. So you can't
 have a directory inside the `resources` directory.
 
 The `get_resource_absolute_path` function allows you to access files from the `resources` directory, being inside the `project_package`.
