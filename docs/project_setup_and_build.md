@@ -177,7 +177,7 @@ RUN apt-get -y update && apt-get install -y libzbar-dev libc-dev musl-dev
 RUN for i in /dist/*.whl; do pip install $i; done
 ```
 
-As you can see, the basic image installs the generated Python package. With the installed package, you can run a workflow or a job
+The basic image installs the generated Python package. With the installed package, you can run a workflow or a job
 from the Docker environment.
 
 Run the `bigflow build-image` command inside the [`docs`](../docs) project. Next, run the following command to run the example workflow from the docker:
