@@ -99,7 +99,7 @@ Welcome inside the example resource!
 
 The two remaining files  — `Dockerfile` and `deployment_config.py` don't take a part in the Python package build process.
 
-Because a BigFlow project is a standard Python package, we suggest going through the 
+Because every BigFlow project is a standard Python package, we suggest going through the 
 [official Python packaging tutorial](https://packaging.python.org/tutorials/packaging-projects/).
 
 ### Package builder
