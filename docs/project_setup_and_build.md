@@ -239,6 +239,6 @@ print_resource_job = kubernetes_pod_operator.KubernetesPodOperator(
 
 Every [job](./workflow-and-job.md#job) in a [workflow](./workflow-and-job.md#workflow) maps to 
 [`KubernetesPodOperator`](https://airflow.apache.org/docs/stable/_api/airflow/contrib/operators/kubernetes_pod_operator/index.html).
-BigFlow sets a reasonable default values for the required operator arguments. You can modify 
+BigFlow sets a reasonable default value for the required operator arguments. You can modify 
 [some of them](./workflow-and-job.md#job), by setting properties on a job. 
-Similarly, you can modify a DAG properties, by setting [properties on a workflow](./workflow-and-job.md#workflow-scheduling-options).
+Similarly, you can modify a DAG property, by setting [properties on a workflow](./workflow-and-job.md#workflow-scheduling-options).
