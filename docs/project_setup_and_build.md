@@ -142,7 +142,7 @@ BigFlow follows the standard [semver](https://en.wikipedia.org/wiki/Software_ver
 
 `<major>.<minor>.<patch>`
 
-If BigFlow finds a tag on the current commit, it uses it as a current project version. If there are commits after the last tag,
+If BigFlow finds a tag on a current commit, it uses it as a current project version. If there are commits after the last tag,
 it creates a snapshot version with the following scheme:
 
 `<major>.<minor>.<patch><snapshot_id>`
