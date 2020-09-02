@@ -15,7 +15,7 @@ Your project is turned into a standard Python package (which can be uploaded to 
 Next, the package is installed on a Docker image with fixed Python version. Finally, there are Airflow DAGs which use this image.
 
 From each of your [workflows](./workflow-and-job.md#workflow), BigFlow generates a DAG file. 
-Produced DAG consists only of [`KubernetesPodOperator`](https://airflow.apache.org/docs/stable/_api/airflow/contrib/operators/kubernetes_pod_operator/index.html) objects, which
+Every produced DAG consists only of [`KubernetesPodOperator`](https://airflow.apache.org/docs/stable/_api/airflow/contrib/operators/kubernetes_pod_operator/index.html) objects, which
 execute operations on a Docker image.
 
 To build a project you need to use the [`bigflow build`](./cli.md#building-airflow-dags) command. The documentation you are reading is also a valid BigFlow
