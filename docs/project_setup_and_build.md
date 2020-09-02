@@ -183,8 +183,7 @@ RUN for i in /dist/*.whl; do pip install $i; done
 The basic image installs the generated Python package. With the installed package, you can run a workflow or a job
 from a Docker environment.
 
-Run the `bigflow build-image` command inside the [`docs`](../docs) project. To build the example image, run the 
-following command to run the example workflow from the docker:
+Run the `bigflow build-image` command inside the [`docs`](../docs) project. Next, you can run the example workflow using Docker:
 
 ```shell script
 docker run bigflow-docs:0.1.0 bigflow run --job hello_world_workflow.hello_world
