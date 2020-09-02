@@ -7,7 +7,7 @@
 1. [Help me](#help-me)
 1. [CLI](./docs/cli.md)
 1. [Configuration](./docs/configuration.md)
-1. [Build](./docs/project_setup_and_build.md)
+1. [Project setup and build](./docs/project_setup_and_build.md)
 1. Deployment
     1. Cloud Composer
     1. Kubernetes
