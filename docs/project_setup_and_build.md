@@ -154,7 +154,7 @@ bigflow project-version
 >>> 0.34.0SHAdee9af83SNAPSHOT8650450a
 ```
 
-If you are ready to release new version, you don't have to set a new tag manually. You can use the `bigflow release` command:
+If you are ready to release a new version, you don't have to set a new tag manually. You can use the `bigflow release` command:
 
 ```
 bigflow project-version
