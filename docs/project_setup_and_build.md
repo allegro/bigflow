@@ -85,7 +85,7 @@ with open(get_resource_absolute_path('example_resource.txt', Path(__file__))) as
     print(f.read())
 ```
 
-Run the example above, using the following command:
+Run the above example, using the following command:
 
 ```shell script
 bigflow run --workflow resources_workflow
