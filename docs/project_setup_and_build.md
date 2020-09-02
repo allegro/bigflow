@@ -224,7 +224,7 @@ dag = DAG(
 )
 
 
-tprint_resource_job = kubernetes_pod_operator.KubernetesPodOperator(
+print_resource_job = kubernetes_pod_operator.KubernetesPodOperator(
     task_id='print-resource-job',
     name='print-resource-job',
     cmds=['bf'],
@@ -234,5 +234,6 @@ tprint_resource_job = kubernetes_pod_operator.KubernetesPodOperator(
     is_delete_operator_pod=True,
     retries=3,
     retry_delay= timedelta(seconds=60),
-    dag=dag)            
+    dag=dag)
 ```
+
