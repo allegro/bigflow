@@ -9,7 +9,7 @@ environment you want for your workflows. What is more, you don't need to worry a
 
 The schema of a BigFlow artifacts looks like this:
 
-![BigFlow artifact scheme](./images/bigflow-artifact.png)
+![BigFlow artifact schema](./images/bigflow-artifact.png)
 
 Your project is turned into a standard Python package (which can be uploaded to [pypi](https://pypi.org/) or installed locally using `pip`). 
 Next, the package is installed on a Docker image with fixed Python version. Finally, there are Airflow DAGs which use this image.
@@ -143,7 +143,7 @@ BigFlow follows the standard [semver](https://en.wikipedia.org/wiki/Software_ver
 `<major>.<minor>.<patch>`
 
 If BigFlow finds a tag on a current commit, it uses it as a current project version. If there are commits after the last tag,
-it creates a snapshot version with the following scheme:
+it creates a snapshot version with the following schema:
 
 `<major>.<minor>.<patch><snapshot_id>`
 
