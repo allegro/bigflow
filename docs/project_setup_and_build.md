@@ -5,9 +5,9 @@
 In this chapter, you will get to know the anatomy of the standard BigFlow project, deployment artifacts, and [CLI commands](./cli.md).
 
 The BigFlow build command packages your processing code into a Docker image. Thanks to this approach, you can create any
-environment you want for your pipelines. What is more, you don't need to worry about dependencies clashes on the Cloud Composer (Airflow).
+environment you want for your workflows. What is more, you don't need to worry about dependencies clashes on the Cloud Composer (Airflow).
 
-The schema of a BigFlow deployment artifacts looks like this:
+The schema of a BigFlow artifacts looks like this:
 
 ![BigFlow artifact scheme](./images/bigflow-artifact.png)
 
@@ -19,14 +19,22 @@ Produced DAG consists only of [`KubernetesPodOperator`](https://airflow.apache.o
 execute operations on a Docker image.
 
 To build a project you need to use the [`bigflow build`](./cli.md#building-airflow-dags) command. The documentation you are reading is also a valid BigFlow
-project. Go to the `docs` directory and run the `bigflow build` command to see how the build process works. The `bigflow build`
-command should produce three artifacts:
+project. Go to the `docs` directory and run the `bigflow build` command to see how the build process works. 
 
-* The `dist` directory with a Python package
-* The `image` directory with a deployment configuration and, optionally, with a Docker image as `.tar`
-* The `build` directory with JUnit test results
+There are two types of artifacts which BigFlow produces:
 
-The `bigflow build` command uses three subcommands to generate all the artifacts: [`bigflow build-package`](./cli.md#building-pip-package), [`bigflow build-image`](./cli.md#building-docker-image), [`bigflow build-dags`](./cli.md#building-dag-files).
+* Deployment artifact — that's a final build product which you deploy or a thing that is necessary for deployment
+* Intermediate artifact — a element of a deployment artifact or a by-product, typically useful for debugging
+
+The `bigflow build` command should produce:
+
+* The `dist` directory with a **Python package** (intermediate artifact)
+* The `build` directory with **JUnit test results** (intermediate artifact)
+* The `image` directory with a **deployment configuration** and **Docker image** as `.tar` (deployment artifact)
+* The `.dags` directory with Airflow DAGs, generated from workflows (deployment artifact)
+
+The `bigflow build` command uses three subcommands to generate all the 
+artifacts: [`bigflow build-package`](./cli.md#building-pip-package), [`bigflow build-image`](./cli.md#building-docker-image), [`bigflow build-dags`](./cli.md#building-dag-files).
 
 Now, let us go through each building element in detail, starting from the Python package.
 
@@ -56,9 +64,9 @@ a [DAG](https://en.wikipedia.org/wiki/Directed_acyclic_graph) (read the [Workflo
 The `project_package` is used to create a standard Python package that can be installed using `pip`.
 
 `project_setup.py` is the build script for the project. It turns the `project_package` into a `.whl` package. 
-It's based on the standard Python tool  — [setuptool](https://packaging.python.org/key_projects/#setuptools).
+It's based on the standard Python tool — [setuptool](https://packaging.python.org/key_projects/#setuptools).
 
-There is also the special variable  — `PROJECT_NAME` inside `project_setup.py`. In the example project, it is 
+There is also the special variable — `PROJECT_NAME` inside `project_setup.py`. In the example project, it is 
 `PROJECT_NAME = 'project_package'`. It tells BigFlow CLI which package inside the `project_dir` is the main package with
 your processing logic and workflows.
 
@@ -91,7 +99,7 @@ Welcome inside the example resource!
 
 The two remaining files  — `Dockerfile` and `deployment_config.py` don't take a part in the Python package build process.
 
-Because a BigFlow project is mainly a standard Python package, we suggest going through the 
+Because a BigFlow project is a standard Python package, we suggest going through the 
 [official Python packaging tutorial](https://packaging.python.org/tutorials/packaging-projects/).
 
 ### Package builder
@@ -156,7 +164,7 @@ bigflow project-version
 >>> 0.35.0
 ```
 
-## Image
+## Docker image
 
 To run a job in the desired environment, BigFlow makes use of Docker. Each job is executed from a Docker container, made
 from your project Docker image. The default image generated from the scaffolding tool looks like this:
