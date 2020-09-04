@@ -76,4 +76,5 @@ bigflow -h
 Read more about [BigFlow CLI](docs/cli.md).
 
 ## Help me
-TODO
+
+You can ask questions on our [Gitter channel](https://gitter.im/allegro/bigflow) or Stackoverflow.
