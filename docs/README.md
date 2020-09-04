@@ -18,4 +18,4 @@ Examples:
 
 `bigflow build`
 
-`bigflow build --workflow simple_workflow --start-time '2020-01-01 00:00:00' --export-image-to-file` 
+`bigflow build --workflow simple_workflow --start-time '2020-01-01 00:00:00'` 

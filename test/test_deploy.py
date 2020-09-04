@@ -1,10 +1,11 @@
 import os
 from unittest import TestCase, mock
+from pathlib import Path
 
 import responses
 
 from bigflow.dagbuilder import get_dags_output_dir, clear_dags_output_dir
-from bigflow.deploy import deploy_dags_folder, get_vault_token
+from bigflow.deploy import deploy_dags_folder, get_vault_token, deploy_docker_image
 
 
 class DeployTestCase(TestCase):
@@ -30,7 +31,7 @@ class DeployTestCase(TestCase):
         deploy_dags_folder(dags_dir=workdir + '/.dags', dags_bucket='europe-west1-1-bucket', project_id='', clear_dags_folder=True,
                            auth_method='local_account', gs_client=gs_client_mock)
 
-        #then
+        # then
         gs_client_mock.bucket.assert_called_with('europe-west1-1-bucket')
         users_dag_blob.delete.assert_called_with()
         dags_blob.delete.assert_not_called()
@@ -69,7 +70,7 @@ class DeployTestCase(TestCase):
         deploy_dags_folder(dags_dir=workdir + '/.dags', dags_bucket='europe-west1-1-bucket', project_id='', clear_dags_folder=False,
                            auth_method='local_account', gs_client=gs_client_mock)
 
-        #then
+        # then
         gs_client_mock.bucket.assert_called_with('europe-west1-1-bucket')
         f1_blob_mock.upload_from_filename.assert_called_with(f1.as_posix(), content_type='application/octet-stream')
         f2_blob_mock.upload_from_filename.assert_called_with(f2.as_posix(), content_type='application/octet-stream')
@@ -102,3 +103,45 @@ class DeployTestCase(TestCase):
             self.assertEqual(len(responses.calls), 1)
             self.assertEqual(responses.calls[0].request.url, 'https://example.com/v1/gcp/token')
             self.assertEqual(responses.calls[0].request.headers['X-Vault-Token'], 'secret')
+
+    @mock.patch('bigflow.deploy.decode_version_number_from_file_name')
+    @mock.patch('bigflow.deploy.load_image_from_tar')
+    @mock.patch('bigflow.deploy._deploy_image_loaded_to_local_registry')
+    @mock.patch('bigflow.deploy.remove_docker_image_from_local_registry')
+    def test_should_remove_image_from_local_registry_after_deploy(self,
+                                                                  remove_docker_image_from_local_registry,
+                                                                  _deploy_image_loaded_to_local_registry,
+                                                                  load_image_from_tar,
+                                                                  decode_version_number_from_file_name):
+        # given
+        decode_version_number_from_file_name.return_value = 'version123'
+        load_image_from_tar.return_value = 'image_id'
+
+        # when
+        deploy_docker_image('image-version123.tar', 'docker_repository')
+
+        # then
+        decode_version_number_from_file_name.assert_called_with(Path('image-version123.tar'))
+        load_image_from_tar.assert_called_with('image-version123.tar')
+        _deploy_image_loaded_to_local_registry.assert_called_with('version123', 'docker_repository', 'image_id', 'local_account', None, None)
+        remove_docker_image_from_local_registry.assert_called_with('version123')
+
+    @mock.patch('bigflow.deploy.decode_version_number_from_file_name')
+    @mock.patch('bigflow.deploy.load_image_from_tar')
+    @mock.patch('bigflow.deploy.tag_image')
+    @mock.patch('bigflow.deploy.remove_docker_image_from_local_registry')
+    def test_should_remove_image_from_local_registry_after_failed_deploy(self, remove_docker_image_from_local_registry,
+                                                                         tag_image, load_image_from_tar,
+                                                                         decode_version_number_from_file_name):
+
+        # given
+        decode_version_number_from_file_name.return_value = 'version123'
+        load_image_from_tar.return_value = 'image_id'
+
+        # when
+        with self.assertRaises(ValueError):
+            deploy_docker_image('image-version123.tar', 'docker_repository', 'invalid_auth_method')
+
+        # then
+        load_image_from_tar.assert_called_with('image-version123.tar')
+        remove_docker_image_from_local_registry.assert_called_with('version123')

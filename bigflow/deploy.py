@@ -7,7 +7,7 @@ import requests
 from typing import List
 from google.cloud import storage
 
-from .utils import run_process
+from .commons import run_process, decode_version_number_from_file_name, remove_docker_image_from_local_registry
 
 
 def os_call(cmd: List, input: str = None) -> CompletedProcess:
@@ -32,14 +32,25 @@ def tag_image(image_id, repository, tag):
 
 
 def deploy_docker_image(
-        build_ver: str,
+        image_tar_path: str,
         docker_repository: str,
         auth_method: str = 'local_account',
         vault_endpoint: str = None,
         vault_secret: str = None):
+    build_ver = decode_version_number_from_file_name(Path(image_tar_path))
+    image_id = load_image_from_tar(image_tar_path)
+    try:
+        return _deploy_image_loaded_to_local_registry(build_ver, docker_repository, image_id, auth_method,
+                                                      vault_endpoint, vault_secret)
+    finally:
+        remove_docker_image_from_local_registry(build_ver)
+
+
+def _deploy_image_loaded_to_local_registry(build_ver, docker_repository, image_id, auth_method, vault_endpoint,
+                                           vault_secret):
+    tag_image(image_id, docker_repository, build_ver)
     docker_image = docker_repository + ":" + build_ver
     print(f"Deploying docker image tag={docker_image} auth_method={auth_method}")
-
     if auth_method == 'local_account':
         os_call(['gcloud', 'auth', 'configure-docker'])
     elif auth_method == 'service_account':
@@ -48,7 +59,6 @@ def deploy_docker_image(
                 input=oauthtoken)
     else:
         raise ValueError('unsupported auth_method: ' + auth_method)
-
     os_call(['docker', 'push', docker_image])
     return docker_image
 

@@ -8,7 +8,7 @@ import tempfile
 from unittest import TestCase, mock
 
 from bigflow.version import VERSION_PATTERN, bump_minor, release, STARTING_VERSION
-from bigflow.utils import resolve
+from bigflow.commons import resolve
 
 NO_REPOSITORY_VERSION_PATTERN = re.compile(r'^0.1.0SNAPSHOT\w+$')
 NO_COMMITS_VERSION_PATTERN = NO_REPOSITORY_VERSION_PATTERN

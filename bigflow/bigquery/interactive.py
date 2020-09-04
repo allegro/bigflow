@@ -12,7 +12,7 @@ from .job import Job
 from .job import DEFAULT_RETRY_COUNT
 from .job import DEFAULT_RETRY_PAUSE_SEC
 from .dataset_manager import DEFAULT_LOCATION
-from ..utils import not_none_or_error
+from ..commons import not_none_or_error
 
 logger = logging.getLogger(__name__)
 

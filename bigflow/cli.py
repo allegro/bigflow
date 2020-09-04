@@ -11,12 +11,13 @@ from typing import Tuple, Iterator
 import importlib.util
 import bigflow as bf
 from typing import Optional
+from glob import glob1
 
 from bigflow import Config
-from bigflow.deploy import deploy_dags_folder, deploy_docker_image, load_image_from_tar, tag_image
+from bigflow.deploy import deploy_dags_folder, deploy_docker_image, load_image_from_tar
 from bigflow.resources import find_file
 from bigflow.version import get_version, release
-from .utils import run_process
+from .commons import run_process
 
 SETUP_VALIDATION_MESSAGE = 'BigFlow setup is valid.'
 
@@ -158,18 +159,6 @@ def find_root_package(project_name: Optional[str], project_dir: Optional[str]) -
         return Path(root_module.__file__.replace('__init__.py', ''))
 
 
-def _decode_version_number_from_file_name(file_path: Path):
-    if file_path.suffix != '.tar':
-        raise ValueError(f'*.tar file expected in {file_path.as_posix()}, got {file_path.suffix}')
-    if not file_path.is_file():
-        raise ValueError(f'File not found: {file_path.as_posix()}')
-
-    split = file_path.stem.split('-', maxsplit=1)
-    if not len(split) == 2:
-        raise ValueError(f'Invalid file name pattern: {file_path.as_posix()}, expected: *-{{version}}.tar, for example: image-0.1.0.tar')
-    return split[1]
-
-
 def import_deployment_config(deployment_config_path: str, property_name: str):
     if not Path(deployment_config_path).exists():
         raise ValueError(f"Can't find deployment_config.py at '{deployment_config_path}'. "
@@ -245,7 +234,6 @@ def _parse_args(project_name: Optional[str], args) -> Namespace:
 def _create_build_parser(subparsers):
     parser = subparsers.add_parser('build', description='Builds a Docker image, DAG files and .whl package from local sources.')
     _add_build_dags_parser_arguments(parser)
-    _add_build_image_parser_arguments(parser)
 
 
 def _create_build_package_parser(subparsers):
@@ -280,14 +268,6 @@ def _add_build_dags_parser_arguments(parser):
                         type=_valid_datetime)
 
 
-def _add_build_image_parser_arguments(parser):
-    parser.add_argument('-e', '--export-image-to-file',
-                        default=False,
-                        action="store_true",
-                        help="If set, an image is exported to a *.tar file. "
-                             "If empty, an image is loaded to a local Docker repository.")
-
-
 def _create_build_dags_parser(subparsers):
     parser = subparsers.add_parser('build-dags',
                                    description='Builds DAG files from local sources to {current_dir}/.dags')
@@ -295,9 +275,8 @@ def _create_build_dags_parser(subparsers):
 
 
 def _create_build_image_parser(subparsers):
-    parser = subparsers.add_parser('build-image',
-                                   description='Builds a docker image from local files.')
-    _add_build_image_parser_arguments(parser)
+    subparsers.add_parser('build-image',
+                          description='Builds a docker image from local files.')
 
 
 def _create_run_parser(subparsers, project_name):
@@ -394,21 +373,17 @@ def _create_deploy_dags_parser(subparsers):
 def _create_project_version_parser(subparsers):
     subparsers.add_parser('project-version', aliases=['pv'], description='Prints project version')
 
+
 def _create_release_parser(subparsers):
     parser = subparsers.add_parser('release', description='Creates a new release tag')
-    parser.add_argument('-i', '--ssh_identity_file',
+    parser.add_argument('-i', '--ssh-identity-file',
                         type=str,
                         help="Path to the identity file, used to authorize push to remote repository"
                              " If not specified, default ssh configuration will be used.")
 
 
 def _add_deploy_image_parser_arguments(parser):
-    group = parser.add_mutually_exclusive_group()
-    group.required = True
-    group.add_argument('-v', '--version',
-                        type=str,
-                        help='Version of a Docker image which is stored in a local Docker repository.')
-    group.add_argument('-i', '--image-tar-path',
+    parser.add_argument('-i', '--image-tar-path',
                         type=str,
                         help='Path to a Docker image file. The file name must contain version number with the following naming schema: image-{version}.tar')
     parser.add_argument('-r', '--docker-repository',
@@ -493,23 +468,26 @@ def _cli_deploy_image(args):
         vault_secret = _resolve_property(args, 'vault_secret')
     except ValueError:
         vault_secret = None
-    if args.image_tar_path:
-        build_ver = _decode_version_number_from_file_name(Path(args.image_tar_path))
-        image_id = load_image_from_tar(args.image_tar_path)
-        tag_image(image_id, docker_repository, build_ver)
-    else:
-        build_ver = args.version
+    image_tar_path = args.image_tar_path if args.image_tar_path  else find_image_file()
 
-    deploy_docker_image(build_ver=build_ver,
+    deploy_docker_image(image_tar_path=image_tar_path,
                         auth_method=args.auth_method,
                         docker_repository=docker_repository,
                         vault_endpoint=_resolve_vault_endpoint(args),
                         vault_secret=vault_secret)
 
 
+def find_image_file():
+    files = glob1("image", "*-*.tar")
+    if files:
+        return os.path.join("image", files[0])
+    else:
+        raise ValueError('File containing image to deploy not found')
+
+
 def _cli_build_image(args):
     validate_project_setup()
-    cmd = 'python project_setup.py build_project --build-image' + (' --export-image-to-file' if args.export_image_to_file else '')
+    cmd = 'python project_setup.py build_project --build-image'
     run_process(cmd)
 
 
@@ -540,8 +518,6 @@ def _cli_build(args):
     if args.start_time:
         cmd.append('--start-time')
         cmd.append(args.start_time)
-    if args.export_image_to_file:
-        cmd.append('--export-image-to-file')
     run_process(cmd)
 
 

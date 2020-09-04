@@ -266,42 +266,10 @@ bigflow build-package
 
 The `build-image` command builds 
 a Docker image with Python, your project's PIP package, and
-all requirements. It has one optional parameter :
-
-* `--export-image-to-file` &mdash; If set, an image is exported to a `tar` file.
-  If empty, an image is loaded to a local Docker repository.
-                             
-For example, build a Docker image to a local registry:
+all requirements. Next, the image is exported to a `tar` file in the `{current_dir}/image` dir.
 
 ```shell
 bigflow build-image
-```               
-       
-Output:       
-                  
-```text
-Successfully built dad5352cd6b1
-Successfully tagged eu.gcr.io/docker_repository_project/my-project:0.6.0-bgqdev067a90ae
-```                  
-                  
-Check if the image is loaded to your local registry:
-
-```shell
-docker images
-```          
-
-Output:
-
-```text
-REPOSITORY                                           TAG                    IMAGE ID            CREATED             SIZE
-eu.gcr.io/docker_repository_project/my-project       0.6.0-bgqdev067a90ae   dad5352cd6b1        1 minute ago        909MB
-```                 
-
-Build a Docker image to a `tar` file, which can be used as a build artifact
-on your CI/CD server:
-
-```shell
-bigflow build-image --export-image-to-file
 ``` 
 
 Output:
@@ -430,7 +398,7 @@ Configuration is taken from `{current_dir}/deployment_config.py`:
 bigflow deploy-dags --config dev
 ```
 
-Upload DAG files from a given dir  using `service_account` authentication.
+Upload DAG files from a given dir using `service_account` authentication.
 Configuration is specified via command line arguments:
 
 ```bash  
@@ -446,14 +414,15 @@ bigflow deploy-dags \
 
 #### Deploy Docker image examples
 
-Upload a Docker image from a local repository using `local_account` authentication.
+Upload a Docker image imported from a `.tar` using `local_account` authentication.
+The first file from the `{current_dir}/image` dir with a name matching pattern `.*-.*\.tar` will be used.
 Configuration is taken from `{current_dir}/deployment_config.py`:
 
 ```bash
-bigflow deploy-image --version 1.0 --config dev
+bigflow deploy-image --config dev
 ```
 
-Upload a Docker image exported to a `.tar` file using `service_account` authentication.
+Upload a Docker image imported from a specific `.tar` file using `service_account` authentication.
 Configuration is specified via command line arguments:
 
 ```bash
@@ -467,17 +436,20 @@ bigflow deploy-image \
 
 #### Complete deploy examples
 
-Upload DAG files from `{current_dir}/.dags` dir and a Docker image from a local repository using `local_account` authentication.
+Upload DAG files from the `{current_dir}/.dags` dir and a Docker image from the `{current_dir}/image` dir using `local_account` authentication.
 Configuration is taken from `{current_dir}/deployment_config.py`:
 
 ```bash
-bigflow deploy --version 1.0 --config dev
+bigflow deploy --config dev
 ```
 
-The same, but configuration is taken from a given file:
+The same, but a configuration and a docker image are taken from the specified files:
 
 ```bash
-bigflow deploy --version 1.0 --config dev --deployment-config-path '/tmp/my_deployment_config.py'
+bigflow deploy \
+--config dev \
+--deployment-config-path '/tmp/my_deployment_config.py' \
+--image-tar-path '/tmp/image-0.1.0-tar' 
 ```
 
 Upload DAG files from a given dir and a Docker image exported to a `.tar` file using `service_account` authentication.
