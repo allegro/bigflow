@@ -6,29 +6,10 @@ It lets you run, build, and deploy your workflows from command-line on any machi
 BigFlow CLI is the recommended way of working with BigFlow projects
 on a local machine as well as for build and deployment automation on CI/CD servers.  
 
-## Installing BigFlow CLI
+## Getting started with BigFlow CLI
 
-Prerequisites:
-
-1. [Python](https://www.python.org/downloads/) 3.7
-2. [Google Cloud SDK](https://cloud.google.com/sdk/docs/downloads-interactive)
-3. [Docker Engine](https://docs.docker.com/engine/install/)  
-
-
-You can install the `bigflow` package globally but we recommend to 
-install it locally with `venv`, in your project's folder:
-
-```bash
-python -m venv .bigflow_env
-source .bigflow_env/bin/activate
-cd .bigflow_env
-```
-
-Install the `bigflow` package:
-
-```bash
-pip install bigflow
-```
+Start from [installing BigFlow](../README.md#installing-bigflow) PIP package 
+in a fresh `venv` in your project directory.
 
 Test it:
 
@@ -39,9 +20,15 @@ bigflow -h
 You should see the welcome message and the list of all `bigflow` commands:
 
 ```text
-Welcome to BiggerQuery CLI. Type: bigflow {run,deploy-dags,deploy-
-image,deploy,build,build-dags,build-image,build-package} -h to print detailed
+Welcome to BiggerQuery CLI. Type: bigflow {command} -h to print detailed
 help for a selected command.
+
+positional arguments:
+  {run,deploy-dags,deploy-image,deploy,build-dags,build-image,build-package,build,start-project,project-version}
+                        BigFlow command to execute
+
+optional arguments:
+  -h, --help            show this help message and exit
 ```
 
 Each command has its own set of arguments. Check it with `-h`, for example:
