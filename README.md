@@ -4,7 +4,7 @@
 
 1. [What is BigFlow?](#what-is-bigflow)
 1. [Getting started](#getting-started)
-1. [Installing Bigflow](#nstalling-bigflow)
+1. [Installing Bigflow](#installing-bigflow)
 1. [Help me](#help-me)
 1. [CLI](docs/cli.md)
 1. [Configuration](./docs/configuration.md)
