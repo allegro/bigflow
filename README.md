@@ -77,4 +77,4 @@ Read more about [BigFlow CLI](docs/cli.md).
 
 ## Help me
 
-You can ask questions on our [Gitter channel](https://gitter.im/allegro/bigflow) or Stackoverflow.
+You can ask questions on our [gitter channel](https://gitter.im/allegro/bigflow) or [stackoverflow](https://stackoverflow.com/questions/tagged/bigflow).
