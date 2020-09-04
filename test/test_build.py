@@ -1,5 +1,6 @@
 import os
 import json
+import shutil
 from pathlib import Path
 import subprocess
 from unittest import TestCase, mock
@@ -7,7 +8,7 @@ from unittest import TestCase, mock
 from bigflow.cli import walk_module_files, SETUP_VALIDATION_MESSAGE
 from bigflow.build import now, get_docker_image_id, build_docker_image_tag, auto_configuration, \
     get_docker_repository_from_deployment_config, project_setup, secure_get_version, default_project_setup, \
-    clear_image_leftovers, clear_dags_leftovers, clear_package_leftovers
+    clear_image_leftovers, clear_dags_leftovers, clear_package_leftovers, build_image
 from example_project.project_setup import DOCKER_REPOSITORY, PROJECT_NAME
 
 TEST_PROJECT_PATH = Path(__file__).parent / 'example_project'
@@ -33,6 +34,10 @@ def mkdir(dir_path: Path):
     if not os.path.isdir(dir_path):
         os.mkdir(dir_path)
 
+
+def rmdir(dir_path: Path):
+    if dir_path.exists() and dir_path.is_dir():
+        shutil.rmtree(dir_path)
 
 def create_image_leftovers(test_project_dir_path: Path = TEST_PROJECT_PATH):
     mkdir(test_project_dir_path / 'image')
@@ -139,7 +144,8 @@ class BuildProjectE2E(SetupTestCase):
         self.assertTrue(python_package_built())
         self.assertTrue(test_run())
         self.assertTrue(dags_built(TEST_PROJECT_PATH, 2))
-        self.assertTrue(docker_image_built_in_registry(DOCKER_REPOSITORY, '0.1.0'))
+        self.assertTrue(docker_image_as_file_built())
+        self.assertFalse(docker_image_built_in_registry(DOCKER_REPOSITORY, '0.1.0'))
         self.assertTrue(deployment_config_copied())
 
         # and
@@ -222,19 +228,36 @@ class BuildImageCommandE2E(SetupTestCase):
 
         # then
         self.assertFalse(image_leftovers_exist())
-        self.assertTrue(docker_image_built_in_registry(DOCKER_REPOSITORY, '0.1.0'))
-        self.assertTrue(deployment_config_copied())
-
-    def test_should_export_image_to_file(self):
-        # given
-        self.test_project.run_build('python project_setup.py build_project --build-package')
-
-        # when
-        self.test_project.run_build('python project_setup.py build_project --build-image --export-image-to-file')
-
-        # then
+        self.assertFalse(docker_image_built_in_registry(DOCKER_REPOSITORY, '0.1.0'))
         self.assertTrue(docker_image_as_file_built())
         self.assertTrue(deployment_config_copied())
+
+
+class BuildImageTest(TestCase):
+
+    @mock.patch('bigflow.build.build_docker_image_tag')
+    @mock.patch('bigflow.build.build_docker_image')
+    @mock.patch('bigflow.build.export_docker_image_to_file')
+    @mock.patch('bigflow.build.remove_docker_image_from_local_registry')
+    def test_should_remove_image_from_local_registry_when_export_to_image_failed(self,
+                                                                                 remove_docker_image_from_local_registry,
+                                                                                 export_docker_image_to_file,
+                                                                                 build_docker_image,
+                                                                                 build_docker_image_tag):
+        # given
+        image_dir_path = Path('image_dir')
+        rmdir(image_dir_path)
+        export_docker_image_to_file.side_effect = Exception('export failed')
+        build_docker_image_tag.return_value = 'tag_value'
+
+
+        # when:
+        with self.assertRaises(Exception):
+            build_image('docker_repository', 'v1', Path('project_dir'), image_dir_path, Path('deployment_config'))
+
+        # then
+        build_docker_image.assert_called_with(Path('project_dir'), 'tag_value')
+        remove_docker_image_from_local_registry.assert_called_with('tag_value')
 
 
 class AutoConfigurationTestCase(TestCase):

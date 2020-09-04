@@ -1,7 +1,7 @@
 from collections import OrderedDict
 from typing import Optional
 from datetime import datetime
-from .utils import now
+from .commons import now
 
 DEFAULT_SCHEDULE_INTERVAL = '@daily'
 

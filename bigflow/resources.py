@@ -2,7 +2,7 @@ import os
 import time
 from typing import List, Iterable
 from pathlib import Path
-from .utils import resolve
+from .commons import resolve
 
 __all__ = [
     'find_all_resources',

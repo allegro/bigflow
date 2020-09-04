@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-import subprocess
 import shutil
 import distutils.cmd
 import setuptools
@@ -12,9 +11,8 @@ import xmlrunner
 from .cli import walk_workflows, import_deployment_config, _valid_datetime, SETUP_VALIDATION_MESSAGE
 from .dagbuilder import generate_dag_file
 from .resources import read_requirements, find_all_resources
-from .utils import resolve, now
+from .commons import resolve, now, run_process, remove_docker_image_from_local_registry, get_docker_image_id
 from .version import get_version
-from .utils import run_process
 
 
 __all__ = [
@@ -30,16 +28,6 @@ def run_tests(build_dir: Path, test_package: Path):
     result = runner.run(suite)
     if result.errors:
         raise ValueError('Test suite failed.')
-
-
-def get_docker_image_id(tag):
-    images = subprocess.getoutput(f"docker images -q {tag}")
-    return images.split('\n')[0]
-
-
-def remove_docker_image_from_local_registry(tag):
-    print('Removing the image from the local registry')
-    run_process(f"docker rmi {get_docker_image_id(tag)}")
 
 
 def export_docker_image_to_file(tag: str, target_dir: Path, version: str):
@@ -82,19 +70,15 @@ def build_image(
         version: str,
         project_dir: Path,
         image_dir: Path,
-        deployment_config: Path,
-        image_as_file: bool):
+        deployment_config: Path):
     os.mkdir(image_dir)
     tag = build_docker_image_tag(docker_repository, version)
     build_docker_image(project_dir, tag)
-    if image_as_file:
-        export_image_to_file(tag, image_dir, version)
-    shutil.copyfile(deployment_config, image_dir / resolve(deployment_config).split(os.sep)[-1])
-
-
-def export_image_to_file(tag, image_dir, version):
-    export_docker_image_to_file(tag, image_dir, version)
-    remove_docker_image_from_local_registry(tag)
+    try:
+        export_docker_image_to_file(tag, image_dir, version)
+        shutil.copyfile(deployment_config, image_dir / resolve(deployment_config).split(os.sep)[-1])
+    finally:
+        remove_docker_image_from_local_registry(tag)
 
 
 def build_command(
@@ -118,7 +102,6 @@ def build_command(
             ('build-image', None, 'Builds the Docker image.'),
             ('start-time=', None, 'DAGs start time -- given in local timezone, for example: 2020-06-27 15:00:00'),
             ('workflow=', None, 'The workflow that you want to build DAG for.'),
-            ('export-image-to-file', None, 'If used, builder will save the Docker image to tar and remove image from the local registry.'),
             ('validate-project-setup', None, 'If used, echoes a message that can be used by the CLI to determine if the setup is working.'),
         ]
 
@@ -128,7 +111,6 @@ def build_command(
             self.build_package = False
             self.build_image = False
             self.workflow = None
-            self.export_image_to_file = False
             self.validate_project_setup = False
 
         def should_run_whole_build(self):
@@ -168,8 +150,7 @@ def build_command(
                     version,
                     project_dir,
                     image_dir,
-                    deployment_config,
-                    self.export_image_to_file)
+                    deployment_config)
 
     return BuildCommand
 

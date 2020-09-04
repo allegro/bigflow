@@ -39,3 +39,25 @@ class ExtrasRequiredError(ImportError):
 
 def merge_dicts(dict1, dict2):
     return {**dict1, **dict2}
+
+
+def decode_version_number_from_file_name(file_path: Path):
+    if file_path.suffix != '.tar':
+        raise ValueError(f'*.tar file expected in {file_path.as_posix()}, got {file_path.suffix}')
+    if not file_path.is_file():
+        raise ValueError(f'File not found: {file_path.as_posix()}')
+
+    split = file_path.stem.split('-', maxsplit=1)
+    if not len(split) == 2:
+        raise ValueError(f'Invalid file name pattern: {file_path.as_posix()}, expected: *-{{version}}.tar, for example: image-0.1.0.tar')
+    return split[1]
+
+
+def get_docker_image_id(tag):
+    images = subprocess.getoutput(f"docker images -q {tag}")
+    return images.split('\n')[0]
+
+
+def remove_docker_image_from_local_registry(tag):
+    print('Removing the image from the local registry')
+    run_process(f"docker rmi {get_docker_image_id(tag)}")

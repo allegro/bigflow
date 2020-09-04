@@ -2,7 +2,6 @@ from unittest import TestCase
 import mock
 
 from bigflow.cli import *
-from bigflow.cli import _decode_version_number_from_file_name
 
 
 class CliTestCase(TestCase):
@@ -253,42 +252,13 @@ class CliTestCase(TestCase):
         self.assertEqual(ids, import_module("test_module.Unused1").started_jobs)
 
 
-    def test_should_decode_version_number_from_file_name(self):
-        # given
-        f_release = self._touch_file('image-0.1.0.tar')
-        f_dev = self._touch_file('image-0.3.0.dev-4b45b638.tar')
 
-        # expect
-        self.assertEqual(_decode_version_number_from_file_name(f_release), '0.1.0')
-        self.assertEqual(_decode_version_number_from_file_name(f_dev), '0.3.0.dev-4b45b638')
 
-        f_release.unlink()
-        f_dev.unlink()
 
-    def test_should_raise_error_when_given_image_file_is_not_tar(self):
-        # given
-        f = self._touch_file('image-0.1.0.zip')
 
-        with self.assertRaises(ValueError):
-            # when
-            _decode_version_number_from_file_name(f)
 
-        f.unlink()
 
-    def test_should_raise_error_when_given_file_name_has_wrong_pattern(self):
-        # given
-        f = self._touch_file('image.0.1.0.tar')
 
-        with self.assertRaises(ValueError):
-            # when
-            _decode_version_number_from_file_name(f)
-
-        f.unlink()
-
-    def test_should_raise_error_when_given_file_does_not_exists(self):
-        with self.assertRaises(ValueError):
-            # when
-            _decode_version_number_from_file_name(Path('/Users/image-0.1122123.0.tar'))
 
     def test_should_raise_error_when_deployment_config_is_needed_but_missing(self):
         with self.assertRaises(ValueError):
@@ -455,12 +425,12 @@ deployment_config = Config(name='dev',
         ''')
 
         # when
-        cli(['deploy-image', '-v', '0.0.2'])
+        cli(['deploy-image', '--image-tar-path', 'image-0.0.2.tar'])
 
         #then
         deploy_docker_image_mock.assert_called_with(auth_method='local_account',
                                                     docker_repository='my-docker--repository',
-                                                    build_ver='0.0.2',
+                                                    image_tar_path='image-0.0.2.tar',
                                                     vault_endpoint=None,
                                                     vault_secret=None)
 
@@ -482,7 +452,7 @@ deployment_config = Config(name='dev',
 
         # when
         cli(['deploy-image',
-             '-v', '0.0.3',
+             '--image-tar-path', 'image-0.0.3.tar',
              '--deployment-config-path', dc_file.as_posix(),
              '--auth-method', 'service_account',
              '--vault-secret', 'secrett'
@@ -491,7 +461,7 @@ deployment_config = Config(name='dev',
         # then
         deploy_docker_image_mock.assert_called_with(auth_method='service_account',
                                                     docker_repository='my-another-docker-repository',
-                                                    build_ver='0.0.3',
+                                                    image_tar_path='image-0.0.3.tar',
                                                     vault_endpoint='my-another-vault-endpoint',
                                                     vault_secret='secrett')
 
@@ -499,14 +469,10 @@ deployment_config = Config(name='dev',
 
     @mock.patch('bigflow.cli.load_image_from_tar')
     @mock.patch('bigflow.cli.deploy_docker_image')
-    @mock.patch('bigflow.cli.tag_image')
-    def test_should_call_cli_deploy_image_command__when_all_parameters_are_given_by_cli_arguments_and_image_is_loaded_from_tar(self, tag_image, deploy_docker_image_mock, load_image_from_tar_mock):
-        #given
-        tar = self._touch_file('image-0.0.1.tar')
-
+    def test_should_call_cli_deploy_image_command__when_all_parameters_are_given_by_cli_arguments_and_image_is_loaded_from_tar(self, deploy_docker_image_mock, load_image_from_tar_mock):
         #when
         cli(['deploy-image',
-             '--image-tar-path', tar.as_posix(),
+             '--image-tar-path', 'image-0.0.1.tar',
              '--docker-repository', 'my-docker-repository',
              '--vault-endpoint', 'my-vault-endpoint',
              '--auth-method', 'service_account',
@@ -516,11 +482,31 @@ deployment_config = Config(name='dev',
         #then
         deploy_docker_image_mock.assert_called_with(auth_method='service_account',
                                                     docker_repository='my-docker-repository',
-                                                    build_ver='0.0.1',
+                                                    image_tar_path='image-0.0.1.tar',
                                                     vault_endpoint='my-vault-endpoint',
                                                     vault_secret='secrett')
 
-        tar.unlink()
+    @mock.patch('bigflow.cli.deploy_docker_image')
+    def test_should_find_tar_in_image_directory(self, deploy_docker_image_mock):
+        #given
+        dc_file = self._touch_file('image-123.tar', '', 'image')
+
+        #when
+        cli(['deploy-image',
+             '--docker-repository', 'my-docker-repository',
+             '--vault-endpoint', 'my-vault-endpoint',
+             '--auth-method', 'service_account',
+             '--vault-secret', 'secrett'
+            ])
+
+        #then
+        deploy_docker_image_mock.assert_called_with(auth_method='service_account',
+                                                    docker_repository='my-docker-repository',
+                                                    image_tar_path='image/image-123.tar',
+                                                    vault_endpoint='my-vault-endpoint',
+                                                    vault_secret='secrett')
+
+        dc_file.unlink()
 
     @mock.patch('bigflow.cli.deploy_dags_folder')
     @mock.patch('bigflow.cli.deploy_docker_image')
@@ -539,7 +525,7 @@ deployment_config = Config(name='dev',
         ''')
 
         # when
-        cli(['deploy', '-v', '0.0.2'])
+        cli(['deploy', '-i', 'my-images/image-version'])
 
         # then
         deploy_dags_folder_mock.assert_called_with(auth_method='local_account',
@@ -552,7 +538,7 @@ deployment_config = Config(name='dev',
 
         deploy_docker_image_mock.assert_called_with(auth_method='local_account',
                                                     docker_repository='my-docker--repository',
-                                                    build_ver='0.0.2',
+                                                    image_tar_path='my-images/image-version',
                                                     vault_endpoint=None,
                                                     vault_secret=None)
 
@@ -600,13 +586,7 @@ deployment_config = Config(name='dev',
         cli(['build-image'])
 
         # then
-        _cli_build_image_mock.assert_called_with(Namespace(operation='build-image', export_image_to_file=False))
-
-        # when
-        cli(['build-image', '-e'])
-
-        # then
-        _cli_build_image_mock.assert_called_with(Namespace(operation='build-image', export_image_to_file=True))
+        _cli_build_image_mock.assert_called_with(Namespace(operation='build-image'))
 
     @mock.patch('bigflow.cli.run_process')
     @mock.patch('bigflow.cli.validate_project_setup')
@@ -636,28 +616,19 @@ deployment_config = Config(name='dev',
         cli(['build'])
 
         # then
-        _cli_build_mock.assert_called_with(Namespace(operation='build', export_image_to_file=False,
-                                                     start_time=None, workflow=None))
-        # when
-        cli(['build', '--export-image-to-file'])
-
-        # then
-        _cli_build_mock.assert_called_with(Namespace(operation='build', export_image_to_file=True,
-                                                     start_time=None, workflow=None))
+        _cli_build_mock.assert_called_with(Namespace(operation='build', start_time=None, workflow=None))
 
         # when
-        cli(['build', '--export-image-to-file', '--start-time', '2020-01-01 00:00:00'])
+        cli(['build', '--start-time', '2020-01-01 00:00:00'])
 
         # then
-        _cli_build_mock.assert_called_with(Namespace(operation='build', export_image_to_file=True,
-                                                     start_time='2020-01-01 00:00:00', workflow=None))
+        _cli_build_mock.assert_called_with(Namespace(operation='build', start_time='2020-01-01 00:00:00', workflow=None))
 
         # when
-        cli(['build', '--export-image-to-file', '--start-time', '2020-01-01 00:00:00', '--workflow', 'some_workflow'])
+        cli(['build', '--start-time', '2020-01-01 00:00:00', '--workflow', 'some_workflow'])
 
         # then
-        _cli_build_mock.assert_called_with(Namespace(operation='build', export_image_to_file=True,
-                                                     start_time='2020-01-01 00:00:00', workflow='some_workflow'))
+        _cli_build_mock.assert_called_with(Namespace(operation='build', start_time='2020-01-01 00:00:00', workflow='some_workflow'))
 
     @mock.patch('bigflow.cli.run_process')
     @mock.patch('bigflow.cli.validate_project_setup')
@@ -731,7 +702,7 @@ deployment_config = Config(name='dev',
     @mock.patch('bigflow.cli.release')
     def test_should_call_cli_release_command_with_identity_file(self, release):
         # when
-        cli(['release', '--ssh_identity_file', 'path/to/identity_file'])
+        cli(['release', '--ssh-identity-file', 'path/to/identity_file'])
 
         # then
         release.assert_called_once_with('path/to/identity_file')
@@ -747,8 +718,12 @@ deployment_config = Config(name='dev',
     def _expected_default_dags_dir(self):
         return (Path(os.getcwd()) / '.dags').as_posix()
 
-    def _touch_file(self, file_name: str, content: str = ''):
-        workdir = Path(os.getcwd())
+    def _touch_file(self, file_name: str, content: str = '', directory: Optional[str] = None):
+        if directory:
+            workdir = Path(os.path.join(os.getcwd(), directory))
+            workdir.mkdir(exist_ok=True)
+        else:
+            workdir = Path(os.getcwd())
         f = workdir / file_name
         f.touch()
         f.write_text(content)
