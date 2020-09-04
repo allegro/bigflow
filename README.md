@@ -4,7 +4,7 @@
 
 1. [What is BigFlow?](#what-is-bigflow)
 1. [Getting started](#getting-started)
-1. [Installing Bigflow](#installing)
+1. [Installing Bigflow](#nstalling-bigflow)
 1. [Help me](#help-me)
 1. [CLI](docs/cli.md)
 1. [Configuration](./docs/configuration.md)
@@ -40,7 +40,6 @@ You can install the `bigflow` package globally but we recommend to
 install it locally with `venv`, in your project's folder:
 
 ```bash
-cd {my_project_dir}
 python -m venv .bigflow_env
 source .bigflow_env/bin/activate
 ```
