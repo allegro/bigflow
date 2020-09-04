@@ -267,7 +267,7 @@ class CliTestCase(TestCase):
 
     @mock.patch('bigflow.cli.deploy_dags_folder')
     def test_should_call_cli_deploy_dags_command__with_defaults_and_with_implicit_deployment_config_file(self, deploy_dags_folder_mock):
-        #given
+        # given
         dc_file = self._touch_file('deployment_config.py',
         '''
 from bigflow import Config
@@ -280,10 +280,10 @@ deployment_config = Config(name='dev',
                            })
         ''')
 
-        #when
+        # when
         cli(['deploy-dags'])
 
-        #then
+        # then
         deploy_dags_folder_mock.assert_called_with(auth_method='local_account',
                                                    clear_dags_folder=False,
                                                    dags_bucket='my-dags-bucket',
@@ -370,14 +370,14 @@ deployment_config = Config(name='dev',
                         })
         ''')
 
-        #when
+        # when
         cli(['deploy-dags',
              '--deployment-config-path', dc_file.as_posix(),
              '--dags-dir', '/tmp/my-dags-dir',
              '--auth-method', 'service_account'
             ])
 
-        #then
+        # then
         deploy_dags_folder_mock.assert_called_with(auth_method='service_account',
                                                    clear_dags_folder=False,
                                                    dags_bucket='my-another-dags-bucket',
@@ -390,7 +390,7 @@ deployment_config = Config(name='dev',
 
     @mock.patch('bigflow.cli.deploy_dags_folder')
     def test_should_call_cli_deploy_dags_command__when_all_parameters_are_given_by_cli_arguments(self, deploy_dags_folder_mock):
-        #when
+        # when
         cli(['deploy-dags',
              '--dags-bucket', 'my-dags-bucket',
              '--dags-dir', '/tmp/my-dags-dir',
@@ -401,7 +401,7 @@ deployment_config = Config(name='dev',
              '--vault-secret', 'secrett'
             ])
 
-        #then
+        # then
         deploy_dags_folder_mock.assert_called_with(auth_method='service_account',
                                                    clear_dags_folder=True,
                                                    dags_bucket='my-dags-bucket',
@@ -427,7 +427,7 @@ deployment_config = Config(name='dev',
         # when
         cli(['deploy-image', '--image-tar-path', 'image-0.0.2.tar'])
 
-        #then
+        # then
         deploy_docker_image_mock.assert_called_with(auth_method='local_account',
                                                     docker_repository='my-docker--repository',
                                                     image_tar_path='image-0.0.2.tar',
@@ -470,7 +470,7 @@ deployment_config = Config(name='dev',
     @mock.patch('bigflow.cli.load_image_from_tar')
     @mock.patch('bigflow.cli.deploy_docker_image')
     def test_should_call_cli_deploy_image_command__when_all_parameters_are_given_by_cli_arguments_and_image_is_loaded_from_tar(self, deploy_docker_image_mock, load_image_from_tar_mock):
-        #when
+        # when
         cli(['deploy-image',
              '--image-tar-path', 'image-0.0.1.tar',
              '--docker-repository', 'my-docker-repository',
@@ -479,7 +479,7 @@ deployment_config = Config(name='dev',
              '--vault-secret', 'secrett'
             ])
 
-        #then
+        # then
         deploy_docker_image_mock.assert_called_with(auth_method='service_account',
                                                     docker_repository='my-docker-repository',
                                                     image_tar_path='image-0.0.1.tar',
@@ -488,10 +488,10 @@ deployment_config = Config(name='dev',
 
     @mock.patch('bigflow.cli.deploy_docker_image')
     def test_should_find_tar_in_image_directory(self, deploy_docker_image_mock):
-        #given
+        # given
         dc_file = self._touch_file('image-123.tar', '', 'image')
 
-        #when
+        # when
         cli(['deploy-image',
              '--docker-repository', 'my-docker-repository',
              '--vault-endpoint', 'my-vault-endpoint',
@@ -499,7 +499,7 @@ deployment_config = Config(name='dev',
              '--vault-secret', 'secrett'
             ])
 
-        #then
+        # then
         deploy_docker_image_mock.assert_called_with(auth_method='service_account',
                                                     docker_repository='my-docker-repository',
                                                     image_tar_path='image/image-123.tar',

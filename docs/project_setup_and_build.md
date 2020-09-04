@@ -164,7 +164,7 @@ bigflow project-version
 >>> 0.35.0
 ```
 
-If needed, you can specify an identity file for ssh, used to push the tag to remote repository.
+If needed, you can specify an identity file for ssh, used to push a tag to a remote repository.
 
 ```
 bigflow release --ssh-identity-file /path/to/id_rsa

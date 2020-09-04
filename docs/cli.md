@@ -266,7 +266,7 @@ bigflow build-package
 
 The `build-image` command builds 
 a Docker image with Python, your project's PIP package, and
-all requirements. Next, image is exported to a `tar` file in `{current_dir}/image` dir.
+all requirements. Next, the image is exported to a `tar` file in the `{current_dir}/image` dir.
 
 ```shell
 bigflow build-image
@@ -414,15 +414,15 @@ bigflow deploy-dags \
 
 #### Deploy Docker image examples
 
-Upload a Docker image exported to a `.tar` using `local_account` authentication.
-First file from `{current_dir}/image` dir with name matching pattern `.*-.*\.tar` will be used.
+Upload a Docker image imported from a `.tar` using `local_account` authentication.
+The first file from the `{current_dir}/image` dir with a name matching pattern `.*-.*\.tar` will be used.
 Configuration is taken from `{current_dir}/deployment_config.py`:
 
 ```bash
 bigflow deploy-image --config dev
 ```
 
-Upload a Docker image exported to a specific `.tar` file using `service_account` authentication.
+Upload a Docker image imported from a specific `.tar` file using `service_account` authentication.
 Configuration is specified via command line arguments:
 
 ```bash
@@ -436,14 +436,14 @@ bigflow deploy-image \
 
 #### Complete deploy examples
 
-Upload DAG files from `{current_dir}/.dags` dir and a Docker image from `{current_dir}/image` dir using `local_account` authentication.
+Upload DAG files from the `{current_dir}/.dags` dir and a Docker image from the `{current_dir}/image` dir using `local_account` authentication.
 Configuration is taken from `{current_dir}/deployment_config.py`:
 
 ```bash
 bigflow deploy --config dev
 ```
 
-The same, but configuration and docker image are taken from specified files:
+The same, but a configuration and a docker image are taken from the specified files:
 
 ```bash
 bigflow deploy \

@@ -31,7 +31,7 @@ class DeployTestCase(TestCase):
         deploy_dags_folder(dags_dir=workdir + '/.dags', dags_bucket='europe-west1-1-bucket', project_id='', clear_dags_folder=True,
                            auth_method='local_account', gs_client=gs_client_mock)
 
-        #then
+        # then
         gs_client_mock.bucket.assert_called_with('europe-west1-1-bucket')
         users_dag_blob.delete.assert_called_with()
         dags_blob.delete.assert_not_called()
@@ -70,7 +70,7 @@ class DeployTestCase(TestCase):
         deploy_dags_folder(dags_dir=workdir + '/.dags', dags_bucket='europe-west1-1-bucket', project_id='', clear_dags_folder=False,
                            auth_method='local_account', gs_client=gs_client_mock)
 
-        #then
+        # then
         gs_client_mock.bucket.assert_called_with('europe-west1-1-bucket')
         f1_blob_mock.upload_from_filename.assert_called_with(f1.as_posix(), content_type='application/octet-stream')
         f2_blob_mock.upload_from_filename.assert_called_with(f2.as_posix(), content_type='application/octet-stream')
@@ -138,8 +138,10 @@ class DeployTestCase(TestCase):
         decode_version_number_from_file_name.return_value = 'version123'
         load_image_from_tar.return_value = 'image_id'
 
+        # when
         with self.assertRaises(ValueError):
             deploy_docker_image('image-version123.tar', 'docker_repository', 'invalid_auth_method')
 
+        # then
         load_image_from_tar.assert_called_with('image-version123.tar')
         remove_docker_image_from_local_registry.assert_called_with('version123')

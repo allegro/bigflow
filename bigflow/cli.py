@@ -468,7 +468,7 @@ def _cli_deploy_image(args):
         vault_secret = _resolve_property(args, 'vault_secret')
     except ValueError:
         vault_secret = None
-    image_tar_path = args.image_tar_path if args.image_tar_path  else _find_image_file()
+    image_tar_path = args.image_tar_path if args.image_tar_path  else find_image_file()
 
     deploy_docker_image(image_tar_path=image_tar_path,
                         auth_method=args.auth_method,
@@ -477,9 +477,9 @@ def _cli_deploy_image(args):
                         vault_secret=vault_secret)
 
 
-def _find_image_file():
+def find_image_file():
     files = glob1("image", "*-*.tar")
-    if len(files):
+    if files:
         return os.path.join("image", files[0])
     else:
         raise ValueError('File containing image to deploy not found')
