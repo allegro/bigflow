@@ -8,8 +8,8 @@ on a local machine as well as for build and deployment automation on CI/CD serve
 
 ## Getting started with BigFlow CLI
 
-[Installing BigFlow](../README.md#installing-bigflow) PIP package 
-in a fresh `venv` in your project directory.
+[Install](../README.md#installing-bigflow) the BigFlow PIP package 
+in a fresh [`venv`](https://docs.python.org/3/library/venv.html) in your project directory.
 
 Test BigFlow CLI:
 
@@ -38,10 +38,10 @@ bigflow run -h
 
 ## Commands Cheat Sheet
 
-Complete sources for all examples are available in this repository 
+Complete sources for Cheat Sheet examples are available in this repository 
 as a part of the [Docs](https://github.com/allegro/bigflow/tree/master/docs) project.
 
-If you have [BigFlow](../README.md#installing-bigflow) installed &mdash; you can run them.
+If you have BigFlow [installed](../README.md#installing-bigflow) &mdash; you can easily run them.
   
 ```
 git clone https://github.com/allegro/bigflow.git
@@ -50,14 +50,15 @@ cd bigflow/docs
 
 ### Running workflows
 
-The `bigflow run` command lets you run a job or a workflow for a given `runtime`.
-It runs your source code on your local machine (without deploying it to Airflow/Composer). 
+The `bigflow run` command lets you run a [job](workflow-and-job.md#job) or a [workflow](workflow-and-job.md#workflow)
+for a given [runtime](workflow-and-job.md#the-runtime-parameter).
 
-Typically, `bigflow run` is used for local development because it's the simplest way to execute a workflow.
+Typically, `bigflow run` is used for **local development** because it's the simplest way to execute a workflow.
 It's not recommended to be used on production, because:
 
-* It's driven from a local machine. If you kill or suspend a `bigflow run` process, what happens on GCP is undefined.
-* It uses [local authentication](#authentication-methods) so it relies on permissions of your Google account.
+* No deploying to Airflow/Composer is done.
+* The `bigflow run` process is executed on a local machine. If you kill or suspend it, what happens on GCP is undefined.
+* It uses [local authentication](deployment.md#local-account-authentication) so it relies on permissions of your Google account.
 * It executes a job or workflow only once
   (while on production environment you probably want your workflows to be run periodically by Composer).
 
@@ -83,7 +84,7 @@ bigflow run --job hello_world_workflow.say_goodbye
 **Run the workflow with concrete runtime**
 
 When running a workflow or a job with CLI, [the runtime parameter](workflow-and-job.md#the-runtime-parameter) 
-is defaulted to now. You can set it to concrete value using the `--runtime` argument. 
+is defaulted to *now*. You can set it to concrete value using the `--runtime` argument. 
 
 ```shell
 bigflow run --workflow hello_world_workflow --runtime '2020-08-01 10:00:00'
@@ -91,9 +92,16 @@ bigflow run --workflow hello_world_workflow --runtime '2020-08-01 10:00:00'
 
 **Run the workflow on selected environment**
 
-To select a required environment, use the `config` parameter.
-Execute the [`hello_config_workflow.py`](examples/cli/hello_config_workflow.py) workflow with specified
-config:
+If you don't set the `config` parameter,
+the workflow configuration (environment)
+is taken from the the [defaul](configuration.md#default-configuration)
+config (`dev` in this case):
+  
+```shell
+bigflow run --workflow hello_config_workflow 
+```
+ 
+Select the concrete environment using the `config` parameter.
 
 ```shell
 bigflow run --workflow hello_config_workflow --config dev
@@ -102,16 +110,16 @@ bigflow run --workflow hello_config_workflow --config prod
 
 ### Building Airflow DAGs
 
-There are four commands to [build](project_setup_and_build.md) 
-[deployment artifacts](deployment.md#deployment-artifacts) from your project:
+There are four commands to [build](project_setup_and_build.md)  your
+[deployment artifacts](deployment.md#deployment-artifacts):
 
 1. `build-dags` generates Airflow DAG files from your workflows. 
-    DAG files are saved to the local `.dags` dir.
+    DAG files are saved to a local `.dags` dir.
 1. `build-package` generates a PIP package from your project based on `project_setup.py`.
 1. `build-image` generates a Docker image with this package and all requirements.
 1. `build` simply runs `build-dags`, `build-package`, and `build-image`.
 
-Before using build commands make sure that you have
+Before using the build commands make sure that you have
 a valid [`deployment_config.py`](deployment.md#managing-configuration-in-deployment_configpy) file.
 It should define the `docker_repository` parameter. 
 
@@ -129,9 +137,8 @@ The `build-dags` command takes two optional parameters:
 * `--start-time` &mdash; the first [runtime](workflow-and-job.md#the-runtime-parameter)
   of your workflows. If empty, a current hour (`datetime.datetime.now().replace(minute=0, second=0, microsecond=0)`)
   is used for hourly workflows and `datetime.date.today()` for daily workflows.
-* `--workflow` &mdash;  
-   Leave empty to build DAGs from all workflows.
-   Set a workflow Id to build selected workflow only.
+* `--workflow` &mdash; leave empty to build DAGs from all workflows.
+   Set a workflow Id to build a selected workflow only.
 
 
 **Build DAG files for all workflows with default `start-time`:**
@@ -140,28 +147,29 @@ The `build-dags` command takes two optional parameters:
 bigflow build-dags
 ```
 
-**Build the DAG file for the single [`hello_config_workflow.py`](examples/cli/hello_config_workflow.py)
+**Build the DAG file for the [`hello_config_workflow.py`](examples/cli/hello_config_workflow.py) workflow
   with given `start-time`:**
 
 ```shell
 bigflow build-dags --workflow hello_world_workflow --start-time '2020-08-01 10:00:00'
 ```
 
-**Building PIP package**
+**Building a PIP package**
 
 Call the `build-package` command to build a PIP package from your project.
-The command requires no parameters, all configuration is taken from `project_setup.py`. 
-Your PIP package is saved to a `wheel` file in `dist` dir. 
+The command requires no parameters, all configuration is taken from `project_setup.py`
+(see [project_setup_and_build.md](project_setup_and_build.md)). 
+Your PIP package is saved to a `wheel` file in the `dist` dir. 
 
 ```shell
 bigflow build-package
 ```
 
-**Building Docker image**
+**Building a Docker image**
 
 The `build-image` command builds 
 a Docker image with Python, your project's PIP package, and
-all requirements. Next, the image is exported to a `tar` file in the `{current_dir}/image` dir.
+all requirements. Next, the image is exported to a `tar` file in the `./image` dir.
 
 ```shell
 bigflow build-image
@@ -232,7 +240,7 @@ bigflow deploy-dags \
 
 **Deploy Docker image**
 
-Upload a Docker image imported from a `.tar` file with default path
+Upload a Docker image imported from a `.tar` file with the default path
 (default path is: the first file from the `image` dir with a name with pattern `.*-.*\.tar`). 
 Configuration is taken from [`deployment_config.py`](deployment.md#managing-configuration-in-deployment_configpy),
 [local account](deployment.md#local-account-authentication) authentication:
@@ -241,7 +249,7 @@ Configuration is taken from [`deployment_config.py`](deployment.md#managing-conf
 bigflow deploy-image --config dev
 ```
 
-Upload a Docker image imported from a `.tar` file with given path.
+Upload a Docker image imported from the `.tar` file with the given path.
 Configuration is passed via command line arguments,
 [service account](deployment.md#service-account-authentication) authentication:
 
@@ -264,7 +272,7 @@ Configuration is taken from [`deployment_config.py`](deployment.md#managing-conf
 bigflow deploy --config dev
 ```
 
-The same, but the config (environment) name if [defaulted](configuration.md#default-configuration) to `dev`:
+The same, but the config (environment) name is [defaulted](configuration.md#default-configuration) to `dev`:
 
  ```shell
 bigflow deploy
