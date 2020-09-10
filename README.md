@@ -29,7 +29,7 @@ BigFlow is a Python framework for data processing pipelines on [GCP](https://clo
 The main features are:
 
 * [Dockerized jobs](./docs/project_setup_and_build.md#overview)
-* [Powerful CLI](./docs/cheatsheet.md)
+* [Powerful CLI](./docs/cli.md)
 * [Automated build](./docs/project_setup_and_build.md#overview), [deployment](./docs/deployment.md), 
 [versioning](./docs/project_setup_and_build.md#project-versioning) and [configuration](./docs/configuration.md)
 * [Unified project structure](./docs/project_setup_and_build.md#project-structure)
