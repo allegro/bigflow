@@ -24,7 +24,7 @@
 
 ## What is BigFlow?
 
-BigFlow is a Python framework for data processing pipelines on [GCP](https://cloud.google.com/). 
+BigFlow is a Python framework for data processing pipelines on [GCP](https://cloud.google.com/).
 
 The main features are:
 
@@ -34,7 +34,7 @@ The main features are:
 [versioning](./docs/project_setup_and_build.md#project-versioning) and [configuration](./docs/configuration.md)
 * [Unified project structure](./docs/project_setup_and_build.md#project-structure)
 * [Support for the major data processing technologies](./docs/utils.md) — [Dataproc](https://cloud.google.com/dataproc),
-[Apache Beam](https://beam.apache.org/), [BigQuery](https://cloud.google.com/bigquery)
+[Apache Beam](https://beam.apache.org/) and [BigQuery](https://cloud.google.com/bigquery)
 * [Project starter](./docs/scaffold.md)
 
 ## Getting started
