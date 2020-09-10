@@ -14,12 +14,12 @@
     1. Kubernetes
     1. Vault
 1. [Workflow & Job](./docs/workflow-and-job.md)
-1. Starter
-1. Utils
+1. [Starter](./docs/scaffold.md)
+1. Technologies
     1. BigQuery
     1. Apache Beam
     1. Dataproc
-    1. Job monitoring
+1. Job monitoring
 1. Roadmap
 
 ## What is BigFlow?
