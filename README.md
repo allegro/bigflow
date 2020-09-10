@@ -39,7 +39,7 @@ The main features are:
 ## Getting started
 
 Start from [setting up a development environment](#installing-bigflow). 
-Next, go through [the BigFlow tutorial](./docs/tutorial.md). 
+Next, go through the BigFlow [tutorial](./docs/tutorial.md). 
 
 ## Installing BigFlow
 
