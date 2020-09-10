@@ -30,6 +30,10 @@ because it integrates seamlessly with Composer.
 
 **//TODO** 
 
+## Kubernetes
+
+**//TODO** 
+
 ## Managing configuration in deployment_config.py
 
 Deploy commands require a lot of configuration. You can pass all parameters directly as command line arguments,
@@ -86,4 +90,4 @@ Service account method is typically used on CI/CD servers.
 It allows you to authenticate with a [service account](https://cloud.google.com/iam/docs/service-accounts) 
 as long as you have a [Vault](https://www.vaultproject.io/) server for managing OAuth tokens.
 
-**//TODO** describe vault integration
+## Vault
