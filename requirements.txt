@@ -1,7 +1,7 @@
 -r requirements/base.txt
 -r requirements/monitoring_extras.txt
 -r requirements/bigquery_extras.txt
-setuptools==45.2.0
+setuptools==49.6.0
 wheel
 twine
 freezegun

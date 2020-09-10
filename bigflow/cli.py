@@ -1,6 +1,7 @@
 import argparse
 import importlib
 import os
+import subprocess
 import sys
 from argparse import Namespace
 from datetime import datetime
@@ -16,6 +17,7 @@ from glob import glob1
 from bigflow import Config
 from bigflow.deploy import deploy_dags_folder, deploy_docker_image, load_image_from_tar
 from bigflow.resources import find_file
+from bigflow.scaffold import start_project
 from bigflow.version import get_version, release
 from .commons import run_process
 
@@ -227,8 +229,13 @@ def _parse_args(project_name: Optional[str], args) -> Namespace:
 
     _create_project_version_parser(subparsers)
     _create_release_parser(subparsers)
+    _create_start_project_parser(subparsers)
 
     return parser.parse_args(args)
+
+
+def _create_start_project_parser(subparsers):
+    subparsers.add_parser('start-project', description='Creates a scaffolding project in a current directory.')
 
 
 def _create_build_parser(subparsers):
@@ -521,6 +528,85 @@ def _cli_build(args):
     run_process(cmd)
 
 
+def project_type_input():
+    project_type = input("Would you like to create basic or advanced project? Default basic. Type 'a' for advanced.\n")
+    return project_type if project_type else 'b'
+
+
+def project_number_input():
+    project_number = input('How many GCP projects would you like to use? '
+                           'It allows to deploy your workflows to more than one project. Default 2\n')
+    return project_number if project_number else '2'
+
+
+def gcloud_project_list():
+    return subprocess.getoutput('gcloud projects list')
+
+
+def get_default_project_from_gcloud():
+    return subprocess.getoutput('gcloud config get-value project')
+
+
+def project_id_input(n):
+    if n == 0:
+        project = input(f'Enter a GCP project ID that you are going to use in your BigFlow project. '
+                        f'Choose a project from the list above. '
+                        f'If not provided default project: {get_default_project_from_gcloud()} will be used.\n')
+    else:
+        project = input(f'Enter a #{n} GCP project ID that you are going to use in your BigFlow project. '
+                        f'Choose a project from the list above.'
+                        f' If not provided default project: {get_default_project_from_gcloud()} will be used.\n')
+    return project
+
+
+def gcp_project_flow(n):
+    projects_list = gcloud_project_list()
+    print(projects_list)
+    return gcp_project_input(n, projects_list)
+
+
+def gcp_project_input(n, projects_list):
+    project = project_id_input(n)
+    if project == '':
+        return get_default_project_from_gcloud()
+    if project not in projects_list:
+        print(f'You do not have access to {project}. Try another project from the list.\n')
+        return gcp_project_input(n, projects_list)
+    return project
+
+
+def gcp_bucket_input():
+    return input('Enter a Cloud Composer Bucket name where DAG files will be stored.\n')
+
+
+def environment_name_input(envs):
+    environment_name = input('Enter an environment name. Default dev\n')
+    if environment_name in envs:
+        print(f'Environment with name{environment_name} is already defined. Try another name.\n')
+        return environment_name_input(envs)
+    return environment_name if environment_name else 'dev'
+
+
+def project_name_input():
+    return input('Enter the project name. It should be valid python package name. '
+                 'It will be used as a main directory of your project and bucket name used by dataflow to run jobs.\n')
+
+
+def _cli_start_project():
+    config = {'is_basic': False, 'project_name': project_name_input(), 'projects_id': [], 'composers_bucket': [], 'envs': []}
+    if False:
+        for n in range(0, int(project_number_input())):
+            config['projects_id'].append(gcp_project_flow(n))
+            config['composers_bucket'].append(gcp_bucket_input())
+            config['envs'].append(environment_name_input(config['envs']))
+    else:
+        config['is_basic'] = True
+        config['projects_id'].append(gcp_project_flow(0))
+        config['composers_bucket'].append(gcp_bucket_input())
+    start_project(config)
+    print('Bigflow project created successfully.')
+
+
 def check_if_project_setup_exists():
     find_file('project_setup.py', Path('.'), 1)
 
@@ -565,6 +651,8 @@ def cli(raw_args) -> None:
         _cli_build_package()
     elif operation == 'build':
         _cli_build(parsed_args)
+    elif operation == 'start-project':
+        _cli_start_project()
     elif operation == 'project-version' or operation == 'pv':
         _cli_project_version(parsed_args)
     elif operation == 'release':

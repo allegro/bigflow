@@ -467,3 +467,6 @@ bigflow deploy \
 --gcp-project-id my_gcp_dev_project \
 --clear-dags-folder
 ```
+
+## Scaffold project
+Use a `bigflow start-project` command to create a [sample project](scaffold.md) and try all of the above commands yourself.
