@@ -41,9 +41,6 @@ The main features are:
 Start from [setting up a development environment](#installing-bigflow). 
 Next, go through [the BigFlow tutorial](./docs/tutorial.md). 
 
-Finally, you can dig into details about [project setup and build](./docs/project_setup_and_build.md), [deployment](./docs/deployment.md),
-[configuration](./docs/configuration.md), [workflows and jobs](./docs/workflow-and-job.md), [data processing technologies support](./docs/utils.md).
-
 ## Installing BigFlow
 
 **Prerequisites**. Before you start, make sure you have the following software installed:
