@@ -35,6 +35,7 @@ The main features are:
 * [Unified project structure](./docs/project_setup_and_build.md#project-structure)
 * [Support for the major data processing technologies](./docs/utils.md) — [Dataproc](https://cloud.google.com/dataproc),
 [Apache Beam](https://beam.apache.org/), [BigQuery](https://cloud.google.com/bigquery)
+* [Project starter](./docs/scaffold.md)
 
 ## Getting started
 
