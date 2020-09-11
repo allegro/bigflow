@@ -10,9 +10,11 @@ There are two deployment artifacts:
 1. Airflow DAG files with workflows definitions,
 1. Docker image with workflows computation code.
 
+## GCP runtime environment
+
 **//TODO** 
 
-## Google Cloud Composer
+### Cloud Composer
 
 **//TODO** 
 
@@ -20,7 +22,7 @@ There are two deployment artifacts:
 
 **//TODO** 
 
-## Docker Registry
+### Docker Registry
 
 [Docker Registry](https://docs.docker.com/registry/) is a repository
 where your Docker images are stored.
@@ -30,7 +32,7 @@ because it integrates seamlessly with Composer.
 
 **//TODO** 
 
-## Kubernetes
+### Kubernetes
 
 **//TODO** 
 

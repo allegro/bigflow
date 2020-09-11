@@ -190,7 +190,7 @@ On this stage, you should have two [deployment artifacts](deployment.md#deployme
 created by the [`bigflow build`](#building-airflow-dags) command.
 
 There are three commands to [deploy](deployment.md) your workflows
-to [Google Cloud Composer](deployment.md#google-cloud-composer):
+to [Google Cloud Composer](deployment.md#cloud-composer):
 
 1. `deploy-dags` uploads all DAG files from a `.dags` folder to
    a Google Cloud Storage **Bucket** which underlies your [Composer's DAGs Folder](deployment.md#composers-dags-folder).

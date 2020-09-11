@@ -11,7 +11,7 @@
 1. [Configuration](./docs/configuration.md)
 1. [Project setup and build](./docs/project_setup_and_build.md)
 1. [Deployment](docs/deployment.md)
-    1. [Cloud Composer](docs/deployment.md#google-cloud-composer)
+    1. [Cloud Composer](docs/deployment.md#cloud-composer)
     1. [Docker Registry](docs/deployment.md#docker-registry)
     1. [Kubernetes](docs/deployment.md#kubernetes)
     1. [Vault](docs/deployment.md#vault)
