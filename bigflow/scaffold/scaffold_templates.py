@@ -53,9 +53,8 @@ advanced_deployment_config_template = '''.add_configuration(name='{env}',
                                'gcp_project_id': '{project_id}',
                                'dags_bucket': '{dags_bucket}'}})
 '''
-requirements_template = f'''bigflow[bigquery]==1.0.dev30
-apache-beam==2.23.0
-wheel==0.35.1
+requirements_template = f'''bigflow[bigquery]==1.0.dev33
+apache-beam[gcp]==2.23.0
 '''
 
 project_setup_template = '''from bigflow.build import default_project_setup
