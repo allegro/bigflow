@@ -11,7 +11,7 @@ import xmlrunner
 from .cli import walk_workflows, import_deployment_config, _valid_datetime, SETUP_VALIDATION_MESSAGE
 from .dagbuilder import generate_dag_file
 from .resources import read_requirements, find_all_resources
-from .commons import resolve, now, run_process, remove_docker_image_from_local_registry, get_docker_image_id
+from .commons import resolve, now, run_process, remove_docker_image_from_local_registry, get_docker_image_id, build_docker_image_tag
 from .version import get_version
 
 
@@ -59,10 +59,6 @@ def build_dags(
             start_time,
             version,
             resolve(root_package).split(os.sep)[-1])
-
-
-def build_docker_image_tag(docker_repository: str, package_version: str):
-    return docker_repository + ':' + package_version
 
 
 def build_image(

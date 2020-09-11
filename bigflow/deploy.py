@@ -7,7 +7,7 @@ import requests
 from typing import List
 from google.cloud import storage
 
-from .commons import run_process, decode_version_number_from_file_name, remove_docker_image_from_local_registry
+from .commons import run_process, decode_version_number_from_file_name, remove_docker_image_from_local_registry, build_docker_image_tag
 
 
 def os_call(cmd: List, input: str = None) -> CompletedProcess:
@@ -43,7 +43,7 @@ def deploy_docker_image(
         return _deploy_image_loaded_to_local_registry(build_ver, docker_repository, image_id, auth_method,
                                                       vault_endpoint, vault_secret)
     finally:
-        remove_docker_image_from_local_registry(build_ver)
+        remove_docker_image_from_local_registry(build_docker_image_tag(docker_repository, build_ver))
 
 
 def _deploy_image_loaded_to_local_registry(build_ver, docker_repository, image_id, auth_method, vault_endpoint,

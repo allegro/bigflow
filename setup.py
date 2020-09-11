@@ -18,7 +18,7 @@ with open(os.path.join('requirements', 'bigquery_extras.txt'), 'r') as bigquery_
 
 setuptools.setup(
     name="bigflow",
-    version="1.0.dev33",
+    version="1.0.dev34",
     author=u"Chi",
     author_email="chibox-team@allegrogroup.com",
     description="BigQuery client wrapper with clean API",
