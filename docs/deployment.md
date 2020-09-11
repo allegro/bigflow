@@ -38,13 +38,13 @@ because it integrates seamlessly with Composer.
 
 ## Managing configuration in deployment_config.py
 
-Deploy commands require a lot of configuration. You can pass all parameters directly as command line arguments,
+Deploy commands require a lot of configuration. You can pass all parameters directly as command-line arguments,
 or save them in a `{project_dir}`deployment_config.py` file.
 
 For local development and for most CI/CD scenarios we recommend using a `deployment_config.py` file.
 This file has to contain a [`bigflow.Config`](configuration.md) 
 object stored in the `deployment_config` variable
-and can be placed in a main folder of your project.
+and can be placed in the main folder of your project.
 
 `deployment_config.py` example:
 
@@ -63,7 +63,7 @@ deployment_config = Config(name='dev',
                                'dags_bucket': 'europe-west1-654321-bucket'})
 ``` 
 
-Having that, you can run extremely concise `deploy` command, for example:  
+Having that, you can run the extremely concise `deploy` command, for example:  
 
 ```bash 
 bigflow deploy-dags --config dev
@@ -78,7 +78,7 @@ Bigflow supports two GCP authentication methods: **local account** and **service
 
 ### Local Account Authentication
 
-Local account method is used for local development.
+The local account method is used for local development.
 It relies on your local user `gcloud` account.
 Check if you are authenticated by typing:
 
@@ -88,8 +88,11 @@ gcloud info
 
 ### Service Account Authentication
 
-Service account method is typically used on CI/CD servers.
+The Service account method is typically used on CI/CD servers.
 It allows you to authenticate with a [service account](https://cloud.google.com/iam/docs/service-accounts) 
 as long as you have a [Vault](https://www.vaultproject.io/) server for managing OAuth tokens.
 
 ## Vault
+
+
+**//TODO** 

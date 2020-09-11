@@ -1,7 +1,7 @@
 # BigFlow Tutorial
 
-In this tutorial we show the complete "Hello, World!" example.
-You will learn how to run the simplest BigFlow [workflow](workflow-and-job.md) on local machine
+In this tutorial, we show the complete "Hello, World!" example.
+You will learn how to run the simplest BigFlow [workflow](workflow-and-job.md) on a local machine
 and how to [deploy](deployment.md) it on Cloud Composer.    
 
 ## Setup
@@ -24,7 +24,7 @@ Since you have installed the BigFlow PIP package, you can use [BigFlow CLI](cli.
 bigflow -h
 ```
 
-## Run the workflow on local machine
+## Run the workflow on a local machine
 
 In BigFlow, your project consists of [workflows](workflow-and-job.md).
 You can run them directly from your local machine or deploy them to Cloud Composer as Airflow DAGs.
@@ -44,7 +44,7 @@ class HelloWorldJob:
         self.id = 'hello_world'
 
     def run(self, runtime):
-        print(f'Hello world at {runtime}!')
+        print(f'Hello world on {runtime}!')
 
 
 class SayGoodbyeJob:
@@ -62,7 +62,7 @@ hello_world_workflow = Workflow(
         SayGoodbyeJob()])
 ```
 
-The [`bigflow run`](cli.md#running-workflows) command lets you to run this workflow directly
+The [`bigflow run`](cli.md#running-workflows) command lets you run this workflow directly
 from sources on your local machine (without building and deploying it to Composer). 
 
 ### Examples
@@ -76,7 +76,7 @@ bigflow run --workflow hello_world_workflow
 Output:
 
 ```text
-Hello world at 2020-09-10 12:17:52!
+Hello world on 2020-09-10 12:17:52!
 Goodbye!
 ```
 
@@ -100,7 +100,7 @@ bigflow run --workflow hello_world_workflow --runtime '2020-08-01 10:00:00'
 
 Output:
 ```text
-Hello world at 2020-08-01 10:00:00!
+Hello world on 2020-08-01 10:00:00!
 Goodbye!
 ```
 
@@ -170,7 +170,7 @@ bf_env is : prod
 Message to print on PROD
 ```
 
-Run the workflow with default config, which happened to be `dev` config:
+Run the workflow with the default config, which happened to be `dev` config:
 
 ```shell
 bigflow run --workflow hello_config_workflow
@@ -209,9 +209,9 @@ from bigflow import Config
 deployment_config = Config(
     name='dev',
     properties={
-        'gcp_project_id': 'MY_GCP_PROJECT_ID',
+        'gcp_project_id': 'my_gcp_project_id',
         'docker_repository': 'eu.gcr.io/{gcp_project_id}/docs-project',
-        'dags_bucket': 'MY_COMPOSER_DAGS_BUCKET'
+        'dags_bucket': 'my_composer_dags_bucket'
     })
 ```  
 
@@ -219,35 +219,66 @@ deployment_config = Config(
 
 ### Build the deployment artifacts
 
-There are two deployment artifacts, which are [build](project_setup_and_build.md) from your BigFlow
+There are two deployment artifacts, which are being [built](project_setup_and_build.md) from your BigFlow
 project:
 
 1. Airflow [DAG](project_setup_and_build.md#dag) files with workflows definitions,
 1. Docker [image](project_setup_and_build.md#docker-image) with workflows computation code.
 
-
-Build both artifacts with the single command:
+Build both artifacts with the single command
+(we recommend to focus one the single workflow here, you can build all workflows in your project
+by skipping the `workflow` parameter):
 
 ```shell
-bigflow build
+bigflow build --workflow hello_world_workflow
 ```
 
+List the freshly generated deployment artifacts:
+
+```bash
+ls .dags
+```
 
 Output:
 
 ```text
-
+hello_world_workflow__v0_1_0__2020_09_11_11_00_00_dag.py
 ```
 
+```bash
+ls image
+```
 
-Check the output.
+Output:
 
-//TODO
-
+```text
+deployment_config.py    image-0.1.0.tar
+```
 
 Read more about the [`bigflow build`](cli.md#building-airflow-dags) command.
-
  
-## Deploy to GCP
+### Deploy to GCP
 
+Your final task is to [deploy](deployment.md) the artifacts on Cloud Composer.
+ 
+When deploying from a local machine, we recommend using the local [authentication method](deployment.md#authentication-methods),
+which relies on your local user `gcloud` account.
+
+Check if you are authenticated:
+
+```bash
+gcloud info
+```  
+ 
+Deploy your workflow to Cloud Composer:
+
+```bash
+bigflow deploy
+```  
+  
+Wait a while till Airflow reads the new DAG file and check your Airflow UI. 
+If you see this picture it means that you nailed it!
+
+
+Read more about the [`bigflow deploy`](cli.md#deploying-to-gcp) command.
 

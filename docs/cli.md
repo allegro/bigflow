@@ -298,7 +298,7 @@ bigflow deploy \
 **Deploy using `deployment_config.py` from non-default path**
 
 By default, a [`deployment_config.py`](deployment.md#managing-configuration-in-deployment_configpy) file
-is located in a main directory of your project, so `bigflow` expects it exists under this path:
+is located in the main directory of your project, so `bigflow` expects it exists under this path:
 `./deployment_config.py`. 
 You can change this location by setting the `deployment-config-path` parameter:
 
