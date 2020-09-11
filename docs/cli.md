@@ -305,3 +305,6 @@ You can change this location by setting the `deployment-config-path` parameter:
 ```shell
 bigflow deploy --deployment-config-path '/tmp/my_deployment_config.py'
 ```
+
+## Scaffold project
+Use the `bigflow start-project` command to create a [sample project](scaffold.md) and try all of the above commands yourself.

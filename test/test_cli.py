@@ -410,7 +410,6 @@ deployment_config = Config(name='dev',
                                                    vault_endpoint='my-vault-endpoint',
                                                    vault_secret='secrett')
 
-
     @mock.patch('bigflow.cli.deploy_docker_image')
     def test_should_call_cli_deploy_image_command__with_defaults_and_with_implicit_deployment_config_file(self, deploy_docker_image_mock):
         # given
@@ -643,7 +642,8 @@ deployment_config = Config(name='dev',
     @mock.patch('bigflow.cli.run_process')
     @mock.patch('bigflow.cli.find_file')
     @mock.patch('bigflow.cli.validate_project_setup')
-    def test_should_call_build_image_command_through_CLI(self, validate_project_setup_mock, find_file_mock, run_process_mock):
+    def test_should_call_build_image_command_through_CLI(self, validate_project_setup_mock, find_file_mock,
+                                                         run_process_mock):
         # when
         cli(['build-image'])
 
@@ -698,7 +698,6 @@ deployment_config = Config(name='dev',
         # then
         release.assert_called_once_with(None)
 
-
     @mock.patch('bigflow.cli.release')
     def test_should_call_cli_release_command_with_identity_file(self, release):
         # when
@@ -714,6 +713,59 @@ deployment_config = Config(name='dev',
 
         # then
         release.assert_called_once_with('path/to/identity_file')
+
+    @mock.patch('bigflow.cli.gcloud_project_list')
+    @mock.patch('bigflow.cli.project_id_input')
+    def test_should_gcp_project_flow_return_project_from_user(self, project_id_input_mock, gcloud_project_list_mock):
+        # given
+        gcloud_project_list_mock.return_value = '''PROJECT_ID                      NAME                            PROJECT_NUMBER
+some-project-id                            SOME PROJECT                   047902537028
+another-project-id                         ANOTHER PROJECT                002242200764'''
+        project_id_input_mock.return_value = 'some-project-id'
+        # when
+        project = gcp_project_flow(0)
+
+        # then
+        self.assertEqual(project, 'some-project-id')
+
+    @mock.patch('bigflow.cli.get_default_project_from_gcloud')
+    @mock.patch('bigflow.cli.gcloud_project_list')
+    @mock.patch('bigflow.cli.project_id_input')
+    def test_should_gcp_project_flow_return_project_from_gcloud_if_project_not_provided_by_user(self, project_id_input_mock, gcloud_project_list_mock, get_default_project_from_gcloud_mock):
+        # given
+        gcloud_project_list_mock.return_value = '''PROJECT_ID                      NAME                            PROJECT_NUMBER
+some-project-id                            SOME PROJECT                   047902537028
+another-project-id                         ANOTHER PROJECT                002242200764'''
+        project_id_input_mock.return_value = ''
+        get_default_project_from_gcloud_mock.return_value = 'another-project-id'
+        # when
+        project = gcp_project_flow(0)
+
+        # then
+        self.assertEqual(project, 'another-project-id')
+
+    @mock.patch('bigflow.cli.gcloud_project_list')
+    @mock.patch('bigflow.cli.project_id_input')
+    def test_should_gcp_project_flow_allow_user_to_enter_project_again_if_wrong_project_passed(self, project_id_input_mock,
+                                                              gcloud_project_list_mock):
+        # given
+        gcloud_project_list_mock.return_value = '''PROJECT_ID                      NAME                            PROJECT_NUMBER
+some-project-id                            SOME PROJECT                   047902537028
+another-project-id                         ANOTHER PROJECT                002242200764'''
+        project_id_input_mock.side_effect = ['fake-project', 'some-project-id']
+        # when
+        project = gcp_project_flow(0)
+
+        # then
+        self.assertEqual(project, 'some-project-id')
+
+    @mock.patch('bigflow.cli._cli_start_project')
+    def test_should_call_cli_start_project_command(self, cli_start_project_mock):
+        # when
+        cli(['start-project'])
+
+        # then
+        self.assertEqual(cli_start_project_mock.call_count, 1)
 
     def _expected_default_dags_dir(self):
         return (Path(os.getcwd()) / '.dags').as_posix()

@@ -58,6 +58,10 @@ def get_docker_image_id(tag):
     return images.split('\n')[0]
 
 
+def build_docker_image_tag(docker_repository: str, package_version: str):
+    return docker_repository + ':' + package_version
+
+
 def remove_docker_image_from_local_registry(tag):
     print('Removing the image from the local registry')
     run_process(f"docker rmi {get_docker_image_id(tag)}")

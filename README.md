@@ -16,19 +16,33 @@
     1. [Kubernetes](docs/deployment.md#kubernetes)
     1. [Vault](docs/deployment.md#vault)
 1. [Workflow & Job](./docs/workflow-and-job.md)
-1. Starter
-1. Utils
+1. [Starter](./docs/scaffold.md)
+1. Technologies
     1. BigQuery
     1. Apache Beam
     1. Dataproc
-    1. Job monitoring
+1. Job monitoring
 1. Roadmap
 
 ## What is BigFlow?
-TODO
+
+BigFlow is a Python framework for data processing pipelines on [GCP](https://cloud.google.com/).
+
+The main features are:
+
+* [Dockerized deployment environment](./docs/project_setup_and_build.md#overview)
+* [Powerful CLI](./docs/cli.md)
+* [Automated build](./docs/project_setup_and_build.md#overview), [deployment](./docs/deployment.md), 
+[versioning](./docs/project_setup_and_build.md#project-versioning) and [configuration](./docs/configuration.md)
+* [Unified project structure](./docs/project_setup_and_build.md#project-structure)
+* [Support for the major data processing technologies](./docs/utils.md) — [Dataproc](https://cloud.google.com/dataproc),
+[Apache Beam](https://beam.apache.org/) and [BigQuery](https://cloud.google.com/bigquery)
+* [Project starter](./docs/scaffold.md)
 
 ## Getting started
-TODO
+
+Start from [setting up a development environment](#installing-bigflow). 
+Next, go through the BigFlow [tutorial](./docs/tutorial.md). 
 
 ## Installing BigFlow
 
@@ -61,4 +75,5 @@ bigflow -h
 Read more about [BigFlow CLI](docs/cli.md).
 
 ## Help me
-TODO
+
+You can ask questions on our [gitter channel](https://gitter.im/allegro/bigflow) or [stackoverflow](https://stackoverflow.com/questions/tagged/bigflow).
