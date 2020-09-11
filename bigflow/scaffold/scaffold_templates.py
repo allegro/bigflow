@@ -212,13 +212,13 @@ class InternationalPortsWorkflowTestCase(TestCase):
     @patch.object(DatasetManager, 'create_table')
     @patch.object(DatasetManager, 'collect')
     @patch.object(bigquery.Client, 'create_dataset')
-    @patch.object(TemplatedDatasetManager, 'create_full_table_id', side_effect=lambda table: 'sc-11309-content-scorer-dev.bigflow_test' + '.' + table)
+    @patch.object(TemplatedDatasetManager, 'create_full_table_id', side_effect=lambda table: 'gcp-project.bigflow_test' + '.' + table)
     @patch.object(DatasetManager, 'table_exists_or_error')
     def test_should_use_proper_queries(self, table_exists_or_error_mock, create_full_table_id_mock, create_dataset_mock, collect__mock, create_table_mock, write_mock):
         table_exists_or_error_mock.return_value = True
         ports_workflow.run('2019-01-01')
         collect__mock.assert_called_with('''
-        INSERT INTO `sc-11309-content-scorer-dev.bigflow_test.more_ports` (port_name, port_latitude, port_longitude, country, index_number)
+        INSERT INTO `gcp-project.bigflow_test.more_ports` (port_name, port_latitude, port_longitude, country, index_number)
         VALUES 
         ('SWINOUJSCIE', 53.916667, 14.266667, 'POL', '28820'),
         ('GDYNIA', 54.533333, 18.55, 'POL', '28740'),
@@ -245,9 +245,9 @@ class InternationalPortsWorkflowTestCase(TestCase):
           country STRING,
           index_number STRING)
     ''')
-        write_mock.assert_called_with('sc-11309-content-scorer-dev.bigflow_test.ports', '''
+        write_mock.assert_called_with('gcp-project.bigflow_test.ports', '''
         SELECT port_name, port_latitude, port_longitude
-        FROM `sc-11309-content-scorer-dev.bigflow_test.more_ports`
+        FROM `gcp-project.bigflow_test.more_ports`
         WHERE country = 'POL'
         ''', 'WRITE_TRUNCATE')
 """
