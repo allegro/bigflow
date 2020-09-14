@@ -5,14 +5,12 @@
 1. [What is BigFlow?](#what-is-bigflow)
 1. [Getting started](#getting-started)
 1. [Installing Bigflow](#installing-bigflow)
+1. [BigFlow tutorial](docs/tutorial.md)
 1. [Help me](#help-me)
 1. [CLI](docs/cli.md)
 1. [Configuration](./docs/configuration.md)
 1. [Project setup and build](./docs/project_setup_and_build.md)
-1. Deployment
-    1. Cloud Composer
-    1. Kubernetes
-    1. Vault
+1. [Deployment](docs/deployment.md)
 1. [Workflow & Job](./docs/workflow-and-job.md)
 1. [Starter](./docs/scaffold.md)
 1. Technologies

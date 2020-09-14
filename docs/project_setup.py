@@ -1,9 +1,6 @@
-from setuptools import setup
-from bigflow.build import project_setup, auto_configuration
+from bigflow.build import default_project_setup
 
 PROJECT_NAME = 'examples'
 
 if __name__ == '__main__':
-    config = auto_configuration(PROJECT_NAME)
-    config['version'] = '0.1.0'  # To make examples deterministic
-    setup(**project_setup(**config))
+    default_project_setup(PROJECT_NAME)
