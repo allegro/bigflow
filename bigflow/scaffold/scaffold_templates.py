@@ -198,7 +198,7 @@ class FakeFile(object):
     data = {{}}
 
 '''
-test_internationalports_workflow_template = """from unittest import TestCase
+test_internationalports_workflow_template = """from unittest import TestCase, mock
 from unittest.mock import patch
 
 from google.cloud import bigquery
@@ -207,14 +207,14 @@ from {project_name}.internationalports.workflow import ports_workflow
 
 
 class InternationalPortsWorkflowTestCase(TestCase):
-
+    @mock.patch('bigflow.bigquery.dataset_manager.create_bigquery_client')
     @patch.object(DatasetManager, 'write')
     @patch.object(DatasetManager, 'create_table')
     @patch.object(DatasetManager, 'collect')
-    @patch.object(bigquery.Client, 'create_dataset')
     @patch.object(TemplatedDatasetManager, 'create_full_table_id', side_effect=lambda table: 'gcp-project.bigflow_test' + '.' + table)
     @patch.object(DatasetManager, 'table_exists_or_error')
-    def test_should_use_proper_queries(self, table_exists_or_error_mock, create_full_table_id_mock, create_dataset_mock, collect__mock, create_table_mock, write_mock):
+    def test_should_use_proper_queries(self, table_exists_or_error_mock, create_full_table_id_mock, collect__mock, create_table_mock, write_mock, create_bigquery_client_mock):
+        create_bigquery_client_mock.return_value = mock.create_autospec(bigquery.Client, project='my_gcp_project', credentials=None, location='EU')
         table_exists_or_error_mock.return_value = True
         ports_workflow.run('2019-01-01')
         collect__mock.assert_called_with('''
