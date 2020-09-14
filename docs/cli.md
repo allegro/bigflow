@@ -9,7 +9,7 @@ on a local machine as well as for build and deployment automation on CI/CD serve
 ## Getting started with BigFlow CLI
 
 [Install](../README.md#installing-bigflow) the BigFlow PIP package 
-in a fresh [`venv`](https://docs.python.org/3/library/venv.html) in your project directory.
+in a fresh [virtual environment](https://docs.python.org/3/library/venv.html) in your project directory.
 
 Test BigFlow CLI:
 
@@ -56,7 +56,7 @@ for a given [runtime](workflow-and-job.md#the-runtime-parameter).
 Typically, `bigflow run` is used for **local development** because it's the simplest way to execute a workflow.
 It's not recommended to be used on production, because:
 
-* No deploying to Airflow/Composer is done.
+* No deployment to Composer (Airflow) is done.
 * The `bigflow run` process is executed on a local machine. If you kill or suspend it, what happens on GCP is undefined.
 * It uses [local authentication](deployment.md#local-account-authentication) so it relies on permissions of your Google account.
 * It executes a job or workflow only once
@@ -157,7 +157,7 @@ bigflow build-dags --workflow hello_world_workflow --start-time '2020-08-01 10:0
 **Building a PIP package**
 
 Call the `build-package` command to build a PIP package from your project.
-The command requires no parameters, all configuration is taken from `project_setup.py`
+The command requires no parameters, all configuration is taken from `project_setup.py` and `deployment_config.py`
 (see [project_setup_and_build.md](project_setup_and_build.md)). 
 Your PIP package is saved to a `wheel` file in the `dist` dir. 
 
