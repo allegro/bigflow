@@ -324,6 +324,13 @@ def random_uuid(suffix=''):
     return uuid.uuid1().hex + suffix
 
 
+def create_bigquery_client(project_id, credentials, location):
+    return bigquery.Client(
+        project=project_id,
+        credentials=credentials,
+        location=location)
+
+
 def create_dataset_manager(
         project_id,
         runtime,
@@ -359,10 +366,7 @@ def create_dataset_manager(
         logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging.INFO)
         logger = logging.getLogger(__name__)
 
-    client = bigquery.Client(
-        project=project_id,
-        credentials=credentials,
-        location=location)
+    client = create_bigquery_client(project_id, credentials, location)
     dataset = create_dataset(dataset_name, client, location)
 
     core_dataset_manager = DatasetManager(client, dataset, logger)
