@@ -12,13 +12,14 @@ from .job import Job
 from .job import DEFAULT_RETRY_COUNT
 from .job import DEFAULT_RETRY_PAUSE_SEC
 from .dataset_manager import DEFAULT_LOCATION
+from .interface import Dataset, DEFAULT_RUNTIME
 from ..commons import not_none_or_error
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_OPERATION_NAME = '__auto'
 DEFAULT_PEEK_LIMIT = 1000
-DEFAULT_RUNTIME = '1970-01-01'
+
 INLINE_COMPONENT_DATASET_ALIAS = '_inline_component_dataset'
 
 
@@ -44,7 +45,7 @@ def interactive_component(**dependencies):
     return decorator
 
 
-class InteractiveDatasetManager(object):
+class InteractiveDatasetManager(Dataset):
     """Let's you run operations on a dataset, without the need of creating a component."""
 
     def __init__(self,

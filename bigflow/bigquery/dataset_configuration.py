@@ -1,4 +1,5 @@
 from ..configuration import Config
+from .interface import Dataset
 from .interactive import InteractiveDatasetManager
 
 
@@ -45,7 +46,7 @@ class DatasetConfig:
         self.delegate.add_configuration(env, all_properties, is_default=is_default)
         return self
 
-    def create_dataset_manager(self, env: str = None) -> InteractiveDatasetManager:
+    def create_dataset_manager(self, env: str = None) -> Dataset:
         return InteractiveDatasetManager(
             project_id=self.resolve_project_id(env),
             dataset_name=self.resolve_dataset_name(env),

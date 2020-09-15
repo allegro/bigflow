@@ -8,9 +8,10 @@ BigFlow provides support for the main big data data processing technologies on G
 * [BigQuery](https://cloud.google.com/bigquery)
 * [Dataproc](https://cloud.google.com/dataproc) (Apache Spark)
 
-However, **you are not limited** to these technologies. The only limitation is Python language.
+However, **you are not limited** to these technologies. The only limitation is Python language. What is more, you can
+mix all technologies.
 
-The provided utils allows you to build workflows easier, solving problems that must be solved anyway.
+The provided utils allow you to build workflows easier and solve problems that must have been solved anyway.
 
 The BigFlow [project starter](./scaffold.md) provides an example for each technology. Before you dive into the next chapters, 
 [create an example project](./scaffold.md#start-project) using the starter.
@@ -74,8 +75,246 @@ options.view_as(SetupOptions).requirements_file = resolve(get_resource_absolute_
 
 ## BigQuery
 
+### Overview
+
+BigFlow provides a vast support for BigQuery. Example use cases:
+
+* Ad-hoc queries (fits well in a Jupyter notebook)
+* Convenient BigQuery client 
+* Creating data processing pipelines
+* Creating BigQuery sensors
+
+Project starter generates workflow called `internationalports`. It's a purely BigQuery based workflow.
+
+The workflow fits the single `internationalports.workflow` module:
+
+```python
+from bigflow import Workflow
+from bigflow.bigquery import DatasetConfig, Dataset
+
+dataset_config = DatasetConfig(
+    env='dev',
+    project_id='your-project-id',
+    dataset_name='internationalports',
+    internal_tables=['ports', 'polish_ports'],
+    external_tables={})
+
+dataset: Dataset = dataset_config.create_dataset_manager()
+
+create_polish_ports_table = dataset.create_table('''
+    CREATE TABLE IF NOT EXISTS polish_ports (
+      port_name STRING,
+      port_latitude FLOAT64,
+      port_longitude FLOAT64)
+''')
+
+create_ports_table = dataset.create_table('''
+    CREATE TABLE IF NOT EXISTS ports (
+      port_name STRING,
+      port_latitude FLOAT64,
+      port_longitude FLOAT64,
+      country STRING,
+      index_number STRING)
+''')
+
+select_polish_ports = dataset.write_truncate('ports', '''
+        SELECT port_name, port_latitude, port_longitude
+        FROM `{more_ports}`
+        WHERE country = 'POL'
+        ''', partitioned=False)
+
+populate_ports_table = dataset.collect('''
+        INSERT INTO `{more_ports}` (port_name, port_latitude, port_longitude, country, index_number)
+        VALUES 
+        ('GDYNIA', 54.533333, 18.55, 'POL', '28740'),
+        ('GDANSK', 54.35, 18.666667, 'POL', '28710'),
+        ('MURMANSK', 68.983333, 33.05, 'RUS', '62950'),
+        ('SANKT-PETERBURG', 59.933333, 30.3, 'RUS', '28370');
+        ''')
 
 
+internationalports_workflow = Workflow(
+        workflow_id='internationalports',
+        definition=[
+                create_ports_table.to_job(id='create_ports_table'),
+                create_polish_ports_table.to_job(id='create_polish_ports_table'),
+                populate_ports_table.to_job(id='populate_ports_table'),
+                select_polish_ports.to_job(id='select_polish_ports'),
+        ],
+        schedule_interval='@once')
+```
+
+There are two notable elements in the `internationalports.workflow` module:
+
+* `DatasetConfig` class which defines BigQuery dataset you want to interact with
+* `dataset: Dataset` object which allows you to perform various operations on the defined dataset
+
+Using a dataset object you can describe operations you want to perform. Next, you arrange them into a workflow.
+
+Take a look at the example operation, which creates a new table:
+
+```python
+create_polish_ports_table = dataset.create_table('''
+    CREATE TABLE IF NOT EXISTS polish_ports (
+      port_name STRING,
+      port_latitude FLOAT64,
+      port_longitude FLOAT64)
+''')
+```
+
+The `create_polish_ports_table` object is a lazy operation. Lazy means that calling `dataset.create_table`
+method, won't actually create a table. To run this lazy operation, you need to turn it into a [job](./workflow-and-job.md#job) first,
+and then run it:
+
+```python
+create_polish_ports_table.to_job(id='create_ports_table').run()
+```
+
+Or put a job into a [workflow](./workflow-and-job.md#workflow), and then, run it using CLI:
+
+```shell script
+bf run --job internationalports.create_ports_table
+```
+
+Now, lets go through `DatasetConfig` and `Dataset` in details.
+
+## Dataset Config
+
+`DatasetConfig` is a convenient extension to `Config` designed for workflows which use a `Dataset` object
+to call Big Query SQL.
+
+`DatasetConfig` defines four properties that are required by a `Dataset` object:
+
+* `project_id` &mdash; GCP project Id of an internal dataset.
+* `dataset_name` &mdash; Internal dataset name.
+* `internal_tables` &mdash; List of table names in an internal dataset. 
+  Fully qualified names of internal tables are resolved to `{project_id}.{dataset_name}.{table_name}`.  
+* `external_tables` &mdash; Dict that defines aliases for external table names.
+  Fully qualified names of those tables have to be declared explicitly.
+
+The distinction between internal and external tables shouldn't be treated too seriously.
+Internal means `mine`. External means any other. It's just a naming convention.
+
+For example:
+
+```python
+from bigflow import DatasetConfig
+
+INTERNAL_TABLES = ['quality_metric']
+
+EXTERNAL_TABLES = {
+    'offer_ctr': 'not-my-project.offer_scorer.offer_ctr_long_name',
+    'box_ctr': 'other-project.box_scorer.box_ctr'
+}
+
+dataset_config = DatasetConfig(env='dev',
+                               project_id='my-project-dev',
+                               dataset_name='scorer',
+                               internal_tables=INTERNAL_TABLES,
+                               external_tables=EXTERNAL_TABLES
+                               )\
+            .add_configuration('prod',
+                               project_id='my-project-prod')
+``` 
+  
+Having that, a `Dataset` object can be easily created:
+
+```python
+dataset = dataset_config.create_dataset()
+``` 
+
+Then, you can use short table names in SQL, a `Dataset` object resolves them to fully qualified names.
+
+For example, in this SQL, a short name of an internal table: 
+
+```python
+dataset.collect('select * from {quality_metric}')
+```
+
+is resolved to `my-project-dev.scorer.quality_metric`.
+
+In this SQL, an alias of an external table: 
+
+```python
+dataset.collect('select * from {offer_ctr}')
+```
+
+is resolved to `not-my-project.offer_scorer.offer_ctr_long_name`.
+
+### Dataset
+
+#### Definition
+
+A `Dataset` object has the following interface:
+
+**[`interface.py`](../bigflow/bigquery/interface.py)**
+
+```python
+class Dataset(object, metaclass=ABCMeta):
+
+    @abstractmethod
+    def write_truncate(self, table_name: str, sql: str, partitioned: bool = True) -> BigQueryOperation:
+        pass
+
+    @abstractmethod
+    def write_append(self, table_name: str, sql: str, partitioned: bool = True) -> BigQueryOperation:
+        pass
+
+    @abstractmethod
+    def write_tmp(self, table_name: str, sql: str) -> BigQueryOperation:
+        pass
+
+    @abstractmethod
+    def collect(self, sql: str) -> BigQueryOperation:
+        pass
+
+    @abstractmethod
+    def collect_list(self, sql: str) -> BigQueryOperation:
+        pass
+
+    @abstractmethod
+    def dry_run(self, sql: str) -> BigQueryOperation:
+        pass
+
+    @abstractmethod
+    def create_table(self, create_query: str) -> BigQueryOperation:
+        pass
+
+    @abstractmethod
+    def load_table_from_dataframe(self, table_name: str, df: pd.DataFrame, partitioned: bool = True) -> BigQueryOperation:
+        pass
+```
+
+All the methods are lazy and return a `BigQueryOperation`, which is defined as the following interface:
+
+```python
+class BigQueryOperation(object, metaclass=ABCMeta):
+
+    @abstractmethod
+    def to_job(self, id: str, retry_count: int = DEFAULT_RETRY_COUNT, retry_pause_sec: int = DEFAULT_RETRY_PAUSE_SEC):
+        pass
+
+    def run(self, runtime=DEFAULT_RUNTIME):
+        pass
+```
+
+You can turn a lazy operation into a job or simply run it (useful for ad-hoc queries or debugging).
+
+#### Write truncate
+
+#### Write append
+
+#### Write tmp
+
+#### Collect
+
+#### Collect list
+
+#### Dry run
+
+#### Create table
+
+#### Load table from dataframe
 
 
 
