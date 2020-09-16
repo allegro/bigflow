@@ -203,6 +203,8 @@ bigflow deploy
 Wait a while till Airflow reads the new DAG file and check your Airflow UI. 
 If you see this picture it means that you nailed it!
 
+![hello_world_airflow_print_screen](images/hello_world_airflow_print_screen.png)
+
 Read more about the [`bigflow deploy`](cli.md#deploying-to-gcp) command.
 
 ## Workflow configuration

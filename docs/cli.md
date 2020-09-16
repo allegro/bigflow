@@ -41,12 +41,12 @@ bigflow run -h
 Complete sources for Cheat Sheet examples are available in this repository 
 as a part of the [Docs](https://github.com/allegro/bigflow/tree/master/docs) project.
 
-If you have BigFlow [installed](../README.md#installing-bigflow) &mdash; you can easily run them.
-  
 ```
 git clone https://github.com/allegro/bigflow.git
 cd bigflow/docs
 ```
+
+If you have BigFlow [installed](../README.md#installing-bigflow) &mdash; you can easily run them.  
 
 ### Running workflows
 
