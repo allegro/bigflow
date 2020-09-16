@@ -147,7 +147,7 @@ internationalports_workflow = Workflow(
 There are two notable elements in the `internationalports.workflow` module:
 
 * `DatasetConfig` class which defines BigQuery dataset you want to interact with
-* `dataset: Dataset` object which allows you to perform various operations on the defined dataset
+* `dataset: Dataset` object which allows you to perform various operations on a defined dataset
 
 Using a dataset object you can describe operations you want to perform. Next, you arrange them into a workflow.
 
@@ -163,8 +163,8 @@ create_polish_ports_table = dataset.create_table('''
 ```
 
 The `create_polish_ports_table` object is a lazy operation. Lazy means that calling `dataset.create_table`
-method, won't actually create a table. To run this lazy operation, you need to turn it into a [job](./workflow-and-job.md#job) first,
-and then run it:
+method, won't actually create a table. To run this lazy operation, you need to turn it into 
+a [job](./workflow-and-job.md#job) first, and then run it:
 
 ```python
 create_polish_ports_table.to_job(id='create_ports_table').run()
@@ -273,19 +273,11 @@ class Dataset(object, metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def dry_run(self, sql: str) -> BigQueryOperation:
-        pass
-
-    @abstractmethod
     def create_table(self, create_query: str) -> BigQueryOperation:
-        pass
-
-    @abstractmethod
-    def load_table_from_dataframe(self, table_name: str, df: pd.DataFrame, partitioned: bool = True) -> BigQueryOperation:
         pass
 ```
 
-All the methods are lazy and return a `BigQueryOperation`, which is defined as the following interface:
+All the methods are lazy and return a `BigQueryOperation` object, which is defined as the following interface:
 
 ```python
 class BigQueryOperation(object, metaclass=ABCMeta):
@@ -300,21 +292,93 @@ class BigQueryOperation(object, metaclass=ABCMeta):
 
 You can turn a lazy operation into a job or simply run it (useful for ad-hoc queries or debugging).
 
+A SQL code which you provide to the methods is templated. Besides a configuration parameters, you can access the
+`runtime` parameter. It's available as the `dt` variable. For example:
+
+```python
+dataset.write_truncate('target_table', '''
+SELECT *
+FROM `{another_table}`
+WHERE PARTITION_TIME = '{dt}'
+''')
+```
+
 #### Write truncate
+
+This method takes a SQL query, executes it, and saves a result into a specified table.
+
+```python
+dataset.write_truncate('target_table', '''
+SELECT *
+FROM `{another_table}`
+''')
+```
+
+The `write_truncate` method overrides the whole table or a single partition, depending on the type of a specified table.
+To specify type of a table you use, you need to use the `partitioned` parameter.
+
+```python
+dataset.write_truncate('target_table', '''
+SELECT *
+FROM `{another_table}`
+''', partitioned=False)
+```
+
+The `write_truncate` method also expects that a specified table exists. It won't create a new table from query results.
 
 #### Write append
 
+The `write_append` method acts almost the same as the `write_truncate`. The difference is that `write_append` doesn't
+override the specified table, but appends new records.
+
+```python
+dataset.write_append('target_table', '''
+SELECT *
+FROM `{another_table}`
+''')
+```
+
 #### Write tmp
+
+The `write_tmp` method allows you to create or override a non-partitioned table from a query results.
+
+```python
+select_dataset.write_tmp('target_temporary_table', '''
+SELECT *
+FROM `{another_table}`
+''')
+```
 
 #### Collect
 
+The `collect` method allows you to fetch a query results to a [Pandas DataFrame](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html).
+
+```python
+rows: pd.Dataframe = dataset.collect('''
+SELECT *
+FROM `{another_table}`
+''').run()
+```
+
 #### Collect list
 
-#### Dry run
+The `collect_list` method works almost the same as the `collect` method, the difference is that it returns a Python `list`.
+
+```python
+rows: list = dataset.collect('''
+SELECT *
+FROM `{another_table}`
+''').run()
+```
 
 #### Create table
 
-#### Load table from dataframe
+The `create_table` method allows you to create a table.
 
-
-
+```python
+create_my_new_table_operation = dataset.create_table('''
+    CREATE TABLE IF NOT EXISTS my_new_table (
+      some_field STRING,
+      another_field FLOAT64)
+''')
+```

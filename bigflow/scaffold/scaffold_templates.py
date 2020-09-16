@@ -53,7 +53,7 @@ advanced_deployment_config_template = '''.add_configuration(name='{env}',
                                'gcp_project_id': '{project_id}',
                                'dags_bucket': '{dags_bucket}'}})
 '''
-requirements_template = f'''bigflow[bigquery]==1.0.dev34
+requirements_template = f'''bigflow[bigquery]==1.0.dev33
 apache-beam[gcp]==2.23.0
 '''
 
@@ -159,7 +159,7 @@ advanced_beam_config_template = '''.add_configuration(name='{env}',
                                'dags_bucket': '{dags_bucket}'}})
 '''
 
-wordcount_workflow_template = """
+bq_workflow_template = """
 from bigflow import Workflow
 from bigflow.bigquery import DatasetConfig
 
@@ -196,7 +196,7 @@ select_polish_ports = dataset.write_truncate('ports', '''
 
 populate_ports_table = dataset.collect('''
         INSERT INTO `{more_ports}` (port_name, port_latitude, port_longitude, country, index_number)
-        VALUES
+        VALUES 
         ('GDYNIA', 54.533333, 18.55, 'POL', '28740'),
         ('GDANSK', 54.35, 18.666667, 'POL', '28710'),
         ('MURMANSK', 68.983333, 33.05, 'RUS', '62950'),
@@ -214,6 +214,100 @@ internationalports_workflow = Workflow(
         ],
         schedule_interval='@once')
 """
+
+test_wordcount_workflow_template = '''from unittest import TestCase
+
+from apache_beam.testing.test_pipeline import TestPipeline
+import apache_beam as beam
+from {project_name}.wordcount.processing import count_words
+
+
+class WordCountWorkflowTestCase(TestCase):
+
+    def test_should_return_result(self):
+        fake_file = FakeFile()
+        with TestPipeline() as p:
+            count_words(p, FakeFileSaver(fake_file))
+        self.assertEqual(fake_file.data, {{'a': 2, 'b': 2, 'c': 2, 'd': 2}})
+
+
+class FakeFileSaver(beam.PTransform):
+    def __init__(self, file):
+        super().__init__()
+        self.file = file
+
+    def expand(self, records_to_delete):
+        return records_to_delete \\
+               | "save to file" >> beam.ParDo(
+            SaveFn(self.file))
+
+
+class SaveFn(beam.DoFn):
+    def __init__(self, file):
+        super().__init__()
+        self.file = file
+
+    def process(self, row, *args, **kwargs):
+        self.file.data[row[0]] = row[1]
+
+class FakeFile(object):
+    data = {{}}
+
+'''
+test_internationalports_workflow_template = """from unittest import TestCase
+from unittest.mock import patch
+
+from google.cloud import bigquery
+from bigflow.bigquery.dataset_manager import DatasetManager, TemplatedDatasetManager
+from {project_name}.internationalports.workflow import ports_workflow
+
+
+class InternationalPortsWorkflowTestCase(TestCase):
+
+    @patch.object(DatasetManager, 'write')
+    @patch.object(DatasetManager, 'create_table')
+    @patch.object(DatasetManager, 'collect')
+    @patch.object(bigquery.Client, 'create_dataset')
+    @patch.object(TemplatedDatasetManager, 'create_full_table_id', side_effect=lambda table: 'gcp-project.bigflow_test' + '.' + table)
+    @patch.object(DatasetManager, 'table_exists_or_error')
+    def test_should_use_proper_queries(self, table_exists_or_error_mock, create_full_table_id_mock, create_dataset_mock, collect__mock, create_table_mock, write_mock):
+        table_exists_or_error_mock.return_value = True
+        ports_workflow.run('2019-01-01')
+        collect__mock.assert_called_with('''
+        INSERT INTO `gcp-project.bigflow_test.more_ports` (port_name, port_latitude, port_longitude, country, index_number)
+        VALUES 
+        ('SWINOUJSCIE', 53.916667, 14.266667, 'POL', '28820'),
+        ('GDYNIA', 54.533333, 18.55, 'POL', '28740'),
+        ('GDANSK', 54.35, 18.666667, 'POL', '28710'),
+        ('SZCZECIN', 53.416667, 14.55, 'POL', '28823'),
+        ('POLICE', 53.566667, 14.566667, 'POL', '28750'),
+        ('KOLOBRZEG', 54.216667, 15.55, 'POL', '28800'),
+        ('MURMANSK', 68.983333, 33.05, 'RUS', '62950'),
+        ('SANKT-PETERBURG', 59.933333, 30.3, 'RUS', '28370');
+        ''')
+
+        create_table_mock.assert_any_call('''
+        CREATE TABLE IF NOT EXISTS ports (
+          port_name STRING,
+          port_latitude FLOAT64,
+          port_longitude FLOAT64)
+    ''')
+
+        create_table_mock.assert_any_call('''
+        CREATE TABLE IF NOT EXISTS more_ports (
+          port_name STRING,
+          port_latitude FLOAT64,
+          port_longitude FLOAT64,
+          country STRING,
+          index_number STRING)
+    ''')
+        write_mock.assert_called_with('gcp-project.bigflow_test.ports', '''
+        SELECT port_name, port_latitude, port_longitude
+        FROM `gcp-project.bigflow_test.more_ports`
+        WHERE country = 'POL'
+        ''', 'WRITE_TRUNCATE')
+"""
+
 
 gitignore_template = '''# Byte-compiled / optimized / DLL files
 __pycache__/

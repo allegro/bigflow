@@ -1,5 +1,4 @@
 from abc import ABCMeta, abstractmethod
-import pandas as pd
 from .job import DEFAULT_RETRY_COUNT
 from .job import DEFAULT_RETRY_PAUSE_SEC
 
@@ -39,13 +38,5 @@ class Dataset(object, metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def dry_run(self, sql: str) -> BigQueryOperation:
-        pass
-
-    @abstractmethod
     def create_table(self, create_query: str) -> BigQueryOperation:
-        pass
-
-    @abstractmethod
-    def load_table_from_dataframe(self, table_name: str, df: pd.DataFrame, partitioned: bool = True) -> BigQueryOperation:
         pass
