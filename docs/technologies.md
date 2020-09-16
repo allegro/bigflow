@@ -9,7 +9,7 @@ BigFlow provides support for the main big data data processing technologies on G
 * [Dataproc](https://cloud.google.com/dataproc) (Apache Spark)
 
 However, **you are not limited** to these technologies. The only limitation is Python language. What is more, you can
-mix all technologies.
+mix all technologies in a single workflow.
 
 The provided utils allow you to build workflows easier and solve problems that must have been solved anyway.
 
