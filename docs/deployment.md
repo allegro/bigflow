@@ -59,7 +59,7 @@ as a Composer's account.
 This account is created automatically for each GCP project. It has the following email:
 
 ```
-GCP_PROJECT_NAME-compute@developer.gserviceaccount.com
+PROJECT_NUMBER-compute@developer.gserviceaccount.com
 ```
 
 ### Setting up a Composer Instance
@@ -77,7 +77,7 @@ It should look like this:
 ![brand_new_composer](images/brand_new_composer.png)
 
 ### Composer's DAGs Folder
-Composer's DAGs Folder is a Storage [bucket](https://cloud.google.com/storage/docs/json_api/v1/buckets)
+Composer's DAGs Folder is a Cloud Storage [bucket](https://cloud.google.com/storage/docs/json_api/v1/buckets)
 mounted to Airflow. This is the place where BigFlow uploads your DAG files.
 
 Go to the Composer's **DAGs folder**:
@@ -105,15 +105,24 @@ It is used by BigFlow to select proper configuration from [Config](configuration
 We recommend to use Google Cloud [Container Registry](https://cloud.google.com/container-registry)
 because it integrates seamlessly with Composer.
 
-Ensure that all your Composers that are going to read from a Container Registry have right permissions.
+Ensure that all your Composers have the right permissions to pull from a Container Registry. 
 
 If a Composer's service account is a  
 [default service account](https://cloud.google.com/compute/docs/access/service-accounts#default_service_account)
-and if it wants to pull from a a Container Registry located in the same GCP project &mdash;
+and if it wants to pull from a Container Registry located in the same GCP project &mdash;
 it has permissions granted by default.
 
-Otherwise, you have to give it the **Pull permission**. 
-See [access control](https://cloud.google.com/container-registry/docs/access-control).
+Otherwise, you have to grant it. 
+
+## Container Registry bucket permissions
+In the GCP project which hosts a Container Registry,
+find the Cloud Storage bucket which underlies this Registry.
+Search it by name using `artifacts` keyword.
+ 
+Grant the **Storage Object Viewer** permissions to each Composer' service account
+that are going to read from this Registry.
+
+Read more about Container Registry [access control](https://cloud.google.com/container-registry/docs/access-control).
 
 ## Managing configuration in deployment_config.py
 
@@ -172,3 +181,6 @@ It allows you to authenticate with a [service account](https://cloud.google.com/
 as long as you have a [Vault](https://www.vaultproject.io/) server for managing OAuth tokens.
 
 ## Vault
+
+Grant the **Storage Object Creator** permissions to a service account which is used on your
+CI/CD server to deployment with [service account authentication](#service-account-authentication).
