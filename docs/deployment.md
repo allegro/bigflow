@@ -75,17 +75,15 @@ It should look like this:
 
 ### Composer's DAGs Folder
 
-Go to the **DAGs folder** and note the [bucket](https://cloud.google.com/storage/docs/json_api/v1/buckets) name,
-for example:
+Go to the Composer's **DAGs folder**:
+ 
+![dags_bucket](images/dags_bucket.png)
+ 
+and note the [bucket](https://cloud.google.com/storage/docs/json_api/v1/buckets) name
+(here `europe-west1-my-first-compo-ba6e3418-bucket`).
 
-```txt
-europe-chi-analytics--*********-bucket
-```
-
-Put this bucket name to the `dags_bucket` property in your
+Put the bucket name into the `dags_bucket` property in your
 [`deployment_config.py`](#managing-configuration-in-deployment_configpy).
-
-### Kubernetes
 
 ## Docker Registry
 
