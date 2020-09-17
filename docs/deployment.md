@@ -5,11 +5,18 @@ BigFlow can dockerize your workflows and deploy them to Google Cloud Composer.
 
 ## GCP runtime environment
 
-GCP runtime environment consists of two services:
+BigFlow GCP runtime environment consists of two services:
 
 1. Google [Cloud Composer](#cloud-composer),
 2. [Docker Registry](#docker-registry).
 
+Typically, for one software project, teams use one or more
+GCP projects (for dev, test, and prod) and one long running Composer instance per each GCP project.
+
+Docker images are heavy files, so pushing them only once to GCP greatly
+reduces subsequent deployments time (it's safe, because images are immutable).
+That's why we recommend to use a single, shared instance of Docker Registry. 
+  
 There are two [deployment artifacts](project_setup_and_build.md#deployment-artifacts):
 
 1. Airflow DAG files with workflows definitions,
@@ -17,11 +24,6 @@ There are two [deployment artifacts](project_setup_and_build.md#deployment-artif
 
 During deployment, BigFlow uploads your DAG files to Composer's [DAGs folder](#composers-dags-folder)
 and pushes your Docker image to Docker Registry.
-
-Typically, for one project, teams use two or more Composer instances (dev, test, prod)
-and a single, shared instance of Docker Registry.
-Docker images are heavy files, so pushing them only once to GCP greatly
-reduces subsequent deployments time (it's safe, because images are immutable). 
 
 Read more about deployment artifacts in [Project setup and build](project_setup_and_build.md).
 
@@ -43,19 +45,22 @@ BigFlow leverages the fact that each Composer instance
 stands on its own ([GKE](https://cloud.google.com/kubernetes-engine)) cluster.
 This cluster is reused by BigFlow.
 
-### Composer's Service account
+### Composer's service account
 
 Before you start you will need a [GCP project](https://cloud.google.com/resource-manager/docs/creating-managing-projects)
-and a [Service account](https://cloud.google.com/iam/docs/service-accounts) name. 
-It looks like an email address, for example:
-
-```
-*********-compute@developer.gserviceaccount.com
-```
+and a [Service account](https://cloud.google.com/iam/docs/service-accounts). 
 
 That's important. All permissions required by a Composer itself and by your jobs have to be granted to this account.
-To make things more secure, we recommend to use a dedicated service accounts for each Composer instance
-(dev, test, prod).
+We recommend to use a default service account which is associated with each GCP project.
+
+We recommend to use
+a [default service account](https://cloud.google.com/compute/docs/access/service-accounts#default_service_account)
+as a Composer's account.
+This account is created automatically for each GCP project. It has the following email:
+
+```
+GCP_PROJECT_NAME-compute@developer.gserviceaccount.com
+```
 
 ### Setting up a Composer Instance
 
@@ -64,9 +69,7 @@ a new Composer instance. Set only these properties (the others leave blank or de
 
 * **Location** &mdash; close to you,
 * **Machine type** &mdash; `n1-standard-2` or higher (we recommend to stay with `n1-standard-2`),
-* **Disk size (GB)** &mdash; 50 is enough,
-* **Service account** &mdash; a Service account which will be running this environment,
-  for example `*********-compute@developer.gserviceaccount.com`.
+* **Disk size (GB)** &mdash; 50 is enough.
   
 That's it, wait until the new Composer Instance is ready.
 It should look like this:
@@ -74,27 +77,43 @@ It should look like this:
 ![brand_new_composer](images/brand_new_composer.png)
 
 ### Composer's DAGs Folder
+Composer's DAGs Folder is a Storage [bucket](https://cloud.google.com/storage/docs/json_api/v1/buckets)
+mounted to Airflow. This is the place where BigFlow uploads your DAG files.
 
 Go to the Composer's **DAGs folder**:
  
 ![dags_bucket](images/dags_bucket.png)
  
-and note the [bucket](https://cloud.google.com/storage/docs/json_api/v1/buckets) name
+and note the [bucket's](https://cloud.google.com/storage/docs/json_api/v1/buckets) name
 (here `europe-west1-my-first-compo-ba6e3418-bucket`).
 
-Put the bucket name into the `dags_bucket` property in your
+Put this bucket name into the `dags_bucket` property in your
 [`deployment_config.py`](#managing-configuration-in-deployment_configpy).
+
+### Airflow Variables
+
+Create the `env` variable in the Airflow web UI:
+
+![airflow_env_variable](images/airflow_env_variable.png)
+
+It is used by BigFlow to select proper configuration from [Config](configuration.md) objects in your project.    
 
 ## Docker Registry
 
-[Docker Registry](https://docs.docker.com/registry/) is a repository
-where your Docker images are stored.
+[Docker Registry](https://docs.docker.com/registry/) is a repository where your Docker images are stored.
 
-We recommend using Google Cloud [Container Registry](https://cloud.google.com/container-registry)
-because it integrates seamlessly with Composer. 
+We recommend to use Google Cloud [Container Registry](https://cloud.google.com/container-registry)
+because it integrates seamlessly with Composer.
 
-All you need to know is choose 
-//TODO
+Ensure that all your Composers that are going to read from a Container Registry have right permissions.
+
+If a Composer's service account is a  
+[default service account](https://cloud.google.com/compute/docs/access/service-accounts#default_service_account)
+and if it wants to pull from a a Container Registry located in the same GCP project &mdash;
+it has permissions granted by default.
+
+Otherwise, you have to give it the **Pull permission**. 
+See [access control](https://cloud.google.com/container-registry/docs/access-control).
 
 ## Managing configuration in deployment_config.py
 
@@ -116,11 +135,11 @@ deployment_config = Config(name='dev',
                                'docker_repository_project': '{gcp_project_id}',
                                'docker_repository': 'eu.gcr.io/{docker_repository_project}/my-project',
                                'vault_endpoint': 'https://example.com/vault',
-                               'dags_bucket': 'europe-west1-123456-bucket'
+                               'dags_bucket': 'europe-west1-my-first-compo-ba6e3418-bucket'
                            })\
         .ad_configuration(name='prod', properties={
                                'gcp_project_id': 'my_gcp_prod_project',
-                               'dags_bucket': 'europe-west1-654321-bucket'})
+                               'dags_bucket': 'europe-west1-my-first-compo-1111116-bucket'})
 ``` 
 
 Having that, you can run the extremely concise `deploy` command, for example:  
