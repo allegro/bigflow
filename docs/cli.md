@@ -110,8 +110,7 @@ bigflow run --workflow hello_config_workflow --config prod
 
 ### Building Airflow DAGs
 
-There are four commands to [build](project_setup_and_build.md)  your
-[deployment artifacts](deployment.md#deployment-artifacts):
+There are four commands to build your [deployment artifacts](project_setup_and_build.md#deployment-artifacts):
 
 1. `build-dags` generates Airflow DAG files from your workflows. 
     DAG files are saved to a local `.dags` dir.
@@ -186,7 +185,7 @@ bigflow build
  
 ### Deploying to GCP
 
-On this stage, you should have two [deployment artifacts](deployment.md#deployment-artifacts) 
+On this stage, you should have two [deployment artifacts](project_setup_and_build.md#deployment-artifacts)
 created by the [`bigflow build`](#building-airflow-dags) command.
 
 There are three commands to [deploy](deployment.md) your workflows
