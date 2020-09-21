@@ -37,6 +37,8 @@ class Config:
 
         self.environment_variables_prefix = environment_variables_prefix
 
+        self._check_docker_repository(properties)
+
     def __str__(self):
         return '\n'.join(list(map(lambda e: self.pretty_print(e), self.configs.keys())))
 
@@ -73,6 +75,8 @@ class Config:
 
         all_properties = self._get_master_properties()
         all_properties.update(properties)
+
+        self._check_docker_repository(properties)
 
         self.configs[name] = EnvConfig(name, all_properties)
 
@@ -142,3 +146,8 @@ class Config:
             return modified_value
         else:
             return value
+
+    def _check_docker_repository(self, properties):
+        if "docker_repository" in properties.keys():
+            if not properties["docker_repository"].islower():
+                raise ValueError("docker_repository variable should be in lower case")

@@ -109,7 +109,7 @@ def set_configuration_env(env):
     """
     if env is not None:
         os.environ['bf_env'] = env
-    print(f"bf_env is : {os.environ.get('bf_env', None)}")
+        print(f"bf_env is : {os.environ.get('bf_env', None)}")
 
 
 def execute_job(root_package: Path, workflow_id: str, job_id: str, runtime=None):

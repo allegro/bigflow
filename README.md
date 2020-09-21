@@ -59,7 +59,7 @@ source .bigflow_env/bin/activate
 Install the `bigflow` PIP package:
 
 ```bash
-pip install bigflow
+pip install bigflow==1.0.dev34
 ```
 
 Test it:
