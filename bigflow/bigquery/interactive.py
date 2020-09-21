@@ -399,12 +399,11 @@ class DatasetConfigInternal(object):
             'extras': self.extras,
             'location': self.location
         }
-        return config
 
 
-def sensor_component(table_alias, where_clause, ds=None):
+def sensor(table_alias, where_clause, ds=None):
 
-    def sensor(ds):
+    def sensor_function(ds):
         result = ds.collect('''
         SELECT count(*) > 0 as table_ready
         FROM `{%(table_alias)s}`
@@ -417,9 +416,9 @@ def sensor_component(table_alias, where_clause, ds=None):
         if not result.iloc[0]['table_ready']:
             raise ValueError('{} is not ready'.format(table_alias))
 
-    sensor.__name__ = 'wait_for_{}'.format(table_alias)
+    sensor_function.__name__ = 'wait_for_{}'.format(table_alias)
 
-    return sensor if ds is None else interactive_component(ds=ds)(sensor)
+    return sensor_function if ds is None else interactive_component(ds=ds)(sensor_function)
 
 
 def add_label_component(table_name, labels, ds=None):

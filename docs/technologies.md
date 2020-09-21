@@ -8,7 +8,7 @@ BigFlow provides support for the main big data data processing technologies on G
 * [BigQuery](https://cloud.google.com/bigquery)
 * [Dataproc](https://cloud.google.com/dataproc) (Apache Spark)
 
-However, **you are not limited** to these technologies. The only limitation is Python language. What is more, you can
+However, **you are not limited** to these technologies. The only limitation is the Python language. What is more, you can
 mix all technologies in a single workflow.
 
 The provided utils allow you to build workflows easier and solve problems that must have been solved anyway.
@@ -18,11 +18,11 @@ The BigFlow [project starter](./scaffold.md) provides an example for each techno
 
 ## Dataflow (Apache Beam)
 
-BigFlow project is a Python package. Apache Beam supports [running jobs as a Python package](https://beam.apache.org/documentation/sdks/python-pipeline-dependencies/#multiple-file-dependencies).
+A BigFlow project is a Python package. Apache Beam supports [running jobs as a Python package](https://beam.apache.org/documentation/sdks/python-pipeline-dependencies/#multiple-file-dependencies).
 Thanks to these facts, running Beam jobs requires almost no support.
 
 The BigFlow project starter provides an example Beam workflow called `wordcount`.
-The interesting part of this example is the `wordcount.pipeline` module. 
+The interesting part of this example is the `wordcount.pipeline` module:
 
 ```python
 def dataflow_pipeline(gcp_project_id, staging_location, temp_location, region, machine_type, project_name):
@@ -46,15 +46,14 @@ def dataflow_pipeline(gcp_project_id, staging_location, temp_location, region, m
     return beam.Pipeline(options=options)
 ```
 
-It contains the pipeline setup for the `wordcount` example. That is the only place where the specific support
-is needed. It's the following line:
+The `dataflow_pipeline` function create a Beam pipeline. The key is the following line:
 
 ```python
 options.view_as(SetupOptions).setup_file = resolve(find_or_create_setup_for_main_project_package(project_name, Path(__file__)))
 ```
 
 The line sets a path to the setup file, that will be used by Beam to create a package. The setup for a Beam
-process is generated on-fly, when a Beam job is run. So it's not the `project_setup.py`. The generated setup looks like this:
+process is generated on-fly when a Beam job is run. So it's not the `project_setup.py`. The generated setup looks like this:
 
 ```python
 import setuptools
@@ -67,7 +66,7 @@ setuptools.setup(
 ```
 
 The generated setup is minimalistic. If you want to provide requirements for your Beam process, you can do it through the
-`SetupOptions`. You can store the requirements for you processes in the [`resources`](./project_setup.py#project-structure) directory.
+`SetupOptions`. You can store the requirements for your processes in the [`resources`](./project_setup.py#project-structure) directory.
 
 ```python
 options.view_as(SetupOptions).requirements_file = resolve(get_resource_absolute_path('requirements.txt', Path(__file__)))
@@ -77,14 +76,14 @@ options.view_as(SetupOptions).requirements_file = resolve(get_resource_absolute_
 
 ### Overview
 
-BigFlow provides a vast support for BigQuery. Example use cases:
+BigFlow provides vast support for BigQuery. Example use cases:
 
 * Ad-hoc queries (fits well in a Jupyter notebook)
 * Convenient BigQuery client 
 * Creating data processing pipelines
 * Creating BigQuery sensors
 
-Project starter generates workflow called `internationalports`. It's a purely BigQuery based workflow.
+The project starter generates the workflow called `internationalports`. It's a purely BigQuery based workflow.
 
 The workflow fits the single `internationalports.workflow` module:
 
@@ -128,8 +127,8 @@ populate_ports_table = dataset.collect('''
         VALUES 
         ('GDYNIA', 54.533333, 18.55, 'POL', '28740'),
         ('GDANSK', 54.35, 18.666667, 'POL', '28710'),
-        ('MURMANSK', 68.983333, 33.05, 'RUS', '62950'),
-        ('SANKT-PETERBURG', 59.933333, 30.3, 'RUS', '28370');
+        ('SANKT-PETERBURG', 59.933333, 30.3, 'RUS', '28370'),
+        ('TEXAS', 34.8, 31.3, 'USA', '28870');
         ''')
 
 
@@ -146,10 +145,10 @@ internationalports_workflow = Workflow(
 
 There are two notable elements in the `internationalports.workflow` module:
 
-* `DatasetConfig` class which defines BigQuery dataset you want to interact with
+* `DatasetConfig` class which defines a BigQuery dataset you want to interact with
 * `dataset: Dataset` object which allows you to perform various operations on a defined dataset
 
-Using a dataset object you can describe operations you want to perform. Next, you arrange them into a workflow.
+Using a dataset object you can describe operations that you want to perform. Next, you arrange them into a workflow.
 
 Take a look at the example operation, which creates a new table:
 
@@ -170,18 +169,29 @@ a [job](./workflow-and-job.md#job) first, and then run it:
 create_polish_ports_table.to_job(id='create_ports_table').run()
 ```
 
-Or put a job into a [workflow](./workflow-and-job.md#workflow), and then, run it using CLI:
+Or put a job into a [workflow](./workflow-and-job.md#workflow) (note that there is not `run()` invocation):
+
+```python
+internationalports_workflow = Workflow(
+        workflow_id='internationalports',
+        definition=[
+                create_polish_ports_table.to_job(id='create_polish_ports_table'),
+        ],
+        schedule_interval='@once')
+```
+
+And then, run it using CLI:
 
 ```shell script
 bf run --job internationalports.create_ports_table
 ```
 
-Now, lets go through `DatasetConfig` and `Dataset` in details.
+Now, let us go through `DatasetConfig` and `Dataset` in detail.
 
 ## Dataset Config
 
 `DatasetConfig` is a convenient extension to `Config` designed for workflows which use a `Dataset` object
-to call Big Query SQL.
+to call BigQuery SQL.
 
 `DatasetConfig` defines four properties that are required by a `Dataset` object:
 
@@ -292,7 +302,8 @@ class BigQueryOperation(object, metaclass=ABCMeta):
 
 You can turn a lazy operation into a job or simply run it (useful for ad-hoc queries or debugging).
 
-A SQL code which you provide to the methods is templated. Besides a configuration parameters, you can access the
+A SQL code that you provide to the methods is templated (as mentioned in the previous section). 
+Besides a configuration parameters, you can access the
 `runtime` parameter. It's available as the `dt` variable. For example:
 
 ```python
@@ -305,7 +316,7 @@ WHERE PARTITION_TIME = '{dt}'
 
 #### Write truncate
 
-This method takes a SQL query, executes it, and saves a result into a specified table.
+The `write_truncate` method takes a SQL query, executes it, and saves a result into a specified table.
 
 ```python
 dataset.write_truncate('target_table', '''
@@ -314,7 +325,7 @@ FROM `{another_table}`
 ''')
 ```
 
-The `write_truncate` method overrides the whole table or a single partition, depending on the type of a specified table.
+This method overrides the whole table or a single partition, depending on the type of a specified table.
 To specify type of a table you use, you need to use the `partitioned` parameter.
 
 ```python
@@ -324,12 +335,12 @@ FROM `{another_table}`
 ''', partitioned=False)
 ```
 
-The `write_truncate` method also expects that a specified table exists. It won't create a new table from query results.
+The `write_truncate` method also expects that a specified table exists. It won't create a new table from a query result.
 
 #### Write append
 
 The `write_append` method acts almost the same as the `write_truncate`. The difference is that `write_append` doesn't
-override the specified table, but appends new records.
+override a specified table, but appends new records.
 
 ```python
 dataset.write_append('target_table', '''
@@ -340,7 +351,7 @@ FROM `{another_table}`
 
 #### Write tmp
 
-The `write_tmp` method allows you to create or override a non-partitioned table from a query results.
+The `write_tmp` method allows you to create or override a non-partitioned table from a query result.
 
 ```python
 select_dataset.write_tmp('target_temporary_table', '''
@@ -360,9 +371,12 @@ FROM `{another_table}`
 ''').run()
 ```
 
+Note that to fetch a result, you need to call the `run` method.
+
 #### Collect list
 
-The `collect_list` method works almost the same as the `collect` method, the difference is that it returns a Python `list`.
+The `collect_list` method works almost the same as the `collect` method,
+the difference is that it returns a Python `list`.
 
 ```python
 rows: list = dataset.collect('''
@@ -381,4 +395,25 @@ create_my_new_table_operation = dataset.create_table('''
       some_field STRING,
       another_field FLOAT64)
 ''')
+```
+
+#### Table sensor
+
+The `sensor` function allows you to wait for a specified table.
+
+```python
+from bigflow.bigquery import sensor
+from bigflow.bigquery import DatasetConfig, Dataset
+
+dataset_config = DatasetConfig(
+    env='dev',
+    project_id='your-project-id',
+    dataset_name='internationalports',
+    internal_tables=['ports'],
+    external_tables={})
+
+dataset: Dataset = dataset_config.create_dataset_manager()
+wait_for_polish_ports = sensor('ports',
+        where_clause='country = "POLAND"',
+        ds=dataset,).to_job(retry_count=144, retry_pause_sec=600)
 ```

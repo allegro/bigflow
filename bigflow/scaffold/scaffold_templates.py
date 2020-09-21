@@ -199,8 +199,8 @@ populate_ports_table = dataset.collect('''
         VALUES 
         ('GDYNIA', 54.533333, 18.55, 'POL', '28740'),
         ('GDANSK', 54.35, 18.666667, 'POL', '28710'),
-        ('MURMANSK', 68.983333, 33.05, 'RUS', '62950'),
-        ('SANKT-PETERBURG', 59.933333, 30.3, 'RUS', '28370');
+        ('SANKT-PETERBURG', 59.933333, 30.3, 'RUS', '28370'),
+        ('TEXAS', 34.8, 31.3, 'USA', '28870');
         ''')
 
 
