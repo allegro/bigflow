@@ -2,7 +2,7 @@ from unittest import TestCase
 from unittest import main
 import pandas as pd
 import mock
-from bigflow.bigquery.interactive import sensor_component
+from bigflow.bigquery.interactive import sensor
 
 YESTERDAY_WHERE_CLAUSE = "DATE(%(partitioning_column)s) = DATE(TIMESTAMP_ADD(TIMESTAMP('{dt} UTC'), INTERVAL -24 HOUR))"
 
@@ -20,7 +20,7 @@ class SensorComponentTestCase(TestCase):
     def test_should_generate_component_name_based_on_table_alias(self):
         # given
         dataset = mock.Mock()
-        sensor = sensor_component('some_table', YESTERDAY_WHERE_CLAUSE, ds=dataset)
+        sensor = sensor('some_table', YESTERDAY_WHERE_CLAUSE, ds=dataset)
 
         # expect
         self.assertEqual(sensor._standard_component.__name__, 'wait_for_some_table')
@@ -29,7 +29,7 @@ class SensorComponentTestCase(TestCase):
         # given
         dataset = mock.Mock()
         dataset.collect.side_effect = return_table_not_ready
-        sensor = sensor_component('some_table', YESTERDAY_WHERE_CLAUSE, ds=dataset)
+        sensor = sensor('some_table', YESTERDAY_WHERE_CLAUSE, ds=dataset)
 
         # expect
         with self.assertRaises(ValueError):
@@ -38,7 +38,7 @@ class SensorComponentTestCase(TestCase):
     def test_should_generate_query_based_on_where_clause_and_table_alias(self):
         # given
         dataset = mock.Mock()
-        sensor = sensor_component('some_table', YESTERDAY_WHERE_CLAUSE % {
+        sensor = sensor('some_table', YESTERDAY_WHERE_CLAUSE % {
             'partitioning_column': 'partition'
         }, ds=dataset)
         dataset.collect.side_effect = return_table_ready
