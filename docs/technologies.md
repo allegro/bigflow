@@ -169,7 +169,7 @@ a [job](./workflow-and-job.md#job) first, and then run it:
 create_polish_ports_table.to_job(id='create_ports_table').run()
 ```
 
-Or put a job into a [workflow](./workflow-and-job.md#workflow) (note that there is not `run()` invocation):
+Or put a job into a [workflow](./workflow-and-job.md#workflow) (note that there is no `run()` invocation):
 
 ```python
 internationalports_workflow = Workflow(
