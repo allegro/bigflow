@@ -85,7 +85,8 @@ BigFlow provides comprehensive support for BigQuery. Example use cases:
 * Creating data processing pipelines.
 * Creating BigQuery sensors.
 
-The project starter generates the workflow called `internationalports`. It's a purely BigQuery based workflow.
+The project starter generates the workflow called `internationalports`. 
+This workflow is based solely on BigQuery.
 
 The workflow fits the single `internationalports.workflow` module:
 
