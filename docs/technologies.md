@@ -46,7 +46,7 @@ def dataflow_pipeline(gcp_project_id, staging_location, temp_location, region, m
     return beam.Pipeline(options=options)
 ```
 
-The `dataflow_pipeline` function create a Beam pipeline. The key is the following line:
+The `dataflow_pipeline` function creates a Beam pipeline. The key is the following line:
 
 ```python
 options.view_as(SetupOptions).setup_file = resolve(find_or_create_setup_for_main_project_package(project_name, Path(__file__)))
