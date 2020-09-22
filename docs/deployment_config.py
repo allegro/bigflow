@@ -5,6 +5,5 @@ deployment_config = Config(
     properties={
         'gcp_project_id': 'my_gcp_project_id',
         'docker_repository': 'eu.gcr.io/{gcp_project_id}/docs-project',
-        'dags_bucket': 'europe-west1-dockerized-chi-12004a8b-bucket'
+        'dags_bucket': 'my_composer_dags_bucket'
     })
-e
