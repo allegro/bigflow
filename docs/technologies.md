@@ -1,7 +1,5 @@
 # Technologies
 
-## Overview
-
 BigFlow provides support for the main big data processing technologies on GCP:
 
 * [Dataflow](#dataflow-apache-beam) (Apache Beam)
@@ -11,7 +9,12 @@ BigFlow provides support for the main big data processing technologies on GCP:
 However, **you are not limited** to these technologies. The only limitation is the Python language. What is more, you can
 mix all technologies in a single workflow.
 
-The provided utils allow you to build workflows easier and solve problems that must have been solved anyway.
+The provided utils allow you to build workflows easier and solve problems that must have been solved anyway, for example:
+
+* Configuring a Beam pipeline.
+* Configuring, staging, submitting a Spark job.
+* Creating a BigQuery table.
+* Performing read/write operation on a BigQuery table.
 
 The BigFlow [project starter](./scaffold.md) provides an example for each technology. Before you dive into the next chapters, 
 [create an example project](./scaffold.md#start-project) using the starter.
@@ -73,8 +76,6 @@ options.view_as(SetupOptions).requirements_file = resolve(get_resource_absolute_
 ```
 
 ## BigQuery
-
-### Overview
 
 BigFlow provides vast support for BigQuery. Example use cases:
 
