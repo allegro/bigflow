@@ -154,23 +154,18 @@ bigflow build --workflow hello_world_workflow
 List the freshly generated deployment artifacts:
 
 ```bash
-ls .dags
+ls dags image
 ```
 
 Output:
 
 ```text
-hello_world_workflow__v0_1_0__2020_09_11_11_00_00_dag.py
-```
+dags:
+hello_world_workflow__v0_1_0SNAPSHOT341dbf7c__2020_09_21_10_00_00_dag.py
 
-```bash
-ls image
-```
-
-Output:
-
-```text
+image:
 deployment_config.py    image-0.1.0.tar
+
 ```
 
 Read more about the [`bigflow build`](cli.md#building-airflow-dags) command.
