@@ -165,8 +165,8 @@ create_polish_ports_table = dataset.create_table('''
 ```
 
 The `create_polish_ports_table` object is a lazy operation. Lazy means that calling `dataset.create_table`
-method, won't actually create a table. First turn it into a [job](./workflow-and-job.md#job) first, 
-and then you can run it:
+method, won't actually create a table. First turn it into a [job](./workflow-and-job.md#job) first,
+then you can run it:
 
 ```python
 create_polish_ports_table.to_job(id='create_ports_table').run()
