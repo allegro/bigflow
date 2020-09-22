@@ -2,7 +2,7 @@
 
 ## Overview
 
-BigFlow provides support for the main big data data processing technologies on GCP:
+BigFlow provides support for the main big data processing technologies on GCP:
 
 * [Dataflow](https://cloud.google.com/dataflow) (Apache Beam)
 * [BigQuery](https://cloud.google.com/bigquery)
