@@ -160,7 +160,7 @@ The following properties are read by BigFlow from `deployment_config.py` if not 
 1. `dags_bucket` &mdash; Composer's [DAGs Folder](#composers-dags-folder),
 1. `docker_repository` &mdash; full name of a [Docker repository](#docker-repository-name),
 1. `vault_endpoint` &mdash; an Vault endpoint to obtain OAuth token, used only if
-   [Service account authentication](#service-account-authentication is] chosen.
+   [Service account authentication](#service-account-authentication) is chosen.
 
 Here is the recommended structure of the `deployment_config.py` file:
 
@@ -220,15 +220,11 @@ Key concepts:
 
 #### Vault integration
 
-[Vault](https://www.vaultproject.io/) can be used to delegated authorization based on service accounts.
-
-//TODO
-
-To use service account authentication you have to pass two configuration parameters: `vault_endpoint`
-and `vault_secret`.
+To use service account authentication you have to pass 
+two configuration parameters to BigFlow [CLI](cli.md):
+`vault_endpoint` and `vault_secret`. 
 While the `vault_endpoint` parameter can (and should) be stored in [`deployment_config.py`](#managing-configuration-in-deployment_configpy)
-&mdash; `vault_secret` can't, you shouldn't keep secrets in Git.
-We recommend to keep it on your CI/CD server 
+&mdash; `vault_secret` shouldn't be stored in Git. We recommend to keep it on your CI/CD server.
 
 ## Deployment permission
 
