@@ -4,9 +4,9 @@
 
 BigFlow provides support for the main big data processing technologies on GCP:
 
-* [Dataflow](https://cloud.google.com/dataflow) (Apache Beam)
-* [BigQuery](https://cloud.google.com/bigquery)
-* [Dataproc](https://cloud.google.com/dataproc) (Apache Spark)
+* [Dataflow](#dataflow-apache-beam) (Apache Beam)
+* [BigQuery](#bigquery)
+* [Dataproc](#dataproc) (Apache Spark)
 
 However, **you are not limited** to these technologies. The only limitation is the Python language. What is more, you can
 mix all technologies in a single workflow.
