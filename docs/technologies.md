@@ -22,8 +22,9 @@ The BigFlow [project starter](./scaffold.md) provides an example for each techno
 
 ## Dataflow (Apache Beam)
 
-The standard BigFlow project is a Python package. Apache Beam supports [running jobs as a Python package](https://beam.apache.org/documentation/sdks/python-pipeline-dependencies/#multiple-file-dependencies).
-Thanks to these facts, running Beam jobs requires almost no support.
+The standard BigFlow project is a Python package. 
+It happens, that Apache Beam supports [running jobs as a Python package](https://beam.apache.org/documentation/sdks/python-pipeline-dependencies/#multiple-file-dependencies).
+Thanks to that, running Beam jobs requires almost no support.
 
 The BigFlow project starter provides an example Beam workflow called `wordcount`.
 The interesting part of this example is the `wordcount.pipeline` module:
