@@ -256,8 +256,6 @@ is resolved to `not-my-project.offer_scorer.offer_ctr_long_name`.
 
 ### Dataset
 
-#### Definition
-
 A `Dataset` object has the following interface:
 
 **[`interface.py`](../bigflow/bigquery/interface.py)**
