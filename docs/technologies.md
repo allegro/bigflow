@@ -81,9 +81,9 @@ options.view_as(SetupOptions).requirements_file = resolve(get_resource_absolute_
 
 BigFlow provides comprehensive support for BigQuery. Example use cases:
 
-* Ad-hoc queries (fits well in a Jupyter notebook)
-* Creating data processing pipelines
-* Creating BigQuery sensors
+* Ad-hoc queries (fits well in a Jupyter notebook).
+* Creating data processing pipelines.
+* Creating BigQuery sensors.
 
 The project starter generates the workflow called `internationalports`. It's a purely BigQuery based workflow.
 
