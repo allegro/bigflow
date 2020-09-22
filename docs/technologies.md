@@ -57,7 +57,7 @@ The `dataflow_pipeline` function creates a [Beam pipeline](https://cloud.google.
 options.view_as(SetupOptions).setup_file = resolve(find_or_create_setup_for_main_project_package(project_name, Path(__file__)))
 ```
 
-The line sets a path to the setup file, that will be used by Beam to create a package. The setup for a Beam
+The line sets a path to the setup file used by Beam to create a package. The setup for a Beam
 process is generated on-fly when a Beam job is run. So it's not the `project_setup.py`. The generated setup looks like this:
 
 ```python
