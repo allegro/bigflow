@@ -148,7 +148,7 @@ internationalports_workflow = Workflow(
 
 There are two notable elements in the `internationalports.workflow` module:
 
-* `DatasetConfig` class which defines a BigQuery dataset you want to interact with
+* [`DatasetConfig`](#dataset-config) class which defines a BigQuery dataset you want to interact with
 * `dataset: Dataset` object which allows you to perform various operations on a defined dataset
 
 Using a dataset object you can describe operations that you want to perform. Next, you arrange them into a workflow.
