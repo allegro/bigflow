@@ -71,7 +71,7 @@ setuptools.setup(
 ```
 
 The generated setup is minimalistic. If you want to provide requirements for your Beam process, you can do it through the
-`SetupOptions`. You can store the requirements for your processes in the [`resources`](./project_setup.py#project-structure) directory.
+`SetupOptions`. You can store requirements for your processes in the [`resources`](./project_setup.py#project-structure) directory.
 
 ```python
 options.view_as(SetupOptions).requirements_file = resolve(get_resource_absolute_path('requirements.txt', Path(__file__)))
