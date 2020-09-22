@@ -17,7 +17,7 @@ They make your job easier. Example use cases:
 * Creating a BigQuery table.
 * Performing read/write operation on a BigQuery table.
 
-The BigFlow [project starter](./scaffold.md) provides an example for each technology. Before you dive into the next chapters, 
+The BigFlow [project starter](./scaffold.md) provides examples each technology. Before you dive into the next chapters, 
 [create an example project](./scaffold.md#start-project) using the starter.
 
 ## Dataflow (Apache Beam)
