@@ -9,7 +9,8 @@ BigFlow provides support for the main big data processing technologies on GCP:
 However, **you are not limited** to these technologies. The only limitation is the Python language. What is more, you can
 mix all technologies in a single workflow.
 
-The provided utils allow you to build workflows easier and solve problems that must have been solved anyway, for example:
+The utils provided by BigFlow solve problems that must have been solved anyway.
+They make your job easier. Example use cases:
 
 * Configuring a Beam pipeline.
 * Configuring, staging, submitting a Spark job.
