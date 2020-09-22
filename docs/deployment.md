@@ -224,7 +224,8 @@ To use service account authentication you have to pass
 two configuration parameters to BigFlow [CLI](cli.md):
 `vault_endpoint` and `vault_secret`. 
 While the `vault_endpoint` parameter can (and should) be stored in [`deployment_config.py`](#managing-configuration-in-deployment_configpy)
-&mdash; `vault_secret` shouldn't be stored in Git. We recommend to keep it on your CI/CD server.
+&mdash; `vault_secret` shouldn't be stored in Git. We recommend to keep it encrypted 
+on your CI/CD server.
 
 ## Deployment permission
 
