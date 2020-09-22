@@ -79,10 +79,9 @@ options.view_as(SetupOptions).requirements_file = resolve(get_resource_absolute_
 
 ## BigQuery
 
-BigFlow provides vast support for BigQuery. Example use cases:
+BigFlow provides comprehensive support for BigQuery. Example use cases:
 
 * Ad-hoc queries (fits well in a Jupyter notebook)
-* Convenient BigQuery client 
 * Creating data processing pipelines
 * Creating BigQuery sensors
 
