@@ -149,7 +149,7 @@ internationalports_workflow = Workflow(
 There are two notable elements in the `internationalports.workflow` module:
 
 * [`DatasetConfig`](#dataset-config) class which defines a BigQuery dataset you want to interact with
-* `dataset: Dataset` object which allows you to perform various operations on a defined dataset
+* [`dataset: Dataset`](../bigflow/bigquery/interface.py) object which allows you to perform various operations on a defined dataset
 
 Using a dataset object you can describe operations that you want to perform. Next, you arrange them into a workflow.
 
@@ -256,52 +256,22 @@ is resolved to `not-my-project.offer_scorer.offer_ctr_long_name`.
 
 ### Dataset
 
-A `Dataset` object has the following interface:
-
-**[`interface.py`](../bigflow/bigquery/interface.py)**
-
-```python
-class Dataset(object, metaclass=ABCMeta):
-
-    @abstractmethod
-    def write_truncate(self, table_name: str, sql: str, partitioned: bool = True) -> BigQueryOperation:
-        pass
-
-    @abstractmethod
-    def write_append(self, table_name: str, sql: str, partitioned: bool = True) -> BigQueryOperation:
-        pass
-
-    @abstractmethod
-    def write_tmp(self, table_name: str, sql: str) -> BigQueryOperation:
-        pass
-
-    @abstractmethod
-    def collect(self, sql: str) -> BigQueryOperation:
-        pass
-
-    @abstractmethod
-    def collect_list(self, sql: str) -> BigQueryOperation:
-        pass
-
-    @abstractmethod
-    def create_table(self, create_query: str) -> BigQueryOperation:
-        pass
-```
-
-All the methods are lazy and return a `BigQueryOperation` object, which is defined as the following interface:
-
-```python
-class BigQueryOperation(object, metaclass=ABCMeta):
-
-    @abstractmethod
-    def to_job(self, id: str, retry_count: int = DEFAULT_RETRY_COUNT, retry_pause_sec: int = DEFAULT_RETRY_PAUSE_SEC):
-        pass
-
-    def run(self, runtime=DEFAULT_RUNTIME):
-        pass
-```
+A [`Dataset`](../bigflow/bigquery/interface.py) object allows you to perform various operations on a dataset. All the 
+methods are lazy and return a [`BigQueryOperation`](../bigflow/bigquery/interface.py) object.
 
 You can turn a lazy operation into a job or simply run it (useful for ad-hoc queries or debugging).
+
+```python
+create_target_table_operation = dataset.write_truncate('target_table', '''
+SELECT *
+FROM `{another_table}`
+''').to_job('create_target_table')
+
+# create a job
+job_which_you_can_put_into_workflow = create_target_table_operation.to_job('create_target_table')
+# or run the operation
+create_target_table_operation.run()
+```
 
 A SQL code that you provide to the methods is templated (as mentioned in the previous section). 
 Besides a configuration parameters, you can access the
@@ -326,7 +296,7 @@ FROM `{another_table}`
 ''')
 ```
 
-This method overrides the whole table or a single partition, depending on the type of a specified table.
+This method overrides all data in a table or a single partition, depending on the type of a specified table.
 To specify type of a table you use, you need to use the `partitioned` parameter.
 
 ```python
