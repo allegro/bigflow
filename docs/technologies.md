@@ -296,8 +296,7 @@ FROM `{another_table}`
 ''')
 ```
 
-This method overrides all data in a table or a single partition, depending on the type of a specified table.
-To specify type of a table you use, you need to use the `partitioned` parameter.
+This method overrides all data in a table or its single partition, depending on the `partitioned` parameter.
 
 ```python
 dataset.write_truncate('target_table', '''
