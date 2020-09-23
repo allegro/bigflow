@@ -310,7 +310,7 @@ The `write_truncate` method also expects that a specified table exists. It won't
 #### Write append
 
 The `write_append` method acts almost the same as the `write_truncate`. The difference is that `write_append` doesn't
-override a specified table, but appends new records.
+override any data, but appends new records.
 
 ```python
 dataset.write_append('target_table', '''
