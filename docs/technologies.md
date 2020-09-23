@@ -372,11 +372,11 @@ create_my_new_table_operation = dataset.create_table('''
 
 #### Table sensor
 
-The `sensor` function allows you to wait for a specified table.
+The `sensor` function allows your workflow to wait for a specified table.
 
 ```python
-from bigflow.bigquery import sensor
-from bigflow.bigquery import DatasetConfig, Dataset
+from bigflow import Workflow
+from bigflow.bigquery import sensor, DatasetConfig, Dataset
 
 dataset_config = DatasetConfig(
     env='dev',
@@ -389,7 +389,19 @@ dataset: Dataset = dataset_config.create_dataset_manager()
 wait_for_polish_ports = sensor('ports',
         where_clause='country = "POLAND"',
         ds=dataset,).to_job(retry_count=144, retry_pause_sec=600)
+
+workflow = Workflow(
+        workflow_id='internationalports',
+        definition=[
+                wait_for_polish_ports,
+                # another jobs which rely on the ports table
+        ],
+        schedule_interval='@once')
 ```
+
+#### Label table
+
+pass
 
 ## Dataproc
 
