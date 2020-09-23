@@ -330,6 +330,9 @@ FROM `{another_table}`
 ''')
 ```
 
+This method creates a table schema from a query result. We recommend using this method only for ad-hoc
+queries. For workflows, we recommend creating tables explicitly (so you can control a table schema).
+
 #### Collect
 
 The `collect` method allows you to fetch a query results to a [Pandas DataFrame](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html).
