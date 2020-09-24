@@ -12,6 +12,7 @@ from urllib.parse import quote_plus
 class Logger(object):
     def __init__(self, logger_name):
         self.logger = logging.getLogger(logger_name)
+        logging.basicConfig(level=logging.INFO)
 
     def warning(self, message, *args, **kwargs):
         self.logger.warning(message, *args, **kwargs)
