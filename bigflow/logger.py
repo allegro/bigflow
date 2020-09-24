@@ -12,7 +12,6 @@ from urllib.parse import quote_plus
 class Logger(object):
     def __init__(self, logger_name):
         self.logger = logging.getLogger(logger_name)
-        logging.basicConfig(level=logging.INFO)
 
     def warning(self, message, *args, **kwargs):
         self.logger.warning(message, *args, **kwargs)
@@ -77,4 +76,4 @@ class GCPLogger(object):
         id = get_dag_deployment_id(self.workflow_id, now(), get_version())
         query = quote_plus(f'''logName="projects/{self.project_id}/logs/{self.logger_name}"
 labels.workflow="{id}"''')
-        return self.logger.info(f'You can find logs for this workflow here: https://console.cloud.google.com/logs/query;query={query}\n')
+        return self.info(f'You can find logs for this workflow here: https://console.cloud.google.com/logs/query;query={query}\n')
