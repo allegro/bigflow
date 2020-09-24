@@ -7,17 +7,18 @@ BigFlow can dockerize your workflows and deploy them to Google Cloud Composer.
 
 BigFlow GCP runtime environment consists of two services:
 
-1. Google [Cloud Composer](#cloud-composer),
+1. [Google Cloud Composer](#cloud-composer),
 2. [Docker Registry](#docker-registry).
 
 Typically, for one software project, teams use one or more
 GCP projects (for dev, test, and prod environments)
 and one long-running Composer instance per each GCP project.
 
+We recommend using a single Docker Registry instance per one software project,
+shared by all environments. 
 Docker images are heavy files, so pushing them only once to GCP greatly
 reduces subsequent deployment time (it's safe because images are immutable).
-That's why we recommend using a single Docker Registry instance of,
-shared by all environments. 
+Moreover, this approach ensures that artifacts are environment-independent.
   
 There are two [deployment artifacts](project_setup_and_build.md#deployment-artifacts):
 
@@ -33,11 +34,10 @@ Read more about deployment artifacts in [Project setup and build](project_setup_
 
 Shortly speaking, a Cloud Composer is Airflow-as-a-Service.
 
-Unfortunately for Python users, Composer's architecture is flawed
-because Python libraries required by DAGs have to be
+Unfortunately for Python users, Python libraries required by DAGs have to be
 [installed manually](https://cloud.google.com/composer/docs/how-to/using/installing-python-dependencies) on Composer.
 To make it worse, installing dependencies forces a Composer instance to restart.
-It not only takes time but often fails. In the worst scenario, you need to spawn a new Composer instance.
+It not only takes time but often fails because of dependencies clash. In the worst scenario, you need to spawn a new Composer instance.
  
 BigFlow fixes these problems by using Docker. Each of your [jobs](workflow-and-job.md)
 is executed in a stable and isolated runtime environment &mdash; a Docker container.
@@ -136,7 +136,7 @@ which underlies your Registry (**Storage Object Viewer** is enough).
 
 Read more about Container Registry [access control](https://cloud.google.com/container-registry/docs/access-control).
 
-#### How to find a bucket behind your Container Registry
+### How to find a bucket behind your Container Registry
 
 Finding a bucket behind your Container Registry is not straightforward, because it's not linked anywhere.
 Moreover, its naming policy is somehow confusing ([read more](https://cloud.google.com/container-registry/docs/access-control#grant-bucket) about this policy).
@@ -160,7 +160,7 @@ The following properties are read by BigFlow from `deployment_config.py` if not 
 1. `dags_bucket` &mdash; Composer's [DAGs Folder](#composers-dags-folder),
 1. `docker_repository` &mdash; full name of a [Docker repository](#docker-repository-name),
 1. `vault_endpoint` &mdash; an Vault endpoint to obtain OAuth token, used only if
-   [Service account authentication](#service-account-authentication) is chosen.
+   [authentication with Vault](#authentication-with-vault) is chosen.
 
 Here is the recommended structure of the `deployment_config.py` file:
 
@@ -191,17 +191,20 @@ BigFlow supports two GCP authentication methods: local account and service accou
 
 ### Local Account Authentication
 
-The local account method is used for local development.
-It relies on your local user `gcloud` account.
-Check if you are authenticated by typing:
+The local account method is used mostly for local development.
+It relies on a local user `gcloud` account, which is, typically, your personal account.
+A service account can also be used locally if you have installed its credentials (see [authenticating as a service account](https://cloud.google.com/docs/authentication/production)).
+
+Check if a local account is authenticated by typing:
 
 ```bash
 gcloud info
 ```  
 
-### Service Account Authentication
+### Authentication with Vault
 
-The service account method is designed to automate your BigFlow deployment using CI/CD servers. 
+Authentication with Vault is designed to automate your BigFlow deployment using CI/CD servers in case when you 
+can't (or don't want to) install service account credentials on CI/CD servers.
 It is based on the Vault secrets engine. Think about Vault as an additional layer of indirection between your code
 and GCP service accounts.
 
@@ -220,8 +223,7 @@ Key concepts:
 
 #### Vault integration
 
-To use service account authentication you have to pass 
-two configuration parameters to BigFlow [CLI](cli.md):
+To use authentication with Vault you have to pass two configuration parameters to BigFlow [CLI](cli.md):
 `vault_endpoint` and `vault_secret`. 
 While the `vault_endpoint` parameter can (and should) be stored in [`deployment_config.py`](#managing-configuration-in-deployment_configpy)
 &mdash; `vault_secret` shouldn't be stored in Git. We recommend to keep it encrypted 
