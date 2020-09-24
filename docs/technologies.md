@@ -57,24 +57,18 @@ The `dataflow_pipeline` function creates a [Beam pipeline](https://cloud.google.
 options.view_as(SetupOptions).setup_file = resolve(find_or_create_setup_for_main_project_package(project_name, Path(__file__)))
 ```
 
-The line sets a path to the setup file used by Beam to create a package. The setup for a Beam
-process is generated on-fly when a Beam job is run. So it's not the `project_setup.py`. The generated setup looks like this:
-
-```python
-import setuptools
-
-setuptools.setup(
-        name='your_project_name',
-        version='0.1.0',
-        packages=setuptools.find_namespace_packages(include=["your_project_name.*"])
-)
-```
-
-The generated setup is minimalistic. If you want to provide requirements for your Beam process, you can do it through the
+If you want to provide requirements for your Beam process, you can do it through the
 `SetupOptions`. You can store requirements for your processes in the [`resources`](./project_setup.py#project-structure) directory.
 
 ```python
 options.view_as(SetupOptions).requirements_file = resolve(get_resource_absolute_path('requirements.txt', Path(__file__)))
+```
+
+Note that the project requirements (`resources/requirements.txt` by default) and a Beam process requirements are two 
+separate things. Your Beam process might need just a subset of the project requirements.
+
+```python
+options.view_as(SetupOptions).requirements_file = resolve(get_resource_absolute_path('my-beam-process-requirements.txt', Path(__file__)))
 ```
 
 ## BigQuery
