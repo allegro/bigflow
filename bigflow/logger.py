@@ -18,9 +18,13 @@ class Logger(object):
         self.logger.error(message, *args, **kwargs)
 
 
+def create_logging_client():
+    return logging_v2.LoggingServiceV2Client()
+
+
 class GCPLogger(object):
     def __init__(self, project_id, workflow_id, logger_name):
-        self.client = logging_v2.LoggingServiceV2Client()
+        self.client = create_logging_client()
         self.project_id = project_id
         self.workflow_id = workflow_id
         self.logger = Logger(logger_name)
@@ -70,4 +74,4 @@ class GCPLogger(object):
     def get_gcp_logs_message(self,):
         query = quote_plus(f'''logName="projects/{self.project_id}/logs/{self.logger_name}"
 labels.workflow="{self.workflow_id}"''')
-        return self.logger.info(f'You can find logs for this workflow here: https://console.cloud.google.com/logs/query;query={query}\n')
+        return self.logger.info(f'You can find logs for this workflow here: https://console.cloud.google.com/logs/query;query={query}')
