@@ -30,6 +30,7 @@ class GCPLogger(object):
         self.workflow_id = workflow_id
         self.logger = Logger(logger_name)
         self.logger_name = logger_name
+        self.logger.info(f'You can find logs for this workflow here: {self.get_gcp_logs_link()}')
 
     def get_resource(self):
         return {
@@ -50,7 +51,6 @@ class GCPLogger(object):
         ))
 
     def error(self, message, *args, **kwargs):
-        self.get_gcp_logs_link()
         self.logger.error(message, *args, **kwargs)
         self.write_log_entries(logging_v2.types.LogEntry(
             log_name=f"projects/{self.project_id}/logs/{self.logger_name}",
