@@ -1,10 +1,4 @@
 import logging
-
-from bigflow.commons import now
-
-from bigflow.dagbuilder import get_dag_deployment_id
-
-from bigflow.version import get_version
 from google.cloud import logging_v2
 from urllib.parse import quote_plus
 
@@ -47,7 +41,7 @@ class GCPLogger(object):
             resource=self.get_resource(),
             text_payload=message,
             severity='WARNING',
-            labels={"workflow": f"{get_dag_deployment_id(self.workflow_id, now(), get_version())}"}
+            labels={"workflow": f"{self.workflow_id}"}
         ))
 
     def error(self, message, *args, **kwargs):
@@ -57,7 +51,7 @@ class GCPLogger(object):
             resource=self.get_resource(),
             text_payload=message,
             severity='ERROR',
-            labels={"workflow": f"{get_dag_deployment_id(self.workflow_id, now(), get_version())}"}
+            labels={"workflow": f"{self.workflow_id}"}
         ))
 
     def info(self, message, *args, **kwargs):
@@ -67,14 +61,13 @@ class GCPLogger(object):
             resource=self.get_resource(),
             text_payload=message,
             severity='INFO',
-            labels={"workflow": f"{get_dag_deployment_id(self.workflow_id, now(), get_version())}"}
+            labels={"workflow": f"{self.workflow_id}"}
         ))
 
     def write_log_entries(self, entry):
         self.client.write_log_entries([entry])
 
-    def get_gcp_logs_message(self):
-        id = get_dag_deployment_id(self.workflow_id, now(), get_version())
+    def get_gcp_logs_message(self,):
         query = quote_plus(f'''logName="projects/{self.project_id}/logs/{self.logger_name}"
-labels.workflow="{id}"''')
-        return self.info(f'You can find logs for this workflow here: https://console.cloud.google.com/logs/query;query={query}\n')
+labels.workflow="{self.workflow_id}"''')
+        return self.logger.info(f'You can find logs for this workflow here: https://console.cloud.google.com/logs/query;query={query}\n')
