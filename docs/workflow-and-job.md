@@ -53,7 +53,8 @@ The Job `run` method a single argument — `runtime`. The `runtime` parameter is
 You can find more information about `runtime` and scheduling [workflow scheduling options](#workflow-scheduling-options).
 
 There are 2 additional parameters, that a job can supply to Airflow: `retry_count` and `retry_pause_sec`. The `retry_count` parameter
-determines how many times a job will be retried (in case of a failure). The `retry_pause_sec` parameter says how long the pause between retries should be.
+determines how many times a job will be retried (in case of a failure). The `retry_pause_sec` parameter says how long 
+the pause between retries should be.
 
 [`retriable_job.py`](examples/workflow_and_job/retriable_job.py)
 ```python
@@ -96,11 +97,12 @@ example_workflow.run()
 
 Output:
 ```text
-Running job 1 at 2020-01-01
-Running job 2 at 2020-01-01
+Running job 1 at 2020-01-01 00:00:00
+Running job 2 at 2020-01-01 00:00:00
 ```
 
-When some of your jobs are executed concurrently, pass them using the Definition object. It allows you to create a graph of jobs ([DAG](https://en.wikipedia.org/wiki/Directed_acyclic_graph)).
+When some of your jobs are executed concurrently, pass them using the Definition object. It allows you to create a 
+graph of jobs ([DAG](https://en.wikipedia.org/wiki/Directed_acyclic_graph)).
 
 Let us say that we want to create the following DAG:
     
@@ -126,10 +128,10 @@ graph_workflow.run()
 
 As you can see below, the `Workflow.run` method executes jobs using the [pre-order traversal](https://www.geeksforgeeks.org/tree-traversals-inorder-preorder-and-postorder/):
 ```text
-Running job 1 at 2020-01-01
-Running job 2 at 2020-01-01
-Running job 3 at 2020-01-01
-Running job 4 at 2020-01-01
+Running job 1 at 2020-01-01 00:00:00
+Running job 2 at 2020-01-01 00:00:00
+Running job 3 at 2020-01-01 00:00:00
+Running job 4 at 2020-01-01 00:00:00
 ```
 
 The `Workflow` class provides the `run` and `run_job` methods. When you run a single job through the `Workflow.run_job` method, 
@@ -139,16 +141,15 @@ without providing the `runtime` parameter, the `Workflow` class passes the curre
 ```python
 simple_workflow = Workflow(
     workflow_id='simple_workflow',
-    runtime_as_datetime=True,
     definition=[Job('1')])
 simple_workflow.run_job('1')
 simple_workflow.run()
-simple_workflow.run_job('1', '1970-01-01')
-simple_workflow.run('1970-01-01')
+simple_workflow.run_job('1', '1970-01-01 00:00:00')
+simple_workflow.run('1970-01-01 00:00:00')
 ```
 
-The `Workflow.run` method ignores job parameters like `retry_count` and `retry_pause_sec`. It executes a workflow in a sequential (non-parallel) way.
-It's not used by Airflow.
+The `Workflow.run` method ignores job parameters like `retry_count` and `retry_pause_sec`. It executes a workflow in a 
+sequential (non-parallel) way. It's not used by Airflow.
 
 ## Workflow scheduling options
 
@@ -158,14 +159,16 @@ The most important parameter for a workflow is `runtime`. BigFlow workflows proc
 where batch means: all units of data having timestamps within a given period. The `runtime` parameter defines this period.
 
 When a workflow is deployed on Airflow, the `runtime` parameter is taken from Airflow `execution_date`. 
-It will be formatted as either `YYYY-MM-DD` or `YYYY-MM-DD hh-mm-ss`. It depends on the `Workflow` setup.
+It will be formatted as `YYYY-MM-DD hh-mm-ss`.
 
-The `Workflow` class has two additional parameters. 
+The `Workflow` class has two additional parameters:
 
 * `schedule_interval` — Defines when a workflow should be run. It can be a cron expression or a "shortcut". 
 For example: `'@daily'`, `'@hourly'`, `'@once'`, `'0 0 * * 0'`.
-* `runtime_as_datetime` — Determines the `runtime` parameter format. If set as `True`, `runtime` will be `YYYY-MM-DD hh-mm-ss`, 
-otherwise `YYYY-MM-DD`.
+* `start_time_expression` — Determines the first execution date-time. It's a Python expression which
+produces `datetime` object, for example:
+
+    * `start_time_expression=`
 
 ### Daily scheduling example
 
