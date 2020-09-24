@@ -1,3 +1,5 @@
+import logging
+
 import mock
 from unittest import TestCase
 from datetime import datetime
@@ -7,7 +9,7 @@ from freezegun import freeze_time
 
 TEST_DATETIME = datetime(year=2019, month=1, day=2)
 TEST_DATETIME_RFC3339 = '2019-01-02T00:00:00Z'
-
+logger = logging.getLogger(__name__)
 
 class FormatRFC3339TestCase(TestCase):
 
@@ -44,16 +46,22 @@ class MetricExistsTestCase(TestCase):
     def test_should_check_if_metric_exists(self, api_list_metrics_mock: mock.Mock):
         # given
         api_list_metrics_mock.return_value = {'metricDescriptors': 'something'}
+        monitoring_config = monitoring.MonitoringConfig(
+            'test project',
+            'eu-west',
+            'env',
+            'workflow_id',
+            logger)
 
         # expect
-        self.assertTrue(monitoring.metric_exists('client', 'project_resource', 'metric_type'))
-        api_list_metrics_mock.assert_has_calls([mock.call('client', 'project_resource', 'metric_type')])
+        self.assertTrue(monitoring.metric_exists('client', monitoring_config, 'metric_type'))
+        api_list_metrics_mock.assert_has_calls([mock.call('client', 'projects/test project', 'metric_type')])
 
         # given
         api_list_metrics_mock.return_value = {}
 
         # expect
-        self.assertFalse(monitoring.metric_exists('client', 'project_resource', 'metric_type'))
+        self.assertFalse(monitoring.metric_exists('client', monitoring_config, 'metric_type'))
 
 
 class WaitForMetricTestCase(TestCase):
@@ -62,18 +70,30 @@ class WaitForMetricTestCase(TestCase):
     def test_should_wait_until_metric_exists(self, metric_exists_mock):
         # given
         metric_exists_mock.return_value = True
+        monitoring_config = monitoring.MonitoringConfig(
+            'test project',
+            'eu-west',
+            'env',
+            'workflow_id',
+            logger)
 
         # expect
-        self.assertTrue(monitoring.wait_for_metric('client', 'project_resource', 'metric_type'))
+        self.assertTrue(monitoring.wait_for_metric('client', monitoring_config, 'metric_type'))
 
     @mock.patch('bigflow.monitoring.metric_exists')
     def test_should_raise_exception_when_no_retries_left(self, metric_exists_mock):
         # given
         metric_exists_mock.return_value = False
+        monitoring_config = monitoring.MonitoringConfig(
+            'test project',
+            'eu-west',
+            'env',
+            'workflow_id',
+            logger)
 
         # expect
         with self.assertRaises(monitoring.MetricError):
-            monitoring.wait_for_metric('client', 'project_resource', 'metric_type')
+            monitoring.wait_for_metric('client', monitoring_config, 'metric_type')
 
 
 class CreateTimeseriesData(TestCase):
@@ -119,7 +139,9 @@ class IncrementCounterTestCase(TestCase):
         monitoring_config = monitoring.MonitoringConfig(
             'test project',
             'eu-west',
-            'env')
+            'env',
+            'workflow_id',
+            logger)
 
         # when
         monitoring.increment_counter('client', monitoring_config, 'metric type', 'job id')
@@ -156,7 +178,9 @@ class IncrementJobFailureCount(TestCase):
         monitoring_config = monitoring.MonitoringConfig(
             'test project',
             'eu-west',
-            'env')
+            'env',
+            'workflow_id',
+            logger)
         api_client_mock.return_value = 'client'
         metric_exists_mock.return_value = False
 
@@ -184,7 +208,9 @@ class IncrementJobFailureCount(TestCase):
         monitoring_config = monitoring.MonitoringConfig(
             'test project',
             'eu-west',
-            'env')
+            'env',
+            'workflow_id',
+            logger)
         api_client_mock.return_value = 'client'
         metric_exists_mock.return_value = True
 
@@ -215,7 +241,9 @@ class MeterJobRunFailuresTestCase(TestCase):
         monitoring_config = monitoring.MonitoringConfig(
             'test project',
             'eu-west',
-            'env')
+            'env',
+            'workflow_id',
+            logger)
 
         metered_job = monitoring.meter_job_run_failures(FailingJob('job1'), monitoring_config)
 
