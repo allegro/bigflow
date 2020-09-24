@@ -155,6 +155,7 @@ def meter_job_run_failures(job, monitoring_config):
 
     def metered_run(runtime):
         try:
+            monitoring_config.logger.get_gcp_logs_message()
             return original_run(runtime)
         except Exception as e:
             monitoring_config.logger.error(str(e))

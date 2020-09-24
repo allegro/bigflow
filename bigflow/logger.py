@@ -12,6 +12,7 @@ from urllib.parse import quote_plus
 class Logger(object):
     def __init__(self, logger_name):
         self.logger = logging.getLogger(logger_name)
+        self.logger.setLevel(logging.INFO)
 
     def warning(self, message, *args, **kwargs):
         self.logger.warning(message, *args, **kwargs)
@@ -30,7 +31,6 @@ class GCPLogger(object):
         self.workflow_id = workflow_id
         self.logger = Logger(logger_name)
         self.logger_name = logger_name
-        self.logger.info(f'You can find logs for this workflow here: {self.get_gcp_logs_link()}')
 
     def get_resource(self):
         return {
@@ -47,7 +47,7 @@ class GCPLogger(object):
             resource=self.get_resource(),
             text_payload=message,
             severity='WARNING',
-            labels={"workflow": f"{get_version()}"}
+            labels={"workflow": f"{get_dag_deployment_id(self.workflow_id, now(), get_version())}"}
         ))
 
     def error(self, message, *args, **kwargs):
@@ -57,7 +57,7 @@ class GCPLogger(object):
             resource=self.get_resource(),
             text_payload=message,
             severity='ERROR',
-            labels={"workflow": f"{get_version()}"}
+            labels={"workflow": f"{get_dag_deployment_id(self.workflow_id, now(), get_version())}"}
         ))
 
     def info(self, message, *args, **kwargs):
@@ -67,14 +67,14 @@ class GCPLogger(object):
             resource=self.get_resource(),
             text_payload=message,
             severity='INFO',
-            labels={"workflow": f"{get_version()}"}
+            labels={"workflow": f"{get_dag_deployment_id(self.workflow_id, now(), get_version())}"}
         ))
 
     def write_log_entries(self, entry):
         self.client.write_log_entries([entry])
 
-    def get_gcp_logs_link(self):
+    def get_gcp_logs_message(self):
         id = get_dag_deployment_id(self.workflow_id, now(), get_version())
         query = quote_plus(f'''logName="projects/{self.project_id}/logs/{self.logger_name}"
 labels.workflow="{id}"''')
-        return f'''https://console.cloud.google.com/logs/query;query={query}'''
+        return self.logger.info(f'You can find logs for this workflow here: https://console.cloud.google.com/logs/query;query={query}')
