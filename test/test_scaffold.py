@@ -77,18 +77,6 @@ deployment_config = Config(
        'gcp_project_id': 'my_gcp_project',
        'dags_bucket': 'my_gcp_bucket'})
 ''')
-        self.check_file_content(Path('my_project_project') / 'my_project' / 'internationalports' / 'config.py', '''from bigflow.bigquery import DatasetConfig
-
-INTERNAL_TABLES = ['ports', 'more_ports']
-
-EXTERNAL_TABLES = {}
-
-dataset_config = DatasetConfig(
-    env='dev',
-    project_id='my_gcp_project',
-    dataset_name='bigflow_test',
-    internal_tables=INTERNAL_TABLES,
-    external_tables=EXTERNAL_TABLES)''')
         self.check_file_content(Path('my_project_project') / 'my_project' / 'wordcount' / 'config.py', '''from bigflow.configuration import Config
 
 workflow_config = Config(name='dev',
@@ -118,39 +106,59 @@ deployment_config = Config(name='dev',
                                'dags_bucket': 'prod_bucket'
                            })
 ''')
-        self.check_file_content(Path('my_project_project') / 'workflows' / 'internationalports' / 'config.py', '''from bigflow.bigquery import DatasetConfig
+        self.check_file_content(Path('my_project_project') / 'workflows' / 'internationalports' / 'workflow.py', """from bigflow import Workflow
+from bigflow.bigquery import DatasetConfig
 
-INTERNAL_TABLES = ['ports', 'more_ports']
+dataset_config = DatasetConfig(
+    env='dev',
+    project_id='dev_project',
+    dataset_name='internationalports',
+    internal_tables=['ports', 'polish_ports'],
+    external_tables={})
 
-EXTERNAL_TABLES = {}
+dataset = dataset_config.create_dataset_manager()
 
-dataset_config = DatasetConfig(env='dev',
-                               project_id='dev_project',
-                               dataset_name='bigflow_test',
-                               internal_tables=INTERNAL_TABLES,
-                               external_tables=EXTERNAL_TABLES
-                               ).add_configuration(env='TEST',
-                               project_id='test_project').add_configuration(env='PROD',
-                               project_id='prod_project')''')
-        self.check_file_content(Path('my_project_project') / 'workflows' / 'wordcount' / 'config.py', '''from bigflow.configuration import Config
+create_polish_ports_table = dataset.create_table('''
+    CREATE TABLE IF NOT EXISTS polish_ports (
+      port_name STRING,
+      port_latitude FLOAT64,
+      port_longitude FLOAT64)
+''')
 
-workflow_config = Config(name='dev',
-                           properties={
-                               'gcp_project_id': 'dev_project',
-                               'staging_location': 'my_project/beam_runner/staging',
-                               'temp_location': 'my_project/beam_runner/temp',
-                               'region': 'europe-west1',
-                               'machine_type': 'n1-standard-1',
-                               'bucket': 'dev_bucket'
-                           }).add_configuration(name='TEST',
-                           properties={
-                               'gcp_project_id': 'test_project',
-                               'dags_bucket': 'test_bucket'
-                           }).add_configuration(name='PROD',
-                           properties={
-                               'gcp_project_id': 'prod_project',
-                               'dags_bucket': 'prod_bucket'
-                           }).resolve()''')
+create_ports_table = dataset.create_table('''
+    CREATE TABLE IF NOT EXISTS ports (
+      port_name STRING,
+      port_latitude FLOAT64,
+      port_longitude FLOAT64,
+      country STRING,
+      index_number STRING)
+''')
+
+select_polish_ports = dataset.write_truncate('ports', '''
+        SELECT port_name, port_latitude, port_longitude
+        FROM `{more_ports}`
+        WHERE country = 'POL'
+        ''', partitioned=False)
+
+populate_ports_table = dataset.collect('''
+        INSERT INTO `{more_ports}` (port_name, port_latitude, port_longitude, country, index_number)
+        VALUES 
+        ('GDYNIA', 54.533333, 18.55, 'POL', '28740'),
+        ('GDANSK', 54.35, 18.666667, 'POL', '28710'),
+        ('MURMANSK', 68.983333, 33.05, 'RUS', '62950'),
+        ('SANKT-PETERBURG', 59.933333, 30.3, 'RUS', '28370');
+        ''')
+
+
+internationalports_workflow = Workflow(
+        workflow_id='internationalports',
+        definition=[
+                create_ports_table.to_job(id='create_ports_table'),
+                create_polish_ports_table.to_job(id='create_polish_ports_table'),
+                populate_ports_table.to_job(id='populate_ports_table'),
+                select_polish_ports.to_job(id='select_polish_ports'),
+        ],
+        schedule_interval='@once')""")
 
     def check_file_content(self, path, template):
         with open(path.resolve(), 'r') as f:

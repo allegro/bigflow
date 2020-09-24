@@ -11,7 +11,7 @@ dataset = Dataset(
     },
     internal_tables=['request_aggregate'])
 
-wait_for_requests = bf.bigquery.sensor_component(
+wait_for_requests = bf.bigquery.sensor(
     '311_requests',
     where_clause="DATE(TIMESTAMP(created_date)) = DATE(TIMESTAMP_ADD(TIMESTAMP('{dt}'), INTERVAL -24 HOUR))",
     ds=dataset)
