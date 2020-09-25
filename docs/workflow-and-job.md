@@ -41,7 +41,7 @@ Running a simple job
 Running a simple job
 ```
 
-Running workflows and jobs from a module is useful for debugging. In any other case we recommend using [BigFlow CLI](cli.md).
+Running workflows and jobs from a module are useful for debugging. In any other case, we recommend using [BigFlow CLI](cli.md).
 
 ## Job
 
@@ -53,8 +53,7 @@ The Job `run` method a single argument — `runtime`. The `runtime` parameter is
 You can find more information about `runtime` and scheduling [workflow scheduling options](#workflow-scheduling-options).
 
 There are 2 additional parameters, that a job can supply to Airflow: `retry_count` and `retry_pause_sec`. The `retry_count` parameter
-determines how many times a job will be retried (in case of a failure). The `retry_pause_sec` parameter says how long 
-the pause between retries should be.
+determines how many times a job will be retried (in case of a failure). The `retry_pause_sec` parameter says how long the pause between retries should be.
 
 [`retriable_job.py`](examples/workflow_and_job/retriable_job.py)
 ```python
@@ -75,7 +74,7 @@ The `Workflow` class takes 2 main parameters: `workflow_id` and `definition`.
 The `workflow_id` parameter is a string that should be a valid Python variable name. For example: `'my_example_workflow'`, `'MY_EXAMPLE_WORKFLOW'`, `'workflow1234'`.
 
 The `Workflow` class arranges jobs into a [DAG](https://en.wikipedia.org/wiki/Directed_acyclic_graph), through the `definition` parameter. 
-There are two ways of specifying job arrangement. When your jobs are executed sequentially, simply pass them in a list of jobs:
+There are two ways of specifying the job arrangement. When your jobs are executed sequentially, simply pass them in a list of jobs:
 
 [`sequential_workflow.py`](examples/workflow_and_job/sequential_workflow.py)
 ```python
@@ -161,14 +160,43 @@ where batch means: all units of data having timestamps within a given period. Th
 When a workflow is deployed on Airflow, the `runtime` parameter is taken from Airflow `execution_date`. 
 It will be formatted as `YYYY-MM-DD hh-mm-ss`.
 
-The `Workflow` class has two additional parameters:
+### The `schedule_interal` parameter
 
-* `schedule_interval` — Defines when a workflow should be run. It can be a cron expression or a "shortcut". 
+The `schedule_interval` parameter defines when a workflow should be run. It can be a cron expression or a "shortcut". 
 For example: `'@daily'`, `'@hourly'`, `'@once'`, `'0 0 * * 0'`.
-* `start_time_expression` — Determines the first execution date-time. It's a Python expression which
-produces `datetime` object, for example:
 
-    * `start_time_expression=`
+### The `start_time_expression` parameter
+
+The `start_time_expression` parameter determines the first execution date-time. Even though you provide the `start-time` parameter
+for the `build` command, you might want to start different workflows in a different time. The `start_time_expression`
+allows you to define a proper start time for each of your workflows, relative to the provided `start-time`.
+
+Let us say that you have two workflows running hourly. You want the first workflow to start in the next hour after deployment time,
+and the second workflow to start one hour before deployment time. So if you build and deploy your workflows at `'2020-01-01 12:00:00'`,
+the first workflow starts at `'2020-01-01 13:00:00'` and the second starts at `'2020-01-01 11:00:00'`.
+
+To achieve that, you need the following expressions:
+
+```python
+# Workflow 1
+'datetime.strptime("{start_time}", "%Y-%m-%d %H:%M:%S") - (timedelta(hours=1))'
+
+# Workflow 2
+'datetime.strptime("{start_time}", "%Y-%m-%d %H:%M:%S") - (timedelta(hours=1))'
+```
+
+The expression parameter is templated and you can access the `start-time` parameter. Inside the expression string, 
+you have access to the [`datetime.datetime` and `datetime.timedelta`](https://docs.python.org/3/library/datetime.html#available-types) 
+types.
+
+The default value of the `start_time_expression` supports daily workflows. It looks like this:
+
+```python
+'datetime.strptime("{start_time[:10]}", "%Y-%m-%d") - (timedelta(hours=24))'
+```
+
+This expression fires a workflow on the same day you build it. So for example, if you build a workflow at `2020-01-01 01:00:00`,
+then the first execution is immediately after deployment (for the day `2020-01-01`).
 
 ### Daily scheduling example
 
@@ -182,20 +210,19 @@ class DailyJob:
         self.id = 'daily_job'
 
     def run(self, runtime):
-        print(f'I should process data with timestamps from: {runtime} 00:00 to {runtime} 23:59')
+        print(f'I should process data with timestamps from: {runtime} to {runtime[:10]} 23:59:00')
 
 daily_workflow = Workflow(
     workflow_id='daily_workflow',
     schedule_interval='@daily',
-    runtime_as_datetime=False,
     definition=[DailyJob()])
-daily_workflow.run('2020-01-01')
+daily_workflow.run('2020-01-01 00:00:00')
 ```
 
 Output:
 
 ```text
-I should process data with timestamps from: 2020-01-01 00:00 to 2020-01-01 23:59
+I should process data with timestamps from 2020-01-01 00:00 to 2020-01-01 23:59:00
 ``` 
 
 ### Hourly scheduling example 
@@ -205,6 +232,7 @@ For example:
 
 [`hourly_workflow.py`](examples/workflow_and_job/hourly_workflow.py):
 ```python
+from bigflow.workflow import hourly_start_time
 class HourlyJob:
     def __init__(self):
         self.id = 'hourly_job'
@@ -215,8 +243,8 @@ class HourlyJob:
 
 hourly_workflow = Workflow(
     workflow_id='hourly_workflow',
-    runtime_as_datetime=True,
     schedule_interval='@hourly',
+    start_time_expression=hourly_start_time,
     definition=[HourlyJob()])
 hourly_workflow.run('2020-01-01 10:00:00')
 ```
@@ -224,5 +252,5 @@ hourly_workflow.run('2020-01-01 10:00:00')
 Output:
 
 ```text
-I should process data with timestamps from: 2020-01-01 10:00:00 to 2020-01-01 10:59:59
+I should process data with timestamps from 2020-01-01 10:00:00 to 2020-01-01 10:59:59
 ``` 

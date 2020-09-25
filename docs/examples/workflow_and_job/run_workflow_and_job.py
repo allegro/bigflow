@@ -8,5 +8,5 @@ simple_workflow = Workflow(
 if __name__ == '__main__':
     simple_workflow.run_job('1')
     simple_workflow.run()
-    simple_workflow.run_job('1', '1970-01-01')
-    simple_workflow.run('1970-01-01')
+    simple_workflow.run_job('1', '1970-01-01 00:00:00')
+    simple_workflow.run('1970-01-01 00:00:00')
