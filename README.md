@@ -13,10 +13,7 @@
 1. [Deployment](docs/deployment.md)
 1. [Workflow & Job](./docs/workflow-and-job.md)
 1. [Starter](./docs/scaffold.md)
-1. Technologies
-    1. BigQuery
-    1. Apache Beam
-    1. Dataproc
+1. [Technologies](./docs/technologies.md)
 1. Job monitoring
 1. Roadmap
 
@@ -31,8 +28,8 @@ The main features are:
 * [Automated build](./docs/project_setup_and_build.md#overview), [deployment](./docs/deployment.md), 
 [versioning](./docs/project_setup_and_build.md#project-versioning) and [configuration](./docs/configuration.md)
 * [Unified project structure](./docs/project_setup_and_build.md#project-structure)
-* [Support for the major data processing technologies](./docs/utils.md) — [Dataproc](https://cloud.google.com/dataproc),
-[Apache Beam](https://beam.apache.org/) and [BigQuery](https://cloud.google.com/bigquery)
+* [Support for the major data processing technologies](./docs/utils.md) — [Dataproc](https://cloud.google.com/dataproc) (Apache Spark),
+[Dataflow](https://beam.apache.org/) (Apache Beam) and [BigQuery](https://cloud.google.com/bigquery)
 * [Project starter](./docs/scaffold.md)
 
 ## Getting started

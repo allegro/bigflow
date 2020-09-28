@@ -165,6 +165,62 @@ advanced_beam_config_template = '''.add_configuration(name='{env}',
                                'dags_bucket': '{dags_bucket}'}})
 '''
 
+bq_workflow_template = """
+from bigflow import Workflow
+from bigflow.bigquery import DatasetConfig
+
+dataset_config = DatasetConfig(
+    env='dev',
+    project_id='{project_id}',
+    dataset_name='internationalports',
+    internal_tables=['ports', 'polish_ports'],
+    external_tables={})
+
+dataset = dataset_config.create_dataset_manager()
+
+create_polish_ports_table = dataset.create_table('''
+    CREATE TABLE IF NOT EXISTS polish_ports (
+      port_name STRING,
+      port_latitude FLOAT64,
+      port_longitude FLOAT64)
+''')
+
+create_ports_table = dataset.create_table('''
+    CREATE TABLE IF NOT EXISTS ports (
+      port_name STRING,
+      port_latitude FLOAT64,
+      port_longitude FLOAT64,
+      country STRING,
+      index_number STRING)
+''')
+
+select_polish_ports = dataset.write_truncate('ports', '''
+        SELECT port_name, port_latitude, port_longitude
+        FROM `{more_ports}`
+        WHERE country = 'POL'
+        ''', partitioned=False)
+
+populate_ports_table = dataset.collect('''
+        INSERT INTO `{more_ports}` (port_name, port_latitude, port_longitude, country, index_number)
+        VALUES 
+        ('GDYNIA', 54.533333, 18.55, 'POL', '28740'),
+        ('GDANSK', 54.35, 18.666667, 'POL', '28710'),
+        ('SANKT-PETERBURG', 59.933333, 30.3, 'RUS', '28370'),
+        ('TEXAS', 34.8, 31.3, 'USA', '28870');
+        ''')
+
+
+internationalports_workflow = Workflow(
+        workflow_id='internationalports',
+        definition=[
+                create_ports_table.to_job(id='create_ports_table'),
+                create_polish_ports_table.to_job(id='create_polish_ports_table'),
+                populate_ports_table.to_job(id='populate_ports_table'),
+                select_polish_ports.to_job(id='select_polish_ports'),
+        ],
+        schedule_interval='@once')
+"""
+
 test_wordcount_workflow_template = '''from unittest import TestCase
 
 from apache_beam.testing.test_pipeline import TestPipeline
@@ -258,91 +314,6 @@ class InternationalPortsWorkflowTestCase(TestCase):
         ''', 'WRITE_TRUNCATE')
 """
 
-basic_bq_config_template = '''from bigflow.bigquery import DatasetConfig
-
-INTERNAL_TABLES = ['ports', 'more_ports']
-
-EXTERNAL_TABLES = {{}}
-
-dataset_config = DatasetConfig(
-    env='dev',
-    project_id='{project_id}',
-    dataset_name='bigflow_test',
-    internal_tables=INTERNAL_TABLES,
-    external_tables=EXTERNAL_TABLES)'''
-
-advanced_bq_config_template = """.add_configuration(env='{env}',
-                               project_id='{project_id}')"""
-
-bq_processing_template = """from bigflow.bigquery import component
-
-
-@component()
-def ports(dataset):
-    dataset.write_truncate('ports', '''
-        SELECT port_name, port_latitude, port_longitude
-        FROM `{more_ports}`
-        WHERE country = 'POL'
-        ''', partitioned=False)
-
-
-@component()
-def populate_more_ports(dataset):
-    dataset.collect('''
-        INSERT INTO `{more_ports}` (port_name, port_latitude, port_longitude, country, index_number)
-        VALUES 
-        ('SWINOUJSCIE', 53.916667, 14.266667, 'POL', '28820'),
-        ('GDYNIA', 54.533333, 18.55, 'POL', '28740'),
-        ('GDANSK', 54.35, 18.666667, 'POL', '28710'),
-        ('SZCZECIN', 53.416667, 14.55, 'POL', '28823'),
-        ('POLICE', 53.566667, 14.566667, 'POL', '28750'),
-        ('KOLOBRZEG', 54.216667, 15.55, 'POL', '28800'),
-        ('MURMANSK', 68.983333, 33.05, 'RUS', '62950'),
-        ('SANKT-PETERBURG', 59.933333, 30.3, 'RUS', '28370');
-        ''')
-
-"""
-bq_workflow_template = '''from bigflow import Workflow
-from bigflow.monitoring import MonitoringConfig, meter_job_run_failures
-from .config import dataset_config
-from .processing import ports, populate_more_ports
-from .tables import create_tables
-
-dataset = dataset_config.create_dataset_manager()
-
-
-create_tables_job = create_tables.to_job(id='create_tables_job', dependencies_override={'dataset': dataset})
-ports_job = ports.to_job(id='ports_job', dependencies_override={'dataset': dataset})
-populate_job = populate_more_ports.to_job(id='populate_job', dependencies_override={'dataset': dataset})
-monitoring_config = MonitoringConfig(
-    project_id=dataset.config.project_id,
-    region='europe-west1',
-    environment_name='dev')
-
-ports_workflow = Workflow(
-        workflow_id='internationalports_workflow',
-        definition=[meter_job_run_failures(create_tables_job, monitoring_config), meter_job_run_failures(populate_job, monitoring_config), meter_job_run_failures(ports_job, monitoring_config)],
-        schedule_interval='@once')'''
-bq_tables_template = """from bigflow.bigquery import component
-
-
-@component()
-def create_tables(dataset):
-    dataset.create_table('''
-        CREATE TABLE IF NOT EXISTS ports (
-          port_name STRING,
-          port_latitude FLOAT64,
-          port_longitude FLOAT64)
-    ''')
-    dataset.create_table('''
-        CREATE TABLE IF NOT EXISTS more_ports (
-          port_name STRING,
-          port_latitude FLOAT64,
-          port_longitude FLOAT64,
-          country STRING,
-          index_number STRING)
-    ''')
-"""
 
 gitignore_template = '''# Byte-compiled / optimized / DLL files
 __pycache__/
