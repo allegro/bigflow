@@ -103,6 +103,7 @@ def count_words(p, target_method):
 '''
 beam_workflow_template = '''from apache_beam.io import WriteToText
 from bigflow import Workflow
+from bigflow.monitoring import MonitoringConfig, meter_job_run_failures
 
 from .pipeline import dataflow_pipeline
 from .config import workflow_config
@@ -127,11 +128,17 @@ class WordcountJob(object):
                               self.machine_type, self.project_name)
         count_words(p, WriteToText("gs://{}/beam_wordcount".format(self.temp_location)))
         p.run().wait_until_finish()
+        
+monitoring_config = MonitoringConfig(
+    project_id=workflow_config['gcp_project_id'],
+    region='europe-west1',
+    environment_name='dev',
+    workflow_id='test_workflow')
 
 
 simple_workflow = Workflow(
     workflow_id="test_workflow",
-    definition=[WordcountJob(
+    definition=[meter_job_run_failures(WordcountJob(
         'test_workflow',
         gcp_project_id=workflow_config['gcp_project_id'],
         staging_location=workflow_config['staging_location'],
@@ -139,7 +146,7 @@ simple_workflow = Workflow(
         region=workflow_config['region'],
         machine_type=workflow_config['machine_type'],
         project_name=workflow_config['project_name']
-    )])
+    ), monitoring_config)])
 '''
 basic_beam_config_template = '''from bigflow.configuration import Config
 
@@ -297,6 +304,7 @@ def populate_more_ports(dataset):
 
 """
 bq_workflow_template = '''from bigflow import Workflow
+from bigflow.monitoring import MonitoringConfig, meter_job_run_failures
 from .config import dataset_config
 from .processing import ports, populate_more_ports
 from .tables import create_tables
@@ -307,10 +315,15 @@ dataset = dataset_config.create_dataset_manager()
 create_tables_job = create_tables.to_job(id='create_tables_job', dependencies_override={'dataset': dataset})
 ports_job = ports.to_job(id='ports_job', dependencies_override={'dataset': dataset})
 populate_job = populate_more_ports.to_job(id='populate_job', dependencies_override={'dataset': dataset})
+monitoring_config = MonitoringConfig(
+    project_id=dataset.config.project_id,
+    region='europe-west1',
+    environment_name='dev',
+    workflow_id='internationalports_workflow')
 
 ports_workflow = Workflow(
         workflow_id='internationalports_workflow',
-        definition=[create_tables_job, populate_job, ports_job],
+        definition=[meter_job_run_failures(create_tables_job, monitoring_config), meter_job_run_failures(populate_job, monitoring_config), meter_job_run_failures(ports_job, monitoring_config)],
         schedule_interval='@once')'''
 bq_tables_template = """from bigflow.bigquery import component
 

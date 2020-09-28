@@ -6,7 +6,7 @@ from google.cloud import logging_v2
 from bigflow.logger import GCPLogger, Logger
 
 
-class SetupTestCase(TestCase):
+class MockedGCPLogger(TestCase):
 
     @mock.patch('bigflow.logger.create_logging_client')
     def setUp(self, create_logging_client_mock) -> None:
@@ -14,7 +14,7 @@ class SetupTestCase(TestCase):
         self.test_logger = GCPLogger('project-id', 'workflow-id', 'test-logger')
 
 
-class LoggerTestCase(SetupTestCase):
+class LoggerTestCase(MockedGCPLogger):
 
     @patch.object(Logger, 'info')
     def test_should_create_correct_logging_link(self, logger_info_mock):
