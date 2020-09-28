@@ -1,11 +1,15 @@
 import logging
+from unittest.mock import patch
 
-import mock
-from unittest import TestCase
+from unittest import TestCase, mock
 from datetime import datetime
+
+from google.cloud import logging_v2
 
 from bigflow import monitoring
 from freezegun import freeze_time
+
+from bigflow.logger import GCPLogger, log_job_run_failures
 
 TEST_DATETIME = datetime(year=2019, month=1, day=2)
 TEST_DATETIME_RFC3339 = '2019-01-02T00:00:00Z'
@@ -49,19 +53,17 @@ class MetricExistsTestCase(TestCase):
         monitoring_config = monitoring.MonitoringConfig(
             'test project',
             'eu-west',
-            'env',
-            'workflow_id',
-            logger)
+            'env')
 
         # expect
-        self.assertTrue(monitoring.metric_exists('client', monitoring_config, 'metric_type'))
+        self.assertTrue(monitoring.metric_exists('client', monitoring_config, 'metric_type', logger))
         api_list_metrics_mock.assert_has_calls([mock.call('client', 'projects/test project', 'metric_type')])
 
         # given
         api_list_metrics_mock.return_value = {}
 
         # expect
-        self.assertFalse(monitoring.metric_exists('client', monitoring_config, 'metric_type'))
+        self.assertFalse(monitoring.metric_exists('client', monitoring_config, 'metric_type', logger))
 
 
 class WaitForMetricTestCase(TestCase):
@@ -73,12 +75,10 @@ class WaitForMetricTestCase(TestCase):
         monitoring_config = monitoring.MonitoringConfig(
             'test project',
             'eu-west',
-            'env',
-            'workflow_id',
-            logger)
+            'env')
 
         # expect
-        self.assertTrue(monitoring.wait_for_metric('client', monitoring_config, 'metric_type'))
+        self.assertTrue(monitoring.wait_for_metric('client', monitoring_config, 'metric_type', logger))
 
     @mock.patch('bigflow.monitoring.metric_exists')
     def test_should_raise_exception_when_no_retries_left(self, metric_exists_mock):
@@ -87,13 +87,11 @@ class WaitForMetricTestCase(TestCase):
         monitoring_config = monitoring.MonitoringConfig(
             'test project',
             'eu-west',
-            'env',
-            'workflow_id',
-            logger)
+            'env')
 
         # expect
         with self.assertRaises(monitoring.MetricError):
-            monitoring.wait_for_metric('client', monitoring_config, 'metric_type')
+            monitoring.wait_for_metric('client', monitoring_config, 'metric_type', logger)
 
 
 class CreateTimeseriesData(TestCase):
@@ -139,9 +137,7 @@ class IncrementCounterTestCase(TestCase):
         monitoring_config = monitoring.MonitoringConfig(
             'test project',
             'eu-west',
-            'env',
-            'workflow_id',
-            logger)
+            'env')
 
         # when
         monitoring.increment_counter('client', monitoring_config, 'metric type', 'job id')
@@ -178,14 +174,12 @@ class IncrementJobFailureCount(TestCase):
         monitoring_config = monitoring.MonitoringConfig(
             'test project',
             'eu-west',
-            'env',
-            'workflow_id',
-            logger)
+            'env')
         api_client_mock.return_value = 'client'
         metric_exists_mock.return_value = False
 
         # when
-        monitoring.increment_job_failure_count(monitoring_config, 'job id')
+        monitoring.increment_job_failure_count(monitoring_config, 'job id', logger)
 
         # then
         api_create_metric_mock.assert_called_once_with(
@@ -208,14 +202,12 @@ class IncrementJobFailureCount(TestCase):
         monitoring_config = monitoring.MonitoringConfig(
             'test project',
             'eu-west',
-            'env',
-            'workflow_id',
-            logger)
+            'env')
         api_client_mock.return_value = 'client'
         metric_exists_mock.return_value = True
 
         # when
-        monitoring.increment_job_failure_count(monitoring_config, 'job id')
+        monitoring.increment_job_failure_count(monitoring_config, 'job id', logger)
 
         # then
         increment_counter_mock.assert_called_once_with(
@@ -241,9 +233,7 @@ class MeterJobRunFailuresTestCase(TestCase):
         monitoring_config = monitoring.MonitoringConfig(
             'test project',
             'eu-west',
-            'env',
-            'workflow_id',
-            logger)
+            'env')
 
         metered_job = monitoring.meter_job_run_failures(FailingJob('job1'), monitoring_config)
 
@@ -252,4 +242,31 @@ class MeterJobRunFailuresTestCase(TestCase):
             metered_job.run('2019-01-01')
 
         # then
-        increment_job_failure_count_mock.assert_called_once_with(monitoring_config, 'job1')
+        increment_job_failure_count_mock.assert_called_once_with(monitoring_config, 'job1', logging.getLogger(monitoring.__name__))
+
+
+class MeteredAndLoggedJobRunFailuresTestCase(TestCase):
+
+    @mock.patch('bigflow.monitoring.increment_job_failure_count')
+    @patch.object(GCPLogger, 'error')
+    @mock.patch('bigflow.logger.create_logging_client')
+    def test_should_increment_failure_count_and_call_gcp_logger(self, create_logging_client_mock, gcp_logger_mock, increment_job_failure_count_mock):
+        # given
+        create_logging_client_mock.return_value = mock.create_autospec(logging_v2.LoggingServiceV2Client)
+        monitoring_config = monitoring.MonitoringConfig(
+            'test project',
+            'eu-west',
+            'env')
+
+        job_with_metrics_and_logs = log_job_run_failures(monitoring.meter_job_run_failures(FailingJob('job1'), monitoring_config), monitoring_config, 'workflow-id')
+
+        # when
+        with self.assertRaises(Exception):
+            job_with_metrics_and_logs.run('2019-01-01')
+
+        # then
+        increment_job_failure_count_mock.assert_called_once_with(monitoring_config, 'job1',
+                                                                 logging.getLogger(monitoring.__name__))
+
+        # and
+        gcp_logger_mock.assert_called_once_with("Panic!")

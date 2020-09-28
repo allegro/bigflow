@@ -1,9 +1,11 @@
 from unittest import TestCase, mock
 from unittest.mock import patch
 
+from bigflow.monitoring import MonitoringConfig
 from google.cloud import logging_v2
 
-from bigflow.logger import GCPLogger, Logger
+from bigflow.logger import GCPLogger, Logger, log_job_run_failures
+from test.test_monitoring import FailingJob
 
 
 class MockedGCPLogger(TestCase):
@@ -72,3 +74,20 @@ class LoggerTestCase(MockedGCPLogger):
             severity='ERROR',
             labels={"workflow": "workflow-id"}
         )])
+
+    @patch.object(GCPLogger, 'error')
+    def test_should_call_gcp_logger_if_job_fails(self, gcp_logger_mock):
+        # given
+        monitoring_config = MonitoringConfig(
+            'test project',
+            'eu-west',
+            'env')
+        logged_job = log_job_run_failures(FailingJob('job1'), monitoring_config, 'workflow-id')
+        # self.test_logger.assert_called_with("error message")
+
+        # when
+        with self.assertRaises(Exception):
+            logged_job.run('2019-01-01')
+
+        # then
+        gcp_logger_mock.assert_called_once_with("Panic!")

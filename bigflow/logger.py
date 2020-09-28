@@ -1,4 +1,5 @@
 import logging
+
 from google.cloud import logging_v2
 from urllib.parse import quote_plus
 
@@ -75,3 +76,20 @@ class GCPLogger(object):
         query = quote_plus(f'''logName="projects/{self.project_id}/logs/{self.logger_name}"
 labels.workflow="{self.workflow_id}"''')
         return self.logger.info(f'You can find logs for this workflow here: https://console.cloud.google.com/logs/query;query={query}')
+
+
+def log_job_run_failures(job, monitoring_config, workflow_id):
+    original_run = job.run
+    logger = GCPLogger(monitoring_config.project_id, workflow_id, f'{workflow_id}_logger')
+
+    def logged_run(runtime):
+        try:
+            logger.get_gcp_logs_message()
+            return original_run(runtime)
+        except Exception as e:
+            logger.error(str(e))
+            raise e
+
+    job.run = logged_run
+    return job
+

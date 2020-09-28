@@ -132,8 +132,7 @@ class WordcountJob(object):
 monitoring_config = MonitoringConfig(
     project_id=workflow_config['gcp_project_id'],
     region='europe-west1',
-    environment_name='dev',
-    workflow_id='test_workflow')
+    environment_name='dev')
 
 
 simple_workflow = Workflow(
@@ -318,8 +317,7 @@ populate_job = populate_more_ports.to_job(id='populate_job', dependencies_overri
 monitoring_config = MonitoringConfig(
     project_id=dataset.config.project_id,
     region='europe-west1',
-    environment_name='dev',
-    workflow_id='internationalports_workflow')
+    environment_name='dev')
 
 ports_workflow = Workflow(
         workflow_id='internationalports_workflow',
