@@ -167,7 +167,7 @@ class IncrementJobFailureCount(TestCase):
         metric_exists_mock.return_value = False
 
         # when
-        monitoring.increment_job_failure_count(monitoring_config, 'job id', logger)
+        monitoring.increment_job_failure_count(monitoring_config, 'job id')
 
         # then
         api_create_metric_mock.assert_called_once_with(
@@ -195,7 +195,7 @@ class IncrementJobFailureCount(TestCase):
         metric_exists_mock.return_value = True
 
         # when
-        monitoring.increment_job_failure_count(monitoring_config, 'job id', logger)
+        monitoring.increment_job_failure_count(monitoring_config, 'job id')
 
         # then
         increment_counter_mock.assert_called_once_with(
@@ -230,7 +230,7 @@ class MeterJobRunFailuresTestCase(TestCase):
             metered_job.run('2019-01-01')
 
         # then
-        increment_job_failure_count_mock.assert_called_once_with(monitoring_config, 'job1', logging.getLogger(monitoring.__name__))
+        increment_job_failure_count_mock.assert_called_once_with(monitoring_config, 'job1')
 
 
 class MeteredAndLoggedJobRunFailuresTestCase(TestCase):
@@ -253,8 +253,7 @@ class MeteredAndLoggedJobRunFailuresTestCase(TestCase):
             job_with_metrics_and_logs.run('2019-01-01')
 
         # then
-        increment_job_failure_count_mock.assert_called_once_with(monitoring_config, 'job1',
-                                                                 logging.getLogger(monitoring.__name__))
+        increment_job_failure_count_mock.assert_called_once_with(monitoring_config, 'job1')
 
         # and
         gcp_logger_mock.assert_called_once_with("Panic!")
