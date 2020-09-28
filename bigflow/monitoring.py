@@ -34,9 +34,9 @@ def api_list_metrics(client, project_resource, metric_type):
     return request.execute()
 
 
-def api_create_timeseries(client, monitoring_config, data):
+def api_create_timeseries(client, project_resource, data):
     request = client.projects().timeSeries().create(
-        name=monitoring_config.project_resource,
+        name=project_resource,
         body={"timeSeries": [data]})
     return request.execute()
 
@@ -63,8 +63,8 @@ def get_now_rfc3339():
     return format_rfc3339(datetime.datetime.utcnow())
 
 
-def metric_exists(client, monitoring_config, metric_type, logger):
-    response = api_list_metrics(client, monitoring_config.project_resource, metric_type)
+def metric_exists(client, project_resource, metric_type, logger):
+    response = api_list_metrics(client, project_resource, metric_type)
     try:
         return response['metricDescriptors'] is not None
     except KeyError:
@@ -72,15 +72,15 @@ def metric_exists(client, monitoring_config, metric_type, logger):
         return False
 
 
-def wait_for_metric(client, monitoring_config, metric_type, logger):
+def wait_for_metric(client, project_resource, metric_type, logger):
     retries_left = 10
-    while not metric_exists(client, monitoring_config, metric_type) and retries_left:
+    while not metric_exists(client, project_resource, metric_type) and retries_left:
         logger.info('Waiting for metric: {}'.format(metric_type))
         time.sleep(1)
         retries_left -= 1
 
     if not retries_left:
-        raise MetricError('Waiting for metric {} failed. Project resource {}.'.format(metric_type, monitoring_config.project_resource))
+        raise MetricError('Waiting for metric {} failed. Project resource {}.'.format(metric_type, project_resource))
     else:
         return True
 

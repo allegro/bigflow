@@ -50,20 +50,16 @@ class MetricExistsTestCase(TestCase):
     def test_should_check_if_metric_exists(self, api_list_metrics_mock: mock.Mock):
         # given
         api_list_metrics_mock.return_value = {'metricDescriptors': 'something'}
-        monitoring_config = monitoring.MonitoringConfig(
-            'test project',
-            'eu-west',
-            'env')
 
         # expect
-        self.assertTrue(monitoring.metric_exists('client', monitoring_config, 'metric_type', logger))
-        api_list_metrics_mock.assert_has_calls([mock.call('client', 'projects/test project', 'metric_type')])
+        self.assertTrue(monitoring.metric_exists('client', 'project_resource', 'metric_type', logger))
+        api_list_metrics_mock.assert_has_calls([mock.call('client', 'project_resource', 'metric_type')])
 
         # given
         api_list_metrics_mock.return_value = {}
 
         # expect
-        self.assertFalse(monitoring.metric_exists('client', monitoring_config, 'metric_type', logger))
+        self.assertFalse(monitoring.metric_exists('client', 'project_resource', 'metric_type', logger))
 
 
 class WaitForMetricTestCase(TestCase):
@@ -72,26 +68,18 @@ class WaitForMetricTestCase(TestCase):
     def test_should_wait_until_metric_exists(self, metric_exists_mock):
         # given
         metric_exists_mock.return_value = True
-        monitoring_config = monitoring.MonitoringConfig(
-            'test project',
-            'eu-west',
-            'env')
 
         # expect
-        self.assertTrue(monitoring.wait_for_metric('client', monitoring_config, 'metric_type', logger))
+        self.assertTrue(monitoring.wait_for_metric('client', 'project_resource', 'metric_type', logger))
 
     @mock.patch('bigflow.monitoring.metric_exists')
     def test_should_raise_exception_when_no_retries_left(self, metric_exists_mock):
         # given
         metric_exists_mock.return_value = False
-        monitoring_config = monitoring.MonitoringConfig(
-            'test project',
-            'eu-west',
-            'env')
 
         # expect
         with self.assertRaises(monitoring.MetricError):
-            monitoring.wait_for_metric('client', monitoring_config, 'metric_type', logger)
+            monitoring.wait_for_metric('client', 'project_resource', 'metric_type', logger)
 
 
 class CreateTimeseriesData(TestCase):
