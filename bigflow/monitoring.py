@@ -4,6 +4,7 @@ import datetime
 
 import googleapiclient.discovery
 
+logger = logging.getLogger(__name__)
 
 BIGFLOW_JOB_FAILURE_METRIC_TYPE = 'custom.googleapis.com/bigflow'
 BIGFLOW_JOB_FAILURE_METRIC = {
@@ -129,12 +130,12 @@ def increment_counter(client, monitoring_config, metric_type, job_id):
     api_create_timeseries(client, monitoring_config, timeseries_data)
 
 
-def increment_job_failure_count(monitoring_config, job_id, logger):
+def increment_job_failure_count(monitoring_config, job_id):
     try:
         client = api_client()
-        if not metric_exists(client, monitoring_config, BIGFLOW_JOB_FAILURE_METRIC_TYPE, logger):
+        if not metric_exists(client, monitoring_config, BIGFLOW_JOB_FAILURE_METRIC_TYPE):
             api_create_metric(client, monitoring_config.project_resource, BIGFLOW_JOB_FAILURE_METRIC)
-            wait_for_metric(client, monitoring_config, BIGFLOW_JOB_FAILURE_METRIC_TYPE, logger)
+            wait_for_metric(client, monitoring_config, BIGFLOW_JOB_FAILURE_METRIC_TYPE)
         increment_counter(client, monitoring_config, BIGFLOW_JOB_FAILURE_METRIC_TYPE, job_id)
     except Exception as e:
         raise MetricError('Cannot increment job failure count: ' + str(e)) from e
@@ -150,14 +151,13 @@ class MonitoringConfig(object):
 
 def meter_job_run_failures(job, monitoring_config):
     original_run = job.run
-    logger = logging.getLogger(__name__)
 
     def metered_run(runtime):
         try:
             return original_run(runtime)
         except Exception as e:
             logger.exception(e)
-            increment_job_failure_count(monitoring_config, job.id, logger)
+            increment_job_failure_count(monitoring_config, job.id)
             raise e
 
     job.run = metered_run
