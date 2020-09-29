@@ -179,7 +179,7 @@ To achieve that, you need the following expressions:
 
 ```python
 # Workflow 1
-'datetime.strptime("{start_time}", "%Y-%m-%d %H:%M:%S") - (timedelta(hours=1))'
+'datetime.strptime("{start_time}", "%Y-%m-%d %H:%M:%S") + (timedelta(hours=1))'
 
 # Workflow 2
 'datetime.strptime("{start_time}", "%Y-%m-%d %H:%M:%S") - (timedelta(hours=1))'
