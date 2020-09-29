@@ -1,8 +1,10 @@
 import os
 import json
 import shutil
-from pathlib import Path
+import datetime
 import subprocess
+
+from pathlib import Path
 from unittest import TestCase, mock
 
 from bigflow.cli import walk_module_files, SETUP_VALIDATION_MESSAGE
@@ -191,13 +193,13 @@ class BuildDagsCommandE2E(SetupTestCase):
         # then
         self.assertTrue(dags_built(TEST_PROJECT_PATH, 2))
         self.assertFalse(dags_leftovers_exist(TEST_PROJECT_PATH))
-        self.assertTrue(dags_contain(TEST_PROJECT_PATH, now(template="%Y-%m-%d")))
+        self.assertTrue(dags_contain(TEST_PROJECT_PATH, repr(datetime.datetime.now().replace(second=0, minute=0, microsecond=0))))
 
         # when
         self.test_project.run_build("python project_setup.py build_project --build-dags --start-time '2020-01-02 00:00:00'")
 
         # then
-        self.assertTrue(dags_contain(TEST_PROJECT_PATH, '2020-01-02'))
+        self.assertTrue(dags_contain(TEST_PROJECT_PATH, 'datetime.datetime(2020, 1, 2, 0, 0)'))
 
         # when
         self.test_project.run_build('python project_setup.py build_project --build-dags --workflow workflow1')

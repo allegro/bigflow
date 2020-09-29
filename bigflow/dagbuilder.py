@@ -1,4 +1,6 @@
 import shutil
+import typing
+
 from pathlib import Path
 from datetime import datetime
 
@@ -13,25 +15,26 @@ def clear_dags_output_dir(workdir: str):
 def generate_dag_file(workdir: str,
                       docker_repository: str,
                       workflow,
-                      start_from: str,
+                      start_from: typing.Union[datetime, str],
                       build_ver: str,
                       root_package_name: str) -> str:
+    start_from = _coerce_str_to_datetime(start_from)
+
     print(f'start_from: {start_from}')
     print(f'build_ver: {build_ver}')
     print(f'docker_repository: {docker_repository}')
 
     dag_deployment_id = get_dag_deployment_id(workflow.workflow_id, start_from, build_ver)
     dag_file_path = get_dags_output_dir(workdir) / (dag_deployment_id + '_dag.py')
-    start_date_as_str = workflow.start_time_expression_factory(start_from)
+    start_date_as_str = repr(start_from)
 
     print(f'dag_file_path: {dag_file_path.resolve()}')
 
     dag_chunks = []
 
-    dag_chunks.append("""    
+    dag_chunks.append("""
+import datetime
 from airflow import DAG
-from datetime import timedelta
-from datetime import datetime
 from airflow.contrib.operators import kubernetes_pod_operator
 
 default_args = {{
@@ -40,7 +43,7 @@ default_args = {{
             'start_date': {start_date_as_str},
             'email_on_failure': False,
             'email_on_retry': False,
-            'execution_timeout': timedelta(minutes=90)
+            'execution_timeout': datetime.timedelta(minutes=90),
 }}
 
 dag = DAG(
@@ -71,7 +74,7 @@ dag = DAG(
     image='{docker_image}',
     is_delete_operator_pod=True,
     retries={retries},
-    retry_delay= timedelta(seconds={retry_delay}),
+    retry_delay=datetime.timedelta(seconds={retry_delay}),
     dag=dag)            
 """.format(job_var=job_var,
           task_id=task_id,
@@ -99,7 +102,7 @@ def get_dag_deployment_id(workflow_name: str,
     return '{workflow_name}__v{ver}__{start_from}'.format(
         workflow_name=workflow_name,
         ver=build_ver.replace('.','_').replace('-','_'),
-        start_from=datetime.strptime(start_from, "%Y-%m-%d" if len(start_from) <= 10 else "%Y-%m-%d %H:%M:%S").strftime('%Y_%m_%d_%H_%M_%S')
+        start_from=_coerce_str_to_datetime(start_from).strftime('%Y_%m_%d_%H_%M_%S')
     )
 
 
@@ -110,3 +113,12 @@ def get_dags_output_dir(workdir: str) -> Path:
         dags_dir_path.mkdir()
 
     return dags_dir_path
+
+
+def _coerce_str_to_datetime(dt: typing.Union[str, datetime]):
+    if isinstance(dt, datetime):
+        return dt
+    elif len(dt) <= 10:
+        return datetime.strptime(dt, "%Y-%m-%d")
+    else:
+        return datetime.strptime(dt, "%Y-%m-%d %H:%M:%S")

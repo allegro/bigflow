@@ -68,7 +68,7 @@ class DagBuilderTestCase(TestCase):
         workflow = Workflow(
             workflow_id='my_workflow',
             definition=Definition(graph),
-            start_time_expression_factory=hourly_start_time,
+            start_time_factory=hourly_start_time,
             schedule_interval='@hourly')
 
         # when
@@ -78,19 +78,18 @@ class DagBuilderTestCase(TestCase):
         self.assertEqual(dag_file_path, workdir + '/.dags/my_workflow__v0_3_0__2020_07_01_10_00_00_dag.py')
 
         dag_file_content = Path(dag_file_path).read_text()
-        expected_dag_content = '''    
+        expected_dag_content = '''
+import datetime
 from airflow import DAG
-from datetime import timedelta
-from datetime import datetime
 from airflow.contrib.operators import kubernetes_pod_operator
 
 default_args = {
             'owner': 'airflow',
             'depends_on_past': True,
-            'start_date': datetime.strptime("2020-07-01 10:00:00", "%Y-%m-%d %H:%M:%S") - (timedelta(seconds='''+self.expected_start_date_shift()+''')),
+            'start_date': datetime.datetime(2020, 7, 1, 10, 0),
             'email_on_failure': False,
             'email_on_retry': False,
-            'execution_timeout': timedelta(minutes=90)
+            'execution_timeout': datetime.timedelta(minutes=90),
 }
 
 dag = DAG(
@@ -110,7 +109,7 @@ tjob1 = kubernetes_pod_operator.KubernetesPodOperator(
     image='eu.gcr.io/my_docker_repository_project/my-project:0.3.0',
     is_delete_operator_pod=True,
     retries=10,
-    retry_delay= timedelta(seconds=20),
+    retry_delay=datetime.timedelta(seconds=20),
     dag=dag)            
 
 
@@ -123,7 +122,7 @@ tjob2 = kubernetes_pod_operator.KubernetesPodOperator(
     image='eu.gcr.io/my_docker_repository_project/my-project:0.3.0',
     is_delete_operator_pod=True,
     retries=100,
-    retry_delay= timedelta(seconds=200),
+    retry_delay=datetime.timedelta(seconds=200),
     dag=dag)            
 
 tjob2.set_upstream(tjob1)
@@ -137,7 +136,7 @@ tjob3 = kubernetes_pod_operator.KubernetesPodOperator(
     image='eu.gcr.io/my_docker_repository_project/my-project:0.3.0',
     is_delete_operator_pod=True,
     retries=100,
-    retry_delay= timedelta(seconds=200),
+    retry_delay=datetime.timedelta(seconds=200),
     dag=dag)            
 
 tjob3.set_upstream(tjob2)
@@ -174,19 +173,18 @@ tjob3.set_upstream(tjob1)
         self.assertEqual(dag_file_path, workdir + '/.dags/my_daily_workflow__v0_3_0__2020_07_01_00_00_00_dag.py')
 
         dag_file_content = Path(dag_file_path).read_text()
-        expected_dag_content = '''    
+        expected_dag_content = '''
+import datetime
 from airflow import DAG
-from datetime import timedelta
-from datetime import datetime
 from airflow.contrib.operators import kubernetes_pod_operator
 
 default_args = {
             'owner': 'airflow',
             'depends_on_past': True,
-            'start_date': datetime.strptime("2020-07-01", "%Y-%m-%d") - (timedelta(hours=24)),
+            'start_date': datetime.datetime(2020, 7, 1, 0, 0),
             'email_on_failure': False,
             'email_on_retry': False,
-            'execution_timeout': timedelta(minutes=90)
+            'execution_timeout': datetime.timedelta(minutes=90),
 }
 
 dag = DAG(
@@ -206,7 +204,7 @@ tjob1 = kubernetes_pod_operator.KubernetesPodOperator(
     image='eu.gcr.io/my_docker_repository_project/my-project:0.3.0',
     is_delete_operator_pod=True,
     retries=10,
-    retry_delay= timedelta(seconds=20),
+    retry_delay=datetime.timedelta(seconds=20),
     dag=dag)            
 
 '''
