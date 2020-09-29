@@ -3,12 +3,12 @@ import subprocess
 import unittest
 from pathlib import Path
 from unittest import mock
+from unittest.case import TestCase
 
 from bigflow.cli import cli
-from test.test_logger import MockedGCPLogger
 
 
-class ProjectScaffoldE2ETestCase(MockedGCPLogger):
+class ProjectScaffoldE2ETestCase(TestCase):
     def tearDown(self):
         clear_project_leftovers(Path('my_project_project'))
 

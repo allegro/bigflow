@@ -103,7 +103,6 @@ def count_words(p, target_method):
 '''
 beam_workflow_template = '''from apache_beam.io import WriteToText
 from bigflow import Workflow
-from bigflow.monitoring import MonitoringConfig, meter_job_run_failures
 
 from .pipeline import dataflow_pipeline
 from .config import workflow_config
@@ -128,16 +127,10 @@ class WordcountJob(object):
                               self.machine_type, self.project_name)
         count_words(p, WriteToText("gs://{}/beam_wordcount".format(self.temp_location)))
         p.run().wait_until_finish()
-        
-monitoring_config = MonitoringConfig(
-    project_id=workflow_config['gcp_project_id'],
-    region='europe-west1',
-    environment_name='dev')
-
 
 simple_workflow = Workflow(
     workflow_id="test_workflow",
-    definition=[meter_job_run_failures(WordcountJob(
+    definition=[WordcountJob(
         'test_workflow',
         gcp_project_id=workflow_config['gcp_project_id'],
         staging_location=workflow_config['staging_location'],
@@ -145,7 +138,7 @@ simple_workflow = Workflow(
         region=workflow_config['region'],
         machine_type=workflow_config['machine_type'],
         project_name=workflow_config['project_name']
-    ), monitoring_config)])
+    )])
 '''
 basic_beam_config_template = '''from bigflow.configuration import Config
 

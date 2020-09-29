@@ -64,7 +64,7 @@ def get_now_rfc3339():
     return format_rfc3339(datetime.datetime.utcnow())
 
 
-def metric_exists(client, project_resource, metric_type, logger):
+def metric_exists(client, project_resource, metric_type):
     response = api_list_metrics(client, project_resource, metric_type)
     try:
         return response['metricDescriptors'] is not None
@@ -73,7 +73,7 @@ def metric_exists(client, project_resource, metric_type, logger):
         return False
 
 
-def wait_for_metric(client, project_resource, metric_type, logger):
+def wait_for_metric(client, project_resource, metric_type):
     retries_left = 10
     while not metric_exists(client, project_resource, metric_type) and retries_left:
         logger.info('Waiting for metric: {}'.format(metric_type))
@@ -133,9 +133,9 @@ def increment_counter(client, monitoring_config, metric_type, job_id):
 def increment_job_failure_count(monitoring_config, job_id):
     try:
         client = api_client()
-        if not metric_exists(client, monitoring_config, BIGFLOW_JOB_FAILURE_METRIC_TYPE):
+        if not metric_exists(client, monitoring_config.project_resource, BIGFLOW_JOB_FAILURE_METRIC_TYPE):
             api_create_metric(client, monitoring_config.project_resource, BIGFLOW_JOB_FAILURE_METRIC)
-            wait_for_metric(client, monitoring_config, BIGFLOW_JOB_FAILURE_METRIC_TYPE)
+            wait_for_metric(client, monitoring_config.project_resource, BIGFLOW_JOB_FAILURE_METRIC_TYPE)
         increment_counter(client, monitoring_config, BIGFLOW_JOB_FAILURE_METRIC_TYPE, job_id)
     except Exception as e:
         raise MetricError('Cannot increment job failure count: ' + str(e)) from e

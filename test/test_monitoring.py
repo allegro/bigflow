@@ -1,5 +1,3 @@
-import logging
-
 from unittest import TestCase, mock
 from datetime import datetime
 
@@ -9,7 +7,6 @@ from freezegun import freeze_time
 
 TEST_DATETIME = datetime(year=2019, month=1, day=2)
 TEST_DATETIME_RFC3339 = '2019-01-02T00:00:00Z'
-logger = logging.getLogger(__name__)
 
 class FormatRFC3339TestCase(TestCase):
 
@@ -48,14 +45,14 @@ class MetricExistsTestCase(TestCase):
         api_list_metrics_mock.return_value = {'metricDescriptors': 'something'}
 
         # expect
-        self.assertTrue(monitoring.metric_exists('client', 'project_resource', 'metric_type', logger))
+        self.assertTrue(monitoring.metric_exists('client', 'project_resource', 'metric_type'))
         api_list_metrics_mock.assert_has_calls([mock.call('client', 'project_resource', 'metric_type')])
 
         # given
         api_list_metrics_mock.return_value = {}
 
         # expect
-        self.assertFalse(monitoring.metric_exists('client', 'project_resource', 'metric_type', logger))
+        self.assertFalse(monitoring.metric_exists('client', 'project_resource', 'metric_type'))
 
 
 class WaitForMetricTestCase(TestCase):
@@ -66,7 +63,7 @@ class WaitForMetricTestCase(TestCase):
         metric_exists_mock.return_value = True
 
         # expect
-        self.assertTrue(monitoring.wait_for_metric('client', 'project_resource', 'metric_type', logger))
+        self.assertTrue(monitoring.wait_for_metric('client', 'project_resource', 'metric_type'))
 
     @mock.patch('bigflow.monitoring.metric_exists')
     def test_should_raise_exception_when_no_retries_left(self, metric_exists_mock):
@@ -75,7 +72,7 @@ class WaitForMetricTestCase(TestCase):
 
         # expect
         with self.assertRaises(monitoring.MetricError):
-            monitoring.wait_for_metric('client', 'project_resource', 'metric_type', logger)
+            monitoring.wait_for_metric('client', 'project_resource', 'metric_type')
 
 
 class CreateTimeseriesData(TestCase):
