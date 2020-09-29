@@ -35,6 +35,21 @@ class LoggerTestCase(MockedGCPLogger):
             labels={"workflow": "workflow-id"}
         )])
 
+    def test_should_send_info(self):
+        self.test_logger.info("info message")
+        self.test_logger.client.write_log_entries.assert_called_with([logging_v2.types.LogEntry(
+            log_name="projects/project-id/logs/workflow-id",
+            resource={
+                "type": "global",
+                "labels": {
+                    "project_id": "project-id"
+                }
+            },
+            text_payload="info message",
+            severity='INFO',
+            labels={"workflow": "workflow-id"}
+        )])
+
     def test_should_send_error(self):
         self.test_logger.error("error message")
         self.test_logger.client.write_log_entries.assert_called_with([logging_v2.types.LogEntry(
