@@ -16,9 +16,7 @@ class GCPLogger(logging.StreamHandler):
         self.workflow_id = workflow_id
 
     def emit(self, record):
-        if record.levelname == 'INFO':
-            self.info(record.getMessage())
-        elif record.levelname == 'WARNING':
+        if record.levelname == 'WARNING':
             self.warning(record.getMessage())
         else:
             self.error(record.getMessage())
@@ -37,9 +35,6 @@ class GCPLogger(logging.StreamHandler):
 
     def error(self, message):
         self.write_log_entries(message, 'ERROR')
-
-    def info(self, message):
-        self.write_log_entries(message, 'INFO')
 
     def write_log_entries(self, message, severity):
         entry = logging_v2.types.LogEntry(
