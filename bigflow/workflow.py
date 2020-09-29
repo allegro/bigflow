@@ -46,7 +46,9 @@ class Workflow(object):
     def _init_logger(self):
         if self.logging_project_id:
             gcp_logger = GCPLogger(self.logging_project_id, self.workflow_id)
-            logger = logging.getLogger(f'{self.workflow_id}_logger')
+            formatter = logging.Formatter("%(message)s")
+            gcp_logger.setFormatter(formatter)
+            logger = logging.getLogger(f'{self.workflow_id}')
             logger.setLevel(logging.INFO)
             logger.addHandler(gcp_logger)
             logger.info(gcp_logger.get_gcp_logs_message())
@@ -55,7 +57,7 @@ class Workflow(object):
         try:
             job.run(runtime=runtime)
         except Exception as e:
-            logger = logging.getLogger(f'{self.workflow_id}_logger')
+            logger = logging.getLogger(f'{self.workflow_id}')
             logger.error(str(e))
             raise e
 
