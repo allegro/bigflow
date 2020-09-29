@@ -214,18 +214,17 @@ To see how it works, go to the [`docs`](../docs) project and run the `bigflow bu
 One of the generated DAGs, for the [`resources.py`](examples/project_structure_and_build/resources_workflow.py) workflow, looks like this:
 
 ```python
+import datetime
 from airflow import DAG
-from datetime import timedelta
-from datetime import datetime
 from airflow.contrib.operators import kubernetes_pod_operator
 
 default_args = {
             'owner': 'airflow',
             'depends_on_past': True,
-            'start_date': datetime.strptime("2020-08-31", "%Y-%m-%d") - (timedelta(hours=24)),
+            'start_date': datetime.datetime(2020, 8, 30),
             'email_on_failure': False,
             'email_on_retry': False,
-            'execution_timeout': timedelta(minutes=90)
+            'execution_timeout': datetime.timedelta(minutes=90),
 }
 
 dag = DAG(
@@ -245,7 +244,7 @@ print_resource_job = kubernetes_pod_operator.KubernetesPodOperator(
     image='eu.gcr.io/docker_repository_project/my-project:0.1.0',
     is_delete_operator_pod=True,
     retries=3,
-    retry_delay= timedelta(seconds=60),
+    retry_delay=timedelta(seconds=60),
     dag=dag)
 ```
 
