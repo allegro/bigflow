@@ -163,8 +163,9 @@ class WorkflowTestCase(TestCase):
         workflow = Workflow(workflow_id='test_workflow', definition=definition, logging_project_id="some_project_id")
 
         # when
-        with self.assertLogs('test_workflow_logger', level='ERROR') as logs:
+        with self.assertLogs('test_workflow_logger', level='INFO') as logs:
             with self.assertRaises(Exception):
                 workflow.run('2019-09-01')
         # then
-            self.assertEqual(logs.output, ['ERROR:test_workflow_logger:Panic!'])
+            self.assertEqual(logs.output, ['INFO:test_workflow_logger:You can find logs for this workflow here: https://console.cloud.google.com/logs/query;query=logName%3D%22projects%2Fsome_project_id%2Flogs%2Ftest_workflow%22%0Alabels.workflow%3D%22test_workflow%22',
+                                           'ERROR:test_workflow_logger:Panic!'])

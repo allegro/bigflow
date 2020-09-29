@@ -49,6 +49,7 @@ class Workflow(object):
             logger = logging.getLogger(f'{self.workflow_id}_logger')
             logger.setLevel(logging.INFO)
             logger.addHandler(gcp_logger)
+            logger.info(gcp_logger.get_gcp_logs_message())
 
     def _logged_run(self, job, runtime):
         try:
