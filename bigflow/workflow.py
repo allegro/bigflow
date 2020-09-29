@@ -45,13 +45,14 @@ class Workflow(object):
 
     def _init_logger(self):
         if self.logging_project_id:
-            gcp_logger = GCPLogger(self.logging_project_id, self.workflow_id)
-            formatter = logging.Formatter("%(message)s")
-            gcp_logger.setFormatter(formatter)
+            # gcp_logger = GCPLogger(self.logging_project_id, self.workflow_id)
+            # gcp_logger.setLevel(logging.ERROR)
+            # formatter = logging.Formatter("%(message)s")
+            # gcp_logger.setFormatter(formatter)
             logger = logging.getLogger(f'{self.workflow_id}')
             logger.setLevel(logging.INFO)
-            logger.addHandler(gcp_logger)
-            logger.info(gcp_logger.get_gcp_logs_message())
+            # logger.addHandler(gcp_logger)
+            # logger.info(gcp_logger.get_gcp_logs_message())
 
     def _logged_run(self, job, runtime):
         try:
