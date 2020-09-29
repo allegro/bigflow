@@ -1,7 +1,9 @@
+import logging
 from collections import OrderedDict
 from typing import Optional
 from datetime import datetime
 from .commons import now
+from .logger import GCPLogger
 
 DEFAULT_SCHEDULE_INTERVAL = '@daily'
 
@@ -23,17 +25,38 @@ class Workflow(object):
                  workflow_id,
                  definition,
                  schedule_interval=DEFAULT_SCHEDULE_INTERVAL,
-                 start_time_expression_factory=daily_start_time):
+                 start_time_expression_factory=daily_start_time,
+                 logging_project_id=None):
         self.definition = self._parse_definition(definition)
         self.schedule_interval = schedule_interval
         self.workflow_id = workflow_id
         self.start_time_expression_factory = start_time_expression_factory
+        self.logging_project_id = logging_project_id
 
     def run(self, runtime: Optional[str] = None):
+        self._init_logger()
         if runtime is None:
             runtime = self._auto_runtime()
         for job in self.build_sequential_order():
+            if self.logging_project_id:
+                self._logged_run(job, runtime)
+            else:
+                job.run(runtime=runtime)
+
+    def _init_logger(self):
+        if self.logging_project_id:
+            gcp_logger = GCPLogger(self.logging_project_id, self.workflow_id)
+            logger = logging.getLogger(f'{self.workflow_id}_logger')
+            logger.setLevel(logging.INFO)
+            logger.addHandler(gcp_logger)
+
+    def _logged_run(self, job, runtime):
+        try:
             job.run(runtime=runtime)
+        except Exception as e:
+            logger = logging.getLogger(f'{self.workflow_id}_logger')
+            logger.error(str(e))
+            raise e
 
     def run_job(self, job_id, runtime: Optional[str] = None):
         if runtime is None:
@@ -166,6 +189,7 @@ class JobOrderResolver:
 
     def find_sequential_run_order(self):
         ordered_jobs = []
+
         def add_to_ordered_job(job, dependencies):
             ordered_jobs.append(job)
 

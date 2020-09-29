@@ -1,9 +1,10 @@
 from collections import OrderedDict
+from unittest import TestCase, mock
 
-import mock
-from unittest import TestCase
+from google.cloud import logging_v2
 
 from bigflow.workflow import Workflow, Definition, InvalidJobGraph, WorkflowJob
+from test.test_monitoring import FailingJob
 
 
 class WorkflowTestCase(TestCase):
@@ -153,3 +154,17 @@ class WorkflowTestCase(TestCase):
 
         # expected
         self.assertEqual(workflow.build_sequential_order(), [job1, job5, job2, job3, job6, job9, job4, job7, job8])
+
+    @mock.patch('bigflow.logger.create_logging_client')
+    def test_should_log_job_exception(self, create_logging_client_mock):
+        # given
+        create_logging_client_mock.return_value = mock.create_autospec(logging_v2.LoggingServiceV2Client)
+        definition = [mock.Mock(), FailingJob("id")]
+        workflow = Workflow(workflow_id='test_workflow', definition=definition, logging_project_id="some_project_id")
+
+        # when
+        with self.assertLogs('test_workflow_logger', level='ERROR') as logs:
+            with self.assertRaises(Exception):
+                workflow.run('2019-09-01')
+        # then
+            self.assertEqual(logs.output, ['ERROR:test_workflow_logger:Panic!'])

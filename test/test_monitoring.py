@@ -1,15 +1,11 @@
 import logging
-from unittest.mock import patch
 
 from unittest import TestCase, mock
 from datetime import datetime
 
-from google.cloud import logging_v2
-
 from bigflow import monitoring
 from freezegun import freeze_time
 
-from bigflow.logger import GCPLogger, log_job_run_failures
 
 TEST_DATETIME = datetime(year=2019, month=1, day=2)
 TEST_DATETIME_RFC3339 = '2019-01-02T00:00:00Z'
@@ -231,29 +227,3 @@ class MeterJobRunFailuresTestCase(TestCase):
 
         # then
         increment_job_failure_count_mock.assert_called_once_with(monitoring_config, 'job1')
-
-
-class MeteredAndLoggedJobRunFailuresTestCase(TestCase):
-
-    @mock.patch('bigflow.monitoring.increment_job_failure_count')
-    @patch.object(GCPLogger, 'error')
-    @mock.patch('bigflow.logger.create_logging_client')
-    def test_should_increment_failure_count_and_call_gcp_logger(self, create_logging_client_mock, gcp_logger_mock, increment_job_failure_count_mock):
-        # given
-        create_logging_client_mock.return_value = mock.create_autospec(logging_v2.LoggingServiceV2Client)
-        monitoring_config = monitoring.MonitoringConfig(
-            'test project',
-            'eu-west',
-            'env')
-
-        job_with_metrics_and_logs = log_job_run_failures(monitoring.meter_job_run_failures(FailingJob('job1'), monitoring_config), monitoring_config, 'workflow-id')
-
-        # when
-        with self.assertRaises(Exception):
-            job_with_metrics_and_logs.run('2019-01-01')
-
-        # then
-        increment_job_failure_count_mock.assert_called_once_with(monitoring_config, 'job1')
-
-        # and
-        gcp_logger_mock.assert_called_once_with("Panic!")
