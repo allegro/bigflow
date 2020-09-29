@@ -45,10 +45,10 @@ class Workflow(object):
 
     def _init_logger(self):
         if self.logging_project_id:
-            logging.basicConfig(level=logging.INFO)
             logger = logging.getLogger(self.workflow_id)
+            logging.basicConfig(level=logging.INFO)
             gcp_logger = GCPLogger(self.logging_project_id, self.workflow_id)
-            gcp_logger.setLevel(logging.INFO)
+            gcp_logger.setLevel(logging.WARNING)
             logger.info(gcp_logger.get_gcp_logs_message())
             logger.addHandler(gcp_logger)
 
