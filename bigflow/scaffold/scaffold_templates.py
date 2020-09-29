@@ -128,6 +128,7 @@ class WordcountJob(object):
         count_words(p, WriteToText("gs://{}/beam_wordcount".format(self.temp_location)))
         p.run().wait_until_finish()
 
+
 simple_workflow = Workflow(
     workflow_id="test_workflow",
     definition=[WordcountJob(

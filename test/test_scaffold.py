@@ -2,8 +2,7 @@ import shutil
 import subprocess
 import unittest
 from pathlib import Path
-from unittest import mock
-from unittest.case import TestCase
+from unittest import TestCase, mock
 
 from bigflow.cli import cli
 
