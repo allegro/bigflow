@@ -41,7 +41,7 @@ Running a simple job
 Running a simple job
 ```
 
-Running workflows and jobs from a module are useful for debugging. In any other case, we recommend using [BigFlow CLI](cli.md).
+Running workflows and jobs from a module is useful for debugging. In any other case, we recommend using [BigFlow CLI](cli.md).
 
 ## Job
 
