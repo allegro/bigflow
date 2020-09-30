@@ -6,7 +6,6 @@ from unittest import TestCase, mock
 from google.cloud import logging_v2
 
 from bigflow.logger import configure_logging
-from logger import EXCEPTHOOK_MESSAGE
 
 
 class MockedLoggerHandler(TestCase):
