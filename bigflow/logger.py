@@ -54,6 +54,9 @@ class GCPLoggerHandler(logging.StreamHandler):
     def get_gcp_logs_message(self):
         query = quote_plus(f'''logName="projects/{self.project_id}/logs/{self.workflow_id}"
 labels.workflow="{self.workflow_id}"''')
-        return f'You can find logs for this workflow here: https://console.cloud.google.com/logs/query;query={query}'
+        return f'*************************LOGS LINK************************* \n ' \
+               f'You can find logs for this workflow here: https://console.cloud.google.com/logs/query;query={query} \n ' \
+               f'***********************************************************'
+
 
 

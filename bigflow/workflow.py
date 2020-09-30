@@ -48,7 +48,7 @@ class Workflow(object):
             logger = logging.getLogger(self.workflow_id)
             logging.basicConfig(level=logging.INFO)
             gcp_logger_handler = GCPLoggerHandler(self.logging_project_id, self.workflow_id)
-            gcp_logger_handler.setLevel(logging.WARNING)
+            gcp_logger_handler.setLevel(logging.INFO)
             logger.info(gcp_logger_handler.get_gcp_logs_message())
             logger.addHandler(gcp_logger_handler)
 
