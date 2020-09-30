@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 from bigflow.bigquery.interactive import InteractiveComponent
-from bigflow.bigquery.interactive import add_label_component
+from bigflow.bigquery.interactive import add_label
 
 
 class FakeTable(object):
@@ -46,25 +46,25 @@ class LabelsTestCase(TestCase):
         dataset = FakeDataset(TEST_PROJECT_ID, TEST_DATASET_NAME)
 
         # when
-        add_label = add_label_component(TEST_TABLE_NAME, TEST_LABELS, ds=dataset)
+        add_label_component = add_label(TEST_TABLE_NAME, TEST_LABELS, ds=dataset)
 
         # then
-        self.assertIsInstance(add_label, InteractiveComponent)
+        self.assertIsInstance(add_label_component, InteractiveComponent)
 
         # and
-        self.test_should_execute_update_table_with_proper_parameters(add_label._standard_component)
+        self.test_should_execute_update_table_with_proper_parameters(add_label_component._standard_component)
 
     def test_should_return_raw_component_when_ds_is_not_provided(self):
         # given
-        add_label = add_label_component(TEST_TABLE_NAME, TEST_LABELS)
+        add_label_component = add_label(TEST_TABLE_NAME, TEST_LABELS)
 
         # expect
-        self.test_should_execute_update_table_with_proper_parameters(add_label)
+        self.test_should_execute_update_table_with_proper_parameters(add_label_component)
 
-    def test_should_execute_update_table_with_proper_parameters(self, add_label=None):
+    def test_should_execute_update_table_with_proper_parameters(self, add_label_component=None):
         # given
-        add_label = add_label or add_label_component(TEST_TABLE_NAME, TEST_LABELS)
+        add_label_component = add_label_component or add_label(TEST_TABLE_NAME, TEST_LABELS)
         dataset = FakeDataset(TEST_PROJECT_ID, TEST_DATASET_NAME)
 
         # expect
-        self.assertEqual(add_label(dataset), (f'{TEST_PROJECT_ID}.{TEST_DATASET_NAME}.{TEST_TABLE_NAME}', TEST_LABELS))
+        self.assertEqual(add_label_component(dataset), (f'{TEST_PROJECT_ID}.{TEST_DATASET_NAME}.{TEST_TABLE_NAME}', TEST_LABELS))

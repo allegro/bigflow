@@ -328,19 +328,19 @@ def _add_deploy_parsers_common_arguments(parser):
                         default='local_account',
                         help='One of two authentication method: '
                              'local_account -- you are using credentials of your local user authenticated in gcloud; '
-                             'service_account -- credentials for service account are obtained from Vault. '
+                             'vault -- credentials for service account are obtained from Vault. '
                              'Default: local_account',
-                        choices=['local_account', 'service_account'])
+                        choices=['local_account', 'vault'])
     parser.add_argument('-ve', '--vault-endpoint',
                         type=str,
                         help='URL of a Vault endpoint to get OAuth token for service account. '
-                             'Required if auth-method is service_account. '
+                             'Required if auth-method is vault. '
                              'If not set, will be read from deployment_config.py.'
                         )
     parser.add_argument('-vs', '--vault-secret',
                         type=str,
                         help='Vault secret token. '
-                             'Required if auth-method is service_account.'
+                             'Required if auth-method is vault.'
                         )
     parser.add_argument('-dc', '--deployment-config-path',
                         type=str,
@@ -435,7 +435,7 @@ def _resolve_dags_dir(args):
 
 
 def _resolve_vault_endpoint(args):
-    if args.auth_method == 'service_account':
+    if args.auth_method == 'vault':
         return _resolve_property(args, 'vault_endpoint')
     else:
         return None

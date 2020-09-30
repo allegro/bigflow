@@ -4,9 +4,7 @@ from pathlib import Path
 from bigflow.scaffold.scaffold_templates import beam_workflow_template, beam_processing_template, \
     beam_pipeline_template, project_setup_template, basic_deployment_config_template, \
     advanced_deployment_config_template, docker_template, basic_beam_config_template, requirements_template, \
-    test_wordcount_workflow_template, test_internationalports_workflow_template, \
-    bq_workflow_template, bq_processing_template, bq_tables_template, readme_template, advanced_beam_config_template, \
-    basic_bq_config_template, advanced_bq_config_template, gitignore_template
+    readme_template, advanced_beam_config_template, gitignore_template, test_wordcount_workflow_template, bq_workflow_template
 
 
 def start_project(config):
@@ -16,8 +14,9 @@ def start_project(config):
 
 def format_templates(config):
     beam_config_template = basic_beam_config_template.format(project_id=config['projects_id'][0], project_name=config['project_name'])
-    bq_config_template = basic_bq_config_template.format(project_id=config['projects_id'][0])
-    test_templates = {'__init__.py': '', 'test_wordcount_workflow.py': test_wordcount_workflow_template.format(project_name=config['project_name']), 'test_internationalports_workflow.py': test_internationalports_workflow_template.format(project_name=config['project_name'])}
+    test_templates = {
+        '__init__.py': '',
+        'test_wordcount_workflow.py': test_wordcount_workflow_template.format(project_name=config['project_name'])}
     resources_templates = {'requirements.txt': requirements_template}
     deployment_config_template = basic_deployment_config_template.format(project_id=config['projects_id'][0], dags_bucket=config['composers_bucket'][0])
 
@@ -29,16 +28,29 @@ def format_templates(config):
             beam_config_template = beam_config_template.strip()
             beam_config_template += advanced_beam_config_template.format(env=config['envs'][i], project_id=config['projects_id'][i], dags_bucket=config['composers_bucket'][i])
 
-            bq_config_template = bq_config_template.strip()
-            bq_config_template += advanced_bq_config_template.format(env=config['envs'][i], project_id=config['projects_id'][i])
-
     beam_config_template = beam_config_template.strip()
     beam_config_template += '.resolve()'
 
-    main_templates = {'project_setup.py': project_setup_template.format(project_name=config['project_name']), 'deployment_config.py': deployment_config_template, 'Dockerfile': docker_template, 'README.md': readme_template.format(project_name=config['project_name'])}
-    beam_templates = {'config.py': beam_config_template, 'workflow.py': beam_workflow_template, 'processing.py': beam_processing_template, 'pipeline.py': beam_pipeline_template, '__init__.py': ''}
-    bq_templates = {'__init__.py': '', 'config.py': bq_config_template, 'workflow.py': bq_workflow_template, 'processing.py': bq_processing_template, 'tables.py': bq_tables_template}
-    return {'beam_templates': beam_templates, 'bq_templates': bq_templates, 'test_templates': test_templates, 'resources_templates': resources_templates, 'main_templates': main_templates}
+    main_templates = {
+        'project_setup.py': project_setup_template.format(project_name=config['project_name']),
+        'deployment_config.py': deployment_config_template,
+        'Dockerfile': docker_template,
+        'README.md': readme_template.format(project_name=config['project_name'])}
+    beam_templates = {
+        'config.py': beam_config_template,
+        'workflow.py': beam_workflow_template,
+        'processing.py': beam_processing_template,
+        'pipeline.py': beam_pipeline_template,
+        '__init__.py': ''}
+    bq_templates = {
+        '__init__.py': '',
+        'workflow.py': bq_workflow_template}
+    return {
+        'beam_templates': beam_templates,
+        'bq_templates': bq_templates,
+        'test_templates': test_templates,
+        'resources_templates': resources_templates,
+        'main_templates': main_templates}
 
 
 def create_dirs_and_files(config, templates):
