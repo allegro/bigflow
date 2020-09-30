@@ -5,8 +5,8 @@
 1. [What is BigFlow?](#what-is-bigflow)
 1. [Getting started](#getting-started)
 1. [Installing Bigflow](#installing-bigflow)
-1. [BigFlow tutorial](docs/tutorial.md)
 1. [Help me](#help-me)
+1. [BigFlow tutorial](docs/tutorial.md)
 1. [CLI](docs/cli.md)
 1. [Configuration](./docs/configuration.md)
 1. [Project setup and build](./docs/project_setup_and_build.md)
@@ -14,7 +14,6 @@
 1. [Workflow & Job](./docs/workflow-and-job.md)
 1. [Starter](./docs/scaffold.md)
 1. [Technologies](./docs/technologies.md)
-1. Job monitoring
 1. Roadmap
 
 ## What is BigFlow?
@@ -28,7 +27,7 @@ The main features are:
 * [Automated build](./docs/project_setup_and_build.md#overview), [deployment](./docs/deployment.md), 
 [versioning](./docs/project_setup_and_build.md#project-versioning) and [configuration](./docs/configuration.md)
 * [Unified project structure](./docs/project_setup_and_build.md#project-structure)
-* [Support for the major data processing technologies](./docs/utils.md) — [Dataproc](https://cloud.google.com/dataproc) (Apache Spark),
+* [Support for the major data processing technologies](./docs/technologies.md) — [Dataproc](https://cloud.google.com/dataproc) (Apache Spark),
 [Dataflow](https://beam.apache.org/) (Apache Beam) and [BigQuery](https://cloud.google.com/bigquery)
 * [Project starter](./docs/scaffold.md)
 
@@ -41,7 +40,7 @@ Next, go through the BigFlow [tutorial](./docs/tutorial.md).
 
 **Prerequisites**. Before you start, make sure you have the following software installed:
 
-1. [Python](https://www.python.org/downloads/) 3.7
+1. [Python](https://www.python.org/downloads/) == 3.7
 2. [Google Cloud SDK](https://cloud.google.com/sdk/docs/downloads-interactive)
 3. [Docker Engine](https://docs.docker.com/engine/install/)  
 
@@ -56,7 +55,7 @@ source .bigflow_env/bin/activate
 Install the `bigflow` PIP package:
 
 ```bash
-pip install bigflow==1.0.dev34
+pip install bigflow==1.0.dev57
 ```
 
 Test it:

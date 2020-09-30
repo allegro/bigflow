@@ -228,7 +228,7 @@ Configuration is passed via command line arguments:
 ```shell  
 bigflow deploy-dags \
 --dags-dir '/tmp/my_dags' \
---auth-method=service_account \
+--auth-method=vault \
 --vault-secret ***** \
 --vault-endpoint 'https://example.com/vault' \
 --dags-bucket europe-west1-12323a-bucket \
@@ -255,7 +255,7 @@ Configuration is passed via command line arguments.
 bigflow deploy-image \
 --image-tar-path '/tmp/image-0.1.0-tar' \
 --docker-repository 'eu.gcr.io/my_gcp_dev_project/my_project' \
---auth-method=service_account \
+--auth-method=vault \
 --vault-secret ***** \
 --vault-endpoint 'https://example.com/vault'
 ```
@@ -285,7 +285,7 @@ bigflow deploy \
 --image-tar-path '/tmp/image-0.1.0-tar' \
 --dags-dir '/tmp/my_dags' \
 --docker-repository 'eu.gcr.io/my_gcp_dev_project/my_project' \
---auth-method=service_account \
+--auth-method=vault \
 --vault-secret ***** \
 --vault-endpoint 'https://example.com/vault' \
 --dags-bucket europe-west1-12323a-bucket \

@@ -53,7 +53,7 @@ def _deploy_image_loaded_to_local_registry(build_ver, docker_repository, image_i
     print(f"Deploying docker image tag={docker_image} auth_method={auth_method}")
     if auth_method == 'local_account':
         os_call(['gcloud', 'auth', 'configure-docker'])
-    elif auth_method == 'service_account':
+    elif auth_method == 'vault':
         oauthtoken = get_vault_token(vault_endpoint, vault_secret)
         os_call(['docker', 'login', '-u', 'oauth2accesstoken', '--password-stdin', 'https://eu.gcr.io'],
                 input=oauthtoken)
@@ -114,7 +114,7 @@ def upload_DAGs_folder(dags_dir: str, bucket: Bucket):
 def create_storage_client(auth_method: str, project_id: str, vault_endpoint: str, vault_secret: str):
     if auth_method == 'local_account':
         return storage.Client(project=project_id)
-    elif auth_method == 'service_account':
+    elif auth_method == 'vault':
         oauthtoken = get_vault_token(vault_endpoint, vault_secret)
         return storage.Client(project=project_id, credentials=credentials.Credentials(oauthtoken))
     else:

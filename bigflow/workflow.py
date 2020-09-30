@@ -1,21 +1,25 @@
+import datetime as dt
+import typing
+
 from collections import OrderedDict
 from typing import Optional
-from datetime import datetime
 from .commons import now
 
 DEFAULT_SCHEDULE_INTERVAL = '@daily'
 
 
 def get_timezone_offset_seconds() -> str:
-    return str(datetime.now().astimezone().tzinfo.utcoffset(None).seconds)
+    return str(dt.datetime.now().astimezone().tzinfo.utcoffset(None).seconds)
 
 
-def hourly_start_time(start_time: str) -> str:
-    return f'datetime.strptime("{start_time}", "%Y-%m-%d %H:%M:%S") - (timedelta(seconds={get_timezone_offset_seconds()}))'
+def hourly_start_time(start_time: dt.datetime) -> dt.datetime:
+    td = dt.timedelta(seconds=get_timezone_offset_seconds())
+    return start_time.replace(microsecond=0) - td
 
 
-def daily_start_time(start_time: str) -> str:
-    return f'datetime.strptime("{start_time[:10]}", "%Y-%m-%d") - (timedelta(hours=24))'
+def daily_start_time(start_time: dt.datetime) -> dt.datetime:
+    td = dt.timedelta(hours=24)
+    return start_time.replace(hour=0, minute=0, second=0, microsecond=0) - td
 
 
 class Workflow(object):
@@ -23,11 +27,12 @@ class Workflow(object):
                  workflow_id,
                  definition,
                  schedule_interval=DEFAULT_SCHEDULE_INTERVAL,
-                 start_time_expression_factory=daily_start_time):
+                 start_time_factory: typing.Callable[[dt.datetime], dt.datetime] = daily_start_time,
+                 ):
         self.definition = self._parse_definition(definition)
         self.schedule_interval = schedule_interval
         self.workflow_id = workflow_id
-        self.start_time_expression_factory = start_time_expression_factory
+        self.start_time_factory = start_time_factory
 
     def run(self, runtime: Optional[str] = None):
         if runtime is None:

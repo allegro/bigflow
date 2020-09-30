@@ -16,7 +16,7 @@ class HourlyJob:
 hourly_workflow = Workflow(
     workflow_id='hourly_workflow',
     schedule_interval='@hourly',
-    start_time_expression_factory=hourly_start_time,
+    start_time_factory=hourly_start_time,
     definition=[HourlyJob()])
 
 if __name__ == '__main__':
