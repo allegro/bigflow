@@ -56,7 +56,8 @@ class GCPLoggerHandler(logging.StreamHandler):
     def get_gcp_logs_message(self):
         query = quote_plus(f'''logName="projects/{self.project_id}/logs/{self.logger_name}"
 labels.id="{self.workflow_id if self.workflow_id else self.project_id}"''')
-        return f'*************************LOGS LINK************************* \n ' \
+        return f'\n'\
+               f'*************************LOGS LINK************************* \n ' \
                f'You can find logs for this workflow here: https://console.cloud.google.com/logs/query;query={query} \n' \
                f'***********************************************************'
 
@@ -66,7 +67,7 @@ EXCEPTHOOK_MESSAGE = "Uncaught exception"
 
 def handle_uncaught_exception(logger):
     def handler(exception_type, value, traceback):
-        logger.error(EXCEPTHOOK_MESSAGE, exc_info=(exception_type, value, traceback))
+        logger.error(f'{EXCEPTHOOK_MESSAGE}: {value}', exc_info=(exception_type, value, traceback))
     return handler
 
 
@@ -75,7 +76,6 @@ def configure_logging(project_id, logger_name, workflow_id=None):
     logging.basicConfig(level=logging.INFO)
     gcp_logger_handler = GCPLoggerHandler(project_id, logger_name, workflow_id)
     gcp_logger_handler.setLevel(logging.INFO)
-    gcp_logger_handler.terminator = ""
     logger.info(gcp_logger_handler.get_gcp_logs_message())
     logger.addHandler(gcp_logger_handler)
     excepthook(logger)
