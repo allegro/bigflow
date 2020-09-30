@@ -1,6 +1,4 @@
 import logging
-import os
-print(os.getcwd())
 
 from bigflow import logger
 

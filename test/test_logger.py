@@ -1,11 +1,12 @@
 import logging
-import os
-import subprocess
+import sys
+from subprocess import Popen, PIPE
 from unittest import TestCase, mock
 
 from google.cloud import logging_v2
 
 from bigflow.logger import configure_logging
+from logger import EXCEPTHOOK_MESSAGE
 
 
 class MockedLoggerHandler(TestCase):
@@ -49,11 +50,11 @@ class LoggerTestCase(MockedLoggerHandler):
  '***********************************************************'])
 
     def test_should_log_unhandled_exception(self):
-        print("xxxxxxxx")
-        print(os.getcwd())
-        output = subprocess.getoutput(f"python {os.getcwd()}/test/test_excepthook.py")
-        print(output)
-        self.assertTrue(output.startswith("Uncaught exception"))
+        process = Popen([sys.executable, 'test_excepthook.py'], stdout=PIPE, stderr=PIPE)
+        stdout, stderr = process.communicate()
+        assert process.returncode == 1
+        assert stderr.startswith(b'Uncaught exception')
+        assert stdout == b''
 
     def test_should_handle_warning(self):
         self.test_logger.warning("warning message")
