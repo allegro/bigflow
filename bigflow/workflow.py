@@ -3,7 +3,7 @@ from collections import OrderedDict
 from typing import Optional
 from datetime import datetime
 from .commons import now
-from .logger import GCPLogger
+from .logger import GCPLoggerHandler
 
 DEFAULT_SCHEDULE_INTERVAL = '@daily'
 
@@ -47,10 +47,10 @@ class Workflow(object):
         if self.logging_project_id:
             logger = logging.getLogger(self.workflow_id)
             logging.basicConfig(level=logging.INFO)
-            gcp_logger = GCPLogger(self.logging_project_id, self.workflow_id)
-            gcp_logger.setLevel(logging.WARNING)
-            logger.info(gcp_logger.get_gcp_logs_message())
-            logger.addHandler(gcp_logger)
+            gcp_logger_handler = GCPLoggerHandler(self.logging_project_id, self.workflow_id)
+            gcp_logger_handler.setLevel(logging.WARNING)
+            logger.info(gcp_logger_handler.get_gcp_logs_message())
+            logger.addHandler(gcp_logger_handler)
 
     def _logged_run(self, job, runtime):
         try:

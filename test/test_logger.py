@@ -1,20 +1,19 @@
 from unittest import TestCase, mock
-from unittest.mock import patch
 
 from google.cloud import logging_v2
 
-from bigflow.logger import GCPLogger
+from bigflow.logger import GCPLoggerHandler
 
 
-class MockedGCPLogger(TestCase):
+class MockedGCPLoggerHandler(TestCase):
 
     @mock.patch('bigflow.logger.create_logging_client')
     def setUp(self, create_logging_client_mock) -> None:
         create_logging_client_mock.return_value = mock.create_autospec(logging_v2.LoggingServiceV2Client)
-        self.test_logger = GCPLogger('project-id', 'workflow-id')
+        self.test_logger = GCPLoggerHandler('project-id', 'workflow-id')
 
 
-class LoggerTestCase(MockedGCPLogger):
+class LoggerTestCase(MockedGCPLoggerHandler):
 
     def test_should_create_correct_logging_link(self):
         message = self.test_logger.get_gcp_logs_message()

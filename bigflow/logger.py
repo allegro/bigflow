@@ -8,7 +8,7 @@ def create_logging_client():
     return logging_v2.LoggingServiceV2Client()
 
 
-class GCPLogger(logging.StreamHandler):
+class GCPLoggerHandler(logging.StreamHandler):
     def __init__(self, project_id, workflow_id):
         logging.StreamHandler.__init__(self)
         self.client = create_logging_client()
