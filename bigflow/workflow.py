@@ -1,4 +1,3 @@
-import logging
 from collections import OrderedDict
 from typing import Optional
 from datetime import datetime
@@ -24,53 +23,24 @@ class Workflow(object):
                  workflow_id,
                  definition,
                  schedule_interval=DEFAULT_SCHEDULE_INTERVAL,
-                 start_time_expression_factory=daily_start_time,
-                 logging_project_id=None):
+                 start_time_expression_factory=daily_start_time):
         self.definition = self._parse_definition(definition)
         self.schedule_interval = schedule_interval
         self.workflow_id = workflow_id
         self.start_time_expression_factory = start_time_expression_factory
-        self.logging_project_id = logging_project_id
 
     def run(self, runtime: Optional[str] = None):
-        self._init_logger()
         if runtime is None:
             runtime = self._auto_runtime()
         for job in self.build_sequential_order():
-            if self.logging_project_id:
-                self._logged_run(job, runtime)
-            else:
-                job.run(runtime=runtime)
-
-    def _init_logger(self):
-        if self.logging_project_id:
-            from .logger import GCPLoggerHandler
-            logger = logging.getLogger(self.workflow_id)
-            logging.basicConfig(level=logging.INFO)
-            gcp_logger_handler = GCPLoggerHandler(self.logging_project_id, self.workflow_id)
-            gcp_logger_handler.setLevel(logging.INFO)
-            gcp_logger_handler.terminator = ""
-            logger.info(gcp_logger_handler.get_gcp_logs_message())
-            logger.addHandler(gcp_logger_handler)
-
-    def _logged_run(self, job, runtime):
-        try:
             job.run(runtime=runtime)
-        except Exception as e:
-            logger = logging.getLogger(f'{self.workflow_id}')
-            logger.error(str(e))
-            raise e
 
     def run_job(self, job_id, runtime: Optional[str] = None):
-        self._init_logger()
         if runtime is None:
             runtime = self._auto_runtime()
         for job_wrapper in self.build_sequential_order():
             if job_wrapper.job.id == job_id:
-                if self.logging_project_id:
-                    self._logged_run(job_wrapper.job, runtime)
-                else:
-                    job_wrapper.job.run(runtime)
+                job_wrapper.job.run(runtime)
                 break
         else:
             raise ValueError(f'Job {job_id} not found.')
