@@ -1,5 +1,4 @@
 import logging
-
 from bigflow.logger import excepthook
 
 logger = logging.getLogger('logger')
