@@ -169,3 +169,48 @@ class WorkflowTestCase(TestCase):
         # then
             self.assertEqual(logs.output, ['INFO:test_workflow:You can find logs for this workflow here: https://console.cloud.google.com/logs/query;query=logName%3D%22projects%2Fsome_project_id%2Flogs%2Ftest_workflow%22%0Alabels.workflow%3D%22test_workflow%22',
                                            'ERROR:test_workflow:Panic!'])
+
+    @mock.patch('bigflow.logger.create_logging_client')
+    def test_should_not_log_job_exception_if_logging_project_id_not_provided(self, create_logging_client_mock):
+        # given
+        create_logging_client_mock.return_value = mock.create_autospec(logging_v2.LoggingServiceV2Client)
+        definition = [mock.Mock(), FailingJob("id")]
+        workflow = Workflow(workflow_id='test_workflow', definition=definition)
+
+        # when
+        with self.assertRaises(Exception):
+            with self.assertLogs('test_workflow', level='INFO') as logs:
+                workflow.run('2019-09-01')
+                # then
+                self.assertEqual(logs.output, [])
+
+    @mock.patch('bigflow.logger.create_logging_client')
+    def test_should_log_job_exception_for_single_job(self, create_logging_client_mock):
+        # given
+        create_logging_client_mock.return_value = mock.create_autospec(logging_v2.LoggingServiceV2Client)
+        definition = [mock.Mock(), FailingJob("id")]
+        workflow = Workflow(workflow_id='test_workflow', definition=definition, logging_project_id="some_project_id")
+
+        # when
+        with self.assertLogs('test_workflow', level='INFO') as logs:
+            with self.assertRaises(Exception):
+                workflow.run_job('id', '2020-01-01')
+            # then
+            self.assertEqual(logs.output, [
+                'INFO:test_workflow:You can find logs for this workflow here: https://console.cloud.google.com/logs/query;query=logName%3D%22projects%2Fsome_project_id%2Flogs%2Ftest_workflow%22%0Alabels.workflow%3D%22test_workflow%22',
+                'ERROR:test_workflow:Panic!'])
+
+    @mock.patch('bigflow.logger.create_logging_client')
+    def test_should_log_job_exception_for_single_job_if_logging_project_id_not_provided(self, create_logging_client_mock):
+        # given
+        create_logging_client_mock.return_value = mock.create_autospec(logging_v2.LoggingServiceV2Client)
+        definition = [mock.Mock(), FailingJob("id")]
+        workflow = Workflow(workflow_id='test_workflow', definition=definition)
+
+        # when
+        with self.assertRaises(Exception):
+            with self.assertLogs('test_workflow', level='INFO') as logs:
+                workflow.run('2019-09-01')
+                # then
+                self.assertEqual(logs.output, [])
+
