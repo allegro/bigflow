@@ -52,9 +52,6 @@ class LoggerTestCase(MockedLoggerHandler):
     def test_should_log_unhandled_exception(self):
         process = Popen([sys.executable, f'{os.getcwd()}/test/test_excepthook.py'], stdout=PIPE, stderr=PIPE)
         stdout, stderr = process.communicate()
-        print('xxxxxxxx')
-        print(stdout)
-        print(stderr)
         self.assertTrue(stderr.startswith(b'Uncaught exception'))
         self.assertTrue(stdout == b'')
 
