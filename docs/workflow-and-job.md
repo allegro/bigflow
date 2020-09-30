@@ -165,38 +165,44 @@ It will be formatted as `YYYY-MM-DD hh-mm-ss`.
 The `schedule_interval` parameter defines when a workflow should be run. It can be a cron expression or a "shortcut". 
 For example: `'@daily'`, `'@hourly'`, `'@once'`, `'0 0 * * 0'`.
 
-### The `start_time_expression` parameter
+### The `start_time_factory` parameter
 
-The `start_time_expression` parameter determines the first execution date-time. Even though you provide the `start-time` parameter
-for the `build` command, you might want to start different workflows in a different time. The `start_time_expression`
-allows you to define a proper start time for each of your workflows, relative to the provided `start-time`.
+The `start_time_factory` parameter determines the first processing date-time. Even though you provide the `start-time` parameter
+for the `build` command, you might want to start different workflows in a different time. The `start_time_factory`
+allows you to define a proper start time for each of your workflows, based on the provided `start-time`.
 
-Let us say that you have two workflows running hourly. You want the first workflow to start in the next hour after deployment time,
-and the second workflow to start one hour before deployment time. So if you build and deploy your workflows at `'2020-01-01 12:00:00'`,
-the first workflow starts at `'2020-01-01 13:00:00'` and the second starts at `'2020-01-01 11:00:00'`.
+Let us say that you have two workflows running hourly. You want the first workflow to start in the next hour after the 
+`start-time`, and the second workflow to start one hour before the `start-time`. So if you set the `start-time` at 
+`2020-01-01 12:00:00`, the first workflow starts at `2020-01-01 13:00:00` and the second starts 
+at `2020-01-01 11:00:00`.
 
-To achieve that, you need the following expressions:
+To achieve that, you need the following factories:
 
 ```python
+from datetime import datetime, timedelta
+
 # Workflow 1
-'datetime.strptime("{start_time}", "%Y-%m-%d %H:%M:%S") + (timedelta(hours=1))'
+def next_hour(start_time: datetime) -> datetime:
+    return start_time + timedelta(hours=1)
 
 # Workflow 2
-'datetime.strptime("{start_time}", "%Y-%m-%d %H:%M:%S") - (timedelta(hours=1))'
+def prev_hour(start_time: datetime) -> datetime:
+    return start_time - timedelta(hours=1)
 ```
 
-The expression parameter is templated and you can access the `start-time` parameter. Inside the expression string, 
-you have access to the [`datetime.datetime` and `datetime.timedelta`](https://docs.python.org/3/library/datetime.html#available-types) 
-types.
+The `start_time_factory` parameter should be a callable which takes a `start-time` as parameter, and returns `datetime`.
+Returned `datetime` is used as the final `start-time` for a workflow.
 
-The default value of the `start_time_expression` supports daily workflows. It looks like this:
+The default value of the `start_time_factory` supports daily workflows. It looks like this:
 
 ```python
-'datetime.strptime("{start_time[:10]}", "%Y-%m-%d") - (timedelta(hours=24))'
+def daily_start_time(start_time: dt.datetime) -> dt.datetime:
+    td = dt.timedelta(hours=24)
+    return start_time.replace(hour=0, minute=0, second=0, microsecond=0) - td
 ```
 
-This expression fires a workflow on the same day you build it. So for example, if you build a workflow at `2020-01-01 01:00:00`,
-then the first execution is immediately after deployment (for the day `2020-01-01`).
+This factory sets a processing start point as the day before a provided `start-time`. Let us say that you set the `start-time`
+parameter as `2020-01-02 00:00:00`. Then, the final `start-time` is `2020-01-01 00:00:00`.
 
 ### Daily scheduling example
 
@@ -244,7 +250,7 @@ class HourlyJob:
 hourly_workflow = Workflow(
     workflow_id='hourly_workflow',
     schedule_interval='@hourly',
-    start_time_expression=hourly_start_time,
+    start_time_factory=hourly_start_time,
     definition=[HourlyJob()])
 hourly_workflow.run('2020-01-01 10:00:00')
 ```
