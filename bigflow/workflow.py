@@ -61,11 +61,15 @@ class Workflow(object):
             raise e
 
     def run_job(self, job_id, runtime: Optional[str] = None):
+        self._init_logger()
         if runtime is None:
             runtime = self._auto_runtime()
         for job_wrapper in self.build_sequential_order():
             if job_wrapper.job.id == job_id:
-                job_wrapper.job.run(runtime)
+                if self.logging_project_id:
+                    self._logged_run(job_wrapper.job, runtime)
+                else:
+                    job_wrapper.job.run(runtime)
                 break
         else:
             raise ValueError(f'Job {job_id} not found.')
