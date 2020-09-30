@@ -8,7 +8,7 @@ from google.cloud import logging_v2
 from bigflow.logger import configure_logging
 
 
-class MockedGCPLoggerHandler(TestCase):
+class MockedLoggerHandler(TestCase):
 
     @mock.patch('bigflow.logger.create_logging_client')
     def setUp(self, create_logging_client_mock) -> None:
@@ -18,7 +18,7 @@ class MockedGCPLoggerHandler(TestCase):
         self.create_logging_client_mock = create_logging_client_mock
 
 
-class LoggerTestCase(MockedGCPLoggerHandler):
+class LoggerTestCase(MockedLoggerHandler):
 
     @mock.patch('bigflow.logger.create_logging_client')
     def test_should_create_correct_logging_link(self, create_logging_client_mock):
@@ -29,7 +29,10 @@ class LoggerTestCase(MockedGCPLoggerHandler):
             configure_logging('project-id', 'another_logger_name', 'workflow_id')
 
         # then
-        self.assertEqual(logs.output, ['INFO:another_logger_name:*************************LOGS LINK*************************\n You can find logs for this workflow here: https://console.cloud.google.com/logs/query;query=logName%3D%22projects%2Fproject-id%2Flogs%2Fworkflow_id%22%0Alabels.workflow%3D%22workflow_id%22***********************************************************'])
+        self.assertEqual(logs.output, ['INFO:another_logger_name:*************************LOGS '
+ 'LINK*************************n You can find logs for this workflow here: '
+ 'https://console.cloud.google.com/logs/query;query=logName%3D%22projects%2Fproject-id%2Flogs%2Fanother_logger_name%22%0Alabels.id%3D%22workflow_id%22 \n'
+ '***********************************************************'])
 
     @mock.patch('bigflow.logger.create_logging_client')
     def test_should_create_correct_logging_link_without_workflow_id(self, create_logging_client_mock):
@@ -41,9 +44,9 @@ class LoggerTestCase(MockedGCPLoggerHandler):
 
         # then
         self.assertEqual(logs.output, ['INFO:another_logger_name:*************************LOGS '
- 'LINK*************************\n'
- ' You can find logs for this workflow here: '
- 'https://console.cloud.google.com/logs/query;query=logName%3D%22projects%2Fproject-id%2Flogs%2Fproject-id%22%0Alabels.workflow%3D%22project-id%22***********************************************************'])
+ 'LINK*************************n You can find logs for this workflow here: '
+ 'https://console.cloud.google.com/logs/query;query=logName%3D%22projects%2Fproject-id%2Flogs%2Fanother_logger_name%22%0Alabels.id%3D%22project-id%22 \n'
+ '***********************************************************'])
 
     def test_should_log_unhandled_exception(self):
         output = subprocess.getoutput(f"python {os.getcwd()}/test_excepthook.py")
@@ -52,7 +55,7 @@ class LoggerTestCase(MockedGCPLoggerHandler):
     def test_should_handle_warning(self):
         self.test_logger.warning("warning message")
         self.test_logger.handlers[0].client.write_log_entries.assert_called_with([logging_v2.types.LogEntry(
-            log_name="projects/project-id/logs/workflow-id",
+            log_name="projects/project-id/logs/logger_name",
             resource={
                 "type": "global",
                 "labels": {
@@ -61,13 +64,13 @@ class LoggerTestCase(MockedGCPLoggerHandler):
             },
             text_payload="warning message",
             severity='WARNING',
-            labels={"workflow": "workflow-id"}
+            labels={"id": "workflow-id"}
         )])
 
     def test_should_handle_info(self):
         self.test_logger.info("info message")
         self.test_logger.handlers[0].client.write_log_entries.assert_called_with([logging_v2.types.LogEntry(
-            log_name="projects/project-id/logs/workflow-id",
+            log_name="projects/project-id/logs/logger_name",
             resource={
                 "type": "global",
                 "labels": {
@@ -76,13 +79,13 @@ class LoggerTestCase(MockedGCPLoggerHandler):
             },
             text_payload="info message",
             severity='INFO',
-            labels={"workflow": "workflow-id"}
+            labels={"id": "workflow-id"}
         )])
 
     def test_should_handle_error(self):
         self.test_logger.error("error message")
         self.test_logger.handlers[0].client.write_log_entries.assert_called_with([logging_v2.types.LogEntry(
-            log_name="projects/project-id/logs/workflow-id",
+            log_name="projects/project-id/logs/logger_name",
             resource={
                 "type": "global",
                 "labels": {
@@ -91,7 +94,7 @@ class LoggerTestCase(MockedGCPLoggerHandler):
             },
             text_payload="error message",
             severity='ERROR',
-            labels={"workflow": "workflow-id"}
+            labels={"id": "workflow-id"}
         )])
 
     @mock.patch('bigflow.logger.create_logging_client')
@@ -101,7 +104,7 @@ class LoggerTestCase(MockedGCPLoggerHandler):
         logger = logging.getLogger("logger_name_without_id")
         logger.error("error message")
         logger.handlers[0].client.write_log_entries.assert_called_with([logging_v2.types.LogEntry(
-            log_name="projects/project-id/logs/project-id",
+            log_name="projects/project-id/logs/logger_name_without_id",
             resource={
                 "type": "global",
                 "labels": {
@@ -110,5 +113,5 @@ class LoggerTestCase(MockedGCPLoggerHandler):
             },
             text_payload="error message",
             severity='ERROR',
-            labels={'workflow': 'project-id'}
+            labels={'id': 'project-id'}
         )])

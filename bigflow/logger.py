@@ -9,12 +9,12 @@ def create_logging_client():
 
 
 class GCPLoggerHandler(logging.StreamHandler):
-    def __init__(self, project_id, workflow_id):
+    def __init__(self, project_id, logger_name, workflow_id):
         logging.StreamHandler.__init__(self)
         self.client = create_logging_client()
         self.project_id = project_id
         self.workflow_id = workflow_id
-        self.workflow_log = self.workflow_id if self.workflow_id else self.project_id
+        self.logger_name = logger_name
 
     def emit(self, record):
         if record.levelname == 'INFO':
@@ -42,8 +42,8 @@ class GCPLoggerHandler(logging.StreamHandler):
         self.write_log_entries(message, 'INFO')
 
     def write_log_entries(self, message, severity):
-        log_name = f"projects/{self.project_id}/logs/{self.workflow_log}"
-        labels = {"workflow": f"{self.workflow_log}"}
+        log_name = f"projects/{self.project_id}/logs/{self.logger_name}"
+        labels = {"id": f"{self.workflow_id if self.workflow_id else self.project_id}"}
         entry = logging_v2.types.LogEntry(
             log_name=log_name,
             resource=self.get_resource(),
@@ -54,9 +54,9 @@ class GCPLoggerHandler(logging.StreamHandler):
         self.client.write_log_entries([entry])
 
     def get_gcp_logs_message(self):
-        query = quote_plus(f'''logName="projects/{self.project_id}/logs/{self.workflow_log}"
-labels.workflow="{self.workflow_log}"''')
-        return f'*************************LOGS LINK*************************\n ' \
+        query = quote_plus(f'''logName="projects/{self.project_id}/logs/{self.logger_name}"
+labels.id="{self.workflow_id if self.workflow_id else self.project_id}"''')
+        return f'*************************LOGS LINK*************************n ' \
                f'You can find logs for this workflow here: https://console.cloud.google.com/logs/query;query={query} \n' \
                f'***********************************************************'
 
@@ -73,7 +73,7 @@ def handle_uncaught_exception(logger):
 def configure_logging(project_id, logger_name, workflow_id=None):
     logger = logging.getLogger(logger_name)
     logging.basicConfig(level=logging.INFO)
-    gcp_logger_handler = GCPLoggerHandler(project_id, workflow_id)
+    gcp_logger_handler = GCPLoggerHandler(project_id, logger_name, workflow_id)
     gcp_logger_handler.setLevel(logging.INFO)
     gcp_logger_handler.terminator = ""
     logger.info(gcp_logger_handler.get_gcp_logs_message())
