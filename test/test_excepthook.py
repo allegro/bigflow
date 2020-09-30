@@ -1,5 +1,5 @@
 import logging
-from bigflow.logger import excepthook
+from ..bigflow.logger import excepthook
 
 logger = logging.getLogger('logger')
 excepthook(logger)
