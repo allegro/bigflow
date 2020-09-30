@@ -167,7 +167,7 @@ For example: `'@daily'`, `'@hourly'`, `'@once'`, `'0 0 * * 0'`.
 
 ### The `start_time_factory` parameter
 
-The `start_time_factory` parameter determines the first processing date-time. Even though you provide the `start-time` parameter
+The `start_time_factory` parameter determines the first `runtime`. Even though you provide the `start-time` parameter
 for the `build` command, you might want to start different workflows in a different time. The `start_time_factory`
 allows you to define a proper start time for each of your workflows, based on the provided `start-time`.
 
