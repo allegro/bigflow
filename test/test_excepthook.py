@@ -1,9 +1,12 @@
 import logging
-from bigflow.logger import excepthook
+import sys
+import os
 
-logger = logging.getLogger('logger')
-excepthook(logger)
+sys.path.append(os.getcwd())
 
+from bigflow import logger
 
+l = logging.getLogger('logger')
+logger.excepthook(l)
 if __name__ == '__main__':
     error()

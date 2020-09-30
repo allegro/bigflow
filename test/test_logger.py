@@ -1,6 +1,7 @@
 import logging
 import os
-import subprocess
+import sys
+from subprocess import Popen, PIPE
 from unittest import TestCase, mock
 
 from google.cloud import logging_v2
@@ -51,8 +52,10 @@ class LoggerTestCase(MockedLoggerHandler):
  '***********************************************************'])
 
     def test_should_log_unhandled_exception(self):
-        output = subprocess.getoutput(f"python {os.getcwd()}/test/test_excepthook.py")
-        self.assertTrue(output.startswith("Uncaught exception"))
+        process = Popen([sys.executable, f'{os.getcwd()}/test/test_excepthook.py'], stdout=PIPE, stderr=PIPE)
+        stdout, stderr = process.communicate()
+        self.assertTrue(stderr.startswith(b'Uncaught exception'))
+        self.assertTrue(stdout == b'')
 
     def test_should_handle_warning(self):
         self.test_logger.warning("warning message")
