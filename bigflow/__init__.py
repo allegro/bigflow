@@ -22,3 +22,9 @@ try:
     __all__.append('monitoring')
 except ImportError:
     pass
+
+try:
+    from . import logger
+    __all__.append('logger')
+except ImportError:
+    pass
