@@ -110,8 +110,7 @@ bigflow run --workflow hello_config_workflow --config prod
 
 ### Building Airflow DAGs
 
-There are four commands to [build](project_setup_and_build.md)  your
-[deployment artifacts](deployment.md#deployment-artifacts):
+There are four commands to build your [deployment artifacts](project_setup_and_build.md#deployment-artifacts):
 
 1. `build-dags` generates Airflow DAG files from your workflows. 
     DAG files are saved to a local `.dags` dir.
@@ -186,7 +185,7 @@ bigflow build
  
 ### Deploying to GCP
 
-On this stage, you should have two [deployment artifacts](deployment.md#deployment-artifacts) 
+On this stage, you should have two [deployment artifacts](project_setup_and_build.md#deployment-artifacts)
 created by the [`bigflow build`](#building-airflow-dags) command.
 
 There are three commands to [deploy](deployment.md) your workflows
@@ -223,14 +222,13 @@ Configuration is taken from [`deployment_config.py`](deployment.md#managing-conf
 bigflow deploy-dags --config dev
 ```
 
-Upload DAG files from a given dir using
-[service account](deployment.md#service-account-authentication) authentication.
+Upload DAG files from a given dir using [authentication with Vault](deployment.md#authentication-with-vault).
 Configuration is passed via command line arguments:
 
 ```shell  
 bigflow deploy-dags \
 --dags-dir '/tmp/my_dags' \
---auth-method=service_account \
+--auth-method=vault \
 --vault-secret ***** \
 --vault-endpoint 'https://example.com/vault' \
 --dags-bucket europe-west1-12323a-bucket \
@@ -242,22 +240,22 @@ bigflow deploy-dags \
 
 Upload a Docker image imported from a `.tar` file with the default path
 (default path is: the first file from the `image` dir with a name with pattern `.*-.*\.tar`). 
-Configuration is taken from [`deployment_config.py`](deployment.md#managing-configuration-in-deployment_configpy),
-[local account](deployment.md#local-account-authentication) authentication:
+Configuration is taken from [`deployment_config.py`](deployment.md#managing-configuration-in-deployment_configpy).
+[Local account](deployment.md#local-account-authentication) authentication is used:
 
 ```shell
 bigflow deploy-image --config dev
 ```
 
 Upload a Docker image imported from the `.tar` file with the given path.
-Configuration is passed via command line arguments,
-[service account](deployment.md#service-account-authentication) authentication:
+Configuration is passed via command line arguments.
+[Authentication with Vault](deployment.md#authentication-with-vault) is used:
 
 ```shell
 bigflow deploy-image \
 --image-tar-path '/tmp/image-0.1.0-tar' \
 --docker-repository 'eu.gcr.io/my_gcp_dev_project/my_project' \
---auth-method=service_account \
+--auth-method=vault \
 --vault-secret ***** \
 --vault-endpoint 'https://example.com/vault'
 ```
@@ -265,8 +263,8 @@ bigflow deploy-image \
 **Complete deploy examples**
 
 Upload DAG files from the `.dags` dir and a Docker image from the default path.
-Configuration is taken from [`deployment_config.py`](deployment.md#managing-configuration-in-deployment_configpy),
-[local account](deployment.md#local-account-authentication) authentication:
+Configuration is taken from [`deployment_config.py`](deployment.md#managing-configuration-in-deployment_configpy).
+[Local account](deployment.md#local-account-authentication) authentication is used:
 
 ```shell
 bigflow deploy --config dev
@@ -279,15 +277,15 @@ bigflow deploy
 ```
 
 Upload DAG files from the specified dir and the Docker image from the specified path.
-Configuration is passed via command line arguments,
-[service account](deployment.md#service-account-authentication) authentication:
+Configuration is passed via command line arguments.
+[Authentication with Vault](deployment.md#authentication-with-vault) is used:
 
 ```shell
 bigflow deploy \
 --image-tar-path '/tmp/image-0.1.0-tar' \
 --dags-dir '/tmp/my_dags' \
 --docker-repository 'eu.gcr.io/my_gcp_dev_project/my_project' \
---auth-method=service_account \
+--auth-method=vault \
 --vault-secret ***** \
 --vault-endpoint 'https://example.com/vault' \
 --dags-bucket europe-west1-12323a-bucket \

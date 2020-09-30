@@ -12,13 +12,14 @@ from .job import Job
 from .job import DEFAULT_RETRY_COUNT
 from .job import DEFAULT_RETRY_PAUSE_SEC
 from .dataset_manager import DEFAULT_LOCATION
+from .interface import Dataset, DEFAULT_RUNTIME
 from ..commons import not_none_or_error
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_OPERATION_NAME = '__auto'
 DEFAULT_PEEK_LIMIT = 1000
-DEFAULT_RUNTIME = '1970-01-01'
+
 INLINE_COMPONENT_DATASET_ALIAS = '_inline_component_dataset'
 
 
@@ -44,7 +45,7 @@ def interactive_component(**dependencies):
     return decorator
 
 
-class InteractiveDatasetManager(object):
+class InteractiveDatasetManager(Dataset):
     """Let's you run operations on a dataset, without the need of creating a component."""
 
     def __init__(self,
@@ -398,12 +399,11 @@ class DatasetConfigInternal(object):
             'extras': self.extras,
             'location': self.location
         }
-        return config
 
 
-def sensor_component(table_alias, where_clause, ds=None):
+def sensor(table_alias, where_clause, ds=None):
 
-    def sensor(ds):
+    def sensor_function(ds):
         result = ds.collect('''
         SELECT count(*) > 0 as table_ready
         FROM `{%(table_alias)s}`
@@ -416,19 +416,19 @@ def sensor_component(table_alias, where_clause, ds=None):
         if not result.iloc[0]['table_ready']:
             raise ValueError('{} is not ready'.format(table_alias))
 
-    sensor.__name__ = 'wait_for_{}'.format(table_alias)
+    sensor_function.__name__ = 'wait_for_{}'.format(table_alias)
 
-    return sensor if ds is None else interactive_component(ds=ds)(sensor)
+    return sensor_function if ds is None else interactive_component(ds=ds)(sensor_function)
 
 
-def add_label_component(table_name, labels, ds=None):
+def add_label(table_name, labels, ds=None):
 
-    def add_label(ds):
+    def add_label_function(ds):
         table = ds.client.get_table("{}.{}.{}".format(ds.project_id, ds.dataset_name, table_name))
         table.labels = labels
         return ds.client.update_table(table, ["labels"])
 
     if ds is None:
-        return add_label
+        return add_label_function
     else:
-        return interactive_component(ds=ds)(add_label)
+        return interactive_component(ds=ds)(add_label_function)

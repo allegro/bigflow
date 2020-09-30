@@ -9,13 +9,8 @@ You will be able to deploy those workflows on your GCP project providing informa
 The Beam workflow example counts letters in an array and then saves this information to a file in your bucket.
 The BigQuery workflow example creates necessary tables then populates one of them and finally moves data from one table to another.
 
-
-## Project starter
-To start a new project, type in terminal 
-
-    bigflow start-project 
-
 ## Preparation
+
   1. Log in to the GCP, using Google Cloud SDK:
   
          gcloud auth application-default login.
@@ -26,3 +21,9 @@ To start a new project, type in terminal
   1. In the bucket connected to your Docker registry, you need to add a role `Storage Object Admin` pointing to the Service Account that the Composer uses.
   1. Install all required dependencies:
    `pip install -r resources/requirements.txt`
+   
+## Start project
+
+To start a new project, type in terminal 
+
+    bigflow start-project

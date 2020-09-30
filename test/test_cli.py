@@ -374,11 +374,11 @@ deployment_config = Config(name='dev',
         cli(['deploy-dags',
              '--deployment-config-path', dc_file.as_posix(),
              '--dags-dir', '/tmp/my-dags-dir',
-             '--auth-method', 'service_account'
+             '--auth-method', 'vault'
             ])
 
         # then
-        deploy_dags_folder_mock.assert_called_with(auth_method='service_account',
+        deploy_dags_folder_mock.assert_called_with(auth_method='vault',
                                                    clear_dags_folder=False,
                                                    dags_bucket='my-another-dags-bucket',
                                                    dags_dir='/tmp/my-dags-dir',
@@ -396,13 +396,13 @@ deployment_config = Config(name='dev',
              '--dags-dir', '/tmp/my-dags-dir',
              '--vault-endpoint', 'my-vault-endpoint',
              '--gcp-project-id', 'my-gcp-project-id',
-             '--auth-method', 'service_account',
+             '--auth-method', 'vault',
              '--clear-dags-folder',
              '--vault-secret', 'secrett'
             ])
 
         # then
-        deploy_dags_folder_mock.assert_called_with(auth_method='service_account',
+        deploy_dags_folder_mock.assert_called_with(auth_method='vault',
                                                    clear_dags_folder=True,
                                                    dags_bucket='my-dags-bucket',
                                                    dags_dir='/tmp/my-dags-dir',
@@ -453,12 +453,12 @@ deployment_config = Config(name='dev',
         cli(['deploy-image',
              '--image-tar-path', 'image-0.0.3.tar',
              '--deployment-config-path', dc_file.as_posix(),
-             '--auth-method', 'service_account',
+             '--auth-method', 'vault',
              '--vault-secret', 'secrett'
              ])
 
         # then
-        deploy_docker_image_mock.assert_called_with(auth_method='service_account',
+        deploy_docker_image_mock.assert_called_with(auth_method='vault',
                                                     docker_repository='my-another-docker-repository',
                                                     image_tar_path='image-0.0.3.tar',
                                                     vault_endpoint='my-another-vault-endpoint',
@@ -474,12 +474,12 @@ deployment_config = Config(name='dev',
              '--image-tar-path', 'image-0.0.1.tar',
              '--docker-repository', 'my-docker-repository',
              '--vault-endpoint', 'my-vault-endpoint',
-             '--auth-method', 'service_account',
+             '--auth-method', 'vault',
              '--vault-secret', 'secrett'
             ])
 
         # then
-        deploy_docker_image_mock.assert_called_with(auth_method='service_account',
+        deploy_docker_image_mock.assert_called_with(auth_method='vault',
                                                     docker_repository='my-docker-repository',
                                                     image_tar_path='image-0.0.1.tar',
                                                     vault_endpoint='my-vault-endpoint',
@@ -494,12 +494,12 @@ deployment_config = Config(name='dev',
         cli(['deploy-image',
              '--docker-repository', 'my-docker-repository',
              '--vault-endpoint', 'my-vault-endpoint',
-             '--auth-method', 'service_account',
+             '--auth-method', 'vault',
              '--vault-secret', 'secrett'
             ])
 
         # then
-        deploy_docker_image_mock.assert_called_with(auth_method='service_account',
+        deploy_docker_image_mock.assert_called_with(auth_method='vault',
                                                     docker_repository='my-docker-repository',
                                                     image_tar_path='image/image-123.tar',
                                                     vault_endpoint='my-vault-endpoint',
