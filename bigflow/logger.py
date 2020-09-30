@@ -54,9 +54,16 @@ class GCPLoggerHandler(logging.StreamHandler):
     def get_gcp_logs_message(self):
         query = quote_plus(f'''logName="projects/{self.project_id}/logs/{self.workflow_id}"
 labels.workflow="{self.workflow_id}"''')
-        return f'*************************LOGS LINK************************* \n ' \
-               f'You can find logs for this workflow here: https://console.cloud.google.com/logs/query;query={query} \n ' \
-               f'***********************************************************'
+        return self._bordered(f'You can find logs for this workflow here: https://console.cloud.google.com/logs/query;query={query}')
+
+    def _bordered(self, text):
+        lines = text.splitlines()
+        width = max(len(s) for s in lines)
+        res = ['┌' + '─' * width + '┐']
+        for s in lines:
+            res.append('│' + (s + ' ' * width)[:width] + '│')
+        res.append('└' + '─' * width + '┘')
+        return '\n'.join(res)
 
 
 
