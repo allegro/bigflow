@@ -7,4 +7,3 @@ better-setuptools-git-version==1.0.5
 unittest-xml-reporting==3.0.2
 wheel==0.35.1
 setuptools==49.6.0
-google-cloud-logging==1.15.1

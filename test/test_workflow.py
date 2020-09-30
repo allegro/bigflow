@@ -167,8 +167,11 @@ class WorkflowTestCase(TestCase):
             with self.assertRaises(Exception):
                 workflow.run('2019-09-01')
         # then
-            self.assertEqual(logs.output, ['INFO:test_workflow:You can find logs for this workflow here: https://console.cloud.google.com/logs/query;query=logName%3D%22projects%2Fsome_project_id%2Flogs%2Ftest_workflow%22%0Alabels.workflow%3D%22test_workflow%22',
-                                           'ERROR:test_workflow:Panic!'])
+            self.assertEqual(logs.output, ['INFO:test_workflow:*************************LOGS '
+ 'LINK************************* \n'
+ ' You can find logs for this workflow here: '
+ 'https://console.cloud.google.com/logs/query;query=logName%3D%22projects%2Fsome_project_id%2Flogs%2Ftest_workflow%22%0Alabels.workflow%3D%22test_workflow%22***********************************************************',
+ 'ERROR:test_workflow:Panic!'])
 
     @mock.patch('bigflow.logger.create_logging_client')
     def test_should_not_log_job_exception_if_logging_project_id_not_provided(self, create_logging_client_mock):
@@ -196,9 +199,11 @@ class WorkflowTestCase(TestCase):
             with self.assertRaises(Exception):
                 workflow.run_job('id', '2020-01-01')
             # then
-            self.assertEqual(logs.output, [
-                'INFO:test_workflow:You can find logs for this workflow here: https://console.cloud.google.com/logs/query;query=logName%3D%22projects%2Fsome_project_id%2Flogs%2Ftest_workflow%22%0Alabels.workflow%3D%22test_workflow%22',
-                'ERROR:test_workflow:Panic!'])
+            self.assertEqual(logs.output, ['INFO:test_workflow:*************************LOGS '
+ 'LINK************************* \n'
+ ' You can find logs for this workflow here: '
+ 'https://console.cloud.google.com/logs/query;query=logName%3D%22projects%2Fsome_project_id%2Flogs%2Ftest_workflow%22%0Alabels.workflow%3D%22test_workflow%22***********************************************************',
+ 'ERROR:test_workflow:Panic!'])
 
     @mock.patch('bigflow.logger.create_logging_client')
     def test_should_log_job_exception_for_single_job_if_logging_project_id_not_provided(self, create_logging_client_mock):

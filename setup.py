@@ -15,10 +15,13 @@ with open(os.path.join('requirements', 'monitoring_extras.txt'), 'r') as monitor
 with open(os.path.join('requirements', 'bigquery_extras.txt'), 'r') as bigquery_extras_requirements:
     bigquery_extras_require = [l.strip() for l in bigquery_extras_requirements.readlines()]
 
+with open(os.path.join('requirements', 'logging_extras.txt'), 'r') as logging_extras_requirements:
+    logging_extras_require = [l.strip() for l in logging_extras_requirements.readlines()]
+
 
 setuptools.setup(
     name="bigflow",
-    version="1.0.dev55",
+    version="1.0.dev56",
     author=u"Chi",
     author_email="chibox-team@allegrogroup.com",
     description="BigQuery client wrapper with clean API",
@@ -27,7 +30,7 @@ setuptools.setup(
     url="https://github.com/allegro/bigflow",
     packages=setuptools.find_packages(exclude=('test', 'e2e')),
     data_files=[
-        ('requirements', ['requirements/base.txt', 'requirements/monitoring_extras.txt', 'requirements/bigquery_extras.txt']),
+        ('requirements', ['requirements/base.txt', 'requirements/monitoring_extras.txt', 'requirements/bigquery_extras.txt', 'requirements/logging_extras.txt']),
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
@@ -36,7 +39,8 @@ setuptools.setup(
     install_requires=install_requires,
     extras_require={
         'monitoring': monitoring_extras_require,
-        'bigquery': bigquery_extras_require
+        'bigquery': bigquery_extras_require,
+        'logging': logging_extras_require
     },
     scripts=["scripts/bf", "scripts/bigflow"]
 )

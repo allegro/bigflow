@@ -17,9 +17,9 @@ class LoggerTestCase(MockedGCPLoggerHandler):
 
     def test_should_create_correct_logging_link(self):
         message = self.test_logger.get_gcp_logs_message()
-        self.assertEqual(message, '''┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│You can find logs for this workflow here: https://console.cloud.google.com/logs/query;query=logName%3D%22projects%2Fproject-id%2Flogs%2Fworkflow-id%22%0Alabels.workflow%3D%22workflow-id%22│
-└────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘''')
+        self.assertEqual(message, '''*************************LOGS LINK************************* 
+ You can find logs for this workflow here: https://console.cloud.google.com/logs/query;query=logName%3D%22projects%2Fproject-id%2Flogs%2Fworkflow-id%22%0Alabels.workflow%3D%22workflow-id%22 
+ ***********************************************************''')
 
     def test_should_send_warning(self):
         self.test_logger.warning("warning message")
