@@ -30,7 +30,7 @@ The main features are:
 * [Automated build](./docs/project_setup_and_build.md#overview), [deployment](./docs/deployment.md), 
 [versioning](./docs/project_setup_and_build.md#project-versioning) and [configuration](./docs/configuration.md)
 * [Unified project structure](./docs/project_setup_and_build.md#project-structure)
-* [Support for the major data processing technologies](./docs/utils.md) — [Dataproc](https://cloud.google.com/dataproc),
+* [Support for the major data processing technologies](./docs/technologies.md) — [Dataproc](https://cloud.google.com/dataproc),
 [Apache Beam](https://beam.apache.org/) and [BigQuery](https://cloud.google.com/bigquery)
 * [Project starter](./docs/scaffold.md)
 
