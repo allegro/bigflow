@@ -18,7 +18,7 @@ def generate_dag_file(workdir: str,
                       start_from: typing.Union[datetime, str],
                       build_ver: str,
                       root_package_name: str) -> str:
-    start_from = _coerce_str_to_datetime(start_from)
+    start_from = _str_to_datetime(start_from)
 
     print(f'start_from: {start_from}')
     print(f'build_ver: {build_ver}')
@@ -102,7 +102,7 @@ def get_dag_deployment_id(workflow_name: str,
     return '{workflow_name}__v{ver}__{start_from}'.format(
         workflow_name=workflow_name,
         ver=build_ver.replace('.','_').replace('-','_'),
-        start_from=_coerce_str_to_datetime(start_from).strftime('%Y_%m_%d_%H_%M_%S')
+        start_from=_str_to_datetime(start_from).strftime('%Y_%m_%d_%H_%M_%S')
     )
 
 
@@ -115,7 +115,7 @@ def get_dags_output_dir(workdir: str) -> Path:
     return dags_dir_path
 
 
-def _coerce_str_to_datetime(dt: typing.Union[str, datetime]):
+def _str_to_datetime(dt: typing.Union[str, datetime]):
     if isinstance(dt, datetime):
         return dt
     elif len(dt) <= 10:
