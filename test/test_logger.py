@@ -49,7 +49,10 @@ class LoggerTestCase(MockedLoggerHandler):
  '***********************************************************'])
 
     def test_should_log_unhandled_exception(self):
+        print("xxxxxxxx")
+        print(os.getcwd())
         output = subprocess.getoutput(f"python {os.getcwd()}/test_excepthook.py")
+        print(output)
         self.assertTrue(output.startswith("Uncaught exception"))
 
     def test_should_handle_warning(self):
