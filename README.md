@@ -17,7 +17,6 @@
     1. BigQuery
     1. Apache Beam
     1. Dataproc
-1. Job monitoring
 1. Roadmap
 
 ## What is BigFlow?
@@ -44,7 +43,7 @@ Next, go through the BigFlow [tutorial](./docs/tutorial.md).
 
 **Prerequisites**. Before you start, make sure you have the following software installed:
 
-1. [Python](https://www.python.org/downloads/) 3.7
+1. [Python](https://www.python.org/downloads/) == 3.7
 2. [Google Cloud SDK](https://cloud.google.com/sdk/docs/downloads-interactive)
 3. [Docker Engine](https://docs.docker.com/engine/install/)  
 
@@ -59,7 +58,7 @@ source .bigflow_env/bin/activate
 Install the `bigflow` PIP package:
 
 ```bash
-pip install bigflow==1.0.dev34
+pip install bigflow==1.0.dev45
 ```
 
 Test it:
