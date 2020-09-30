@@ -51,8 +51,9 @@ class LoggerTestCase(MockedLoggerHandler):
     def test_should_log_unhandled_exception(self):
         process = Popen([sys.executable, 'test_excepthook.py'], stdout=PIPE, stderr=PIPE)
         stdout, stderr = process.communicate()
-        assert process.returncode == 1
         assert stderr.startswith(b'Uncaught exception')
+        print(stdout)
+        print(stderr)
         assert stdout == b''
 
     def test_should_handle_warning(self):
