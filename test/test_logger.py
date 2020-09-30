@@ -30,7 +30,7 @@ class LoggerTestCase(MockedLoggerHandler):
 
         # then
         self.assertEqual(logs.output, ['INFO:another_logger_name:*************************LOGS '
- 'LINK*************************n You can find logs for this workflow here: '
+ 'LINK************************* \n You can find logs for this workflow here: '
  'https://console.cloud.google.com/logs/query;query=logName%3D%22projects%2Fproject-id%2Flogs%2Fanother_logger_name%22%0Alabels.id%3D%22workflow_id%22 \n'
  '***********************************************************'])
 
@@ -44,7 +44,7 @@ class LoggerTestCase(MockedLoggerHandler):
 
         # then
         self.assertEqual(logs.output, ['INFO:another_logger_name:*************************LOGS '
- 'LINK*************************n You can find logs for this workflow here: '
+ 'LINK************************* \n You can find logs for this workflow here: '
  'https://console.cloud.google.com/logs/query;query=logName%3D%22projects%2Fproject-id%2Flogs%2Fanother_logger_name%22%0Alabels.id%3D%22project-id%22 \n'
  '***********************************************************'])
 
