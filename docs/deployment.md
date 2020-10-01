@@ -165,7 +165,7 @@ The following properties are read by BigFlow from `deployment_config.py` if not 
 Here is the recommended structure of the `deployment_config.py` file:
 
 ```python
-from biggerquery import Config
+from bigflow import Config
 deployment_config = Config(name='dev',                    
                            properties={
                                'gcp_project_id': 'my_gcp_dev_project',
