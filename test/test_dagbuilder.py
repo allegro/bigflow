@@ -34,9 +34,11 @@ class DagBuilderTestCase(TestCase):
         # then
         self.assertFalse(f.exists())
 
-    def test_should_generate_DAG_file_from_workflow_with_hourly_scheduling(self):
+    @mock.patch('bigflow.workflow.get_timezone_offset_seconds')
+    def test_should_generate_DAG_file_from_workflow_with_hourly_scheduling(self, get_timezone_offset_seconds_mock):
         # given
         workdir = os.path.dirname(__file__)
+        get_timezone_offset_seconds_mock.return_value = 2 * 3600
         docker_repository = 'eu.gcr.io/my_docker_repository_project/my-project'
 
         # given
@@ -72,10 +74,10 @@ class DagBuilderTestCase(TestCase):
             schedule_interval='@hourly')
 
         # when
-        dag_file_path = generate_dag_file(workdir, docker_repository, workflow, '2020-07-01 10:00:00', '0.3.0', 'ca')
+        dag_file_path = generate_dag_file(workdir, docker_repository, workflow, '2020-07-02 10:00:00', '0.3.0', 'ca')
 
         # then
-        self.assertEqual(dag_file_path, workdir + '/.dags/my_workflow__v0_3_0__2020_07_01_10_00_00_dag.py')
+        self.assertEqual(dag_file_path, workdir + '/.dags/my_workflow__v0_3_0__2020_07_02_10_00_00_dag.py')
 
         dag_file_content = Path(dag_file_path).read_text()
         expected_dag_content = '''
@@ -86,14 +88,14 @@ from airflow.contrib.operators import kubernetes_pod_operator
 default_args = {
             'owner': 'airflow',
             'depends_on_past': True,
-            'start_date': datetime.datetime(2020, 7, 1, 10, 0),
+            'start_date': datetime.datetime(2020, 7, 2, 8, 0),
             'email_on_failure': False,
             'email_on_retry': False,
             'execution_timeout': datetime.timedelta(minutes=90),
 }
 
 dag = DAG(
-    'my_workflow__v0_3_0__2020_07_01_10_00_00',
+    'my_workflow__v0_3_0__2020_07_02_10_00_00',
     default_args=default_args,
     max_active_runs=1,
     schedule_interval='@hourly'
@@ -167,10 +169,10 @@ tjob3.set_upstream(tjob1)
             schedule_interval='@daily')
 
         # when
-        dag_file_path = generate_dag_file(workdir, docker_repository, workflow, '2020-07-01', '0.3.0', 'ca')
+        dag_file_path = generate_dag_file(workdir, docker_repository, workflow, '2020-07-02', '0.3.0', 'ca')
 
         # then
-        self.assertEqual(dag_file_path, workdir + '/.dags/my_daily_workflow__v0_3_0__2020_07_01_00_00_00_dag.py')
+        self.assertEqual(dag_file_path, workdir + '/.dags/my_daily_workflow__v0_3_0__2020_07_02_00_00_00_dag.py')
 
         dag_file_content = Path(dag_file_path).read_text()
         expected_dag_content = '''
@@ -188,7 +190,7 @@ default_args = {
 }
 
 dag = DAG(
-    'my_daily_workflow__v0_3_0__2020_07_01_00_00_00',
+    'my_daily_workflow__v0_3_0__2020_07_02_00_00_00',
     default_args=default_args,
     max_active_runs=1,
     schedule_interval='@daily'

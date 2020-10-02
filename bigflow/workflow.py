@@ -8,8 +8,8 @@ from .commons import now
 DEFAULT_SCHEDULE_INTERVAL = '@daily'
 
 
-def get_timezone_offset_seconds() -> str:
-    return str(dt.datetime.now().astimezone().tzinfo.utcoffset(None).seconds)
+def get_timezone_offset_seconds() -> int:
+    return dt.datetime.now().astimezone().tzinfo.utcoffset(None).seconds
 
 
 def hourly_start_time(start_time: dt.datetime) -> dt.datetime:
