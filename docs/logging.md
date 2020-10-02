@@ -4,6 +4,7 @@ Using Bigflow you can easily add handlers to your loggers that will send all log
 In the CL you can filter logs per project id/logger name and workflow id. 
 
 ## Getting started
+To use logging you have to install `bigflow` with `logger` module, `bigflow[logger]`.
 To create logger with the CL handler you have to use `configure_logging` method.
 
 ```python
