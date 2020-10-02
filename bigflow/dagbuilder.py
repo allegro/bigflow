@@ -26,7 +26,7 @@ def generate_dag_file(workdir: str,
 
     dag_deployment_id = get_dag_deployment_id(workflow.workflow_id, start_from, build_ver)
     dag_file_path = get_dags_output_dir(workdir) / (dag_deployment_id + '_dag.py')
-    start_date_as_str = repr(start_from)
+    start_date_as_str = repr(workflow.start_time_factory(start_from))
 
     print(f'dag_file_path: {dag_file_path.resolve()}')
 

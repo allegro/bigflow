@@ -3,6 +3,7 @@ import json
 import shutil
 import datetime
 import subprocess
+from datetime import timedelta
 
 from pathlib import Path
 from unittest import TestCase, mock
@@ -40,6 +41,7 @@ def mkdir(dir_path: Path):
 def rmdir(dir_path: Path):
     if dir_path.exists() and dir_path.is_dir():
         shutil.rmtree(dir_path)
+
 
 def create_image_leftovers(test_project_dir_path: Path = TEST_PROJECT_PATH):
     mkdir(test_project_dir_path / 'image')
@@ -123,7 +125,8 @@ def docker_image_built_in_registry(docker_repository: str, version: str):
 def dags_contain(test_project_dir_path: Path, substring: str):
     for module_dir, module_file_name in walk_module_files(test_project_dir_path / '.dags'):
         with open(os.path.join(module_dir, module_file_name), 'r') as f:
-            if substring not in f.read():
+            content = f.read()
+            if substring not in content:
                 return False
     return True
 
@@ -193,13 +196,13 @@ class BuildDagsCommandE2E(SetupTestCase):
         # then
         self.assertTrue(dags_built(TEST_PROJECT_PATH, 2))
         self.assertFalse(dags_leftovers_exist(TEST_PROJECT_PATH))
-        self.assertTrue(dags_contain(TEST_PROJECT_PATH, repr(datetime.datetime.now().replace(second=0, minute=0, microsecond=0))))
+        self.assertTrue(dags_contain(TEST_PROJECT_PATH, repr(datetime.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(hours=24))))
 
         # when
         self.test_project.run_build("python project_setup.py build_project --build-dags --start-time '2020-01-02 00:00:00'")
 
         # then
-        self.assertTrue(dags_contain(TEST_PROJECT_PATH, 'datetime.datetime(2020, 1, 2, 0, 0)'))
+        self.assertTrue(dags_contain(TEST_PROJECT_PATH, 'datetime.datetime(2020, 1, 1, 0, 0)'))
 
         # when
         self.test_project.run_build('python project_setup.py build_project --build-dags --workflow workflow1')
