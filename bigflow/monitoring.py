@@ -35,9 +35,9 @@ def api_list_metrics(client, project_resource, metric_type):
     return request.execute()
 
 
-def api_create_timeseries(client, monitoring_config, data):
+def api_create_timeseries(client, project_resource, data):
     request = client.projects().timeSeries().create(
-        name=monitoring_config.project_resource,
+        name=project_resource,
         body={"timeSeries": [data]})
     return request.execute()
 

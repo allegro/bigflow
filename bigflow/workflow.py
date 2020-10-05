@@ -171,6 +171,7 @@ class JobOrderResolver:
 
     def find_sequential_run_order(self):
         ordered_jobs = []
+
         def add_to_ordered_job(job, dependencies):
             ordered_jobs.append(job)
 

@@ -14,6 +14,7 @@
 1. [Workflow & Job](./docs/workflow-and-job.md)
 1. [Starter](./docs/scaffold.md)
 1. [Technologies](./docs/technologies.md)
+1. [Logging](./docs/logging.md)
 1. Roadmap
 
 ## What is BigFlow?

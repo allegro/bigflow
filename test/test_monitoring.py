@@ -1,9 +1,9 @@
-import mock
-from unittest import TestCase
+from unittest import TestCase, mock
 from datetime import datetime
 
 from bigflow import monitoring
 from freezegun import freeze_time
+
 
 TEST_DATETIME = datetime(year=2019, month=1, day=2)
 TEST_DATETIME_RFC3339 = '2019-01-02T00:00:00Z'

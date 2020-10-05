@@ -1,9 +1,10 @@
 from collections import OrderedDict
+from unittest import TestCase, mock
 
-import mock
-from unittest import TestCase
+from google.cloud import logging_v2
 
 from bigflow.workflow import Workflow, Definition, InvalidJobGraph, WorkflowJob
+from test.test_monitoring import FailingJob
 
 
 class WorkflowTestCase(TestCase):
