@@ -44,7 +44,7 @@ def format_templates(config):
         '__init__.py': ''}
     bq_templates = {
         '__init__.py': '',
-        'workflow.py': bq_workflow_template}
+        'workflow.py': bq_workflow_template % {'project_id': config['projects_id'][0]}}
     return {
         'beam_templates': beam_templates,
         'bq_templates': bq_templates,
