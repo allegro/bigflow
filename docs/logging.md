@@ -8,24 +8,24 @@ To use logging, you have to install `bigflow` with `logger` module - `bigflow[lo
 To create logger with the CL handler, you have to use `configure_logging` method.
 
 ```python
-from bigflow.log import configure_logging
+from bigflow.log import BigflowLogging
 project_id = 'some_project'
 logger_name = __name__
 
 
-configure_logging(project_id, logger_name)
+BigflowLogging.configure_logging(project_id, logger_name)
 ```
 
 or, if you prefer to filter CL logs by workflow id:
  
 ```python
-from bigflow.log import configure_logging
+from bigflow.log import BigflowLogging
 project_id = 'some_project'
 logger_name = __name__
 workflow_id = 'some-workflow'
 
 
-configure_logging(project_id, logger_name, workflow_id)
+BigflowLogging.configure_logging(project_id, logger_name, workflow_id)
 ```
 After calling the `configure_logging` method, your calls to any logger will be send to CL.
 
@@ -46,12 +46,12 @@ All three logs should be visible now in CL.
 
 ## Unhandled Exceptions
 ```python
-from bigflow.log import configure_logging
+from bigflow.log import BigflowLogging
 project_id = 'some_project'
 logger_name ='some-logger'
 
 
-configure_logging(project_id, logger_name)
+BigflowLogging.configure_logging(project_id, logger_name)
 
 raise ValueError()
 ```
