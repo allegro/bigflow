@@ -71,8 +71,9 @@ separate things. Your Beam process might need just a subset of the project requi
 options.view_as(SetupOptions).requirements_file = resolve(get_resource_absolute_path('my-beam-process-requirements.txt', Path(__file__)))
 ```
 
-The pipeline configuration contains `staging_location` and `temp_location` which uses the reference to a Cloud Storage Bucket.
-Beam uses this bucket during processing to store temp files. This bucket is not created automatically and you need to create it by yourself with separate directories for staging and temp.
+The pipeline configuration contains `staging_location` and `temp_location` directories.
+These directories are placed in a Cloud Storage Bucket. 
+Beam uses these directories during processing to store temp files. Directories and bucket are not created automatically.
 Below is example configuration of `staging_location` and `temp_location`. 
 
 ```python
