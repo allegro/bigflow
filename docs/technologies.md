@@ -73,7 +73,7 @@ options.view_as(SetupOptions).requirements_file = resolve(get_resource_absolute_
 
 The pipeline configuration contains `staging_location` and `temp_location` directories.
 These directories are placed in a Cloud Storage Bucket. 
-Beam uses these directories during processing to store temp files. Directories and buckets are not created automatically.
+Beam uses these directories during processing to store temp files. The specified bucket and directories are not created automatically.
 Below is an example configuration of `staging_location` and `temp_location`. 
 
 ```python
