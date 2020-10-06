@@ -126,8 +126,10 @@ import setuptools
 setuptools.setup(
         name='{project_name}',
         version='0.1.0',
-        packages=setuptools.find_packages()
-)
+        packages=setuptools.find_packages(
+                exclude=tuple(
+                        p for p in setuptools.find_packages()
+                        if not p.startswith('{project_name}'))))
 '''
 
 
