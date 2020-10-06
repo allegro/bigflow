@@ -71,6 +71,13 @@ separate things. Your Beam process might need just a subset of the project requi
 options.view_as(SetupOptions).requirements_file = resolve(get_resource_absolute_path('my-beam-process-requirements.txt', Path(__file__)))
 ```
 
+Note that in those lines:
+```python
+google_cloud_options.staging_location = f"gs://{staging_location}"
+google_cloud_options.temp_location = f"gs://{temp_location}"
+```
+we use a Google Cloud Storage Bucket links. This bucket is not created automatically and you need to create it by yourself with separate directories for staging and temp.
+
 ## BigQuery
 
 BigFlow provides comprehensive support for BigQuery. Example use cases:
