@@ -126,7 +126,7 @@ import setuptools
 setuptools.setup(
         name='{project_name}',
         version='0.1.0',
-        packages=setuptools.find_namespace_packages(include=["{project_name}.*"])
+        packages=setuptools.find_packages()
 )
 '''
 
