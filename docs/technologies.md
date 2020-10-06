@@ -71,6 +71,18 @@ separate things. Your Beam process might need just a subset of the project requi
 options.view_as(SetupOptions).requirements_file = resolve(get_resource_absolute_path('my-beam-process-requirements.txt', Path(__file__)))
 ```
 
+The pipeline configuration contains `staging_location` and `temp_location` directories.
+These directories are placed in a Cloud Storage Bucket. 
+Beam uses these directories during processing to store temp files. The specified bucket and directories are not created automatically.
+Below is an example configuration of `staging_location` and `temp_location`. 
+
+```python
+staging_location= 'my-bucket/staging'
+temp_location = 'my-bucket/temp'
+google_cloud_options.staging_location = f"gs://{staging_location}"
+google_cloud_options.temp_location = f"gs://{temp_location}"
+```
+
 ## BigQuery
 
 BigFlow provides comprehensive support for BigQuery. Example use cases:
