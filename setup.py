@@ -21,7 +21,7 @@ with open(os.path.join('requirements', 'log_extras.txt'), 'r') as log_extras_req
 
 setuptools.setup(
     name="bigflow",
-    version="1.0.dev66",
+    version="1.0.dev67",
     author=u"Chi",
     author_email="chibox-team@allegrogroup.com",
     description="BigQuery client wrapper with clean API",
