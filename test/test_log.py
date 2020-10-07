@@ -56,23 +56,18 @@ class LoggerTestCase(TestCase):
 
         # when
         try:
-            raise Exception("oh no... i'm dying")
+            raise ValueError("oh no... i'm dying")
         except Exception:
             sys.excepthook(*sys.exc_info()) # simulate uncaught exception
 
         # then
-        self.logging_client.write_log_entries.assert_called_with([logging_v2.types.LogEntry(
-            log_name="projects/project-id/logs/logger_name",
-            resource={
-                "type": "global",
-                "labels": {
-                    "project_id": "project-id"
-                }
-            },
-            text_payload="Uncaught exception: oh no... i\'m dying",
-            severity='ERROR',
-            labels={"id": "workflow-id"}
-        )])
+        self.assertEqual(1, self.logging_client.write_log_entries.call_count)
+        calls = self.logging_client.write_log_entries.call_args_list[0][0]
+        le = calls[0][0]
+        
+        self.assertEqual(le.log_name, "projects/project-id/logs/logger_name")
+        self.assertIn("Uncaught exception: oh no... i\'m dying", le.text_payload)
+        self.assertIn("ValueError", le.text_payload)
 
     def test_should_handle_warning(self):
         # when
@@ -115,7 +110,7 @@ class LoggerTestCase(TestCase):
         self.test_logger.error("error message")
 
         # then
-        self.root_logger.handlers[1].client.write_log_entries.assert_called_with([logging_v2.types.LogEntry(
+        self.logging_client.write_log_entries.assert_called_with([logging_v2.types.LogEntry(
             log_name="projects/project-id/logs/logger_name",
             resource={
                 "type": "global",

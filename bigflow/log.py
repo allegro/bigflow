@@ -8,7 +8,7 @@ from google.cloud.logging_v2.gapic.enums import LogSeverity
 from urllib.parse import quote_plus
 
 
-class GCPLoggerHandler(logging.StreamHandler):
+class GCPLoggerHandler(logging.Handler):
 
     def __init__(self, project_id, log_name, workflow_id):
         logging.StreamHandler.__init__(self)
@@ -36,7 +36,8 @@ class GCPLoggerHandler(logging.StreamHandler):
 
     def emit(self, record: logging.LogRecord):
         cl_log_level = record.levelname  # CloudLogging list of supported log levels is a superset of python logging level names
-        self.write_log_entries(record.getMessage(), cl_log_level)
+        message = self.format(record)
+        self.write_log_entries(message, cl_log_level)
 
     def write_log_entries(self, message, severity):
         entry = logging_v2.types.LogEntry()
@@ -67,6 +68,7 @@ def configure_logging(project_id, log_name, workflow_id=None):
     logging.basicConfig(level=logging.INFO)
     gcp_logger_handler = GCPLoggerHandler(project_id, log_name, workflow_id)
     gcp_logger_handler.setLevel(logging.INFO)
+    # TODO: add formatter?
 
     query = quote_plus(dedent(f'''
         logName="projects/{project_id}/logs/{log_name}"
