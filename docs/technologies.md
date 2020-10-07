@@ -91,6 +91,10 @@ BigFlow provides comprehensive support for BigQuery. Example use cases:
 * Creating data processing pipelines.
 * Creating BigQuery sensors.
 
+To start using the BigQuery utils, install the `bigflow[bigquery]` extras:
+
+`pip install bigflow[bigquery]`
+
 The project starter generates the workflow called `internationalports`. 
 This workflow is based solely on BigQuery.
 
