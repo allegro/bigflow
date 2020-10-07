@@ -5,15 +5,15 @@ In the CL, you can filter logs per project id/logger name and workflow id.
 
 ## Getting started
 To use logging, you have to install `bigflow` with `logger` module - `bigflow[log]`.
-To create a logger with the CL handler, you have to use `configure_logging` method.
+To create a logger with the CL handler, you have to use `configure_logging` function.
 
 ```python
-from bigflow.log import BigflowLogging
+from bigflow.log import configure_logging
 project_id = 'some_project'
-logger_name = __name__
+log_name = 'log_name'
 
 
-BigflowLogging.configure_logging(project_id, logger_name)
+configure_logging(project_id, log_name)
 ```
 
 or, if you prefer to filter CL logs by workflow id:
@@ -21,16 +21,16 @@ or, if you prefer to filter CL logs by workflow id:
 ```python
 from bigflow.log import BigflowLogging
 project_id = 'some_project'
-logger_name = __name__
+log_name = 'log-name'
 workflow_id = 'some-workflow'
 
 
-BigflowLogging.configure_logging(project_id, logger_name, workflow_id)
+BigflowLogging.configure_logging(project_id, log_name, workflow_id)
 ```
 After calling the `configure_logging` method, your calls to any logger will be send to CL.
 
 Also in a console, you should see a
-link to the CL query. In the case of the code above, the link should look like this `https://console.cloud.google.com/logs/query;query=logName%3D%22projects%2Fsome-project%2Flogs%some-logger%22%0Alabels.id%3D%some-workflow%22\`
+link to the CL query. In the case of the code above, the link should look like this `https://console.cloud.google.com/logs/query;query=logName%3D%22projects%2Fsome-project%2Flogs%some-log%22%0Alabels.id%3D%some-workflow%22\`
 
 To send logs to the CL, you use the standard python `logging` module.
 
@@ -48,10 +48,10 @@ All three logs should be visible now in CL.
 ```python
 from bigflow.log import BigflowLogging
 project_id = 'some_project'
-logger_name ='some-logger'
+log_name ='some-log'
 
 
-BigflowLogging.configure_logging(project_id, logger_name)
+BigflowLogging.configure_logging(project_id, log_name)
 
 raise ValueError()
 ```

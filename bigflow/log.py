@@ -52,32 +52,31 @@ def _uncaught_exception_handler(logger):
     return handler
 
 
-class BigflowLogging(object):
-    IS_LOGGING_SET = False
+_LOGGING_CONFIGURED = False
 
-    @staticmethod
-    def configure_logging(project_id, logger_name, workflow_id=None):
+def configure_logging(project_id, log_name, workflow_id=None):
 
-        if BigflowLogging.IS_LOGGING_SET:
-            import warnings
-            warnings.warn(UserWarning("bigflow.log is is already configured - skip"))
-            return
+    global _LOGGING_CONFIGURED
+    if _LOGGING_CONFIGURED:
+        import warnings
+        warnings.warn(UserWarning("bigflow.log is is already configured - skip"))
+        return
 
-        logging.basicConfig(level=logging.INFO)
-        gcp_logger_handler = GCPLoggerHandler(project_id, logger_name, workflow_id)
-        gcp_logger_handler.setLevel(logging.INFO)
+    _LOGGING_CONFIGURED = True
 
-        query = quote_plus(dedent(f'''
-            logName="projects/{project_id}/logs/{logger_name}"
-            labels.id="{workflow_id or project_id}"
-        '''))
-        logging.info(dedent(f"""
-               *************************LOGS LINK*************************
-               You can find this workflow logs here: https://console.cloud.google.com/logs/query;query={query}
-               ***********************************************************
-        """))
+    logging.basicConfig(level=logging.INFO)
+    gcp_logger_handler = GCPLoggerHandler(project_id, log_name, workflow_id)
+    gcp_logger_handler.setLevel(logging.INFO)
 
-        logging.getLogger(None).addHandler(gcp_logger_handler)
-        sys.excepthook = _uncaught_exception_handler(logging.getLogger())
-        
-        BigflowLogging.IS_LOGGING_SET = True
+    query = quote_plus(dedent(f'''
+        logName="projects/{project_id}/logs/{log_name}"
+        labels.id="{workflow_id or project_id}"
+    '''))
+    logging.info(dedent(f"""
+           *************************LOGS LINK*************************
+           You can find this workflow logs here: https://console.cloud.google.com/logs/query;query={query}
+           ***********************************************************
+    """))
+
+    logging.getLogger(None).addHandler(gcp_logger_handler)
+    sys.excepthook = _uncaught_exception_handler(logging.getLogger())

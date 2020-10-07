@@ -7,14 +7,14 @@ from unittest import TestCase, mock
 
 from google.cloud import logging_v2
 
-from bigflow.log import BigflowLogging
+import bigflow.log
 
 
 class MockedLoggerHandler(TestCase):
 
     @mock.patch('bigflow.log.create_logging_client')
     def setUp(self, create_logging_client_mock) -> None:
-        BigflowLogging.IS_LOGGING_SET = False
+        bigflow.log._LOGGING_CONFIGURED = False
         self.reset_root_logger_handlers()
 
         create_logging_client_mock.return_value = mock.create_autospec(logging_v2.LoggingServiceV2Client)
@@ -22,7 +22,7 @@ class MockedLoggerHandler(TestCase):
 
         self.test_logger = logging.getLogger('any.random.logger.name')
         self.root_logger = logging.getLogger('')
-        BigflowLogging.configure_logging('project-id', 'logger_name', 'workflow-id')
+        bigflow.log.configure_logging('project-id', 'logger_name', 'workflow-id')
 
     def reset_root_logger_handlers(self):
         logging.getLogger().handlers.clear()
@@ -34,10 +34,10 @@ class LoggerTestCase(MockedLoggerHandler):
     def test_should_create_correct_logging_link(self, create_logging_client_mock):
         # given
         create_logging_client_mock.return_value = mock.create_autospec(logging_v2.LoggingServiceV2Client)
-        BigflowLogging.IS_LOGGING_SET = False
+        bigflow.log._LOGGING_CONFIGURED = False
         with self.assertLogs(level='INFO') as logs:
             # when
-            BigflowLogging.configure_logging('project-id', 'another_logger_name', 'workflow_id')
+            bigflow.log.configure_logging('project-id', 'another_logger_name', 'workflow_id')
 
         # then
         self.assertEqual(logs.output, ['INFO:root:\n'
@@ -50,10 +50,10 @@ class LoggerTestCase(MockedLoggerHandler):
     def test_should_create_correct_logging_link_without_workflow_id(self, create_logging_client_mock):
         # given
         create_logging_client_mock.return_value = mock.create_autospec(logging_v2.LoggingServiceV2Client)
-        BigflowLogging.IS_LOGGING_SET = False
+        bigflow.log._LOGGING_CONFIGURED = False
         with self.assertLogs(level='INFO') as logs:
             # when
-            BigflowLogging.configure_logging('project-id', 'another_logger_name')
+            bigflow.log.configure_logging('project-id', 'another_logger_name')
 
         # then
         self.assertEqual(logs.output, ['INFO:root:\n'
@@ -129,13 +129,14 @@ class LoggerTestCase(MockedLoggerHandler):
     @mock.patch('bigflow.log.create_logging_client')
     def test_should_handle_message_without_workflow_id(self, create_logging_client_mock):
         # given
-        BigflowLogging.IS_LOGGING_SET = False
+        bigflow.log._LOGGING_CONFIGURED = False
         self.reset_root_logger_handlers()
         create_logging_client_mock.return_value = mock.create_autospec(logging_v2.LoggingServiceV2Client)
 
-        logger = BigflowLogging.configure_logging('project-id', 'logger_name_without_id')
+        bigflow.log.configure_logging('project-id', 'logger_name_without_id')
 
         # when
+        logger = logging.getLogger('logger_name_without_id')
         logger.error("error message")
 
         # then
