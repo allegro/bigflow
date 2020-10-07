@@ -16,13 +16,16 @@ class MockedLoggerHandler(TestCase):
     def setUp(self, create_logging_client_mock) -> None:
         BigflowLogging.IS_LOGGING_SET = False
         self.reset_root_logger_handlers()
+
         create_logging_client_mock.return_value = mock.create_autospec(logging_v2.LoggingServiceV2Client)
-        self.test_logger = BigflowLogging.configure_logging('project-id', 'logger_name', 'workflow-id')
         self.create_logging_client_mock = create_logging_client_mock
 
+        self.test_logger = logging.getLogger('any.random.logger.name')
+        self.root_logger = logging.getLogger('')
+        BigflowLogging.configure_logging('project-id', 'logger_name', 'workflow-id')
 
     def reset_root_logger_handlers(self):
-        list(map(logging.getLogger().removeHandler, logging.getLogger().handlers[:]))
+        logging.getLogger().handlers.clear()
 
 
 class LoggerTestCase(MockedLoggerHandler):
@@ -74,7 +77,7 @@ class LoggerTestCase(MockedLoggerHandler):
         self.test_logger.warning("warning message")
 
         # then
-        self.test_logger.handlers[1].client.write_log_entries.assert_called_with([logging_v2.types.LogEntry(
+        self.root_logger.handlers[1].client.write_log_entries.assert_called_with([logging_v2.types.LogEntry(
             log_name="projects/project-id/logs/logger_name",
             resource={
                 "type": "global",
@@ -92,7 +95,7 @@ class LoggerTestCase(MockedLoggerHandler):
         self.test_logger.info("info message")
 
         # then
-        self.test_logger.handlers[1].client.write_log_entries.assert_called_with([logging_v2.types.LogEntry(
+        self.root_logger.handlers[1].client.write_log_entries.assert_called_with([logging_v2.types.LogEntry(
             log_name="projects/project-id/logs/logger_name",
             resource={
                 "type": "global",
@@ -110,7 +113,7 @@ class LoggerTestCase(MockedLoggerHandler):
         self.test_logger.error("error message")
 
         # then
-        self.test_logger.handlers[1].client.write_log_entries.assert_called_with([logging_v2.types.LogEntry(
+        self.root_logger.handlers[1].client.write_log_entries.assert_called_with([logging_v2.types.LogEntry(
             log_name="projects/project-id/logs/logger_name",
             resource={
                 "type": "global",

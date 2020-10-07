@@ -9,6 +9,7 @@ def create_logging_client():
 
 
 class GCPLoggerHandler(logging.StreamHandler):
+
     def __init__(self, project_id, logger_name, workflow_id):
         logging.StreamHandler.__init__(self)
         self.client = create_logging_client()
@@ -73,16 +74,22 @@ class BigflowLogging(object):
 
     @staticmethod
     def configure_logging(project_id, logger_name, workflow_id=None):
+
+        if BigflowLogging.IS_LOGGING_SET:
+            import warnings
+            warnings.warn(UserWarning("bigflow.log is is already configured - skip"))
+            return
+
+        logging.basicConfig(level=logging.INFO)
+        gcp_logger_handler = GCPLoggerHandler(project_id, logger_name, workflow_id)
+        gcp_logger_handler.setLevel(logging.INFO)
+
         logger = logging.getLogger()
-        if not BigflowLogging.IS_LOGGING_SET:
-            logging.basicConfig(level=logging.INFO)
-            gcp_logger_handler = GCPLoggerHandler(project_id, logger_name, workflow_id)
-            gcp_logger_handler.setLevel(logging.INFO)
-            logger.info(gcp_logger_handler.get_gcp_logs_message())
-            logger.addHandler(gcp_logger_handler)
-            excepthook(logger)
-            BigflowLogging.IS_LOGGING_SET = True
-        return logger
+        logger.info(gcp_logger_handler.get_gcp_logs_message())
+        logger.addHandler(gcp_logger_handler)
+
+        excepthook(logger)
+        BigflowLogging.IS_LOGGING_SET = True
 
 
 def excepthook(logger):
