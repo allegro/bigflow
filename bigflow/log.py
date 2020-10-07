@@ -1,4 +1,5 @@
 import logging
+import typing
 import sys
 
 from textwrap import dedent
@@ -6,6 +7,11 @@ from textwrap import dedent
 from google.cloud import logging_v2
 from google.cloud.logging_v2.gapic.enums import LogSeverity
 from urllib.parse import quote_plus
+
+try:
+    from typing import TypedDict
+except ImportError:
+    TypedDict = dict
 
 
 class GCPLoggerHandler(logging.Handler):
@@ -42,6 +48,7 @@ class GCPLoggerHandler(logging.Handler):
     def write_log_entries(self, message, severity):
         entry = logging_v2.types.LogEntry()
         entry.CopyFrom(self._log_entry_prototype)
+        # FIXME: maybe 'jsonPayload' ?
         entry.text_payload = message
         entry.severity = LogSeverity[severity]
         self.client.write_log_entries([entry])
@@ -55,24 +62,36 @@ def _uncaught_exception_handler(logger):
 
 _LOGGING_CONFIGURED = False
 
-def configure_logging(project_id, log_name, workflow_id=None):
+
+class LogConfigDict(TypedDict):
+    gcp_project_id: str
+    log_name: str
+    level: typing.Union[str, int]
+
+
+def init_logging(config: LogConfigDict, force=False):
 
     global _LOGGING_CONFIGURED
-    if _LOGGING_CONFIGURED:
+    if _LOGGING_CONFIGURED and not force:
         import warnings
         warnings.warn(UserWarning("bigflow.log is is already configured - skip"))
         return
 
     _LOGGING_CONFIGURED = True
 
-    logging.basicConfig(level=logging.INFO)
-    gcp_logger_handler = GCPLoggerHandler(project_id, log_name, workflow_id)
+    gcp_project_id = config['gcp_project_id']
+    workflow_id = config.get('workflow_id', "unknown-workflow")
+    log_name = config.get('log_name', workflow_id)
+    log_level = config.get('log_level', 'INFO')
+
+    logging.basicConfig(level=log_level)
+    gcp_logger_handler = GCPLoggerHandler(gcp_project_id, log_name, workflow_id)
     gcp_logger_handler.setLevel(logging.INFO)
     # TODO: add formatter?
 
     query = quote_plus(dedent(f'''
-        logName="projects/{project_id}/logs/{log_name}"
-        labels.id="{workflow_id or project_id}"
+        logName="projects/{gcp_project_id}/logs/{log_name}"
+        labels.id="{workflow_id or gcp_project_id}"
     ''').strip())
     logging.info(dedent(f"""
            *************************LOGS LINK*************************

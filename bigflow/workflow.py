@@ -3,7 +3,14 @@ import typing
 
 from collections import OrderedDict
 from typing import Optional
-from .commons import now
+
+from bigflow import log
+from bigflow.commons import now
+
+
+import logging
+logger = logging.getLogger(__name__)
+
 
 DEFAULT_SCHEDULE_INTERVAL = '@daily'
 
@@ -23,16 +30,38 @@ def daily_start_time(start_time: dt.datetime) -> dt.datetime:
 
 
 class Workflow(object):
-    def __init__(self,
-                 workflow_id,
-                 definition,
-                 schedule_interval=DEFAULT_SCHEDULE_INTERVAL,
-                 start_time_factory: typing.Callable[[dt.datetime], dt.datetime] = daily_start_time,
-                 ):
+
+    def __init__(
+        self,
+        workflow_id,
+        definition,
+        schedule_interval=DEFAULT_SCHEDULE_INTERVAL,
+        start_time_factory: typing.Callable[[dt.datetime], dt.datetime] = daily_start_time,
+        log_config=None,
+    ):
         self.definition = self._parse_definition(definition)
         self.schedule_interval = schedule_interval
         self.workflow_id = workflow_id
         self.start_time_factory = start_time_factory
+
+        self._log_initialized = False
+        self.log_config = log_config
+
+    def init_logging(self):
+        """Initialize python logging based on the configuration attached to the workflow.
+        This method is automatically called when workflow is executed via "bf run" cmd-line tool.
+        """
+
+        if not self.log_config:
+            print("Log configuration is not provided: skip")
+            return
+        if self._log_initialized:
+            return
+        self._log_initialized = True
+        log.init_logging(
+            workflow_id=self.workflow_id,
+            **self.log_config,
+        )
 
     def run(self, runtime: Optional[str] = None):
         if runtime is None:
@@ -181,7 +210,8 @@ class JobOrderResolver:
     def call_on_graph_nodes(self, consumer):
         visited = set()
         for job in self.parental_map:
-            self._call_on_graph_node_helper(job, self.parental_map, visited, consumer)
+            self._call_on_graph_node_helper(
+                job, self.parental_map, visited, consumer)
 
     def _build_parental_map(self):
         visited = set()
@@ -210,5 +240,6 @@ class JobOrderResolver:
         visited.add(job)
 
         for parent in parental_map[job]:
-            self._call_on_graph_node_helper(parent, parental_map, visited, consumer)
+            self._call_on_graph_node_helper(
+                parent, parental_map, visited, consumer)
         consumer(job, parental_map[job])

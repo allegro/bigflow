@@ -11,11 +11,15 @@ import bigflow.log
 
 class LoggerTestCase(TestCase):
 
-    def configure_mocked_logging(self, *args):
+    def configure_mocked_logging(self, project_id, log_name, workflow_id=None):
         self.logging_client = mock.MagicMock(return_value=mock.create_autospec(logging_v2.LoggingServiceV2Client))
         with mock.patch.object(bigflow.log.GCPLoggerHandler, 'create_logging_client', return_value=self.logging_client):
             bigflow.log._LOGGING_CONFIGURED = False
-            bigflow.log.configure_logging(*args)
+            bigflow.log.init_logging({
+                'gcp_project': project_id,
+                'log_name': log_name,
+                'workflow_id': workflow_id,
+            })
 
     def setUp(self):
         self.configure_mocked_logging('project-id', 'logger_name', 'workflow-id')

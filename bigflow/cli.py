@@ -118,7 +118,9 @@ def execute_job(root_package: Path, workflow_id: str, job_id: str, runtime=None)
 
     @param runtime: str determine partition that will be used for write operations.
     """
-    find_workflow(root_package, workflow_id).run_job(job_id, runtime)
+    w = find_workflow(root_package, workflow_id)
+    w.init_logging()
+    w.run_job(job_id, runtime)
 
 
 def execute_workflow(root_package: Path, workflow_id: str, runtime=None):
@@ -127,7 +129,9 @@ def execute_workflow(root_package: Path, workflow_id: str, runtime=None):
 
     @param runtime: str determine partition that will be used for write operations.
     """
-    find_workflow(root_package, workflow_id).run(runtime)
+    w = find_workflow(root_package, workflow_id)
+    w.init_logging()
+    w.run(runtime)
 
 
 def read_project_name_from_setup() -> Optional[str]:
