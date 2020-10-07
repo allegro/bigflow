@@ -1,5 +1,8 @@
 import logging
 import sys
+
+from textwrap import dedent
+
 from google.cloud import logging_v2
 from urllib.parse import quote_plus
 
@@ -12,58 +15,38 @@ class GCPLoggerHandler(logging.StreamHandler):
 
     def __init__(self, project_id, logger_name, workflow_id):
         logging.StreamHandler.__init__(self)
+
         self.client = create_logging_client()
         self.project_id = project_id
         self.workflow_id = workflow_id
         self.logger_name = logger_name
 
-    def emit(self, record):
-        if record.levelname == 'INFO':
-            self.info(record.getMessage())
-        elif record.levelname == 'WARNING':
-            self.warning(record.getMessage())
-        else:
-            self.error(record.getMessage())
+        self._log_entry_prototype = logging_v2.types.LogEntry(
+            log_name=f"projects/{self.project_id}/logs/{self.logger_name}",
+            labels={
+                "id": str(self.workflow_id or self.project_id),
+            },
+            resource={
+                "type": "global",
+                "labels": {
+                    "project_id": str(self.project_id),
+                },
+            },
+        )
 
-    def get_resource(self):
-        return {
-            "type": "global",
-            "labels": {
-                "project_id": f"{self.project_id}"
-            }
-        }
-
-    def warning(self, message):
-        self.write_log_entries(message, 'WARNING')
-
-    def error(self, message):
-        self.write_log_entries(message, 'ERROR')
-
-    def info(self, message):
-        self.write_log_entries(message, 'INFO')
+    def emit(self, record: logging.LogRecord):
+        cl_log_level = record.levelname  # CloudLogging list of supported log levels is a superset of python logging level names
+        self.write_log_entries(record.getMessage(), cl_log_level)
 
     def write_log_entries(self, message, severity):
-        log_name = f"projects/{self.project_id}/logs/{self.logger_name}"
-        labels = {"id": f"{self.workflow_id or self.project_id}"}
-        entry = logging_v2.types.LogEntry(
-            log_name=log_name,
-            resource=self.get_resource(),
-            text_payload=message,
-            severity=severity,
-            labels=labels
-        )
+        entry = logging_v2.types.LogEntry()
+        entry.CopyFrom(self._log_entry_prototype)
+        entry.text_payload = message
+        entry.severity = severity
         self.client.write_log_entries([entry])
 
-    def get_gcp_logs_message(self):
-        query = quote_plus(f'''logName="projects/{self.project_id}/logs/{self.logger_name}"
-labels.id="{self.workflow_id or self.project_id}"''')
-        return f'\n'\
-               f'*************************LOGS LINK************************* \n ' \
-               f'You can find this workflow logs here: https://console.cloud.google.com/logs/query;query={query} \n' \
-               f'***********************************************************'
 
-
-def handle_uncaught_exception(logger):
+def _uncaught_exception_handler(logger):
     def handler(exception_type, value, traceback):
         logger.error(f'Uncaught exception: {value}', exc_info=(exception_type, value, traceback))
     return handler
@@ -84,13 +67,17 @@ class BigflowLogging(object):
         gcp_logger_handler = GCPLoggerHandler(project_id, logger_name, workflow_id)
         gcp_logger_handler.setLevel(logging.INFO)
 
-        logger = logging.getLogger()
-        logger.info(gcp_logger_handler.get_gcp_logs_message())
-        logger.addHandler(gcp_logger_handler)
+        query = quote_plus(dedent(f'''
+            logName="projects/{project_id}/logs/{logger_name}"
+            labels.id="{workflow_id or project_id}"
+        '''))
+        logging.info(dedent(f"""
+               *************************LOGS LINK*************************
+               You can find this workflow logs here: https://console.cloud.google.com/logs/query;query={query}
+               ***********************************************************
+        """))
 
-        excepthook(logger)
+        logging.getLogger(None).addHandler(gcp_logger_handler)
+        sys.excepthook = _uncaught_exception_handler(logging.getLogger())
+        
         BigflowLogging.IS_LOGGING_SET = True
-
-
-def excepthook(logger):
-    sys.excepthook = handle_uncaught_exception(logger)
