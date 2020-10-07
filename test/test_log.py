@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+from pathlib import Path
 from subprocess import Popen, PIPE
 from unittest import TestCase, mock
 
@@ -60,7 +61,8 @@ class LoggerTestCase(MockedLoggerHandler):
 
     def test_should_log_unhandled_exception(self):
         # when
-        process = Popen([sys.executable, f'{os.getcwd()}/test/test_excepthook.py'], stdout=PIPE, stderr=PIPE)
+        test_excepthook = str(Path(__file__).parent / 'test_excepthook.py')
+        process = Popen([sys.executable, test_excepthook], stdout=PIPE, stderr=PIPE)
         stdout, stderr = process.communicate()
 
         # then
