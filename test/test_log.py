@@ -1,8 +1,7 @@
 import logging
 import os
 import sys
-from pathlib import Path
-from subprocess import Popen, PIPE
+
 from unittest import TestCase, mock
 
 from google.cloud import logging_v2
@@ -10,74 +9,77 @@ from google.cloud import logging_v2
 import bigflow.log
 
 
-class MockedLoggerHandler(TestCase):
+class LoggerTestCase(TestCase):
 
-    @mock.patch('bigflow.log.create_logging_client')
-    def setUp(self, create_logging_client_mock) -> None:
-        bigflow.log._LOGGING_CONFIGURED = False
-        self.reset_root_logger_handlers()
+    def configure_mocked_logging(self, *args):
+        self.logging_client = mock.MagicMock(return_value=mock.create_autospec(logging_v2.LoggingServiceV2Client))
+        with mock.patch.object(bigflow.log.GCPLoggerHandler, 'create_logging_client', return_value=self.logging_client):
+            bigflow.log._LOGGING_CONFIGURED = False
+            bigflow.log.configure_logging(*args)
 
-        create_logging_client_mock.return_value = mock.create_autospec(logging_v2.LoggingServiceV2Client)
-        self.create_logging_client_mock = create_logging_client_mock
-
+    def setUp(self):
+        self.configure_mocked_logging('project-id', 'logger_name', 'workflow-id')
         self.test_logger = logging.getLogger('any.random.logger.name')
         self.root_logger = logging.getLogger('')
-        bigflow.log.configure_logging('project-id', 'logger_name', 'workflow-id')
-
-    def reset_root_logger_handlers(self):
+ 
+    def tearDown(self):
         logging.getLogger().handlers.clear()
-
-
-class LoggerTestCase(MockedLoggerHandler):
-
-    @mock.patch('bigflow.log.create_logging_client')
-    def test_should_create_correct_logging_link(self, create_logging_client_mock):
-        # given
-        create_logging_client_mock.return_value = mock.create_autospec(logging_v2.LoggingServiceV2Client)
         bigflow.log._LOGGING_CONFIGURED = False
+
+    def test_should_create_correct_logging_link(self):
+
         with self.assertLogs(level='INFO') as logs:
             # when
-            bigflow.log.configure_logging('project-id', 'another_logger_name', 'workflow_id')
+            self.configure_mocked_logging('project-id', 'another_log_name', 'workflow_id')
 
         # then
         self.assertEqual(logs.output, ['INFO:root:\n'
- '*************************LOGS LINK************************* \n'
+ '*************************LOGS LINK*************************\n'
  ' You can find this workflow logs here: '
- 'https://console.cloud.google.com/logs/query;query=logName%3D%22projects%2Fproject-id%2Flogs%2Fanother_logger_name%22%0Alabels.id%3D%22workflow_id%22 \n'
+ 'https://console.cloud.google.com/logs/query;query=logName%3D%22projects%2Fproject-id%2Flogs%2Fanother_log_name%22%0Alabels.id%3D%22workflow_id%22\n'
  '***********************************************************'])
 
-    @mock.patch('bigflow.log.create_logging_client')
-    def test_should_create_correct_logging_link_without_workflow_id(self, create_logging_client_mock):
-        # given
-        create_logging_client_mock.return_value = mock.create_autospec(logging_v2.LoggingServiceV2Client)
-        bigflow.log._LOGGING_CONFIGURED = False
+    def test_should_create_correct_logging_link_without_workflow_id(self):
+
         with self.assertLogs(level='INFO') as logs:
             # when
-            bigflow.log.configure_logging('project-id', 'another_logger_name')
+            self.configure_mocked_logging('project-id', 'another_log_name')
 
         # then
         self.assertEqual(logs.output, ['INFO:root:\n'
- '*************************LOGS LINK************************* \n'
+ '*************************LOGS LINK*************************\n'
  ' You can find this workflow logs here: '
- 'https://console.cloud.google.com/logs/query;query=logName%3D%22projects%2Fproject-id%2Flogs%2Fanother_logger_name%22%0Alabels.id%3D%22project-id%22 \n'
+ 'https://console.cloud.google.com/logs/query;query=logName%3D%22projects%2Fproject-id%2Flogs%2Fanother_log_name%22%0Alabels.id%3D%22project-id%22\n'
  '***********************************************************'])
 
     def test_should_log_unhandled_exception(self):
+
         # when
-        test_excepthook = str(Path(__file__).parent / 'test_excepthook.py')
-        process = Popen([sys.executable, test_excepthook], stdout=PIPE, stderr=PIPE)
-        stdout, stderr = process.communicate()
+        try:
+            raise Exception("oh no... i'm dying")
+        except Exception:
+            sys.excepthook(*sys.exc_info()) # simulate uncaught exception
 
         # then
-        self.assertTrue(stderr.startswith(b'Uncaught exception'))
-        self.assertTrue(stdout == b'')
+        self.logging_client.write_log_entries.assert_called_with([logging_v2.types.LogEntry(
+            log_name="projects/project-id/logs/logger_name",
+            resource={
+                "type": "global",
+                "labels": {
+                    "project_id": "project-id"
+                }
+            },
+            text_payload="Uncaught exception: oh no... i\'m dying",
+            severity='ERROR',
+            labels={"id": "workflow-id"}
+        )])
 
     def test_should_handle_warning(self):
         # when
         self.test_logger.warning("warning message")
 
         # then
-        self.root_logger.handlers[1].client.write_log_entries.assert_called_with([logging_v2.types.LogEntry(
+        self.logging_client.write_log_entries.assert_called_with([logging_v2.types.LogEntry(
             log_name="projects/project-id/logs/logger_name",
             resource={
                 "type": "global",
@@ -95,7 +97,7 @@ class LoggerTestCase(MockedLoggerHandler):
         self.test_logger.info("info message")
 
         # then
-        self.root_logger.handlers[1].client.write_log_entries.assert_called_with([logging_v2.types.LogEntry(
+        self.logging_client.write_log_entries.assert_called_with([logging_v2.types.LogEntry(
             log_name="projects/project-id/logs/logger_name",
             resource={
                 "type": "global",
@@ -126,21 +128,16 @@ class LoggerTestCase(MockedLoggerHandler):
             labels={"id": "workflow-id"}
         )])
 
-    @mock.patch('bigflow.log.create_logging_client')
-    def test_should_handle_message_without_workflow_id(self, create_logging_client_mock):
+    def test_should_handle_message_without_workflow_id(self):
         # given
-        bigflow.log._LOGGING_CONFIGURED = False
-        self.reset_root_logger_handlers()
-        create_logging_client_mock.return_value = mock.create_autospec(logging_v2.LoggingServiceV2Client)
-
-        bigflow.log.configure_logging('project-id', 'logger_name_without_id')
+        self.configure_mocked_logging('project-id', 'logger_name_without_id')
 
         # when
         logger = logging.getLogger('logger_name_without_id')
         logger.error("error message")
 
         # then
-        logger.handlers[1].client.write_log_entries.assert_called_with([logging_v2.types.LogEntry(
+        self.logging_client.write_log_entries.assert_called_with([logging_v2.types.LogEntry(
             log_name="projects/project-id/logs/logger_name_without_id",
             resource={
                 "type": "global",
