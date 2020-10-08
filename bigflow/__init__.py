@@ -28,3 +28,9 @@ try:
     __all__.append('log')
 except ImportError:
     pass
+
+try:
+    from . import log
+    __all__.append('dataproc')
+except ImportError:
+    pass

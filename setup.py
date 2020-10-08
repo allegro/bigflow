@@ -18,6 +18,8 @@ with open(os.path.join('requirements', 'bigquery_extras.txt'), 'r') as bigquery_
 with open(os.path.join('requirements', 'log_extras.txt'), 'r') as log_extras_requirements:
     log_extras_require = [l.strip() for l in log_extras_requirements.readlines()]
 
+with open(os.path.join('requirements', 'dataproc_extras.txt'), 'r') as dataproc_extras_requirements:
+    dataproc_extras_require = [l.strip() for l in dataproc_extras_requirements.readlines()]
 
 setuptools.setup(
     name="bigflow",
@@ -31,7 +33,8 @@ setuptools.setup(
     packages=setuptools.find_packages(exclude=('test', 'e2e')),
     data_files=[
         ('requirements', ['requirements/base.txt', 'requirements/monitoring_extras.txt',
-                          'requirements/bigquery_extras.txt', 'requirements/log_extras.txt']),
+                          'requirements/bigquery_extras.txt', 'requirements/log_extras.txt',
+                          'requirements/dataproc_extras.txt']),
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
@@ -41,7 +44,8 @@ setuptools.setup(
     extras_require={
         'monitoring': monitoring_extras_require,
         'bigquery': bigquery_extras_require,
-        'log': log_extras_require
+        'log': log_extras_require,
+        'dataproc': dataproc_extras_require
     },
     scripts=["scripts/bf", "scripts/bigflow"]
 )
