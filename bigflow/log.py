@@ -1,6 +1,8 @@
 import logging
 import typing
 import sys
+import uuid
+import traceback
 
 from textwrap import dedent
 
@@ -16,19 +18,17 @@ except ImportError:
 
 class GCPLoggerHandler(logging.Handler):
 
-    def __init__(self, project_id, log_name, workflow_id):
+    def __init__(self, project_id, log_name, labels):
         logging.StreamHandler.__init__(self)
 
         self.client = self.create_logging_client()
         self.project_id = project_id
-        self.workflow_id = workflow_id
         self.log_name = log_name
+        self.labels = labels
 
         self._log_entry_prototype = logging_v2.types.LogEntry(
             log_name=f"projects/{self.project_id}/logs/{self.log_name}",
-            labels={
-                "id": str(self.workflow_id or self.project_id),
-            },
+            labels=dict(labels),
             resource={
                 "type": "global",
                 "labels": {
@@ -42,14 +42,33 @@ class GCPLoggerHandler(logging.Handler):
 
     def emit(self, record: logging.LogRecord):
         cl_log_level = record.levelname  # CloudLogging list of supported log levels is a superset of python logging level names
-        message = self.format(record)
-        self.write_log_entries(message, cl_log_level)
+        json = {
+            'message': record.getMessage(),
+            'name': record.name,
+            'filename': record.filename,
+            'module': record.module,
+            'lineno': record.lineno,
+        }
 
-    def write_log_entries(self, message, severity):
+        if record.exc_info and not record.exc_text:
+            # mimic caching behaviour of `logging.Formatter.format`
+            record.exc_text = self._format_exception(record.exc_info)
+        if record.exc_text:
+            json['exc_text'] = str(record.exc_text)
+
+        if record.stack_info:
+            json['stack_info'] = str(record.stack_info)
+
+        self.write_log_entries(json, cl_log_level)
+
+    def _format_exception(self, ei):
+        etype, value, tb = ei
+        return "\n".join(traceback.format_exception(etype, value, tb))
+
+    def write_log_entries(self, json, severity):
         entry = logging_v2.types.LogEntry()
-        entry.CopyFrom(self._log_entry_prototype)
-        # FIXME: maybe 'jsonPayload' ?
-        entry.text_payload = message
+        entry.CopyFrom(self._log_entry_prototype) 
+        entry.json_payload.update(json)
         entry.severity = LogSeverity[severity]
         self.client.write_log_entries([entry])
 
@@ -70,6 +89,14 @@ class LogConfigDict(TypedDict):
     log_level: typing.Union[str, int]
 
 
+def _generate_cl_log_view_link(params: dict):
+    query = quote_plus("\n".join(
+        '{}="{}"'.format(k, v)
+        for k, v in params.items()
+    ))
+    return f"https://console.cloud.google.com/logs/query;query={query}"
+
+ 
 def init_logging(config: LogConfigDict, workflow_id=None, force=False):
 
     global _LOGGING_CONFIGURED
@@ -84,19 +111,26 @@ def init_logging(config: LogConfigDict, workflow_id=None, force=False):
     workflow_id = workflow_id or config.get('workflow_id', "unknown-workflow")
     log_name = config.get('log_name', workflow_id)
     log_level = config.get('log_level', 'INFO')
+    run_uuid = str(uuid.uuid4())
+
+    labels = {
+        'workflow_id': workflow_id,
+        'run_uuid': run_uuid,
+    }
 
     logging.basicConfig(level=log_level)
-    gcp_logger_handler = GCPLoggerHandler(gcp_project_id, log_name, workflow_id)
+    gcp_logger_handler = GCPLoggerHandler(gcp_project_id, log_name, labels)
     gcp_logger_handler.setLevel(logging.INFO)
     # TODO: add formatter?
 
-    query = quote_plus(dedent(f'''
-        logName="projects/{gcp_project_id}/logs/{log_name}"
-        labels.id="{workflow_id or gcp_project_id}"
-    ''').strip())
+    full_log_name = f"projects/{gcp_project_id}/logs/{log_name}"
+    workflow_logs_link = _generate_cl_log_view_link({'logName': full_log_name, 'labels.workflow_id': workflow_id})
+    this_execution_logs_link = _generate_cl_log_view_link({'logName': full_log_name, 'labels.run_uuid': run_uuid})
+
     logging.info(dedent(f"""
            *************************LOGS LINK*************************
-            You can find this workflow logs here: https://console.cloud.google.com/logs/query;query={query}
+           Workflow logs (all runs): {workflow_logs_link}
+           Only this run logs: {this_execution_logs_link}
            ***********************************************************"""))
     logging.getLogger(None).addHandler(gcp_logger_handler)
     sys.excepthook = _uncaught_exception_handler(logging.getLogger('uncaught_exception'))

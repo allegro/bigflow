@@ -37,7 +37,7 @@ class Workflow(object):
         definition,
         schedule_interval=DEFAULT_SCHEDULE_INTERVAL,
         start_time_factory: typing.Callable[[dt.datetime], dt.datetime] = daily_start_time,
-        log_config=None,
+        log_config: typing.Optional[log.LogConfigDict] = None,
     ):
         self.definition = self._parse_definition(definition)
         self.schedule_interval = schedule_interval
@@ -58,8 +58,8 @@ class Workflow(object):
             print("Log configuration is not provided: skip")
             return
         log.init_logging(
+            self.log_config,
             workflow_id=self.workflow_id,
-            **self.log_config,
         )
 
     def _check_logging_initialized(self):

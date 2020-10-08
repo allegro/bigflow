@@ -154,10 +154,10 @@ class WordcountJob(object):
 
 
 simple_workflow = Workflow(
-    workflow_id="test_workflow",
+    workflow_id="wordcount",
     log_config={
         'gcp_project_id': workflow_config['gcp_project_id'],
-        'log_level': 
+        'log_level': 'INFO',
     },
     definition=[WordcountJob(
         'test_workflow',
