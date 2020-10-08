@@ -45,7 +45,6 @@ deployment_config = Config(
     properties={{
        'docker_repository': 'test_repository',
        'gcp_project_id': '{project_id}',
-       'log_level': 'DEBUG',
        'dags_bucket': '{dags_bucket}'}})
 '''
 
