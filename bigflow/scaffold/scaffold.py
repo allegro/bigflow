@@ -1,6 +1,8 @@
 import os
 from pathlib import Path
 
+import bigflow
+
 from bigflow.scaffold.scaffold_templates import beam_workflow_template, beam_processing_template, \
     beam_pipeline_template, project_setup_template, basic_deployment_config_template, \
     advanced_deployment_config_template, docker_template, basic_beam_config_template, requirements_template, \
@@ -17,7 +19,12 @@ def format_templates(config):
     test_templates = {
         '__init__.py': '',
         'test_wordcount_workflow.py': test_wordcount_workflow_template.format(project_name=config['project_name'])}
-    resources_templates = {'requirements.txt': requirements_template}
+        
+    resources_templates = {
+        'requirements.txt': requirements_template.format(
+            bigflow_version=bigflow.__version__,
+        ),
+    }
     deployment_config_template = basic_deployment_config_template.format(project_id=config['projects_id'][0], dags_bucket=config['composers_bucket'][0])
 
     if not config['is_basic']:

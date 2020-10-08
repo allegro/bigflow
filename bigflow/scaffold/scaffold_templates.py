@@ -45,15 +45,18 @@ deployment_config = Config(
     properties={{
        'docker_repository': 'test_repository',
        'gcp_project_id': '{project_id}',
+       'log_level': 'DEBUG',
        'dags_bucket': '{dags_bucket}'}})
 '''
 
-advanced_deployment_config_template = '''.add_configuration(name='{env}',
-                           properties={{
-                               'gcp_project_id': '{project_id}',
-                               'dags_bucket': '{dags_bucket}'}})
+advanced_deployment_config_template = '''.add_configuration(
+                            name='{env}',
+                            properties={{
+                                'gcp_project_id': '{project_id}',
+                                'dags_bucket': '{dags_bucket}',
+                            }})
 '''
-requirements_template = f'''bigflow[bigquery]==1.0.dev33
+requirements_template = '''bigflow[bigquery,log]=={bigflow_version}
 apache-beam[gcp]==2.23.0
 '''
 
@@ -66,10 +69,14 @@ if __name__ == '__main__':
 '''
 
 beam_pipeline_template = '''import uuid
+import logging
 from pathlib import Path
 
 import apache_beam as beam
 from apache_beam.options.pipeline_options import SetupOptions, StandardOptions, WorkerOptions, GoogleCloudOptions, PipelineOptions
+
+
+logger = logging.getLogger(__name__)
 
 
 def dataflow_pipeline(gcp_project_id, staging_location, temp_location, region, machine_type, project_name):
@@ -90,18 +97,28 @@ def dataflow_pipeline(gcp_project_id, staging_location, temp_location, region, m
 
     options.view_as(SetupOptions).setup_file = resolve(find_or_create_setup_for_main_project_package(project_name, Path(__file__)))
     options.view_as(SetupOptions).requirements_file = resolve(get_resource_absolute_path('requirements.txt', Path(__file__)))
+
+    logger.info("Run beam pipeline with options %s", options)
     return beam.Pipeline(options=options)
 '''
-beam_processing_template = '''import apache_beam as beam
+beam_processing_template = '''import logging
+
+import apache_beam as beam
+
+
+logger = logging.getLogger(__name__)
 
 
 def count_words(p, target_method):
+    logger.debug("Count words with target method %s", target_method)
     return (p | beam.Create(['a', 'b', 'c', 'd', 'a', 'b', 'c', 'd'])
             | 'PairWithOne' >> beam.Map(lambda x: (x, 1))
             | 'GroupAndSum' >> beam.CombinePerKey(sum)
             | 'save' >> target_method)
 '''
-beam_workflow_template = '''from apache_beam.io import WriteToText
+beam_workflow_template = '''import logging
+
+from apache_beam.io import WriteToText
 from bigflow import Workflow
 
 from .pipeline import dataflow_pipeline
@@ -109,8 +126,14 @@ from .config import workflow_config
 from .processing import count_words
 
 
+logger = logging.getLogger(__name__)
+
+
 class WordcountJob(object):
+
     def __init__(self, id, gcp_project_id, staging_location, temp_location, region, machine_type, project_name):
+        logger.debug("Init workflow %s", id)
+
         self.id = id
         self.retry_count = 20
         self.retry_pause_sec = 100
@@ -123,6 +146,7 @@ class WordcountJob(object):
         self.project_name = project_name
 
     def run(self, runtime):
+        logger.info("Run workflow %s at %s", self.id, runtime)
         p = dataflow_pipeline(self.gcp_project_id, self.staging_location, self.temp_location, self.region,
                               self.machine_type, self.project_name)
         count_words(p, WriteToText("gs://{}/beam_wordcount".format(self.temp_location)))
@@ -131,6 +155,10 @@ class WordcountJob(object):
 
 simple_workflow = Workflow(
     workflow_id="test_workflow",
+    log_config={
+        'gcp_project_id': workflow_config['gcp_project_id'],
+        'log_level': 
+    },
     definition=[WordcountJob(
         'test_workflow',
         gcp_project_id=workflow_config['gcp_project_id'],
