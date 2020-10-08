@@ -48,28 +48,34 @@ class Workflow(object):
         self.log_config = log_config
 
     def init_logging(self):
-        """Initialize python logging based on the configuration attached to the workflow.
-        This method is automatically called when workflow is executed via "bf run" cmd-line tool.
-        """
+        """Initialize python logging based on the configuration attached to the workflow. """
+
+        if self._log_initialized:
+            return
+        self._log_initialized = True
 
         if not self.log_config:
             print("Log configuration is not provided: skip")
             return
-        if self._log_initialized:
-            return
-        self._log_initialized = True
         log.init_logging(
             workflow_id=self.workflow_id,
             **self.log_config,
         )
 
+    def _check_logging_initialized(self):
+        if self.log_config and not self._log_initialized:
+            import warnings
+            warnings.warn(UserWarning("Log configuration is attached to the Workflow, but method `.init_logging() is not called"))
+
     def run(self, runtime: Optional[str] = None):
+        self._check_logging_initialized()
         if runtime is None:
             runtime = self._auto_runtime()
         for job in self.build_sequential_order():
             job.run(runtime=runtime)
 
     def run_job(self, job_id, runtime: Optional[str] = None):
+        self._check_logging_initialized()
         if runtime is None:
             runtime = self._auto_runtime()
         for job_wrapper in self.build_sequential_order():

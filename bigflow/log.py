@@ -63,13 +63,14 @@ def _uncaught_exception_handler(logger):
 _LOGGING_CONFIGURED = False
 
 
+# TODO: move to some shared config module?
 class LogConfigDict(TypedDict):
     gcp_project_id: str
     log_name: str
-    level: typing.Union[str, int]
+    log_level: typing.Union[str, int]
 
 
-def init_logging(config: LogConfigDict, force=False):
+def init_logging(config: LogConfigDict, workflow_id=None, force=False):
 
     global _LOGGING_CONFIGURED
     if _LOGGING_CONFIGURED and not force:
@@ -80,7 +81,7 @@ def init_logging(config: LogConfigDict, force=False):
     _LOGGING_CONFIGURED = True
 
     gcp_project_id = config['gcp_project_id']
-    workflow_id = config.get('workflow_id', "unknown-workflow")
+    workflow_id = workflow_id or config.get('workflow_id', "unknown-workflow")
     log_name = config.get('log_name', workflow_id)
     log_level = config.get('log_level', 'INFO')
 
