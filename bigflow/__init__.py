@@ -2,6 +2,8 @@ from . import resources
 from .workflow import Workflow, Definition
 from .configuration import Config
 
+from bigflow._version import __version__
+
 
 __all__ = [
     # core
