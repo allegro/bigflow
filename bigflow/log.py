@@ -54,6 +54,7 @@ class GCPLoggerHandler(logging.Handler):
         }
 
         # mimic caching behaviour of `logging.Formatter.format`
+        # render/cache exception info in the same way as default `logging.Formatter`
         if record.exc_info and not record.exc_text:
             record.exc_text = self._format_exception(record.exc_info)
         if record.exc_text:

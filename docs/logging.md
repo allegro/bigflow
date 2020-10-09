@@ -2,7 +2,7 @@
 
 
 With Bigflow you can easily configure Python logging to send all log messages to the Cloud Logging (Stackdriver).
-Cloud Logging allows you to filter logs by project id / log name / workflow id and other fields available at Cloud Logging.
+Cloud Logging allows you to filter logs by project id / log name / workflow id.
 
 To use logging, you have to install `bigflow` with `log` module.
 
