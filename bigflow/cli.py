@@ -14,6 +14,8 @@ import bigflow as bf
 from typing import Optional
 from glob import glob1
 
+import bigflow
+
 from bigflow import Config
 from bigflow.deploy import deploy_dags_folder, deploy_docker_image, load_image_from_tar
 from bigflow.resources import find_file
@@ -112,6 +114,19 @@ def set_configuration_env(env):
         print(f"bf_env is : {os.environ.get('bf_env', None)}")
 
 
+def _init_workflow_log(workflow: bf.Workflow):
+    if not workflow.log_config:
+        return
+
+    try:
+        import bigflow.log
+    except ImportError:
+        # `log` extras is not installed?
+        pass
+    else:
+        bigflow.log.init_workflow_logging(workflow)
+
+
 def execute_job(root_package: Path, workflow_id: str, job_id: str, runtime=None):
     """
     Executes the job with the `workflow_id`, with job id `job_id`
@@ -119,7 +134,7 @@ def execute_job(root_package: Path, workflow_id: str, job_id: str, runtime=None)
     @param runtime: str determine partition that will be used for write operations.
     """
     w = find_workflow(root_package, workflow_id)
-    w.init_logging()
+    _init_workflow_log(w)
     w.run_job(job_id, runtime)
 
 
@@ -130,7 +145,7 @@ def execute_workflow(root_package: Path, workflow_id: str, runtime=None):
     @param runtime: str determine partition that will be used for write operations.
     """
     w = find_workflow(root_package, workflow_id)
-    w.init_logging()
+    _init_workflow_log(w)
     w.run(runtime)
 
 

@@ -1,10 +1,15 @@
 # Logging
 
 
-With Bigflow you can easily configure Python logging to send all messages the Cloud Logging (Stackdriver).
-Cloud Logging allows you to filter logs by project id / log name / workflow id and other fields.
+With Bigflow you can easily configure Python logging to send all log messages to the Cloud Logging (Stackdriver).
+Cloud Logging allows you to filter logs by project id / log name / workflow id and other fields available at Cloud Logging.
 
-To use logging, you have to install `bigflow` with `log` module - `bigflow[log]`.
+To use logging, you have to install `bigflow` with `log` module.
+
+```bash
+pip install bigflow[log]
+```
+
 Then you need to pass logging configuration to your `Workflow`.
 
 ```python
@@ -22,11 +27,12 @@ workflow = bigflow.Workflow(
 )
 ```
 
-BigFlow will automatically configure `logging` when workflow is executed with `bigflow run` or `bigflow deploy` commands.
-If you want to run workflow manually from your custom script, then you need to call method on `Workflow` object manually:
+When `bigflow[log]` is installed, framework configures logging during execution of `bigflow run` or `bigflow deploy` commands.
+If you want to run workflow manually from your custom script, then you need to call function `init_workflow_logging`:
 
 ```python
 import bigflow
+import bigflow.log
 
 gcp_project_id = 'some_project_id'
 
@@ -40,12 +46,13 @@ workflow = bigflow.Workflow(
 )
 
 def run_manually():
-    workflow.init_logging()
+    bigflow.log.init_workflow_logging(work)
+
     workflow.run("2018-01-01")
     workflow.run("2018-01-02")
 ```
 
-In order to send logs into the Cloud Logging you should the standard python `logging` module.
+In order to send logs into the Cloud Logging you should use the standard python logging module.
 
 ```python
 import logging
@@ -62,7 +69,7 @@ Also all unhandled exceptions are redirected to Cloud Logging too:
 
 ```python
 # ...
-workflow.init_logging()
+bigflow.log.init_workflow_logging(workflow)
 raise ValueError("message")
 ```
 The code above contains an unhandled `ValueError` exception, which will be also available at Cloud Logging.

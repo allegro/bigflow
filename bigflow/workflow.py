@@ -4,7 +4,7 @@ import typing
 from collections import OrderedDict
 from typing import Optional
 
-from bigflow import log
+import bigflow
 from bigflow.commons import now
 
 
@@ -37,45 +37,21 @@ class Workflow(object):
         definition,
         schedule_interval=DEFAULT_SCHEDULE_INTERVAL,
         start_time_factory: typing.Callable[[dt.datetime], dt.datetime] = daily_start_time,
-        log_config: typing.Optional[log.LogConfigDict] = None,
+        log_config: typing.Optional['bigflow.log.LogConfigDict'] = None,
     ):
         self.definition = self._parse_definition(definition)
         self.schedule_interval = schedule_interval
         self.workflow_id = workflow_id
         self.start_time_factory = start_time_factory
-
-        self._log_initialized = False
         self.log_config = log_config
 
-    def init_logging(self):
-        """Initialize python logging based on the configuration attached to the workflow. """
-
-        if self._log_initialized:
-            return
-        self._log_initialized = True
-
-        if not self.log_config:
-            print("Log configuration is not provided: skip")
-            return
-        log.init_logging(
-            self.log_config,
-            workflow_id=self.workflow_id,
-        )
-
-    def _check_logging_initialized(self):
-        if self.log_config and not self._log_initialized:
-            import warnings
-            warnings.warn(UserWarning("Log configuration is attached to the Workflow, but method `.init_logging() is not called"))
-
     def run(self, runtime: Optional[str] = None):
-        self._check_logging_initialized()
         if runtime is None:
             runtime = self._auto_runtime()
         for job in self.build_sequential_order():
             job.run(runtime=runtime)
 
     def run_job(self, job_id, runtime: Optional[str] = None):
-        self._check_logging_initialized()
         if runtime is None:
             runtime = self._auto_runtime()
         for job_wrapper in self.build_sequential_order():

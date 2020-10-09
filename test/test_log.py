@@ -43,16 +43,6 @@ class LoggerTestCase(TestCase):
         self.assertIn("https://console.cloud.google.com/logs/query;query=", out)
         self.assertIn("labels.workflow_id%3D%22workflow_id%22", out)
 
-    def test_should_create_correct_logging_link_without_workflow_id(self):
-        with self.assertLogs(level='INFO') as logs:
-            # when
-            self.configure_mocked_logging('project-id', 'another_log_name')
-
-        # then
-        out = "\n".join(logs.output)
-        self.assertIn("LOGS LINK", out)
-        self.assertIn("https://console.cloud.google.com/logs/query;query=", out)
-
     def _assert_single_log_event(self, message_re, severity=None, labels=None):
         self.assertEqual(1, self.logging_client.write_log_entries.call_count)
         calls = self.logging_client.write_log_entries.call_args_list[0][0]

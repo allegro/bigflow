@@ -19,7 +19,7 @@ except ImportError:
 class GCPLoggerHandler(logging.Handler):
 
     def __init__(self, project_id, log_name, labels):
-        logging.StreamHandler.__init__(self)
+        super().__init__()
 
         self.client = self.create_logging_client()
         self.project_id = project_id
@@ -41,7 +41,10 @@ class GCPLoggerHandler(logging.Handler):
         return logging_v2.LoggingServiceV2Client()
 
     def emit(self, record: logging.LogRecord):
-        cl_log_level = record.levelname  # CloudLogging list of supported log levels is a superset of python logging level names
+
+        # CloudLogging list of supported log levels is a superset of python logging level names
+        cl_log_level = record.levelname
+       
         json = {
             'message': record.getMessage(),
             'name': record.name,
@@ -50,8 +53,8 @@ class GCPLoggerHandler(logging.Handler):
             'lineno': record.lineno,
         }
 
+        # mimic caching behaviour of `logging.Formatter.format`
         if record.exc_info and not record.exc_text:
-            # mimic caching behaviour of `logging.Formatter.format`
             record.exc_text = self._format_exception(record.exc_info)
         if record.exc_text:
             json['exc_text'] = str(record.exc_text)
@@ -61,8 +64,8 @@ class GCPLoggerHandler(logging.Handler):
 
         self.write_log_entries(json, cl_log_level)
 
-    def _format_exception(self, ei):
-        etype, value, tb = ei
+    def _format_exception(self, exc_info):
+        etype, value, tb = exc_info
         return "\n".join(traceback.format_exception(etype, value, tb))
 
     def write_log_entries(self, json, severity):
@@ -96,19 +99,24 @@ def _generate_cl_log_view_link(params: dict):
     ))
     return f"https://console.cloud.google.com/logs/query;query={query}"
 
+
+def init_workflow_logging(workflow: 'bigflow.Workflow'):
+    if workflow.log_config:
+        init_logging(workflow.log_config, workflow.workflow_id)
+    else:
+        print("Log config is not provided for the Workflow")
+
  
-def init_logging(config: LogConfigDict, workflow_id=None, force=False):
+def init_logging(config: LogConfigDict, workflow_id: str):
 
     global _LOGGING_CONFIGURED
-    if _LOGGING_CONFIGURED and not force:
+    if _LOGGING_CONFIGURED:
         import warnings
         warnings.warn(UserWarning("bigflow.log is is already configured - skip"))
         return
-
     _LOGGING_CONFIGURED = True
 
     gcp_project_id = config['gcp_project_id']
-    workflow_id = workflow_id or config.get('workflow_id', "unknown-workflow")
     log_name = config.get('log_name', workflow_id)
     log_level = config.get('log_level', 'INFO')
     run_uuid = str(uuid.uuid4())
