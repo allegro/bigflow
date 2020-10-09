@@ -1,58 +1,75 @@
 # Logging
 
-Using Bigflow, you can easily add a handler to your root logger that will send all logging calls to the Cloud Logging.
-In the CL, you can filter logs per project id/logger name and workflow id. 
 
-## Getting started
-To use logging, you have to install `bigflow` with `logger` module - `bigflow[log]`.
-To create a logger with the CL handler, you have to use `configure_logging` method.
+With Bigflow you can easily configure Python logging to send all log messages to the Cloud Logging (Stackdriver).
+Cloud Logging allows you to filter logs by project id / log name / workflow id.
 
-```python
-from bigflow.log import BigflowLogging
-project_id = 'some_project'
-logger_name = __name__
+To use logging, you have to install `bigflow` with `log` module.
 
-
-BigflowLogging.configure_logging(project_id, logger_name)
+```bash
+pip install bigflow[log]
 ```
 
-or, if you prefer to filter CL logs by workflow id:
- 
+Then you need to pass logging configuration to your `Workflow`.
+
 ```python
-from bigflow.log import BigflowLogging
-project_id = 'some_project'
-logger_name = __name__
-workflow_id = 'some-workflow'
+import bigflow
 
+gcp_project_id = 'some_project_id'
 
-BigflowLogging.configure_logging(project_id, logger_name, workflow_id)
+workflow = bigflow.Workflow(
+    name='workflow_name',
+    log_config={
+        'project_id': gcp_project_id,
+        'level': 'DEBUG',
+    },
+    # ...
+)
 ```
-After calling the `configure_logging` method, your calls to any logger will be send to CL.
 
-Also in a console, you should see a
-link to the CL query. In the case of the code above, the link should look like this `https://console.cloud.google.com/logs/query;query=logName%3D%22projects%2Fsome-project%2Flogs%some-logger%22%0Alabels.id%3D%some-workflow%22\`
+When `bigflow[log]` is installed, framework configures logging during execution of `bigflow run` or `bigflow deploy` commands.
+If you want to run workflow manually from your custom script, then you need to call function `init_workflow_logging`:
 
-To send logs to the CL, you use the standard python `logging` module.
+```python
+import bigflow
+import bigflow.log
+
+gcp_project_id = 'some_project_id'
+
+workflow = bigflow.Workflow(
+    name='workflow_name',
+    log_config={
+        'project_id': gcp_project_id,
+        'level': 'DEBUG',
+    },
+    # ...
+)
+
+def run_manually():
+    bigflow.log.init_workflow_logging(work)
+
+    workflow.run("2018-01-01")
+    workflow.run("2018-01-02")
+```
+
+In order to send logs into the Cloud Logging you should use the standard python logging module.
 
 ```python
 import logging
 
-l = logging.getLogger(__name__)
-l.info("some info")
-l.warning("some warn")
-l.error("some error")
+logger = logging.getLogger(__name__)
+
+logger.info("some info")
+logger.warning("some warn")
+logger.error("some error")
 ```
 All three logs should be visible now in CL.
 
-## Unhandled Exceptions
+Also all unhandled exceptions are redirected to Cloud Logging too:
+
 ```python
-from bigflow.log import BigflowLogging
-project_id = 'some_project'
-logger_name ='some-logger'
-
-
-BigflowLogging.configure_logging(project_id, logger_name)
-
-raise ValueError()
+# ...
+bigflow.log.init_workflow_logging(workflow)
+raise ValueError("message")
 ```
-The code above contains an unhandled `ValueError` exception. The logging mechanism also catches such unhandled exceptions in your app and sends them to the CL.
+The code above contains an unhandled `ValueError` exception, which will be also available at Cloud Logging.
