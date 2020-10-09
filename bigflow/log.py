@@ -168,5 +168,5 @@ def init_logging(config: LogConfigDict, workflow_id: str):
            Workflow logs (all runs): {workflow_logs_link}
            Only this run logs: {this_execution_logs_link}
            ***********************************************************"""))
-    logging.getLogger(None).addHandler(gcp_logger_handler)
+    logging.getLogger().addHandler(gcp_logger_handler)
     sys.excepthook = _uncaught_exception_handler(logging.getLogger('uncaught_exception'))
