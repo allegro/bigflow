@@ -1,149 +1,144 @@
+import base64
+import datetime
+import functools
 import inspect
+import io
 import os
+import pathlib
+import pickle
 import random
+import re
 import string
+import subprocess
+import textwrap
 import time
 import typing
-import re
-import subprocess
-from datetime import datetime
-from io import BytesIO
-from pathlib import Path
 
-from bigflow.resources import resolve, read_requirements, find_or_create_setup_for_main_project_package
-from google.cloud import storage, dataproc_v1
+from google.cloud import dataproc_v1, storage
 
-from .resources import create_tmp_file
+import bigflow.configuration
+import bigflow.resources
 
-DEFAULT_REQUIREMENTS = 'bigflow[dataproc,log,bigquery]==1.0.dev67'
+__all__ = [
+    'PySparkJob',
+]
+
+DEFAULT_REQUIREMENTS = [ 
+    'bigflow[dataproc,log,bigquery]==1.0.dev67',
+]
 
 
-def submit_dataproc_job(
-        project_id: str,
-        driver_callable: typing.Callable,
-        staging_bucket_id: str,
-        driver_arguments: typing.Optional[dict] = None,
-        requirements_file: typing.Optional[Path] = None,
-        region: typing.Optional[str] = 'europe-west1',
-        jar_files_uris: typing.Optional[typing.Iterable[str]] = ('gs://spark-lib/bigquery/spark-bigquery-latest_2.12.jar', ),
-        worker_num_instances: typing.Optional[int] = 2,
-        worker_machine_type: typing.Optional[str] = 'n1-standard-1'):
-    if driver_arguments is None:
-        driver_arguments = {}
-    if requirements_file is None:
-        requirements_file = create_tmp_file(DEFAULT_REQUIREMENTS)
+def _submit_dataproc_job(
+    job_id,
+    driver_callable,
+    requirements,
+    setup_file,
+    bucket_id,
+    gcp_project_id,
+    gcp_region,
+    env,
+    driver_filename='driver.py',
+    jar_file_uris: typing.Optional[typing.Iterable[str]] = ('gs://spark-lib/bigquery/spark-bigquery-latest_2.12.jar', ),
+    worker_num_instances: typing.Optional[int] = 2,
+    worker_machine_type: typing.Optional[str] = 'n1-standard-1',
+):
+    job_random_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=10))
+    job_timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S")  # FIXME: use 'runtime' ?
+    job_internal_id = f"{job_id}-{env or 'none'}-{job_timestamp}-{job_random_suffix}"
 
-    env = 'dev'  # TODO config.resolve
-    driver_filename = 'driver.py'
-    project = driver_callable.__module__.split('.')[0]
-
-    job_internal_id = datetime.now().strftime('{}-{}-%Y-%m-%d-%H%M%S-{}'.format(
-        project, env, ''.join(random.choices(string.ascii_lowercase + string.digits, k=10))))
-
-    client_options = {'api_endpoint': region + '-dataproc.googleapis.com:443'}
-
-    client = storage.Client(project=project_id)
-    bucket = client.get_bucket(staging_bucket_id)
-
-    egg_path = build_and_upload_egg(bucket, job_internal_id, project)
-
-    driver_path = generate_and_upload_driver(
-        driver_arguments,
-        bucket,
-        driver_callable,
-        driver_filename,
-        job_internal_id)
-
-    dataproc_cluster_client = dataproc_v1.ClusterControllerClient(
-        client_options=client_options)
-
-    cluster_id = job_internal_id
-
-    create_cluster(
-        dataproc_cluster_client, project_id, region,
-        cluster_id, read_requirements(Path(requirements_file)),
-        worker_num_instances, worker_machine_type)
+    client_options = {'api_endpoint': f"{gcp_region}-dataproc.googleapis.com:443"}
+    storage_client = storage.Client(project=gcp_project_id)
+    dataproc_cluster_client = dataproc_v1.ClusterControllerClient(client_options=client_options)
     dataproc_job_client = dataproc_v1.JobControllerClient(client_options=client_options)
-    job_id = submit_pyspark_job(
-        dataproc_job_client, project_id, region, cluster_id,
-        staging_bucket_id, driver_path, egg_path, jar_files_uris)
+
+    bucket = storage_client.get_bucket(bucket_id)
+    egg_local_path = _build_project_egg(setup_file)
+    egg_path = _upload_egg(egg_local_path, bucket, job_internal_id)
+
+    driver_path = f"{job_internal_id}/{driver_filename}"
+    generate_and_upload_driver(driver_callable, bucket, driver_path)
+
+    cluster_name = _create_cluster(
+        dataproc_cluster_client=dataproc_cluster_client,
+        project_id=gcp_project_id,
+        region=gcp_region,
+        cluster_name=job_internal_id,
+        requirements=requirements,
+        worker_machine_type=worker_machine_type,
+        worker_num_instances=worker_num_instances,
+    )
+
     try:
-        wait_for_job(dataproc_job_client, project_id, region, job_id)
+        job = _submit_single_pyspark_job(
+            dataproc_job_client=dataproc_job_client,
+            project_id=gcp_project_id,
+            region=gcp_region,
+            cluster_name=cluster_name,
+            bucket_id=bucket_id,
+            driver_path=driver_path,
+            egg_path=egg_path,
+            jar_file_uris=jar_file_uris,
+        )
+        _wait_for_job_to_finish(dataproc_job_client, gcp_project_id, gcp_region, job)
     finally:
-        print_log(client, dataproc_job_client, project_id, region, job_id)
-        delete_cluster(dataproc_cluster_client, project_id, region, cluster_id)
+        _print_job_output_log(storage_client, dataproc_job_client, gcp_project_id, gcp_region, job)
+        _delete_cluster(dataproc_cluster_client, gcp_project_id, gcp_region, cluster_name)
+
+def generate_driver_script(callable):
+    pickled = pickle.dumps(callable)
+    return textwrap.dedent(f"""
+            # Generated by `bigflow.dataproc.generate_and_upload_driver`
+            import pickle, base64
+            # unpickle'n'call {callable!r}
+            data = {base64.b85encode(pickled)!r}
+            call = pickle.loads(base64.b85decode(data))
+            call()
+    """)
 
 
-def generate_and_upload_driver(arguments, bucket, driver, driver_filename, job_internal_id):
-    driver_path = '{}/{}'.format(job_internal_id, driver_filename)
+def generate_and_upload_driver(callable, bucket, driver_path):
     driver_blob = bucket.blob(driver_path)
-    driver_blob.upload_from_string(
-        content_type='application/octet-stream', data='''from {} import {}
-{}({})'''.format(
-            driver.__module__,
-            driver.__name__,
-            driver.__name__,
-            ', '.join(list(map(lambda x: x[0] + '=' + repr(x[1]), arguments.items())))))
-    return driver_path
+    script = generate_driver_script(callable)
+    driver_blob.upload_from_string(content_type='application/octet-stream', data=script)
 
 
-def build_and_upload_egg(bucket, job_internal_id, project):
-    egg_local_path = build_egg(project)
-    egg_path = '{}/{}'.format(job_internal_id, Path(egg_local_path).name)
+def _upload_egg(egg_local_path, bucket, job_internal_id):
+    egg_path = '{}/{}'.format(job_internal_id, pathlib.Path(egg_local_path).name)
     egg_blob = bucket.blob(egg_path)
     egg_blob.upload_from_filename(filename=egg_local_path, content_type='application/octet-stream')
     return egg_path
 
 
-def submit_pyspark_job(dataproc, project_id, region, cluster_name, bucket, driver_path, egg_path, jar_file_uris):
-    job_details = {
-        "placement": {"cluster_name": cluster_name},
-        "pyspark_job": {
-            "main_python_file_uri": "gs://{}/{}".format(bucket, driver_path),
-            'jar_file_uris': jar_file_uris,
-            'python_file_uris': ['gs://{}/{}'.format(bucket, egg_path)]
-        },
-    }
-
-    result = dataproc.submit_job(
-        request={"project_id": project_id, "region": region, "job": job_details}
-    )
-    job_id = result.reference.job_id
-    print("Job {} submitted.".format(job_id))
-    print("https://console.cloud.google.com/dataproc/jobs/{}?project={}&region={}".format(
-        job_id, project_id, region
-    ))
-    return job_id
-
-
-def wait_for_job(dataproc, project_id, region, job_id):
-    print("Waiting for job to finish...")
+def _wait_for_job_to_finish(dataproc_cluster_client, project_id, region, job_id):
+    print("Waiting for job to finish...", end="")
     while True:
-        job = get_job(dataproc, project_id, region, job_id)
-        if job.status.state == job.status.State.ERROR:
-            raise Exception(job.status.details)
-        elif job.status.state == job.status.State.DONE:
-            print("Job finished.")
+        job = dataproc_cluster_client.get_job(project_id=project_id, region=region, job_id=job_id)
+        state = job.status.state
+
+        if state == dataproc_v1.JobStatus.State.DONE:
+            print("\nJob finished!")
             return job
+        elif state == dataproc_v1.JobStatus.State.ERROR:
+            raise Exception(job.status.details)
+        elif state == dataproc_v1.JobStatus.State.CANCELLED:
+            raise Exception("Job cancelled")
+
         time.sleep(5)
 
 
-def get_job(dataproc, project_id, region, job_id):
-    return dataproc.get_job(request={"project_id": project_id, "region": region, "job_id": job_id})
-
-
-def print_log(storage_client, dataproc, project_id, region, job_id):
-    job = get_job(dataproc, project_id, region, job_id)
-    log_buffer = BytesIO()
+def _print_job_output_log(storage_client, dataproc_cluster_client, project_id, region, job_id):
+    job = dataproc_cluster_client.get_job(project_id=project_id, region=region, job_id=job_id)
+    log_buffer = io.BytesIO()
+    # FIXME(anjensan): Download all logs
     storage_client.download_blob_to_file(job.driver_output_resource_uri + ".000000000", log_buffer)
     print("Job log:")
     print(log_buffer.getvalue().decode())
 
 
-def create_cluster(dataproc_cluster_client, project_id, region, cluster_name, requirements, worker_num_instances, worker_machine_type):
-    packages = ' '.join([i for i in requirements if i])
+def _create_cluster(dataproc_cluster_client, project_id, region, cluster_name, requirements, worker_num_instances, worker_machine_type):
+    packages = " ".join(filter(None, requirements))
     cluster_data = {
-        "project_id": project_id,
+        # "project_id": project_id,
         "cluster_name": cluster_name,
         "config": {
             "master_config": {
@@ -168,42 +163,141 @@ def create_cluster(dataproc_cluster_client, project_id, region, cluster_name, re
         },
     }
 
-    cluster = dataproc_cluster_client.create_cluster(
-        request={"project_id": project_id, "region": region, "cluster": cluster_data})
+    cluster_future = dataproc_cluster_client.create_cluster(
+        project_id=project_id,
+        region=region,
+        cluster=cluster_data,
+    )
 
-    cluster.add_done_callback(callback)
-    global waiting_callback
-    waiting_callback = True
-    wait_for_cluster_creation()
-
-
-def callback(operation_future):
-    global waiting_callback
-    waiting_callback = False
-
-
-def wait_for_cluster_creation():
     print("Waiting for cluster creation...")
-    while True:
-        time.sleep(5)
-        if not waiting_callback:
-            print("Cluster created.")
-            break
+    cluster_future.result()
+
+    print("Cluster created.")
+    return cluster_name
 
 
-def delete_cluster(dataproc_cluster_client, project_id, region, cluster):
-    print("Deleting cluster.")
-    return dataproc_cluster_client.delete_cluster(
-        request={"project_id": project_id, "region": region, "cluster_name": cluster})
+def _submit_single_pyspark_job(dataproc_job_client, project_id, region, cluster_name, bucket_id, driver_path, egg_path, jar_file_uris):
+    result = dataproc_job_client.submit_job(
+        project_id=project_id,
+        region=region,
+        job={
+            "placement": {
+                "cluster_name": cluster_name,
+            },
+            "pyspark_job": {
+                'main_python_file_uri': f"gs://{bucket_id}/{driver_path}",
+                'jar_file_uris': jar_file_uris,
+                'python_file_uris': [f"gs://{bucket_id}/{egg_path}"],
+            },
+        },
+    )
+
+    job_id = result.reference.job_id
+    print("Job {} submitted.".format(job_id))
+    print(f"https://console.cloud.google.com/dataproc/jobs/{job_id}?project={project_id}&region={region}")
+
+    return job_id
 
 
-def build_egg(project):
-    caller_path = os.path.abspath((inspect.stack()[1])[1])
-    setup_file = resolve(find_or_create_setup_for_main_project_package(project, Path(caller_path)))
-    saved_current_directory = os.getcwd()
-    try:
-        os.chdir(os.path.dirname(setup_file))
-        output = subprocess.check_output(['python', setup_file, 'bdist_egg'])
-        return os.path.abspath(re.search('creating \'([^\']*)\'', output.decode()).group(1))
-    finally:
-        os.chdir(saved_current_directory)
+def _delete_cluster(dataproc_cluster_client, project_id, region, cluster):
+    print("Deleting cluster...")
+    dataproc_cluster_client.delete_cluster(
+        project_id=project_id,
+        region=region,
+        cluster_name=cluster,
+    )
+    print("Cluster was deleted.")
+
+
+def _capture_caller_path(deep=1):
+    return os.path.abspath(inspect.stack()[deep + 1].filename)
+
+
+def _capture_caller_topmodule(deep=1):
+    f = inspect.stack()[deep + 1].frame
+    module = f.f_globals['__name__']
+    return module.split(".", 2)[0]
+
+
+def _build_project_egg(setup_file):
+    cwd = pathlib.Path(setup_file).parent.resolve()
+    output = subprocess.check_output(['python', setup_file, 'bdist_egg'], cwd=str(cwd))
+    print(output.decode())  # FIXME(anjensan): Add 'tee output stream' (prefixed?)
+    egg_filename = re.search('creating \'([^\']*)\'', output.decode()).group(1)
+    return str(cwd / egg_filename)
+
+
+class PySparkJob:
+
+    def __init__(
+        self,
+        id,
+        driver_callable: typing.Callable,
+        bucket_id: str,
+        gcp_project_id: str,
+        gcp_region: str,
+        driver_arguments: typing.Optional[dict] = None,
+        pip_packages: typing.Union[typing.Iterable[str], pathlib.Path] = (),
+        jar_file_uris: typing.Iterable[str] = ('gs://spark-lib/bigquery/spark-bigquery-latest_2.12.jar',),
+        worker_num_instances: int = 2,
+        worker_machine_type: str = 'n1-standard-1',
+        env: str = '',
+        setup_file: str = '',
+    ):
+        self.id = id
+
+        self.driver_filename = 'driver.py'
+        self.driver_callable = driver_callable
+        self.driver_arguments = driver_arguments or {}
+
+        self.bucket_id = bucket_id
+        self.gcp_project_id = gcp_project_id
+        self.gcp_region = gcp_region
+
+        self.env = env or bigflow.configuration.current_env() or 'none'
+
+        self.jar_file_uris = jar_file_uris
+        self.worker_machine_type = worker_machine_type
+        self.worker_num_instances = worker_num_instances
+
+        if isinstance(pip_packages, pathlib.Path):
+            self.pip_packages = bigflow.resources.read_requirements(pip_packages)
+        elif pip_packages:
+            self.pip_packages = pip_packages
+        else:
+            self.pip_packages = DEFAULT_REQUIREMENTS
+
+        if setup_file:
+            self.setup_file = setup_file
+        else:
+            self.setup_file = None
+            self._project = _capture_caller_topmodule()
+            self._any_file_inside_project = _capture_caller_path(1)
+
+    def _ensure_has_setup_file(self):
+        if self.setup_file:
+            return
+        self.setup_file = bigflow.resources.find_or_create_setup_for_main_project_package(
+            self._project,
+            self._any_file_inside_project)
+
+    def run(self, runtime):
+        self._ensure_has_setup_file()
+
+        arguments = dict(self.driver_arguments)
+        arguments['runtime'] = runtime
+        driver_callable = functools.partial(self.driver_callable, **arguments)
+
+        _submit_dataproc_job(
+            job_id=self.id.lower(),
+            driver_callable=driver_callable,
+            requirements=self.pip_packages,
+            bucket_id=self.bucket_id,
+            gcp_project_id=self.gcp_project_id,
+            gcp_region=self.gcp_region,
+            env=self.env,
+            setup_file=self.setup_file,
+            jar_file_uris=self.jar_file_uris,
+            worker_machine_type=self.worker_machine_type,
+            worker_num_instances=self.worker_num_instances,
+        )
