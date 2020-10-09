@@ -54,15 +54,31 @@ class GCPLoggerHandler(logging.StreamHandler):
         self.client.write_log_entries([entry])
 
     def get_gcp_logs_message(self):
+        pod_errors = [("severity", ">=", "WARNING"), ('"Error:"'), ("resource.type", "=", '"k8s_pod"')]
+        container_errors = [("severity", ">=", "WARNING"), ("resource.type", "=", '"k8s_container"'), ("resource.labels.container_name", "=", '"base"')]
+        bigflow_logs = [("logName", "=", f'"projects/{self.project_id}/logs/{self.logger_name}"'), ("labels.workflow_id", "=", f'"{self.workflow_id}"')]
+        dataflow_errors = [("resource.type", "=", '"dataflow_step"'), ("severity", ">=", "WARNING"), ("log_name", "=", f'"projects/{self.project_id}/logs/dataflow.googleapis.com%2Fjob-message"')]
+        params = [pod_errors, container_errors, bigflow_logs, dataflow_errors]
+
+        z = []
+        for e in params:
+            w = ''
+            for i in e:
+                s = ''.join(i)
+                s += '\n'
+                w += ''.join(s)
+            z.append(f'({w})')
+
+        zz = '\nOR\n'.join(z)
+        zz += f'\nAND\nresource.labels.project_id="{self.project_id}"'
+        a = 2
         return f'\n'\
                f'*************************LOGS LINK************************* \n ' \
-               f'You can find this workflow logs here: https://console.cloud.google.com/logs/query;query={prepare_gcp_logs_link(self.project_id, self.workflow_id, self.logger_name)} \n' \
+               f'You can find this workflow logs here: {prepare_gcp_logs_link(quote_plus(zz))} \n' \
                f'***********************************************************'
 
-
-def prepare_gcp_logs_link(project_id, workflow_id, logger_name):
-    return quote_plus(f'''logName="projects/{project_id}/logs/{logger_name}"
-    labels.id="{workflow_id or project_id}"''')
+def prepare_gcp_logs_link(query: str):
+    return f'"https://console.cloud.google.com/logs/query;query={query}"'
 
 
 def handle_uncaught_exception(logger):
