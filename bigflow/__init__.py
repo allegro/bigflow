@@ -30,7 +30,7 @@ except ImportError:
     pass
 
 try:
-    from . import log
+    from . import dataproc
     __all__.append('dataproc')
 except ImportError:
     pass
