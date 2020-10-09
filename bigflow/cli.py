@@ -230,8 +230,15 @@ def _parse_args(project_name: Optional[str], args) -> Namespace:
     _create_project_version_parser(subparsers)
     _create_release_parser(subparsers)
     _create_start_project_parser(subparsers)
+    _create_logs_parser(subparsers)
 
     return parser.parse_args(args)
+
+def _create_logs_parser(subparsers):
+    parser = subparsers.add_parser('logs', description='Returns link leading to logs in GCP Logging.')
+    parser.add_argument('-w', '--workflow',
+                        type=str,
+                        help="Pass a Workflow Id.")
 
 
 def _create_start_project_parser(subparsers):
@@ -627,6 +634,19 @@ def _cli_release(args):
     release(args.ssh_identity_file)
 
 
+def _cli_logs(args):
+    workflow = args.workflow
+    print('https://')
+
+
+def _check_if_log_module_is_installed():
+    try:
+        import bigflow.log
+        return True
+    except ImportError:
+        raise Exception("bigflow.log module not found.")
+
+
 def cli(raw_args) -> None:
     project_name = read_project_name_from_setup()
     parsed_args = _parse_args(project_name, raw_args)
@@ -657,5 +677,8 @@ def cli(raw_args) -> None:
         _cli_project_version(parsed_args)
     elif operation == 'release':
         _cli_release(parsed_args)
+    elif operation == 'logs':
+        _check_if_log_module_is_installed()
+        _cli_logs(parsed_args)
     else:
         raise ValueError(f'Operation unknown - {operation}')

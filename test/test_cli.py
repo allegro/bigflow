@@ -767,6 +767,22 @@ another-project-id                         ANOTHER PROJECT                002242
         # then
         self.assertEqual(cli_start_project_mock.call_count, 1)
 
+    @mock.patch('builtins.print')
+    def test_should_call_cli_logs_command(self, print_mock):
+        # when
+        cli(['logs'])
+
+        # then
+        print_mock.assert_called_with('https://')
+
+    def test_should_throw_if_log_module_is_not_installed(self):
+        # given
+        with mock.patch.dict('sys.modules', {'bigflow.log': None}):
+            # when
+            with self.assertRaises(Exception):
+                cli(['logs'])
+
+
     def _expected_default_dags_dir(self):
         return (Path(os.getcwd()) / '.dags').as_posix()
 

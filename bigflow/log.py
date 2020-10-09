@@ -54,12 +54,15 @@ class GCPLoggerHandler(logging.StreamHandler):
         self.client.write_log_entries([entry])
 
     def get_gcp_logs_message(self):
-        query = quote_plus(f'''logName="projects/{self.project_id}/logs/{self.logger_name}"
-labels.id="{self.workflow_id or self.project_id}"''')
         return f'\n'\
                f'*************************LOGS LINK************************* \n ' \
-               f'You can find this workflow logs here: https://console.cloud.google.com/logs/query;query={query} \n' \
+               f'You can find this workflow logs here: https://console.cloud.google.com/logs/query;query={prepare_gcp_logs_link(self.project_id, self.workflow_id, self.logger_name)} \n' \
                f'***********************************************************'
+
+
+def prepare_gcp_logs_link(project_id, workflow_id, logger_name):
+    return quote_plus(f'''logName="projects/{project_id}/logs/{logger_name}"
+    labels.id="{workflow_id or project_id}"''')
 
 
 def handle_uncaught_exception(logger):
