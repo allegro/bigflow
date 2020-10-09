@@ -23,7 +23,7 @@ with open(os.path.join('requirements', 'dataproc_extras.txt'), 'r') as dataproc_
 
 setuptools.setup(
     name="bigflow",
-    version="1.0.dev67",
+    version="1.0.dev68",
     author=u"Chi",
     author_email="chibox-team@allegrogroup.com",
     description="BigQuery client wrapper with clean API",
