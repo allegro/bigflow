@@ -40,9 +40,11 @@ class LoggerTestCase(TestCase):
 
     def test_should_create_correct_logging_link(self):
 
+        # when
         f = io.StringIO()
         with contextlib.redirect_stderr(f):
-            # when
+            # stderr handler is created only when no other handlers are registered
+            self._clear_all_root_loggers()
             self.configure_mocked_logging('project-id', 'another_log_name', 'workflow_id')
 
         # then
@@ -112,7 +114,7 @@ class LoggerTestCase(TestCase):
             severity=500,
         )
 
-    def test_should_overwrite_existing_logging_config(self):
+    def test_should_install_gcp_handler_when_logging_already_exists(self):
 
         # given
         self._clear_all_root_loggers()

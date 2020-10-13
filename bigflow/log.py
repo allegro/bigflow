@@ -130,16 +130,12 @@ def init_logging(config: LogConfigDict, workflow_id: str):
         'run_uuid': run_uuid,
     }
 
-    # clean all existings handlers
-    root = logging.getLogger(None)
-    for h in root.handlers[:]:
-        root.removeHandler(h)
- 
-    logging.basicConfig(level=log_level)
-
-    gcp_logger_handler = GCPLoggerHandler(gcp_project_id, log_name, labels)
-    gcp_logger_handler.setLevel(logging.INFO)
-    # TODO: add formatter?
+    root = logging.getLogger()
+    if not root.handlers:
+        # logs are not configured yet - print to stderr
+        logging.basicConfig(level=log_level)
+    elif log_level:
+        root.setLevel(min(root.level, logging._checkLevel(log_level)))
 
     full_log_name = f"projects/{gcp_project_id}/logs/{log_name}"
     workflow_logs_link = _generate_cl_log_view_link({'logName': full_log_name, 'labels.workflow_id': workflow_id})
@@ -150,5 +146,9 @@ def init_logging(config: LogConfigDict, workflow_id: str):
            Workflow logs (all runs): {workflow_logs_link}
            Only this run logs: {this_execution_logs_link}
            ***********************************************************"""))
-    logging.getLogger(None).addHandler(gcp_logger_handler)
+    gcp_logger_handler = GCPLoggerHandler(gcp_project_id, log_name, labels)
+    gcp_logger_handler.setLevel(log_level or logging.INFO)
+    # TODO: add formatter?
+    root.addHandler(gcp_logger_handler)
+
     sys.excepthook = _uncaught_exception_handler(logging.getLogger('uncaught_exception'))
