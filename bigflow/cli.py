@@ -255,9 +255,20 @@ def _parse_args(project_name: Optional[str], args) -> Namespace:
 
 def _create_logs_parser(subparsers):
     parser = subparsers.add_parser('logs', description='Returns link leading to logs in GCP Logging.')
+    parser.add_argument('-dc', '--deployment-config-path',
+                        type=str,
+                        help='Path to the deployment_config.py file. '
+                             'If not set, {current_dir}/deployment_config.py will be used.')
+    parser.add_argument('-p', '--gcp-project-id',
+                        help="Name of your Google Cloud Platform project."
+                             " If not set, will be read from deployment_config.py")
     parser.add_argument('-w', '--workflow',
                         type=str,
                         help="Pass a Workflow Id.")
+    parser.add_argument('-ln', '--log-name',
+                        type=str,
+                        help="Pass a Log Name.")
+    _add_parsers_common_arguments(parser)
 
 
 def _create_start_project_parser(subparsers):
@@ -654,11 +665,13 @@ def _cli_release(args):
 
 
 def _cli_logs(args):
-    workflow = args.workflow
-    print('https://')
+    if not(args.workflow or args.log_name):
+        raise ValueError("You need to pass at least one of the workflow/log-name arguments.")
+    project_id = _resolve_property(args, 'gcp_project_id')
+    bf.log.get_message_for_cli(project_id, args.workflow, args.log_name)
 
 
-def _check_if_log_module_is_installed():
+def _is_log_module_installed():
     try:
         import bigflow.log
         return True
@@ -697,7 +710,7 @@ def cli(raw_args) -> None:
     elif operation == 'release':
         _cli_release(parsed_args)
     elif operation == 'logs':
-        _check_if_log_module_is_installed()
+        _is_log_module_installed()
         _cli_logs(parsed_args)
     else:
         raise ValueError(f'Operation unknown - {operation}')

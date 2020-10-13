@@ -251,22 +251,14 @@ class CliTestCase(TestCase):
     def assert_started_jobs(self, ids):
         self.assertEqual(ids, import_module("test_module.Unused1").started_jobs)
 
-
-
-
-
-
-
-
-
-
     def test_should_raise_error_when_deployment_config_is_needed_but_missing(self):
         with self.assertRaises(ValueError):
             # when
             cli(['deploy-dags'])
 
     @mock.patch('bigflow.cli.deploy_dags_folder')
-    def test_should_call_cli_deploy_dags_command__with_defaults_and_with_implicit_deployment_config_file(self, deploy_dags_folder_mock):
+    def test_should_call_cli_deploy_dags_command__with_defaults_and_with_implicit_deployment_config_file(self,
+                                                                                                         deploy_dags_folder_mock):
         # given
         dc_file = self._touch_file('deployment_config.py',
         '''
@@ -355,7 +347,8 @@ deployment_config = Config(name='dev',
         dc_file.unlink()
 
     @mock.patch('bigflow.cli.deploy_dags_folder')
-    def test_should_call_cli_deploy_dags_command__when_parameters_are_given_by_explicit_deployment_config_file(self, deploy_dags_folder_mock):
+    def test_should_call_cli_deploy_dags_command__when_parameters_are_given_by_explicit_deployment_config_file(self,
+                                                                                                               deploy_dags_folder_mock):
         # given
         dc_file = self._touch_file('deployment_config_another.py',
         '''
@@ -375,7 +368,7 @@ deployment_config = Config(name='dev',
              '--deployment-config-path', dc_file.as_posix(),
              '--dags-dir', '/tmp/my-dags-dir',
              '--auth-method', 'vault'
-            ])
+             ])
 
         # then
         deploy_dags_folder_mock.assert_called_with(auth_method='vault',
@@ -389,7 +382,8 @@ deployment_config = Config(name='dev',
         dc_file.unlink()
 
     @mock.patch('bigflow.cli.deploy_dags_folder')
-    def test_should_call_cli_deploy_dags_command__when_all_parameters_are_given_by_cli_arguments(self, deploy_dags_folder_mock):
+    def test_should_call_cli_deploy_dags_command__when_all_parameters_are_given_by_cli_arguments(self,
+                                                                                                 deploy_dags_folder_mock):
         # when
         cli(['deploy-dags',
              '--dags-bucket', 'my-dags-bucket',
@@ -399,7 +393,7 @@ deployment_config = Config(name='dev',
              '--auth-method', 'vault',
              '--clear-dags-folder',
              '--vault-secret', 'secrett'
-            ])
+             ])
 
         # then
         deploy_dags_folder_mock.assert_called_with(auth_method='vault',
@@ -411,7 +405,8 @@ deployment_config = Config(name='dev',
                                                    vault_secret='secrett')
 
     @mock.patch('bigflow.cli.deploy_docker_image')
-    def test_should_call_cli_deploy_image_command__with_defaults_and_with_implicit_deployment_config_file(self, deploy_docker_image_mock):
+    def test_should_call_cli_deploy_image_command__with_defaults_and_with_implicit_deployment_config_file(self,
+                                                                                                          deploy_docker_image_mock):
         # given
         dc_file = self._touch_file('deployment_config.py',
         '''
@@ -468,7 +463,8 @@ deployment_config = Config(name='dev',
 
     @mock.patch('bigflow.cli.load_image_from_tar')
     @mock.patch('bigflow.cli.deploy_docker_image')
-    def test_should_call_cli_deploy_image_command__when_all_parameters_are_given_by_cli_arguments_and_image_is_loaded_from_tar(self, deploy_docker_image_mock, load_image_from_tar_mock):
+    def test_should_call_cli_deploy_image_command__when_all_parameters_are_given_by_cli_arguments_and_image_is_loaded_from_tar(
+            self, deploy_docker_image_mock, load_image_from_tar_mock):
         # when
         cli(['deploy-image',
              '--image-tar-path', 'image-0.0.1.tar',
@@ -476,7 +472,7 @@ deployment_config = Config(name='dev',
              '--vault-endpoint', 'my-vault-endpoint',
              '--auth-method', 'vault',
              '--vault-secret', 'secrett'
-            ])
+             ])
 
         # then
         deploy_docker_image_mock.assert_called_with(auth_method='vault',
@@ -496,7 +492,7 @@ deployment_config = Config(name='dev',
              '--vault-endpoint', 'my-vault-endpoint',
              '--auth-method', 'vault',
              '--vault-secret', 'secrett'
-            ])
+             ])
 
         # then
         deploy_docker_image_mock.assert_called_with(auth_method='vault',
@@ -509,7 +505,8 @@ deployment_config = Config(name='dev',
 
     @mock.patch('bigflow.cli.deploy_dags_folder')
     @mock.patch('bigflow.cli.deploy_docker_image')
-    def test_should_call_both_deploy_methods_with_deploy_command(self, deploy_docker_image_mock, deploy_dags_folder_mock):
+    def test_should_call_both_deploy_methods_with_deploy_command(self, deploy_docker_image_mock,
+                                                                 deploy_dags_folder_mock):
         # given
         dc_file = self._touch_file('deployment_config.py',
         '''
@@ -555,25 +552,29 @@ deployment_config = Config(name='dev',
         cli(['build-dags', '-t', '2020-01-01 00:00:00'])
 
         # then
-        _cli_build_dags_mock.assert_called_with(Namespace(operation='build-dags', start_time='2020-01-01 00:00:00', workflow=None))
+        _cli_build_dags_mock.assert_called_with(
+            Namespace(operation='build-dags', start_time='2020-01-01 00:00:00', workflow=None))
 
         # when
         cli(['build-dags', '-w', 'some_workflow'])
 
         # then
-        _cli_build_dags_mock.assert_called_with(Namespace(operation='build-dags', start_time=None, workflow='some_workflow'))
+        _cli_build_dags_mock.assert_called_with(
+            Namespace(operation='build-dags', start_time=None, workflow='some_workflow'))
 
         # when
         cli(['build-dags', '-w', 'some_workflow', '-t', '2020-01-01 00:00:00'])
 
         # then
-        _cli_build_dags_mock.assert_called_with(Namespace(operation='build-dags', start_time='2020-01-01 00:00:00', workflow='some_workflow'))
+        _cli_build_dags_mock.assert_called_with(
+            Namespace(operation='build-dags', start_time='2020-01-01 00:00:00', workflow='some_workflow'))
 
         # when
         cli(['build-dags', '-w', 'some_workflow', '-t', '2020-01-01'])
 
         # then
-        _cli_build_dags_mock.assert_called_with(Namespace(operation='build-dags', start_time='2020-01-01', workflow='some_workflow'))
+        _cli_build_dags_mock.assert_called_with(
+            Namespace(operation='build-dags', start_time='2020-01-01', workflow='some_workflow'))
 
         # when
         with self.assertRaises(SystemExit):
@@ -621,13 +622,15 @@ deployment_config = Config(name='dev',
         cli(['build', '--start-time', '2020-01-01 00:00:00'])
 
         # then
-        _cli_build_mock.assert_called_with(Namespace(operation='build', start_time='2020-01-01 00:00:00', workflow=None))
+        _cli_build_mock.assert_called_with(
+            Namespace(operation='build', start_time='2020-01-01 00:00:00', workflow=None))
 
         # when
         cli(['build', '--start-time', '2020-01-01 00:00:00', '--workflow', 'some_workflow'])
 
         # then
-        _cli_build_mock.assert_called_with(Namespace(operation='build', start_time='2020-01-01 00:00:00', workflow='some_workflow'))
+        _cli_build_mock.assert_called_with(
+            Namespace(operation='build', start_time='2020-01-01 00:00:00', workflow='some_workflow'))
 
     @mock.patch('bigflow.cli.run_process')
     @mock.patch('bigflow.cli.validate_project_setup')
@@ -731,7 +734,10 @@ another-project-id                         ANOTHER PROJECT                002242
     @mock.patch('bigflow.cli.get_default_project_from_gcloud')
     @mock.patch('bigflow.cli.gcloud_project_list')
     @mock.patch('bigflow.cli.project_id_input')
-    def test_should_gcp_project_flow_return_project_from_gcloud_if_project_not_provided_by_user(self, project_id_input_mock, gcloud_project_list_mock, get_default_project_from_gcloud_mock):
+    def test_should_gcp_project_flow_return_project_from_gcloud_if_project_not_provided_by_user(self,
+                                                                                                project_id_input_mock,
+                                                                                                gcloud_project_list_mock,
+                                                                                                get_default_project_from_gcloud_mock):
         # given
         gcloud_project_list_mock.return_value = '''PROJECT_ID                      NAME                            PROJECT_NUMBER
 some-project-id                            SOME PROJECT                   047902537028
@@ -746,8 +752,9 @@ another-project-id                         ANOTHER PROJECT                002242
 
     @mock.patch('bigflow.cli.gcloud_project_list')
     @mock.patch('bigflow.cli.project_id_input')
-    def test_should_gcp_project_flow_allow_user_to_enter_project_again_if_wrong_project_passed(self, project_id_input_mock,
-                                                              gcloud_project_list_mock):
+    def test_should_gcp_project_flow_allow_user_to_enter_project_again_if_wrong_project_passed(self,
+                                                                                               project_id_input_mock,
+                                                                                               gcloud_project_list_mock):
         # given
         gcloud_project_list_mock.return_value = '''PROJECT_ID                      NAME                            PROJECT_NUMBER
 some-project-id                            SOME PROJECT                   047902537028
@@ -769,19 +776,61 @@ another-project-id                         ANOTHER PROJECT                002242
 
     @mock.patch('builtins.print')
     def test_should_call_cli_logs_command(self, print_mock):
+        # given
+        dc_file = self._touch_file('deployment_config.py',
+                                   '''
+from bigflow import Config
+
+deployment_config = Config(name='dev',
+                          properties={
+                              'gcp_project_id': 'my-gcp-project-id',
+                              'dags_bucket': 'my-dags-bucket',
+                              'vault_secret': 'secret'
+                          })
+                                   ''')
         # when
-        cli(['logs'])
+        cli(['logs', '--config', 'dev', '-ln', 'log-name'])
 
         # then
-        print_mock.assert_called_with('https://')
+        print_mock.assert_called_with(
+            '\n*************************LOGS LINK*************************\nBigflow project logs:'
+            'https://console.cloud.google.com/logs/query;query=%28severity%3E%3D%22WARNING%22%0Aresource.type'
+            '%3D%22k8s_pod%22%0A%22Error%3A%22%29%0AOR%0A%28severity%3E%3D%22WARNING%22%0Aresource.type'
+            '%3D%22k8s_container%22%0Aresource.labels.container_name%3D%22base%22%0A%29%0AOR%0A%28logName'
+            '%3D%22projects%2Fmy-gcp-project-id%2Flogs%2Flog-name%22%0A%29%0AOR%0A%28resource.type%3D%22dataflow_step'
+            '%22%0Alog_name%3D%22projects%2Fmy-gcp-project-id%2Flogs%2Fdataflow.googleapis.com%252Fjob-message'
+            '%22%0Aseverity%3E%3D%22WARNING%22%0A%29%0AAND%0Aresource.labels.project_id%3D%22my-gcp-project-id%22'
+            '\n***********************************************************')
+
+        # when
+        cli(['logs', '--config', 'dev', '--workflow', 'some-workflow'])
+        print_mock.assert_called_with(
+            '\n*************************LOGS LINK*************************\nWorkflow logs: '
+            'https://console.cloud.google.com/logs/query;query=logName%3D%22projects'
+            '%2Fmy-gcp-project-id%2Flogs%2Fsome-workflow%22%0Alabels.workflow_id%'
+            '3D%22some-workflow%22%0A\n***********************************************************')
+
+        # when
+        cli(['logs', '--config', 'dev', '-ln', 'log-name', '--workflow', 'some-workflow'])
+
+        print_mock.assert_called_with(
+            '\n*************************LOGS LINK*************************\nWorkflow logs:'
+            ' https://console.cloud.google.com/logs/query;query=logName%3D%22projects%2Fmy-gcp-project-id'
+            '%2Flogs%2Flog-name%22%0Alabels.workflow_id%3D%22some-workflow%22%0A'
+            '\n***********************************************************')
+        dc_file.unlink()
 
     def test_should_throw_if_log_module_is_not_installed(self):
         # given
         with mock.patch.dict('sys.modules', {'bigflow.log': None}):
             # when
             with self.assertRaises(Exception):
-                cli(['logs'])
+                cli(['logs', '-w', 'some-workflow'])
 
+    def test_should_throw_if_cli_logs_command_called_without_workflow_or_log_name_arg(self):
+        # when
+        with self.assertRaises(Exception):
+            cli(['logs'])
 
     def _expected_default_dags_dir(self):
         return (Path(os.getcwd()) / '.dags').as_posix()

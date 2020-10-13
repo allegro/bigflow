@@ -11,6 +11,7 @@ __all__ = [
     'Definition',
     'Config',
     'resources',
+    'log'
 ]
 
 try:
