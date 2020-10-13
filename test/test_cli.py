@@ -775,7 +775,8 @@ another-project-id                         ANOTHER PROJECT                002242
         self.assertEqual(cli_start_project_mock.call_count, 1)
 
     @mock.patch('builtins.print')
-    def test_should_call_cli_logs_command(self, print_mock):
+    @mock.patch('bigflow.log._open_link_in_browser')
+    def test_should_call_cli_logs_command(self,_open_link_in_browser_mock, print_mock):
         # given
         dc_file = self._touch_file('deployment_config.py',
                                    '''
@@ -801,23 +802,37 @@ deployment_config = Config(name='dev',
             '%22%0Alog_name%3D%22projects%2Fmy-gcp-project-id%2Flogs%2Fdataflow.googleapis.com%252Fjob-message'
             '%22%0Aseverity%3E%3D%22WARNING%22%0A%29%0AAND%0Aresource.labels.project_id%3D%22my-gcp-project-id%22'
             '\n***********************************************************')
+        _open_link_in_browser_mock.assert_called_with('https://console.cloud.google.com/logs/query;query=%28severity%3E%3D%22WARNING%22%0Aresource.type'
+            '%3D%22k8s_pod%22%0A%22Error%3A%22%29%0AOR%0A%28severity%3E%3D%22WARNING%22%0Aresource.type'
+            '%3D%22k8s_container%22%0Aresource.labels.container_name%3D%22base%22%0A%29%0AOR%0A%28logName'
+            '%3D%22projects%2Fmy-gcp-project-id%2Flogs%2Flog-name%22%0A%29%0AOR%0A%28resource.type%3D%22dataflow_step'
+            '%22%0Alog_name%3D%22projects%2Fmy-gcp-project-id%2Flogs%2Fdataflow.googleapis.com%252Fjob-message'
+            '%22%0Aseverity%3E%3D%22WARNING%22%0A%29%0AAND%0Aresource.labels.project_id%3D%22my-gcp-project-id%22')
 
         # when
         cli(['logs', '--config', 'dev', '--workflow', 'some-workflow'])
+
+        # then
         print_mock.assert_called_with(
             '\n*************************LOGS LINK*************************\nWorkflow logs: '
             'https://console.cloud.google.com/logs/query;query=logName%3D%22projects'
             '%2Fmy-gcp-project-id%2Flogs%2Fsome-workflow%22%0Alabels.workflow_id%'
             '3D%22some-workflow%22%0A\n***********************************************************')
+        _open_link_in_browser_mock.assert_called_with('https://console.cloud.google.com/logs/query;query=logName%3D%22projects'
+            '%2Fmy-gcp-project-id%2Flogs%2Fsome-workflow%22%0Alabels.workflow_id%'
+            '3D%22some-workflow%22%0A')
 
         # when
         cli(['logs', '--config', 'dev', '-ln', 'log-name', '--workflow', 'some-workflow'])
 
+        # then
         print_mock.assert_called_with(
             '\n*************************LOGS LINK*************************\nWorkflow logs:'
             ' https://console.cloud.google.com/logs/query;query=logName%3D%22projects%2Fmy-gcp-project-id'
             '%2Flogs%2Flog-name%22%0Alabels.workflow_id%3D%22some-workflow%22%0A'
             '\n***********************************************************')
+        _open_link_in_browser_mock.assert_called_with('https://console.cloud.google.com/logs/query;query=logName%3D%22projects%2Fmy-gcp-project-id'
+            '%2Flogs%2Flog-name%22%0Alabels.workflow_id%3D%22some-workflow%22%0A')
         dc_file.unlink()
 
     def test_should_throw_if_log_module_is_not_installed(self):
