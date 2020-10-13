@@ -16,6 +16,9 @@ except ImportError:
     TypedDict = dict
 
 
+logger = logging.getLogger(__name__)
+
+
 class GCPLoggerHandler(logging.Handler):
 
     def __init__(self, project_id, log_name, labels):
@@ -127,7 +130,13 @@ def init_logging(config: LogConfigDict, workflow_id: str):
         'run_uuid': run_uuid,
     }
 
+    # clean all existings handlers
+    root = logging.getLogger(None)
+    for h in root.handlers[:]:
+        root.removeHandler(h)
+ 
     logging.basicConfig(level=log_level)
+
     gcp_logger_handler = GCPLoggerHandler(gcp_project_id, log_name, labels)
     gcp_logger_handler.setLevel(logging.INFO)
     # TODO: add formatter?
@@ -136,7 +145,7 @@ def init_logging(config: LogConfigDict, workflow_id: str):
     workflow_logs_link = _generate_cl_log_view_link({'logName': full_log_name, 'labels.workflow_id': workflow_id})
     this_execution_logs_link = _generate_cl_log_view_link({'logName': full_log_name, 'labels.run_uuid': run_uuid})
 
-    logging.info(dedent(f"""
+    logger.info(dedent(f"""
            *************************LOGS LINK*************************
            Workflow logs (all runs): {workflow_logs_link}
            Only this run logs: {this_execution_logs_link}

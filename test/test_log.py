@@ -1,5 +1,6 @@
 import logging
-import os
+import contextlib
+import io
 import sys
 
 from unittest import TestCase, mock
@@ -27,18 +28,25 @@ class LoggerTestCase(TestCase):
         self.configure_mocked_logging('project-id', 'logger_name', 'workflow-id')
         self.test_logger = logging.getLogger('any.random.logger.name')
         self.root_logger = logging.getLogger('')
+
+    def _clear_all_root_loggers(self):
+        for h in logging.getLogger().handlers[:]:
+            logging.getLogger().removeHandler(h)
+            h.close()
  
     def tearDown(self):
-        logging.getLogger().handlers.clear()
+        self._clear_all_root_loggers()
         bigflow.log._LOGGING_CONFIGURED = False
 
     def test_should_create_correct_logging_link(self):
-        with self.assertLogs(level='INFO') as logs:
+
+        f = io.StringIO()
+        with contextlib.redirect_stderr(f):
             # when
             self.configure_mocked_logging('project-id', 'another_log_name', 'workflow_id')
 
         # then
-        out = "\n".join(logs.output)
+        out = f.getvalue()
         self.assertIn("LOGS LINK", out)
         self.assertIn("https://console.cloud.google.com/logs/query;query=", out)
         self.assertIn("labels.workflow_id%3D%22workflow_id%22", out)
@@ -102,4 +110,20 @@ class LoggerTestCase(TestCase):
         self._assert_single_log_event(
             message_re="error message",
             severity=500,
+        )
+
+    def test_should_overwrite_existing_logging_config(self):
+
+        # given
+        self._clear_all_root_loggers()
+        logging.basicConfig(level=logging.ERROR)
+
+        # when
+        self.configure_mocked_logging('project-id', 'logger_name', 'workflow_id')
+        self.test_logger.info("message")
+
+        # then
+        self._assert_single_log_event(
+            message_re="message",
+            severity=200,
         )
