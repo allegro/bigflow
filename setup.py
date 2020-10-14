@@ -3,22 +3,13 @@
 import setuptools
 import os
 
+
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-with open(os.path.join('requirements', 'base.txt'), 'r') as base_requirements:
-    install_requires = [l.strip() for l in base_requirements.readlines()]
-
-with open(os.path.join('requirements', 'monitoring_extras.txt'), 'r') as monitoring_extras_requirements:
-    monitoring_extras_require = [
-        l.strip() for l in monitoring_extras_requirements.readlines()]
-
-with open(os.path.join('requirements', 'bigquery_extras.txt'), 'r') as bigquery_extras_requirements:
-    bigquery_extras_require = [l.strip() for l in bigquery_extras_requirements.readlines()]
-
-with open(os.path.join('requirements', 'log_extras.txt'), 'r') as log_extras_requirements:
-    log_extras_require = [l.strip() for l in log_extras_requirements.readlines()]
-
+def read_requirements(name):
+    with open(os.path.join("requirements", name)) as f:
+        return list(map(str.strip, f))
 
 with open(os.path.join('bigflow', '_version.py'), 'r') as version_file:
     version_globals = {}
@@ -48,11 +39,11 @@ setuptools.setup(
         "Programming Language :: Python :: 3",
         "Operating System :: OS Independent",
     ],
-    install_requires=install_requires,
+    install_requires=read_requirements("base.txt"),
     extras_require={
-        'monitoring': monitoring_extras_require,
-        'bigquery': bigquery_extras_require,
-        'log': log_extras_require
+        'monitoring': read_requirements("monitoring_extras.txt"),
+        'bigquery': read_requirements("bigquery_extras.txt"),
+        'log': read_requirements("log_extras.txt"),
     },
     scripts=["scripts/bf", "scripts/bigflow"]
 )
