@@ -2,6 +2,8 @@ from . import resources
 from .workflow import Workflow, Definition
 from .configuration import Config
 
+from bigflow._version import __version__
+
 
 __all__ = [
     # core
@@ -20,11 +22,5 @@ except ImportError:
 try:
     from . import monitoring
     __all__.append('monitoring')
-except ImportError:
-    pass
-
-try:
-    from . import log
-    __all__.append('log')
 except ImportError:
     pass
