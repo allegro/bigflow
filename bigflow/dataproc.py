@@ -86,12 +86,17 @@ class PySparkJob:
     def _generate_internal_jobid(self, runtime):
         job_random_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=10))
         job_timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S")  # FIXME: use 'runtime' ?
-        return f"{self.id}-{self.env or 'none'}-{job_timestamp}-{job_random_suffix}"
+        return f"{self.id.lower()}-{self.env or 'none'}-{job_timestamp}-{job_random_suffix}"
 
     def _prepare_driver_callable(self, runtime):
-        arguments = dict(self.driver_arguments)
-        arguments['runtime'] = runtime
-        return functools.partial(self.driver_callable, **arguments)
+        kwargs = dict(self.driver_arguments)
+        kwargs['runtime'] = runtime
+
+        envs = {}
+        if self.env:
+            envs['env'] = self.env
+
+        return _PySparkDriverWrapper(self.driver_callable, (), kwargs, envs)
 
     @contextlib.contextmanager
     def _with_temp_cluster(self, cluster_name):
@@ -110,6 +115,15 @@ class PySparkJob:
             yield cluster_name
         finally:
             _delete_cluster(dataproc_cluster_client, self.gcp_project_id, self.gcp_region, cluster_name)
+
+    def _prepare_pyspark_properties(self):
+        ps = {
+            'spark.app.name': self.id,
+        }
+        if self.env:
+            ps['spark.workerEnv.env'] = self.env            
+            ps['spark.executorEnv.env'] = self.env
+        return ps
 
     def run(self, runtime):
         self._ensure_has_setup_file()
@@ -138,11 +152,25 @@ class PySparkJob:
                 jar_file_uris=self.jar_file_uris,
                 driver_path=driver_path,
                 egg_path=egg_path,
+                properties=self._prepare_pyspark_properties(),
             )
             try:
                 _wait_for_job_to_finish(dataproc_job_client, self.gcp_project_id, self.gcp_region, job)
             finally:
                 _print_job_output_log(storage_client, dataproc_job_client, self.gcp_project_id, self.gcp_region, job)
+
+
+class _PySparkDriverWrapper:
+
+    def __init__(self, callable, args, kwargs, envs):
+        self.callable = callable
+        self.args = args
+        self.kwargs = kwargs
+        self.envs = envs
+
+    def __call__(self):
+        os.environ.update(self.envs)
+        self.callable(*self.args, **self.kwargs)
 
 
 def generate_driver_script(callable):
@@ -237,7 +265,7 @@ def _create_cluster(dataproc_cluster_client, project_id, region, cluster_name, r
     return cluster_name
 
 
-def _submit_single_pyspark_job(dataproc_job_client, project_id, region, cluster_name, bucket_id, driver_path, egg_path, jar_file_uris):
+def _submit_single_pyspark_job(dataproc_job_client, project_id, region, cluster_name, bucket_id, driver_path, egg_path, jar_file_uris, properties):
     result = dataproc_job_client.submit_job(
         project_id=project_id,
         region=region,
@@ -249,6 +277,7 @@ def _submit_single_pyspark_job(dataproc_job_client, project_id, region, cluster_
                 'main_python_file_uri': f"gs://{bucket_id}/{driver_path}",
                 'jar_file_uris': jar_file_uris,
                 'python_file_uris': [f"gs://{bucket_id}/{egg_path}"],
+                'properties': properties,
             },
         },
     )
