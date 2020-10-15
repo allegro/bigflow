@@ -306,24 +306,8 @@ bigflow deploy --deployment-config-path '/tmp/my_deployment_config.py'
 ```
 
 ### Generating link to GCP Logging
-The `bigflow logs` command lets you generate link leading to your project/workflow logs in GCP Logging and opens it
-in your browser. 
-
-**Getting help for the logs command**
-
-`bigflow logs -h`
-
-**Generate link for a single workflow**
-
-`bigflow logs --workflow hello_world_workflow`
-
-**Generate link for a log name**
-
-`bigflow logs --log-name hello_world_log_name`
-
-**Generate link for a single workflow with log name**
-
-`bigflow logs --log-name hello_world_log_name --workflow hello_world_workflow`
+The `bigflow logs` command lets you generate link leading to your project/workflow logs in GCP Logging. It consists of
+infrastructure part and workflow part.
 
 
 ## Scaffold project
