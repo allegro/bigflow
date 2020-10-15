@@ -76,4 +76,4 @@ The code above contains an unhandled `ValueError` exception, which will be also 
 
 
 ## Bigflow logs command
-It is possible to create link to CL through CLI command [`logs`](./cli.md#generating-link-to-gcp-logging).
+To access logs, use the CLI command Bigflow logs. [`logs`](./cli.md#generating-link-to-gcp-logging).

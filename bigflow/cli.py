@@ -253,7 +253,7 @@ def _parse_args(project_name: Optional[str], args) -> Namespace:
 
 
 def _create_logs_parser(subparsers):
-    subparsers.add_parser('logs', description='Returns link leading to workflow logs in GCP Logging.')
+    subparsers.add_parser('logs', description='Returns a link leading to a workflow logs in GCP Logging.')
 
 
 def _create_start_project_parser(subparsers):
