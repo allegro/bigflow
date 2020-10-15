@@ -72,10 +72,10 @@ class Workflow(object):
         self.start_time_factory = start_time_factory
         self.log_config = log_config
 
-    def _parse_runtime_str(self, rt: str):
-        for fmt in self.RUNTIME_FORMATS:
+    def _parse_runtime_str(self, runtime: str):
+        for format in self.RUNTIME_FORMATS:
             try:
-                return dt.datetime.strptime(rt, fmt)
+                return dt.datetime.strptime(runtime, format)
             except ValueError:
                 pass
         raise ValueError("Unable to parse 'run_time' %r" % rt)
