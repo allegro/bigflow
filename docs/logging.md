@@ -20,8 +20,8 @@ gcp_project_id = 'some_project_id'
 workflow = bigflow.Workflow(
     name='workflow_name',
     log_config={
-        'project_id': gcp_project_id,
-        'level': 'DEBUG',
+        'gcp_project_id': gcp_project_id,
+        'log_level': 'DEBUG',
     },
     # ...
 )
@@ -39,8 +39,8 @@ gcp_project_id = 'some_project_id'
 workflow = bigflow.Workflow(
     name='workflow_name',
     log_config={
-        'project_id': gcp_project_id,
-        'level': 'DEBUG',
+        'gcp_project_id': gcp_project_id,
+        'log_level': 'DEBUG',
     },
     # ...
 )
