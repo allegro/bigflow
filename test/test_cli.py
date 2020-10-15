@@ -461,10 +461,9 @@ deployment_config = Config(name='dev',
 
         dc_file.unlink()
 
-    @mock.patch('bigflow.cli.load_image_from_tar')
     @mock.patch('bigflow.cli.deploy_docker_image')
     def test_should_call_cli_deploy_image_command__when_all_parameters_are_given_by_cli_arguments_and_image_is_loaded_from_tar(
-            self, deploy_docker_image_mock, load_image_from_tar_mock):
+            self, deploy_docker_image_mock):
         # when
         cli(['deploy-image',
              '--image-tar-path', 'image-0.0.1.tar',
@@ -775,77 +774,101 @@ another-project-id                         ANOTHER PROJECT                002242
         self.assertEqual(cli_start_project_mock.call_count, 1)
 
     @mock.patch('builtins.print')
-    @mock.patch('bigflow.log._open_link_in_browser')
-    def test_should_call_cli_logs_command(self,_open_link_in_browser_mock, print_mock):
-        # given
-        dc_file = self._touch_file('deployment_config.py',
-                                   '''
-from bigflow import Config
-
-deployment_config = Config(name='dev',
-                          properties={
-                              'gcp_project_id': 'my-gcp-project-id',
-                              'dags_bucket': 'my-dags-bucket',
-                              'vault_secret': 'secret'
-                          })
-                                   ''')
+    def test_should_call_cli_logs_command(self, print_mock):
         # when
-        cli(['logs', '--config', 'dev', '-ln', 'log-name'])
+        root_package = find_root_package(None, "test.cli_logs_regular_workflows")
+        cli_logs(root_package)
 
         # then
         print_mock.assert_called_with(
-            '\n*************************LOGS LINK*************************\nBigflow project logs:'
-            'https://console.cloud.google.com/logs/query;query=%28severity%3E%3D%22WARNING%22%0Aresource.type'
-            '%3D%22k8s_pod%22%0A%22Error%3A%22%29%0AOR%0A%28severity%3E%3D%22WARNING%22%0Aresource.type'
-            '%3D%22k8s_container%22%0Aresource.labels.container_name%3D%22base%22%0A%29%0AOR%0A%28logName'
-            '%3D%22projects%2Fmy-gcp-project-id%2Flogs%2Flog-name%22%0A%29%0AOR%0A%28resource.type%3D%22dataflow_step'
-            '%22%0Alog_name%3D%22projects%2Fmy-gcp-project-id%2Flogs%2Fdataflow.googleapis.com%252Fjob-message'
-            '%22%0Aseverity%3E%3D%22WARNING%22%0A%29%0AAND%0Aresource.labels.project_id%3D%22my-gcp-project-id%22'
+            '\n*************************LOGS LINK*************************\nInfrastructure logs:'
+            ' \nsome-project-id: https://console.cloud.google.com/logs/query;query=%28severity%3E%3D%22WARNING'
+            '%22%0Aresource.type%3D%22k8s_pod'
+            '%22%0A%22Error%3A%22%29%0AOR%0A%28'
+            'severity%3E%3D%22WARNING%22%0A'
+            'resource.type%3D%22k8s_container%22%0A'
+            'resource.labels.container_name%3D%22base%22%0A%29%0AOR%0A%28'
+            'resource.type%3D%22dataflow_step%22%0A'
+            'log_name%3D%22projects%2Fsome-project-id%2Flogs%2Fdataflow.googleapis.com%252Fjob-message%22%0A'
+            'severity%3E%3D%22WARNING%22%0A%29%0A'
+            'AND%0Aresource.labels.project_id%3D%22some-project-id%22\nanother-project-id: '
+            'https://console.cloud.google.com/logs/query;query=%28severity%3E%3D%22WARNING%22%0A'
+            'resource.type%3D%22k8s_pod%'
+            '22%0A%22Error%3A%22%29%0AOR%0A%28severity%3E%3D%22WARNING%22%0A'
+            'resource.type%3D%22k8s_container%22%0Aresource.labels.container_name%3D%22base%22%0A%29%0AOR%0A%28'
+            'resource.type%3D%22dataflow_step%22%0A'
+            'log_name%3D%22projects%2Fanother-project-id%2Flogs%2Fdataflow.googleapis.com%252Fjob-message%22%0A'
+            'severity%3E%3D%22WARNING%22%0A%29%0AAND%0Aresource.labels.project_id%3D%22another-project-id%22\n'
+            'Workflow logs: \nID_1: https://console.cloud.google.com/logs/query;query='
+            'logName%3D%22projects%2Fsome-project-id%2Flogs%2FID_1%22%0A'
+            'labels.workflow_id%3D%22ID_1%22%0A\nID_2: '
+            'https://console.cloud.google.com/logs/query;query='
+            'logName%3D%22projects%2Fanother-project-id%2Flogs%2FID_2%22%0Alabels.workflow_id%3D%22ID_2%22%0A'
             '\n***********************************************************')
-        _open_link_in_browser_mock.assert_called_with('https://console.cloud.google.com/logs/query;query=%28severity%3E%3D%22WARNING%22%0Aresource.type'
-            '%3D%22k8s_pod%22%0A%22Error%3A%22%29%0AOR%0A%28severity%3E%3D%22WARNING%22%0Aresource.type'
-            '%3D%22k8s_container%22%0Aresource.labels.container_name%3D%22base%22%0A%29%0AOR%0A%28logName'
-            '%3D%22projects%2Fmy-gcp-project-id%2Flogs%2Flog-name%22%0A%29%0AOR%0A%28resource.type%3D%22dataflow_step'
-            '%22%0Alog_name%3D%22projects%2Fmy-gcp-project-id%2Flogs%2Fdataflow.googleapis.com%252Fjob-message'
-            '%22%0Aseverity%3E%3D%22WARNING%22%0A%29%0AAND%0Aresource.labels.project_id%3D%22my-gcp-project-id%22')
 
+    @mock.patch('builtins.print')
+    def test_should_call_cli_logs_and_use_log_name_if_provided(self, print_mock):
         # when
-        cli(['logs', '--config', 'dev', '--workflow', 'some-workflow'])
+        root_package = find_root_package(None, "test.cli_logs_log_name_workflow")
+        cli_logs(root_package)
 
         # then
         print_mock.assert_called_with(
-            '\n*************************LOGS LINK*************************\nWorkflow logs: '
-            'https://console.cloud.google.com/logs/query;query=logName%3D%22projects'
-            '%2Fmy-gcp-project-id%2Flogs%2Fsome-workflow%22%0Alabels.workflow_id%'
-            '3D%22some-workflow%22%0A\n***********************************************************')
-        _open_link_in_browser_mock.assert_called_with('https://console.cloud.google.com/logs/query;query=logName%3D%22projects'
-            '%2Fmy-gcp-project-id%2Flogs%2Fsome-workflow%22%0Alabels.workflow_id%'
-            '3D%22some-workflow%22%0A')
+            '\n*************************LOGS LINK*************************\nInfrastructure logs:'
+            ' \nsome-project-id: https://console.cloud.google.com/logs/query;query=%28'
+            'severity%3E%3D%22WARNING%22%0A'
+            'resource.type%3D%22k8s_pod%22%0A%22'
+            'Error%3A%22%29%0AOR%0A%28'
+            'severity%3E%3D%22WARNING%22%0'
+            'Aresource.type%3D%22k8s_container%22%0'
+            'Aresource.labels.container_name%3D%22base%22%0A%29%0A'
+            'OR%0A%28resource.type%3D%22dataflow_step%22%0A'
+            'log_name%3D%22projects%2Fsome-project-id%2Flogs%2Fdataflow.googleapis.com%252Fjob-message%22%0'
+            'Aseverity%3E%3D%22WARNING%22%0A%29%0AAND%0A'
+            'resource.labels.project_id%3D%22some-project-id%22'
+            '\nWorkflow logs: \nID_1: https://console.cloud.google.com/logs/query;query='
+            'logName%3D%22projects%2Fsome-project-id%2Flogs%2Fname-log%22%0A'
+            'labels.workflow_id%3D%22ID_1%22%0A\n***********************************************************')
 
+    @mock.patch('builtins.print')
+    def test_should_deduplicate_projects_id(self, print_mock):
         # when
-        cli(['logs', '--config', 'dev', '-ln', 'log-name', '--workflow', 'some-workflow'])
+        root_package = find_root_package(None, "test.cli_logs_duplicated_workflows")
+        cli_logs(root_package)
 
         # then
         print_mock.assert_called_with(
-            '\n*************************LOGS LINK*************************\nWorkflow logs:'
-            ' https://console.cloud.google.com/logs/query;query=logName%3D%22projects%2Fmy-gcp-project-id'
-            '%2Flogs%2Flog-name%22%0Alabels.workflow_id%3D%22some-workflow%22%0A'
-            '\n***********************************************************')
-        _open_link_in_browser_mock.assert_called_with('https://console.cloud.google.com/logs/query;query=logName%3D%22projects%2Fmy-gcp-project-id'
-            '%2Flogs%2Flog-name%22%0Alabels.workflow_id%3D%22some-workflow%22%0A')
-        dc_file.unlink()
+            '\n*************************LOGS LINK*************************\nInfrastructure logs: '
+            '\nsome-project-id: https://console.cloud.google.com/logs/query;query=%28'
+            'severity%3E%3D%22WARNING%22%0A'
+            'resource.type%3D%22k8s_pod%22%0A%22'
+            'Error%3A%22%29%0AOR%0A%28'
+            'severity%3E%3D%22WARNING%22%0'
+            'Aresource.type%3D%22k8s_container%22%0'
+            'Aresource.labels.container_name%3D%22base%22%0A%29%0A'
+            'OR%0A%28resource.type%3D%22dataflow_step%22%0A'
+            'log_name%3D%22projects%2Fsome-project-id%2Flogs%2Fdataflow.googleapis.com%252Fjob-message%22%0A'
+            'severity%3E%3D%22WARNING%22%0A%29%0AAND%0A'
+            'resource.labels.project_id%3D%22some-project-id%22'
+            '\nWorkflow logs: \nID_1: https://console.cloud.google.com/logs/query;query='
+            'logName%3D%22projects%2Fsome-project-id%2Flogs%2FID_1%22%0A'
+            'labels.workflow_id%3D%22ID_1%22%0A\nID_2: '
+            'https://console.cloud.google.com/logs/query;query='
+            'logName%3D%22projects%2Fsome-project-id%2Flogs%2FID_2%22%0A'
+            'labels.workflow_id%3D%22ID_2%22%0A\n***********************************************************')
+
+    def test_should_raise_exception_if_no_workflow_with_log_config_found(self):
+        root_package = find_root_package("fake_project_name", None)
+        with self.assertRaises(Exception) as e:
+            cli_logs(root_package)
+        self.assertEqual(str(e.exception), 'Found no workflows with configured logging.')
 
     def test_should_throw_if_log_module_is_not_installed(self):
         # given
         with mock.patch.dict('sys.modules', {'bigflow.log': None}):
             # when
             with self.assertRaises(Exception):
-                cli(['logs', '-w', 'some-workflow'])
-
-    def test_should_throw_if_cli_logs_command_called_without_workflow_or_log_name_arg(self):
-        # when
-        with self.assertRaises(Exception):
-            cli(['logs'])
+                cli(['logs'])
 
     def _expected_default_dags_dir(self):
         return (Path(os.getcwd()) / '.dags').as_posix()

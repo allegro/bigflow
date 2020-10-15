@@ -3,13 +3,13 @@ import typing
 import sys
 import uuid
 import traceback
-import webbrowser
 
 from textwrap import dedent
 
 from google.cloud import logging_v2
 from google.cloud.logging_v2.gapic.enums import LogSeverity
 from urllib.parse import quote_plus
+
 
 try:
     from typing import TypedDict
@@ -99,49 +99,51 @@ class LogConfigDict(TypedDict):
     log_level: typing.Union[str, int]
 
 
-def _generate_cl_log_view_query(params: dict, separator: str = '='):
+def _generate_cl_log_view_query(params: dict):
     query = "".join(
-        '{}{}"{}"\n'.format(k, separator, v)
+        '{}"{}"\n'.format(k, v)
         for k, v in params.items()
     )
     return query
 
 
-def get_message_for_cli(project_id, workflow_id, log_name):
-    log_name = log_name or workflow_id
-    full_log_name = f"projects/{project_id}/logs/{log_name}"
+def workflow_logs_link_for_cli(log_config, workflow_id):
+    log_name = log_config.get('log_name', workflow_id)
+    full_log_name = f"projects/{log_config['gcp_project_id']}/logs/{log_name}"
+    return prepare_gcp_logs_link(
+        _generate_cl_log_view_query({'logName=': full_log_name, 'labels.workflow_id=': workflow_id}))
 
-    if workflow_id:
-        link = prepare_gcp_logs_link(
-            _generate_cl_log_view_query({'logName': full_log_name, 'labels.workflow_id': workflow_id}))
-        message = f'Workflow logs: {link}'
-    else:
-        link = get_bigflow_project_logs(project_id, full_log_name)
-        message = f'Bigflow project logs:{link}'
 
+def infrastructure_logs_link_for_cli(projects_id):
+    links = {}
+    for project_id in projects_id:
+        links[project_id] = get_infrastrucutre_bigflow_project_logs(project_id)
+    return links
+
+
+def print_log_links_message(workflows_links, infra_links):
+    workflows_links = '\n'.join(f'{workflow}: {link}' for workflow, link in workflows_links.items())
+    infra_links = '\n'.join(f'{workflow}: {link}' for workflow, link in infra_links.items())
     print(dedent(f"""
-           *************************LOGS LINK*************************
-           {message}
-           ***********************************************************"""))
-    _open_link_in_browser(link)
+*************************LOGS LINK*************************
+Infrastructure logs: 
+{infra_links}
+Workflow logs: 
+{workflows_links}
+***********************************************************"""))
 
 
-def _open_link_in_browser(link):
-    webbrowser.open(link)
-
-
-def get_bigflow_project_logs(project_id, full_log_name):
-    pod_errors = _generate_cl_log_view_query({"severity": "WARNING"}, '>=') + _generate_cl_log_view_query(
-        {"resource.type": "k8s_pod"}) + '"Error:"'
-    container_errors = _generate_cl_log_view_query({"severity": "WARNING"}, '>=') + _generate_cl_log_view_query(
-        {"resource.type": "k8s_container", "resource.labels.container_name": "base"})
-    bigflow_logs = _generate_cl_log_view_query({"logName": full_log_name})
-    dataflow_errors = _generate_cl_log_view_query({"resource.type": "dataflow_step",
-                                                   "log_name": f"projects/{project_id}/logs/dataflow.googleapis.com%2Fjob-message"}) + _generate_cl_log_view_query(
-        {"severity": "WARNING"}, '>=')
+def get_infrastrucutre_bigflow_project_logs(project_id):
+    pod_errors = _generate_cl_log_view_query({"severity>=": "WARNING"}) + _generate_cl_log_view_query(
+        {"resource.type=": "k8s_pod"}) + '"Error:"'
+    container_errors = _generate_cl_log_view_query({"severity>=": "WARNING"}) + _generate_cl_log_view_query(
+        {"resource.type=": "k8s_container", "resource.labels.container_name=": "base"})
+    dataflow_errors = _generate_cl_log_view_query({"resource.type=": "dataflow_step",
+                                                   "log_name=": f"projects/{project_id}/logs/dataflow.googleapis.com%2Fjob-message"}) + _generate_cl_log_view_query(
+        {"severity>=": "WARNING"})
 
     result = []
-    for entry in [pod_errors, container_errors, bigflow_logs, dataflow_errors]:
+    for entry in [pod_errors, container_errors, dataflow_errors]:
         result.append(f'({entry})')
 
     condition = '\nOR\n'.join(result)
@@ -180,15 +182,15 @@ def init_logging(config: LogConfigDict, workflow_id: str):
     # TODO: add formatter?
 
     full_log_name = f"projects/{gcp_project_id}/logs/{log_name}"
-    bigflow_project_logs = get_bigflow_project_logs(gcp_project_id, full_log_name)
+    infrastructure_logs = get_infrastrucutre_bigflow_project_logs(gcp_project_id)
     workflow_logs_link = prepare_gcp_logs_link(
-        _generate_cl_log_view_query({'logName': full_log_name, 'labels.workflow_id': workflow_id}))
+        _generate_cl_log_view_query({'logName=': full_log_name, 'labels.workflow_id=': workflow_id}))
     this_execution_logs_link = prepare_gcp_logs_link(
-        _generate_cl_log_view_query({'logName': full_log_name, 'labels.run_uuid': run_uuid}))
+        _generate_cl_log_view_query({'logName=': full_log_name, 'labels.run_uuid=': run_uuid}))
 
     logging.info(dedent(f"""
            *************************LOGS LINK*************************
-           Bigflow project logs:{bigflow_project_logs}
+           Infrastructure logs:{infrastructure_logs}
            Workflow logs (all runs): {workflow_logs_link}
            Only this run logs: {this_execution_logs_link}
            ***********************************************************"""))

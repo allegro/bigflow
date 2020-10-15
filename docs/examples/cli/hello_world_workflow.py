@@ -26,4 +26,4 @@ hello_world_workflow = Workflow(
         'gcp_project_id': 'some-project-id',
         'log_level': 'INFO',
         'log_name': 'hello_world_log_name'
-    },)
+    })
