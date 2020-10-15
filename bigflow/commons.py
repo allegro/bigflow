@@ -12,10 +12,10 @@ def now(template: str = "%Y-%m-%d %H:00:00"):
     return datetime.now().strftime(template)
 
 
-def run_process(cmd):
+def run_process(cmd, **kwargs):
     if isinstance(cmd, str):
         cmd = cmd.split(' ')
-    process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, **kwargs)
     result_output = ''
     for c in iter(lambda: process.stdout.read(1), b''):
         l = c.decode('utf-8')

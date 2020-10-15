@@ -177,6 +177,7 @@ class PySparkJobTest(unittest.TestCase):
             driver_path=driver_path,
             egg_path=egg_path,
             jar_file_uris=(),
+            properties=(),
         )
 
         # then
@@ -216,8 +217,7 @@ class PySparkJobTest(unittest.TestCase):
         job_controller.get_job = mock.Mock(return_value=job_state)
 
         # when
-        stdout = io.StringIO()
-        with contextlib.redirect_stdout(stdout):
+        with self.assertLogs() as logs:
             pyspark_job.run("2020-02-02")
 
         # then
@@ -230,5 +230,4 @@ class PySparkJobTest(unittest.TestCase):
             job=mock.ANY,
         )
 
-        out = stdout.getvalue()
-        self.assertIn("Job log:", out)
+        self.assertTrue(any("JOB OUTPUT:" in line for line in logs.output))
