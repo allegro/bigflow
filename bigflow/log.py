@@ -148,7 +148,6 @@ def get_infrastrucutre_bigflow_project_logs(project_id):
         result.append(f'({entry})')
 
     condition = '\nOR\n'.join(result)
-    condition += f'\nAND\nresource.labels.project_id="{project_id}"'
     return prepare_gcp_logs_link(condition)
 
 
