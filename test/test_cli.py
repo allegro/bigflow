@@ -549,31 +549,31 @@ deployment_config = Config(name='dev',
         cli(['build-dags'])
 
         # then
-        _cli_build_dags_mock.assert_called_with(Namespace(operation='build-dags', start_time=None, workflow=None))
+        _cli_build_dags_mock.assert_called_with(Namespace(operation='build-dags', start_time=None, workflow=None, verbose=False))
 
         # when
         cli(['build-dags', '-t', '2020-01-01 00:00:00'])
 
         # then
-        _cli_build_dags_mock.assert_called_with(Namespace(operation='build-dags', start_time='2020-01-01 00:00:00', workflow=None))
+        _cli_build_dags_mock.assert_called_with(Namespace(operation='build-dags', start_time='2020-01-01 00:00:00', workflow=None, verbose=False))
 
         # when
         cli(['build-dags', '-w', 'some_workflow'])
 
         # then
-        _cli_build_dags_mock.assert_called_with(Namespace(operation='build-dags', start_time=None, workflow='some_workflow'))
+        _cli_build_dags_mock.assert_called_with(Namespace(operation='build-dags', start_time=None, workflow='some_workflow', verbose=False))
 
         # when
         cli(['build-dags', '-w', 'some_workflow', '-t', '2020-01-01 00:00:00'])
 
         # then
-        _cli_build_dags_mock.assert_called_with(Namespace(operation='build-dags', start_time='2020-01-01 00:00:00', workflow='some_workflow'))
+        _cli_build_dags_mock.assert_called_with(Namespace(operation='build-dags', start_time='2020-01-01 00:00:00', workflow='some_workflow', verbose=False))
 
         # when
         cli(['build-dags', '-w', 'some_workflow', '-t', '2020-01-01'])
 
         # then
-        _cli_build_dags_mock.assert_called_with(Namespace(operation='build-dags', start_time='2020-01-01', workflow='some_workflow'))
+        _cli_build_dags_mock.assert_called_with(Namespace(operation='build-dags', start_time='2020-01-01', workflow='some_workflow', verbose=False))
 
         # when
         with self.assertRaises(SystemExit):
@@ -585,7 +585,7 @@ deployment_config = Config(name='dev',
         cli(['build-image'])
 
         # then
-        _cli_build_image_mock.assert_called_with(Namespace(operation='build-image'))
+        _cli_build_image_mock.assert_called_with(Namespace(operation='build-image', verbose=False))
 
     @mock.patch('bigflow.cli.run_process')
     @mock.patch('bigflow.cli.validate_project_setup')
@@ -615,19 +615,19 @@ deployment_config = Config(name='dev',
         cli(['build'])
 
         # then
-        _cli_build_mock.assert_called_with(Namespace(operation='build', start_time=None, workflow=None))
+        _cli_build_mock.assert_called_with(Namespace(operation='build', start_time=None, workflow=None, verbose=False))
 
         # when
         cli(['build', '--start-time', '2020-01-01 00:00:00'])
 
         # then
-        _cli_build_mock.assert_called_with(Namespace(operation='build', start_time='2020-01-01 00:00:00', workflow=None))
+        _cli_build_mock.assert_called_with(Namespace(operation='build', start_time='2020-01-01 00:00:00', workflow=None, verbose=False))
 
         # when
         cli(['build', '--start-time', '2020-01-01 00:00:00', '--workflow', 'some_workflow'])
 
         # then
-        _cli_build_mock.assert_called_with(Namespace(operation='build', start_time='2020-01-01 00:00:00', workflow='some_workflow'))
+        _cli_build_mock.assert_called_with(Namespace(operation='build', start_time='2020-01-01 00:00:00', workflow='some_workflow', verbose=False))
 
     @mock.patch('bigflow.cli.run_process')
     @mock.patch('bigflow.cli.validate_project_setup')
