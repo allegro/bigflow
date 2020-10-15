@@ -5,7 +5,7 @@ from unittest import TestCase, mock
 
 from google.cloud import logging_v2
 
-from bigflow.workflow import Workflow, Definition, InvalidJobGraph, WorkflowJob
+from bigflow.workflow import JobContext, Workflow, Definition, InvalidJobGraph, WorkflowJob
 from test.test_monitoring import FailingJob
 
 
@@ -42,9 +42,9 @@ class WorkflowTestCase(TestCase):
 
     def test_should_run_single_job_with_context(self):
         # given
-        first_job = mock.Mock(spec={'run_job', 'run', 'id'})
+        first_job = mock.Mock(spec={'execute', 'run', 'id'})
         first_job.id = 'first job'
-        first_job.run_job = mock.Mock()
+        first_job.execute = mock.Mock()
 
         definition = [first_job] + [mock.Mock() for i in range(100)]
         workflow = Workflow(workflow_id='test_workflow', definition=definition)
@@ -56,13 +56,56 @@ class WorkflowTestCase(TestCase):
         for step in definition[1:]:
             step.assert_not_called()
 
-        first_job.run_job.assert_called_once()
-        ctx: bigflow.workflow.JobContext = first_job.run_job.call_args.args[0]
+        first_job.execute.assert_called_once()
+        ctx: bigflow.workflow.JobContext = first_job.execute.call_args.args[0]
 
         self.assertIs(ctx.workflow, workflow)
         self.assertEqual(ctx.workflow_id, workflow.workflow_id)
         self.assertEqual(ctx.runtime_raw, "2020-01-01")
         self.assertEqual(ctx.runtime, datetime.datetime(2020, 1, 1))
+
+    def test_should_run_single_classbased_job_oldapi(self):
+
+        # given
+        class FirstJob:
+            id = 'first job'
+            runtime = None
+
+            def run(self, runtime):
+                assert self.runtime is None
+                self.runtime = runtime
+
+        first_job = FirstJob()
+        workflow = Workflow(workflow_id='test_workflow', definition=[first_job])
+
+        # when
+        workflow.run_job('first job', "2020-01-01")
+
+        # then
+        self.assertEqual(first_job.runtime, "2020-01-01")
+
+    def test_should_run_single_classbased_job(self):
+        # given
+        class FirstJob(bigflow.Job):
+            id = 'first job'
+            context = None
+
+            def execute(self, context: JobContext):
+                assert self.context is None
+                self.context = context
+
+        first_job = FirstJob()
+        workflow = Workflow(workflow_id='test_workflow', definition=[first_job])
+
+        # when
+        workflow.run_job('first job', datetime.datetime(2020, 1, 1))
+
+        # then
+        context: JobContext = first_job.context
+        self.assertIsNotNone(context)
+        self.assertEqual(context.runtime, datetime.datetime(2020, 1, 1))
+        self.assertEqual(context.workflow, workflow)
+        self.assertEqual(context.workflow_id, 'test_workflow')
 
     def test_should_have_id_and_schedule_interval(self):
         # given

@@ -43,17 +43,14 @@ class JobContext(typing.NamedTuple):
 class Job(abc.ABC):
     """Base abstract class for bigflow.Jobs.  It is recommended to inherit all your jobs from this class."""
 
-    @abc.abstractproperty
-    def get(self):
+    @property
+    @abc.abstractmethod
+    def id(self) -> str:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def run_job(self, context: JobContext):
-        logger.warn("Call old-api method 'job.run()' for %s", self.id)
-        self.run(context.runtime_raw)
-
-    def run(self, runtime):
-        raise NotImplementedError("Methods 'run_job' is not implemented for %r" % self)
+    def execute(self, context: JobContext):
+        raise NotImplementedError
 
 
 class Workflow(object):
@@ -85,11 +82,11 @@ class Workflow(object):
                 pass
         raise ValueError("Unable to parse 'run_time' %r" % rt)
 
-    def _apply_run_job(self, job, context):
+    def _execute_job(self, job, context):
         if not isinstance(job, Job):
             logger.warn("Please, inherit your job %r from `bigflow.Job` class", job)
-        if hasattr(job, 'run_job'):
-            job.run_job(context)
+        if hasattr(job, 'execute'):
+            job.execute(context)
         else:
             # fallback to old api
             job.run(context.runtime_raw)
@@ -113,7 +110,7 @@ class Workflow(object):
     def run(self, runtime: typing.Union[dt.datetime, str, None] = None):
         context = self._make_job_context(runtime)
         for job in self.build_sequential_order():
-            self._apply_run_job(job, context)
+            self._execute_job(job, context)
 
     def find_job(self, job_id):
         for job_wrapper in self.build_sequential_order():
@@ -123,7 +120,7 @@ class Workflow(object):
 
     def run_job(self, job_id: str, runtime: typing.Union[dt.datetime, str, None] = None):
         context = self._make_job_context(runtime)
-        self._apply_run_job(self.find_job(job_id), context)
+        self._execute_job(self.find_job(job_id), context)
 
     def build_sequential_order(self):
         return self.definition.sequential_order()
