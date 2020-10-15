@@ -1,8 +1,7 @@
 # BigFlow CLI
 
 BigFlow package offers a command-line tool called `bigflow`.
-It lets you run, build, and deploy your workflows from command-line on any machine with Python.
-It is also possible to generate GCP Logging link.
+It lets you run, build, access logs, and deploy your workflows from command-line on any machine with Python.
 
 BigFlow CLI is the recommended way of working with BigFlow projects
 on a local machine as well as for build and deployment automation on CI/CD servers.  
