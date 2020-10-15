@@ -146,3 +146,13 @@ class FindOrCreateSetupForMainProjectPackageTestCase(TestCase):
 
         # then
         self.assertEqual(path, self.setup_py)
+
+
+class FindOrCreateSetupForDefaultProjectPackageTestCase(TestCase):
+    def setUp(self):
+        self.setup_py = Path(__file__).parent.parent / 'setup.py'
+
+    def test_should_find_existing_setup_py_with_default_args(self):
+        path = find_or_create_setup_for_main_project_package()
+
+        self.assertEqual(path, self.setup_py)
