@@ -24,7 +24,7 @@ class WorkflowTestCase(TestCase):
 
     def test_should_run_single_job(self):
         # given
-        first_job = mock.Mock(spec={'run', 'id'})
+        first_job = mock.Mock(spec_set=['run', 'id'])
         first_job.id = 'first job'
         first_job.run = mock.Mock()
 
@@ -42,7 +42,7 @@ class WorkflowTestCase(TestCase):
 
     def test_should_run_single_job_with_context(self):
         # given
-        first_job = mock.Mock(spec={'execute', 'run', 'id'})
+        first_job = mock.Mock(spec_set=['execute', 'run', 'id'])
         first_job.id = 'first job'
         first_job.execute = mock.Mock()
 
@@ -57,7 +57,7 @@ class WorkflowTestCase(TestCase):
             step.assert_not_called()
 
         first_job.execute.assert_called_once()
-        ctx: bigflow.workflow.JobContext = first_job.execute.call_args.args[0]
+        ((ctx,), _kwargs) = first_job.execute.call_args
 
         self.assertIs(ctx.workflow, workflow)
         self.assertEqual(ctx.workflow_id, workflow.workflow_id)
