@@ -31,13 +31,11 @@ def daily_start_time(start_time: dt.datetime) -> dt.datetime:
 
 
 class JobContext(typing.NamedTuple):
-    runtime_raw: typing.Optional[str]
     runtime: typing.Optional[dt.datetime]
-    env: typing.Optional[str]
+    runtime_raw: typing.Optional[str]
     workflow: typing.Optional['Workflow']
     workflow_id: typing.Optional[str]
     # TODO: add unique 'workflow execution id' (for tracing/logging)
-    # TODO: add some 'workflow-level' configuration here
 
 
 class Job(abc.ABC):
@@ -104,7 +102,6 @@ class Workflow(object):
             runtime_raw=runtime_raw,
             workflow_id=self.workflow_id,
             workflow=self,
-            env='',  # TODO: capture the env
         )        
 
     def run(self, runtime: typing.Union[dt.datetime, str, None] = None):
