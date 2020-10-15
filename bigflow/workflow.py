@@ -1,3 +1,4 @@
+import abc
 import datetime as dt
 import typing
 
@@ -29,7 +30,38 @@ def daily_start_time(start_time: dt.datetime) -> dt.datetime:
     return start_time.replace(hour=0, minute=0, second=0, microsecond=0) - td
 
 
+class JobContext(typing.NamedTuple):
+    runtime_raw: typing.Optional[str]
+    runtime: typing.Optional[dt.datetime]
+    env: typing.Optional[str]
+    workflow: typing.Optional['Workflow']
+    workflow_id: typing.Optional[str]
+    # TODO: add unique 'workflow execution id' (for tracing/logging)
+    # TODO: add some 'workflow-level' configuration here
+
+
+class Job(abc.ABC):
+    """Base abstract class for bigflow.Jobs.  It is recommended to inherit all your jobs from this class."""
+
+    @abc.abstractproperty
+    def get(self):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def run_job(self, context: JobContext):
+        logger.warn("Call old-api method 'job.run()' for %s", self.id)
+        self.run(context.runtime_raw)
+
+    def run(self, runtime):
+        raise NotImplementedError("Methods 'run_job' is not implemented for %r" % self)
+
+
 class Workflow(object):
+
+    RUNTIME_FORMATS = [
+        "%Y-%m-%d %H:%M:%S",
+        "%Y-%m-%d",
+    ]
 
     def __init__(
         self,
@@ -45,24 +77,53 @@ class Workflow(object):
         self.start_time_factory = start_time_factory
         self.log_config = log_config
 
-    def run(self, runtime: Optional[str] = None):
-        if runtime is None:
-            runtime = self._auto_runtime()
-        for job in self.build_sequential_order():
-            job.run(runtime=runtime)
+    def _parse_runtime_str(self, rt: str):
+        for fmt in self.RUNTIME_FORMATS:
+            try:
+                return dt.datetime.strptime(rt, fmt)
+            except ValueError:
+                pass
+        raise ValueError("Unable to parse 'run_time' %r" % rt)
 
-    def run_job(self, job_id, runtime: Optional[str] = None):
-        if runtime is None:
-            runtime = self._auto_runtime()
+    def _apply_run_job(self, job, context):
+        if not isinstance(job, Job):
+            logger.warn("Please, inherit your job %r from `bigflow.Job` class", job)
+        if hasattr(job, 'run_job'):
+            job.run_job(context)
+        else:
+            # fallback to old api
+            job.run(context.runtime_raw)
+
+    def _make_job_context(self, runtime_raw):
+        if isinstance(runtime_raw, str):
+            runtime = self._parse_runtime_str(runtime_raw)
+        elif runtime_raw:
+            runtime = runtime_raw
+        else:
+            runtime = dt.datetime.now()
+
+        return JobContext(
+            runtime=runtime,
+            runtime_raw=runtime_raw,
+            workflow_id=self.workflow_id,
+            workflow=self,
+            env='',  # TODO: capture the env
+        )        
+
+    def run(self, runtime: typing.Union[dt.datetime, str, None] = None):
+        context = self._make_job_context(runtime)
+        for job in self.build_sequential_order():
+            self._apply_run_job(job, context)
+
+    def find_job(self, job_id):
         for job_wrapper in self.build_sequential_order():
             if job_wrapper.job.id == job_id:
-                job_wrapper.job.run(runtime)
-                break
-        else:
-            raise ValueError(f'Job {job_id} not found.')
+                return job_wrapper.job
+        raise ValueError(f'Job {job_id} not found.')
 
-    def _auto_runtime(self):
-        return now("%Y-%m-%d %H:%M:%S")
+    def run_job(self, job_id: str, runtime: typing.Union[dt.datetime, str, None] = None):
+        context = self._make_job_context(runtime)
+        self._apply_run_job(self.find_job(job_id), context)
 
     def build_sequential_order(self):
         return self.definition.sequential_order()

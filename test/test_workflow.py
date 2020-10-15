@@ -1,3 +1,5 @@
+import datetime
+import bigflow
 from collections import OrderedDict
 from unittest import TestCase, mock
 
@@ -22,8 +24,9 @@ class WorkflowTestCase(TestCase):
 
     def test_should_run_single_job(self):
         # given
-        first_job = mock.Mock()
-        setattr(first_job, 'id', 'first job')
+        first_job = mock.Mock(spec={'run', 'id'})
+        first_job.id = 'first job'
+        first_job.run = mock.Mock()
 
         definition = [first_job] + [mock.Mock() for i in range(100)]
         workflow = Workflow(workflow_id='test_workflow', definition=definition)
@@ -36,6 +39,30 @@ class WorkflowTestCase(TestCase):
             step.assert_not_called()
         # and
         first_job.assert_has_calls([mock.call.run('2020-01-01')])
+
+    def test_should_run_single_job_with_context(self):
+        # given
+        first_job = mock.Mock(spec={'run_job', 'run', 'id'})
+        first_job.id = 'first job'
+        first_job.run_job = mock.Mock()
+
+        definition = [first_job] + [mock.Mock() for i in range(100)]
+        workflow = Workflow(workflow_id='test_workflow', definition=definition)
+
+        # when
+        workflow.run_job('first job', '2020-01-01')
+
+        # then
+        for step in definition[1:]:
+            step.assert_not_called()
+
+        first_job.run_job.assert_called_once()
+        ctx: bigflow.workflow.JobContext = first_job.run_job.call_args.args[0]
+
+        self.assertIs(ctx.workflow, workflow)
+        self.assertEqual(ctx.workflow_id, workflow.workflow_id)
+        self.assertEqual(ctx.runtime_raw, "2020-01-01")
+        self.assertEqual(ctx.runtime, datetime.datetime(2020, 1, 1))
 
     def test_should_have_id_and_schedule_interval(self):
         # given
