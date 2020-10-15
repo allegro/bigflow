@@ -41,7 +41,10 @@ class _SomeObject:
 class PySparkJobTest(unittest.TestCase):
 
     def tearDown(self):
-        (pathlib.Path(__file__).parent / "example_project/setup.py").unlink(True)
+        try:
+            (pathlib.Path(__file__).parent / "example_project/setup.py").unlink()
+        except FileNotFoundError:
+            pass
 
     def test_generates_driver_for_callable(self):
 
@@ -126,7 +129,8 @@ class PySparkJobTest(unittest.TestCase):
         cluster_client.create_cluster.assert_called_once_with(
             project_id=project_id, region=region, cluster=mock.ANY)
 
-        cluster_data = cluster_client.create_cluster.call_args.kwargs['cluster']
+        (_, call_kwargs) = cluster_client.create_cluster.call_args
+        cluster_data = call_kwargs['cluster']
         cluster_client.create_cluster.return_value.result.assert_called_once()
 
         self.assertEqual(cluster_data['cluster_name'], cluster_name)
@@ -183,7 +187,9 @@ class PySparkJobTest(unittest.TestCase):
         # then
         dataproc_job_client.submit_job.assert_called_once_with(
             project_id=project_id, region=region, job=mock.ANY)
-        job = dataproc_job_client.submit_job.call_args.kwargs['job']
+            
+        (_, call_kwargs) = dataproc_job_client.submit_job.call_args
+        job = call_kwargs['job']
 
         self.assertEqual(job['placement']['cluster_name'], cluster_name)
         self.assertEqual(job_id, "the-job")
