@@ -654,7 +654,7 @@ def cli_logs(root_package):
     workflows_links = {}
     for workflow in walk_workflows(root_package):
         if workflow.log_config:
-            projects_id.append(workflow.log_config['gcp_project_id'])
+            projects_id.append((workflow.log_config['gcp_project_id'], workflow.workflow_id))
             workflows_links[workflow.workflow_id] = workflow_logs_link_for_cli(workflow.log_config, workflow.workflow_id)
     if not projects_id:
         raise Exception("Found no workflows with configured logging.")
