@@ -50,8 +50,8 @@ class PySparkJob:
         jar_file_uris: typing.Iterable[str] = ('gs://spark-lib/bigquery/spark-bigquery-latest_2.12.jar',),
         worker_num_instances: int = 2,
         worker_machine_type: str = 'n1-standard-1',
-        env: str = '',
-        setup_file: str = '',
+        env: typing.Optional[str] = None,
+        setup_file: typing.Optional[str] = None,
     ):
         self.id = id
 
