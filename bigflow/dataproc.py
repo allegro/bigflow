@@ -133,8 +133,8 @@ class PySparkJob:
             'spark.app.name': self.id,
         }
         if self.env:
-            ps['spark.workerEnv.env'] = self.env            
-            ps['spark.executorEnv.env'] = self.env
+            ps['spark.workerEnv.bf_env'] = self.env            
+            ps['spark.executorEnv.bf_env'] = self.env
         logger.debug("Pyspark properties are %r", ps)
         return ps
 

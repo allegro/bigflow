@@ -12,8 +12,8 @@ class EnvConfig:
 
 
 def current_env():
-    """Returns current env name (specified via 'bighflow --config' option)"""
-    return os.environ.get('env')
+    """Returns current env name (specified via 'bigflow --config' option)"""
+    return os.environ.get('bf_env')
 
 
 class Config:
