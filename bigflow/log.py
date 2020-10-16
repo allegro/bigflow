@@ -141,7 +141,7 @@ def get_infrastrucutre_bigflow_project_logs(project_id, workflow_id):
         {"resource.type=": "k8s_container", "resource.labels.container_name=": "base"})
     dataflow_errors = _generate_cl_log_view_query({"resource.type=": "dataflow_step",
                                                    "log_name=": f"projects/{project_id}/logs/dataflow.googleapis.com%2Fjob-message",
-                                                   "labels.workflow_id": workflow_id}) + _generate_cl_log_view_query(
+                                                   "labels.workflow_id=": workflow_id}) + _generate_cl_log_view_query(
         {"severity>=": "WARNING"})
 
     result = []
