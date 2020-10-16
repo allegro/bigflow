@@ -60,8 +60,7 @@ class WorkflowTestCase(TestCase):
         ((ctx,), _kwargs) = first_job.execute.call_args
 
         self.assertIs(ctx.workflow, workflow)
-        self.assertEqual(ctx.workflow_id, workflow.workflow_id)
-        self.assertEqual(ctx.runtime_raw, "2020-01-01")
+        self.assertEqual(ctx.runtime_as_str, "2020-01-01")
         self.assertEqual(ctx.runtime, datetime.datetime(2020, 1, 1))
 
     def test_should_run_single_classbased_job_oldapi(self):
@@ -104,8 +103,7 @@ class WorkflowTestCase(TestCase):
         context: JobContext = first_job.context
         self.assertIsNotNone(context)
         self.assertEqual(context.runtime, datetime.datetime(2020, 1, 1))
-        self.assertEqual(context.workflow, workflow)
-        self.assertEqual(context.workflow_id, 'test_workflow')
+        self.assertIs(context.workflow, workflow)
 
     def test_should_have_id_and_schedule_interval(self):
         # given

@@ -32,9 +32,8 @@ def daily_start_time(start_time: dt.datetime) -> dt.datetime:
 
 class JobContext(typing.NamedTuple):
     runtime: typing.Optional[dt.datetime]
-    runtime_raw: typing.Optional[str]
+    runtime_as_str: typing.Optional[str]
     workflow: typing.Optional['Workflow']
-    workflow_id: typing.Optional[str]
     # TODO: add unique 'workflow execution id' (for tracing/logging)
 
 
@@ -87,21 +86,20 @@ class Workflow(object):
             job.execute(context)
         else:
             # fallback to old api
-            job.run(context.runtime_raw)
+            job.run(context.runtime_as_str)
 
     def _make_job_context(self, runtime_raw):
         if isinstance(runtime_raw, str):
+            runtime_as_str = runtime_raw
             runtime = self._parse_runtime_str(runtime_raw)
-        elif runtime_raw:
-            runtime = runtime_raw
         else:
-            runtime = dt.datetime.now()
+            runtime = runtime_raw or dt.datetime.now()
+            runtime_as_str = runtime.strftime(self.RUNTIME_FORMATS[0])
 
         return JobContext(
-            runtime=runtime,
-            runtime_raw=runtime_raw,
-            workflow_id=self.workflow_id,
             workflow=self,
+            runtime=runtime,
+            runtime_as_str=runtime_as_str,
         )        
 
     def run(self, runtime: typing.Union[dt.datetime, str, None] = None):
