@@ -19,6 +19,7 @@ import logging
 
 from google.cloud import dataproc_v1, storage
 
+import bigflow
 import bigflow.configuration
 import bigflow.resources
 import bigflow.commons
@@ -31,7 +32,7 @@ __all__ = [
 ]
 
 DEFAULT_REQUIREMENTS = [
-    'bigflow[dataproc,log,bigquery]==1.0.dev67',
+    f"bigflow[dataproc,log,bigquery]=={bigflow.__version__}",
 ]
 
 
