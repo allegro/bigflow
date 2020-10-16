@@ -16,9 +16,6 @@ except ImportError:
     TypedDict = dict
 
 
-logger = logging.getLogger(__name__)
-
-
 class GCPLoggerHandler(logging.Handler):
 
     def __init__(self, project_id, log_name, labels):
@@ -177,12 +174,10 @@ def init_logging(config: LogConfigDict, workflow_id: str):
         'run_uuid': run_uuid,
     }
 
-    root = logging.getLogger()
-    if not root.handlers:
-        # logs are not configured yet - print to stderr
-        logging.basicConfig(level=log_level)
-    elif log_level:
-        root.setLevel(min(root.level, logging._checkLevel(log_level)))
+    logging.basicConfig(level=log_level)
+    gcp_logger_handler = GCPLoggerHandler(gcp_project_id, log_name, labels)
+    gcp_logger_handler.setLevel(logging.INFO)
+    # TODO: add formatter?
 
     full_log_name = f"projects/{gcp_project_id}/logs/{log_name}"
     infrastructure_logs = get_infrastrucutre_bigflow_project_logs(gcp_project_id, workflow_id)
@@ -191,15 +186,11 @@ def init_logging(config: LogConfigDict, workflow_id: str):
     this_execution_logs_link = prepare_gcp_logs_link(
         _generate_cl_log_view_query({'logName=': full_log_name, 'labels.run_uuid=': run_uuid}))
 
-    logger.info(dedent(f"""
+    logging.info(dedent(f"""
            *************************LOGS LINK*************************
            Infrastructure logs:{infrastructure_logs}
            Workflow logs (all runs): {workflow_logs_link}
            Only this run logs: {this_execution_logs_link}
            ***********************************************************"""))
-    gcp_logger_handler = GCPLoggerHandler(gcp_project_id, log_name, labels)
-    gcp_logger_handler.setLevel(log_level or logging.INFO)
-    # TODO: add formatter?
-    root.addHandler(gcp_logger_handler)
-
+    logging.getLogger(None).addHandler(gcp_logger_handler)
     sys.excepthook = _uncaught_exception_handler(logging.getLogger('uncaught_exception'))

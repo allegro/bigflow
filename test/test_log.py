@@ -1,6 +1,5 @@
 import logging
-import contextlib
-import io
+import os
 import sys
 
 from unittest import TestCase, mock
@@ -28,27 +27,18 @@ class LoggerTestCase(TestCase):
         self.configure_mocked_logging('project-id', 'logger_name', 'workflow-id')
         self.test_logger = logging.getLogger('any.random.logger.name')
         self.root_logger = logging.getLogger('')
-
-    def _clear_all_root_loggers(self):
-        for h in logging.getLogger().handlers[:]:
-            logging.getLogger().removeHandler(h)
-            h.close()
  
     def tearDown(self):
-        self._clear_all_root_loggers()
+        logging.getLogger().handlers.clear()
         bigflow.log._LOGGING_CONFIGURED = False
 
     def test_should_create_correct_logging_link(self):
-
-        # when
-        f = io.StringIO()
-        with contextlib.redirect_stderr(f):
-            # stderr handler is created only when no other handlers are registered
-            self._clear_all_root_loggers()
+        with self.assertLogs(level='INFO') as logs:
+            # when
             self.configure_mocked_logging('project-id', 'another_log_name', 'workflow_id')
 
         # then
-        out = f.getvalue()
+        out = "\n".join(logs.output)
         self.assertIn("LOGS LINK", out)
         self.assertIn("https://console.cloud.google.com/logs/query;query=", out)
         self.assertIn("labels.workflow_id%3D%22workflow_id%22", out)
@@ -112,20 +102,4 @@ class LoggerTestCase(TestCase):
         self._assert_single_log_event(
             message_re="error message",
             severity=500,
-        )
-
-    def test_should_install_gcp_handler_when_logging_already_exists(self):
-
-        # given
-        self._clear_all_root_loggers()
-        logging.basicConfig(level=logging.ERROR)
-
-        # when
-        self.configure_mocked_logging('project-id', 'logger_name', 'workflow_id')
-        self.test_logger.info("message")
-
-        # then
-        self._assert_single_log_event(
-            message_re="message",
-            severity=200,
         )
