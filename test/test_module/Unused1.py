@@ -25,8 +25,14 @@ class ExampleJob:
     def run(self, runtime):
         started_jobs.append(self.id)
 
-workflow_1 = bf.Workflow(workflow_id="ID_1", definition=[wait_for_requests.to_job(), wait_for_requests.to_job()], schedule_interval="@once")
-workflow_2 = bf.Workflow(workflow_id="ID_2", definition=[wait_for_requests.to_job()])
+workflow_1 = bf.Workflow(workflow_id="ID_1", definition=[wait_for_requests.to_job(), wait_for_requests.to_job()], schedule_interval="@once", log_config={
+        'gcp_project_id': 'some-project-id',
+        'log_level': 'INFO',
+    })
+workflow_2 = bf.Workflow(workflow_id="ID_2", definition=[wait_for_requests.to_job()], log_config={
+        'gcp_project_id': 'another-project-id',
+        'log_level': 'INFO',
+    })
 workflow_3 = bf.Workflow(workflow_id="ID_3", definition=[ExampleJob("J_ID_3"), ExampleJob("J_ID_4")])
 workflow_4 = bf.Workflow(workflow_id="ID_4", definition=[ExampleJob("J_ID_5")])
 
