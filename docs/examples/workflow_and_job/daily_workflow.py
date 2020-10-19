@@ -1,17 +1,20 @@
+import datetime
 import bigflow
-
 
 class DailyJob(bigflow.Job):
     id = 'daily_job'
 
-    def run(self, runtime):
-        print(f'I should process data with timestamps from: {runtime} to {runtime[:10]} 23:59:00')
-
+    def execute(self, context):
+        dt1 = context.runtime
+        dt2 = dt1 + datetime.timedelta(days=1, seconds=-1)
+        print(f'I should process data with timestamps from: {dt1} to {dt2}')
 
 daily_workflow = Workflow(
     workflow_id='daily_workflow',
     schedule_interval='@daily',
-    definition=[DailyJob()])
+    definition=[
+        DailyJob(),
+    ],
+)
 
-if __name__ == '__main__':
-    daily_workflow.run('2020-01-01 00:00:00')
+daily_workflow.run(datetime.datetime(2020, 1, 1))

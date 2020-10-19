@@ -203,7 +203,7 @@ class FailingJob(object):
     def __init__(self, id):
         self.id = id
 
-    def run(self, runtime):
+    def execute(self, context):
         raise Exception('Panic!')
 
 

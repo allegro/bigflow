@@ -51,6 +51,8 @@ class JobContext(typing.NamedTuple):
             warnings.warn("Using `str` as `runtime` value is deprecated, please provide instance of `datetime`", DeprecationWarning)
             runtime_str = runtime_str or runtime
             runtime = _parse_runtime_str(runtime)
+        elif isinstance(runtime, dt.date):
+            runtime = dt.datetime(runtime.year, runtime.month, runtime.day)
         elif runtime is None:
             runtime = dt.datetime.now()
 
@@ -154,7 +156,7 @@ class WorkflowJob:
         return self.job.id
 
     def run(self, runtime):
-        self.job.run(runtime=runtime)
+        self.job.run(runtime)
 
     def execute(self, context: JobContext):
         self.job.execute(context)

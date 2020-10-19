@@ -11,7 +11,7 @@ class HelloWorldJob(bigflow.Job):
 class SayGoodbyeJob(bigflow.Job):
     id = 'say_goodbye'
 
-    def run(self, context: bigflow.JobContext):
+    def execute(self, context: bigflow.JobContext):
         print(f'Goodbye!')
 
 
