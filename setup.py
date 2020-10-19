@@ -33,6 +33,7 @@ setuptools.setup(
             'requirements/monitoring_extras.txt',
             'requirements/bigquery_extras.txt',
             'requirements/log_extras.txt',
+            'requirements/dataproc_extras.txt',
         ]),
     ],
     classifiers=[
@@ -44,6 +45,7 @@ setuptools.setup(
         'monitoring': read_requirements("monitoring_extras.txt"),
         'bigquery': read_requirements("bigquery_extras.txt"),
         'log': read_requirements("log_extras.txt"),
+        'dataproc': read_requirements("dataproc_extras.txt"),
     },
     scripts=["scripts/bf", "scripts/bigflow"]
 )
