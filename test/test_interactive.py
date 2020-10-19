@@ -287,7 +287,7 @@ class InteractiveComponentToJobTestCase(TestCase):
             self.assertEqual(ds1._peek_limit, None)
 
         # when
-        fake_component.to_job().execute(bigflow.JobContext.make(runtime_as_str='2019-01-01'))
+        fake_component.to_job().execute(bigflow.JobContext.make(runtime_str='2019-01-01'))
 
 
 class InteractiveComponentRunTestCase(TestCase):

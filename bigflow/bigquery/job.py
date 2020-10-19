@@ -22,7 +22,7 @@ class Job(bigflow.Job):
         self.retry_pause_sec = retry_pause_sec
 
     def execute(self, context: bigflow.JobContext):
-        return self._run_component(self._build_dependencies(context.runtime_as_str))
+        return self._run_component(self._build_dependencies(context.runtime_str))
 
     def _build_dependencies(self, runtime):
         return {

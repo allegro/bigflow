@@ -35,7 +35,7 @@ def daily_start_time(start_time: dt.datetime) -> dt.datetime:
 class JobContext(typing.NamedTuple):
 
     runtime: typing.Optional[dt.datetime]
-    runtime_as_str: typing.Optional[str]
+    runtime_str: typing.Optional[str]
     workflow: typing.Optional['Workflow']
     # TODO: add unique 'workflow execution id' (for tracing/logging)
 
@@ -44,22 +44,22 @@ class JobContext(typing.NamedTuple):
         cls,
         *,
         runtime: typing.Union[str, dt.datetime, None] = None,
-        runtime_as_str: typing.Optional[str] = None,
+        runtime_str: typing.Optional[str] = None,
         workflow: typing.Optional['Workflow'] = None,
     ):
         if isinstance(runtime, str):
             warnings.warn("Using `str` as `runtime` value is deprecated, please provide instance of `datetime`", DeprecationWarning)
-            runtime_as_str = runtime_as_str or runtime
+            runtime_str = runtime_str or runtime
             runtime = _parse_runtime_str(runtime)
         elif runtime is None:
             runtime = dt.datetime.now()
 
-        if not runtime_as_str and runtime:
-            runtime_as_str = runtime.strftime(_RUNTIME_FORMATS[0])
+        if not runtime_str and runtime:
+            runtime_str = runtime.strftime(_RUNTIME_FORMATS[0])
 
         return cls(
             runtime=runtime,
-            runtime_as_str=runtime_as_str,
+            runtime_str=runtime_str,
             workflow=workflow,
         )
 
@@ -105,7 +105,7 @@ class Workflow(object):
         else:
             # fallback to old api
             warnings.warn("Old bigflow.Job api is used, please implement method `execute` (see bigflow.Job)")
-            job.run(context.runtime_as_str)
+            job.run(context.runtime_str)
 
     def _make_job_context(self, runtime):
         return JobContext.make(workflow=self, runtime=runtime)

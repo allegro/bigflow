@@ -23,7 +23,7 @@ class WorkflowTestCase(TestCase):
             step.assert_has_calls([
                 mock.call.execute(JobContext(
                     runtime=datetime.datetime(2019, 1, 1),
-                    runtime_as_str='2019-01-01 00:00:00',
+                    runtime_str='2019-01-01 00:00:00',
                     workflow=workflow,
                 )),
             ])
@@ -66,7 +66,7 @@ class WorkflowTestCase(TestCase):
         ((ctx,), _kwargs) = first_job.execute.call_args
 
         self.assertIs(ctx.workflow, workflow)
-        self.assertEqual(ctx.runtime_as_str, "2020-01-01")
+        self.assertEqual(ctx.runtime_str, "2020-01-01")
         self.assertEqual(ctx.runtime, datetime.datetime(2020, 1, 1))
 
     def test_should_run_single_classbased_job_oldapi(self):
