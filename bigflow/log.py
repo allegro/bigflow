@@ -178,10 +178,7 @@ def init_logging(config: LogConfigDict, workflow_id: str):
     }
 
     root = logging.getLogger()
-    if not root.handlers:
-        # logs are not configured yet - print to stderr
-        logging.basicConfig(level=log_level)
-    elif log_level:
+    if log_level:
         root.setLevel(min(root.level, logging._checkLevel(log_level)))
 
     full_log_name = f"projects/{gcp_project_id}/logs/{log_name}"
