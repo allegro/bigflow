@@ -10,7 +10,7 @@ __all__ = [
     'Workflow',
     'Definition',
     'Config',
-    'resources',
+    'resources'
 ]
 
 try:

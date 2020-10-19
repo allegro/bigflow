@@ -47,7 +47,7 @@ class GCPLoggerHandler(logging.Handler):
 
         # CloudLogging list of supported log levels is a superset of python logging level names
         cl_log_level = record.levelname
-       
+
         json = {
             'message': record.getMessage(),
             'name': record.name,
@@ -74,10 +74,14 @@ class GCPLoggerHandler(logging.Handler):
 
     def write_log_entries(self, json, severity):
         entry = logging_v2.types.LogEntry()
-        entry.CopyFrom(self._log_entry_prototype) 
+        entry.CopyFrom(self._log_entry_prototype)
         entry.json_payload.update(json)
         entry.severity = LogSeverity[severity]
         self.client.write_log_entries([entry])
+
+
+def prepare_gcp_logs_link(query: str):
+    return f"https://console.cloud.google.com/logs/query;query={quote_plus(query)}"
 
 
 def _uncaught_exception_handler(logger):
@@ -96,12 +100,56 @@ class LogConfigDict(TypedDict):
     log_level: typing.Union[str, int]
 
 
-def _generate_cl_log_view_link(params: dict):
-    query = quote_plus("\n".join(
-        '{}="{}"'.format(k, v)
+def _generate_cl_log_view_query(params: dict):
+    query = "".join(
+        '{}"{}"\n'.format(k, v)
         for k, v in params.items()
-    ))
-    return f"https://console.cloud.google.com/logs/query;query={query}"
+    )
+    return query
+
+
+def workflow_logs_link_for_cli(log_config, workflow_id):
+    log_name = log_config.get('log_name', workflow_id)
+    full_log_name = f"projects/{log_config['gcp_project_id']}/logs/{log_name}"
+    return prepare_gcp_logs_link(
+        _generate_cl_log_view_query({'logName=': full_log_name, 'labels.workflow_id=': workflow_id}))
+
+
+def infrastructure_logs_link_for_cli(projects_config):
+    links = {}
+    for project_id, workflow_id in projects_config:
+        links[project_id] = get_infrastrucutre_bigflow_project_logs(project_id, workflow_id)
+    return links
+
+
+def print_log_links_message(workflows_links, infra_links):
+    workflows_links = '\n'.join(f'{workflow}: {link}' for workflow, link in workflows_links.items())
+    infra_links = '\n'.join(f'{workflow}: {link}' for workflow, link in infra_links.items())
+    print(dedent(f"""
+*************************LOGS LINK*************************
+Infrastructure logs: 
+{infra_links}
+Workflow logs: 
+{workflows_links}
+***********************************************************"""))
+
+
+def get_infrastrucutre_bigflow_project_logs(project_id, workflow_id):
+    pod_errors = _generate_cl_log_view_query({"severity>=": "WARNING"}) + _generate_cl_log_view_query(
+        {"resource.type=": "k8s_pod"}) + '"Error:"'
+    container_errors = _generate_cl_log_view_query({"severity>=": "WARNING"}) + _generate_cl_log_view_query(
+        {"resource.type=": "k8s_container", "resource.labels.container_name=": "base"})
+    dataflow_errors = _generate_cl_log_view_query({"resource.type=": "dataflow_step",
+                                                   "log_name=": f"projects/{project_id}/logs/dataflow.googleapis.com%2Fjob-message",
+                                                   "labels.workflow_id=": workflow_id}) + _generate_cl_log_view_query(
+        {"severity>=": "WARNING"})
+
+    result = []
+    for entry in [pod_errors, container_errors, dataflow_errors]:
+        result.append(f'({entry})')
+
+    condition = '\nOR\n'.join(result)
+    return prepare_gcp_logs_link(condition)
 
 
 def init_workflow_logging(workflow: 'bigflow.Workflow'):
@@ -110,13 +158,12 @@ def init_workflow_logging(workflow: 'bigflow.Workflow'):
     else:
         print("Log config is not provided for the Workflow")
 
- 
-def init_logging(config: LogConfigDict, workflow_id: str):
 
+def init_logging(config: LogConfigDict, workflow_id: str):
     global _LOGGING_CONFIGURED
     if _LOGGING_CONFIGURED:
         import warnings
-        warnings.warn(UserWarning("bigflow.log is is already configured - skip"))
+        warnings.warn(UserWarning("bigflow.log is already configured - skip"))
         return
     _LOGGING_CONFIGURED = True
 
@@ -138,11 +185,15 @@ def init_logging(config: LogConfigDict, workflow_id: str):
         root.setLevel(min(root.level, logging._checkLevel(log_level)))
 
     full_log_name = f"projects/{gcp_project_id}/logs/{log_name}"
-    workflow_logs_link = _generate_cl_log_view_link({'logName': full_log_name, 'labels.workflow_id': workflow_id})
-    this_execution_logs_link = _generate_cl_log_view_link({'logName': full_log_name, 'labels.run_uuid': run_uuid})
+    infrastructure_logs = get_infrastrucutre_bigflow_project_logs(gcp_project_id, workflow_id)
+    workflow_logs_link = prepare_gcp_logs_link(
+        _generate_cl_log_view_query({'logName=': full_log_name, 'labels.workflow_id=': workflow_id}))
+    this_execution_logs_link = prepare_gcp_logs_link(
+        _generate_cl_log_view_query({'logName=': full_log_name, 'labels.run_uuid=': run_uuid}))
 
     logger.info(dedent(f"""
            *************************LOGS LINK*************************
+           Infrastructure logs:{infrastructure_logs}
            Workflow logs (all runs): {workflow_logs_link}
            Only this run logs: {this_execution_logs_link}
            ***********************************************************"""))

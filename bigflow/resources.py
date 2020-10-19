@@ -1,5 +1,6 @@
 import os
 import time
+import inspect
 from typing import List, Iterable
 from pathlib import Path
 from tempfile import NamedTemporaryFile
@@ -135,7 +136,8 @@ setuptools.setup(
 '''
 
 
-def find_or_create_setup_for_main_project_package(project_name: str, search_start_file: Path) -> Path:
+def find_or_create_setup_for_main_project_package(project_name: str = __name__.split('.')[0], search_start_file: Path = None) -> Path:
+    search_start_file = search_start_file or inspect.getmodule(inspect.stack()[1][0]).__file__
     return create_file_if_not_exists(find_file(project_name, Path(search_start_file)).parent / 'setup.py', create_setup_body(project_name))
 
 
