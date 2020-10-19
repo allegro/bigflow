@@ -40,6 +40,9 @@ class JobContext(typing.NamedTuple):
 class Job(abc.ABC):
     """Base abstract class for bigflow.Jobs.  It is recommended to inherit all your jobs from this class."""
 
+    retries: int = 3
+    retry_delay: float = 60
+
     @property
     @abc.abstractmethod
     def id(self) -> str:
