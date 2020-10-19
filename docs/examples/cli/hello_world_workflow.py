@@ -1,24 +1,24 @@
-from bigflow.workflow import Workflow
+import bigflow
 
 
-class HelloWorldJob:
-    def __init__(self):
-        self.id = 'hello_world'
+class HelloWorldJob(bigflow.Job):
+    id = 'hello_world'
 
-    def run(self, runtime):
-        print(f'Hello world on {runtime}!')
+    def execute(self, context: bigflow.JobContext):
+        print(f'Hello world on {context.runtime}!')
 
 
-class SayGoodbyeJob:
-    def __init__(self):
-        self.id = 'say_goodbye'
+class SayGoodbyeJob(bigflow.Job):
+    id = 'say_goodbye'
 
-    def run(self, runtime):
+    def run(self, context: bigflow.JobContext):
         print(f'Goodbye!')
 
 
-hello_world_workflow = Workflow(
+hello_world_workflow = bigflow.Workflow(
     workflow_id='hello_world_workflow',
     definition=[
         HelloWorldJob(),
-        SayGoodbyeJob()])
+        SayGoodbyeJob(),
+    ],
+)

@@ -14,16 +14,16 @@ The simplest workflow you can create looks like this:
 
 [`simple_workflow_and_job.py`](examples/workflow_and_job/simple_workflow_and_job.py)
 ```python
-from bigflow.workflow import Workflow
+import bigflow
 
 class SimpleJob:
     def __init__(self):
         self.id = 'simple_job'
 
-    def run(self, runtime):
+    def execute(self, context: bigflow.JobContext):
         print(f'Running a simple job')
 
-simple_workflow = Workflow(workflow_id='simple_workflow', definition=[SimpleJob()])
+simple_workflow = bigflow.Workflow(workflow_id='simple_workflow', definition=[SimpleJob()])
 ```
 
 You can run this workflow within a Python module:

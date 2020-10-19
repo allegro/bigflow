@@ -81,10 +81,12 @@ class Workflow(object):
 
     def _execute_job(self, job, context):
         if not isinstance(job, Job):
-            logger.warn("Please, inherit your job %r from `bigflow.Job` class", job)
+            logger.debug("Please, inherit your job %r from `bigflow.Job` class", job)
         if hasattr(job, 'execute'):
             job.execute(context)
         else:
+            logger.warn("Old bigflow.Job api is used: please change `run(runtime) => execute(context)`)")
+            raise Exception("XXX")
             # fallback to old api
             job.run(context.runtime_as_str)
 
