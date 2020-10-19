@@ -16,11 +16,17 @@ class WorkflowTestCase(TestCase):
         workflow = Workflow(workflow_id='test_workflow', definition=definition)
 
         # when
-        workflow.run('2019-01-01')
+        workflow.run(datetime.datetime(2019, 1, 1))
 
         # then
         for step in definition:
-            step.assert_has_calls([mock.call.run(runtime='2019-01-01')])
+            step.assert_has_calls([
+                mock.call.execute(JobContext(
+                    runtime=datetime.datetime(2019, 1, 1),
+                    runtime_as_str='2019-01-01 00:00:00',
+                    workflow=workflow,
+                )),
+            ])
 
     def test_should_run_single_job(self):
         # given

@@ -1,19 +1,21 @@
 import abc
-import datetime as dt
+import collections
 import typing
-
-from collections import OrderedDict
-from typing import Optional
+import warnings
+import datetime as dt
 
 import bigflow
-from bigflow.commons import now
-
 
 import logging
 logger = logging.getLogger(__name__)
 
 
 DEFAULT_SCHEDULE_INTERVAL = '@daily'
+
+_RUNTIME_FORMATS = [
+    "%Y-%m-%d %H:%M:%S",
+    "%Y-%m-%d",
+]
 
 
 def get_timezone_offset_seconds() -> int:
@@ -31,34 +33,55 @@ def daily_start_time(start_time: dt.datetime) -> dt.datetime:
 
 
 class JobContext(typing.NamedTuple):
+
     runtime: typing.Optional[dt.datetime]
     runtime_as_str: typing.Optional[str]
     workflow: typing.Optional['Workflow']
     # TODO: add unique 'workflow execution id' (for tracing/logging)
 
+    @classmethod
+    def make(
+        cls,
+        *,
+        runtime: typing.Union[str, dt.datetime, None] = None,
+        runtime_as_str: typing.Optional[str] = None,
+        workflow: typing.Optional['Workflow'] = None,
+    ):
+        if isinstance(runtime, str):
+            warnings.warn("Using `str` as `runtime` value is deprecated, please provide instance of `datetime`", DeprecationWarning)
+            runtime_as_str = runtime_as_str or runtime
+            runtime = _parse_runtime_str(runtime)
+        elif runtime is None:
+            runtime = dt.datetime.now()
+
+        if not runtime_as_str and runtime:
+            runtime_as_str = runtime.strftime(_RUNTIME_FORMATS[0])
+
+        return cls(
+            runtime=runtime,
+            runtime_as_str=runtime_as_str,
+            workflow=workflow,
+        )
+
 
 class Job(abc.ABC):
     """Base abstract class for bigflow.Jobs.  It is recommended to inherit all your jobs from this class."""
 
+    id: str
     retries: int = 3
     retry_delay: float = 60
-
-    @property
-    @abc.abstractmethod
-    def id(self) -> str:
-        raise NotImplementedError
 
     @abc.abstractmethod
     def execute(self, context: JobContext):
         raise NotImplementedError
 
+    def run(self, runtime):
+        warnings.warn("Method `Job.run` is deprecated, use `Job.execute()` instead")
+        context = JobContext.make(runtime=runtime)
+        return self.execute(context)
+
 
 class Workflow(object):
-
-    RUNTIME_FORMATS = [
-        "%Y-%m-%d %H:%M:%S",
-        "%Y-%m-%d",
-    ]
 
     def __init__(
         self,
@@ -74,51 +97,31 @@ class Workflow(object):
         self.start_time_factory = start_time_factory
         self.log_config = log_config
 
-    def _parse_runtime_str(self, runtime: str):
-        for format in self.RUNTIME_FORMATS:
-            try:
-                return dt.datetime.strptime(runtime, format)
-            except ValueError:
-                pass
-        raise ValueError("Unable to parse 'run_time' %r" % rt)
-
     def _execute_job(self, job, context):
         if not isinstance(job, Job):
-            logger.debug("Please, inherit your job %r from `bigflow.Job` class", job)
+            logger.debug("It is recommended to inherit your job %r from `bigflow.Job` class", job)
         if hasattr(job, 'execute'):
             job.execute(context)
         else:
-            logger.warn("Old bigflow.Job api is used: please change `run(runtime) => execute(context)`)")
-            raise Exception("XXX")
             # fallback to old api
+            warnings.warn("Old bigflow.Job api is used, please implement method `execute` (see bigflow.Job)")
             job.run(context.runtime_as_str)
 
-    def _make_job_context(self, runtime_raw):
-        if isinstance(runtime_raw, str):
-            runtime_as_str = runtime_raw
-            runtime = self._parse_runtime_str(runtime_raw)
-        else:
-            runtime = runtime_raw or dt.datetime.now()
-            runtime_as_str = runtime.strftime(self.RUNTIME_FORMATS[0])
+    def _make_job_context(self, runtime):
+        return JobContext.make(workflow=self, runtime=runtime)
 
-        return JobContext(
-            workflow=self,
-            runtime=runtime,
-            runtime_as_str=runtime_as_str,
-        )        
-
-    def run(self, runtime: typing.Union[dt.datetime, str, None] = None):
+    def run(self, runtime: typing.Union[dt.date, str, None] = None):
         context = self._make_job_context(runtime)
         for job in self.build_sequential_order():
             self._execute_job(job, context)
 
-    def find_job(self, job_id):
+    def find_job(self, job_id) -> Job:
         for job_wrapper in self.build_sequential_order():
             if job_wrapper.job.id == job_id:
                 return job_wrapper.job
         raise ValueError(f'Job {job_id} not found.')
 
-    def run_job(self, job_id: str, runtime: typing.Union[dt.datetime, str, None] = None):
+    def run_job(self, job_id: str, runtime: typing.Union[dt.date, str, None] = None):
         context = self._make_job_context(runtime)
         self._execute_job(self.find_job(job_id), context)
 
@@ -141,12 +144,20 @@ class Workflow(object):
 
 
 class WorkflowJob:
+
     def __init__(self, job, name):
         self.job = job
         self.name = name
 
+    @property
+    def id(self):
+        return self.job.id
+
     def run(self, runtime):
         self.job.run(runtime=runtime)
+
+    def execute(self, context: JobContext):
+        self.job.execute(context)
 
     def __hash__(self):
         return hash(self.name)
@@ -188,7 +199,7 @@ class Definition:
 
     @staticmethod
     def _convert_list_to_graph(job_list):
-        graph_as_dict = OrderedDict()
+        graph_as_dict = collections.OrderedDict()
         if len(job_list) == 1:
             graph_as_dict[job_list[0]] = []
         else:
@@ -255,7 +266,7 @@ class JobOrderResolver:
 
     def _build_parental_map(self):
         visited = set()
-        parental_map = OrderedDict()
+        parental_map = collections.OrderedDict()
         for job in self.job_graph:
             self._fill_parental_map(job, parental_map, visited)
         return parental_map
@@ -283,3 +294,12 @@ class JobOrderResolver:
             self._call_on_graph_node_helper(
                 parent, parental_map, visited, consumer)
         consumer(job, parental_map[job])
+
+
+def _parse_runtime_str(runtime: str):
+    for format in _RUNTIME_FORMATS:
+        try:
+            return dt.datetime.strptime(runtime, format)
+        except ValueError:
+            pass
+    raise ValueError("Unable to parse 'runtime' %r" % rt)

@@ -22,7 +22,7 @@ class ExampleJob:
     def __init__(self, id):
         self.id = id
 
-    def run(self, runtime):
+    def execute(self, context):
         started_jobs.append(self.id)
 
 workflow_1 = bf.Workflow(workflow_id="ID_1", definition=[wait_for_requests.to_job(), wait_for_requests.to_job()], schedule_interval="@once")

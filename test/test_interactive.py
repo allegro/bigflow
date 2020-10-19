@@ -1,7 +1,10 @@
+import datetime
 from unittest import TestCase
 import mock
 
 from google.api_core.exceptions import BadRequest
+
+import bigflow
 
 from bigflow.bigquery.interactive import InteractiveDatasetManager
 from bigflow.bigquery.interactive import interactive_component
@@ -36,7 +39,7 @@ class OperationLevelDatasetManagerTestCase(TestCase):
         job = standard_component.to_job()
 
         # then
-        job.run('2019-01-01')
+        job.execute(bigflow.JobContext.make())
 
     @mock.patch('bigflow.bigquery.job.create_dataset_manager')
     def test_should_pass_all_arguments_to_core_dataset_manager_on_run(self, create_dataset_manager_mock):
@@ -61,7 +64,7 @@ class OperationLevelDatasetManagerTestCase(TestCase):
 
         # when
         job = standard_component.to_job()
-        job.run('2019-01-01')
+        job.execute(bigflow.JobContext.make())
 
         # then
         fake_dataset_manager.assert_has_calls([
@@ -193,7 +196,7 @@ class InteractiveComponentToJobTestCase(TestCase):
         @interactive_component(ds=default_dataset)
         def standard_component(ds):
             # then
-            self.assertEqual(ds.dt, '2019-01-01')
+            self.assertEqual(ds.dt, '2019-01-01 00:00:00')
             self.assertEqual(ds.extras, {'extra': 'param'})
             self.assertEqual(ds.client, 'client')
 
@@ -205,7 +208,7 @@ class InteractiveComponentToJobTestCase(TestCase):
         self.assertEqual(job.retry_count, DEFAULT_RETRY_COUNT)
         self.assertEqual(job.retry_pause_sec, DEFAULT_RETRY_PAUSE_SEC)
         self.assertEqual(job.dependency_configuration, {'ds': default_dataset.config})
-        job.run('2019-01-01')
+        job.execute(bigflow.JobContext.make(runtime=datetime.datetime(2019, 1, 1)))
 
     @mock.patch('bigflow.bigquery.job.create_dataset_manager')
     def test_should_turn_component_to_job_with_redefined_dependencies(self, create_dataset_manager_mock):
@@ -245,7 +248,7 @@ class InteractiveComponentToJobTestCase(TestCase):
         job = standard_component.to_job(dependencies_override={'ds2': modified_dataset})
 
         # then
-        job.run('2019-01-01')
+        job.execute(bigflow.JobContext.make())
 
     @mock.patch('bigflow.bigquery.job.create_dataset_manager')
     def test_should_not_mutate_dependency_configuration_when_redefining_dependencies(self, create_dataset_manager_mock):
@@ -268,7 +271,7 @@ class InteractiveComponentToJobTestCase(TestCase):
 
         # when
         standard_component.to_job(dependencies_override={'ds': modified_dataset})
-        standard_component.to_job().run('2019-01-01')
+        standard_component.to_job().execute(bigflow.JobContext.make())
 
     @mock.patch('bigflow.bigquery.job.create_dataset_manager')
     def test_should_wrap_each_dependency_into_operation_level_dataset_manager(self, create_dataset_manager_mock):
@@ -284,7 +287,7 @@ class InteractiveComponentToJobTestCase(TestCase):
             self.assertEqual(ds1._peek_limit, None)
 
         # when
-        fake_component.to_job().run('2019-01-01')
+        fake_component.to_job().execute(bigflow.JobContext.make(runtime_as_str='2019-01-01'))
 
 
 class InteractiveComponentRunTestCase(TestCase):
