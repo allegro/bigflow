@@ -3,10 +3,8 @@ import datetime as dt
 import typing
 
 from collections import OrderedDict
-from typing import Optional
 
 import bigflow
-from bigflow.commons import now
 
 
 import logging
@@ -64,7 +62,7 @@ class Workflow(object):
         schedule_interval=DEFAULT_SCHEDULE_INTERVAL,
         start_time_factory: typing.Callable[[dt.datetime], dt.datetime] = daily_start_time,
         log_config: typing.Optional['bigflow.log.LogConfigDict'] = None,
-    ):
+):
         self.definition = self._parse_definition(definition)
         self.schedule_interval = schedule_interval
         self.workflow_id = workflow_id
@@ -77,9 +75,10 @@ class Workflow(object):
                 return dt.datetime.strptime(runtime, format)
             except ValueError:
                 pass
-        raise ValueError("Unable to parse 'run_time' %r" % rt)
+        raise ValueError("Unable to parse 'run_time' %r" % runtime)
 
-    def _execute_job(self, job, context):
+    @staticmethod
+    def _execute_job(job, context):
         if not isinstance(job, Job):
             logger.warn("Please, inherit your job %r from `bigflow.Job` class", job)
         if hasattr(job, 'execute'):
@@ -142,6 +141,9 @@ class WorkflowJob:
 
     def run(self, runtime):
         self.job.run(runtime=runtime)
+
+    def execute(self, context: JobContext):
+        Workflow._execute_job(self.job, context)
 
     def __hash__(self):
         return hash(self.name)

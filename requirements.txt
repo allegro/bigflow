@@ -2,5 +2,6 @@
 -r requirements/monitoring_extras.txt
 -r requirements/bigquery_extras.txt
 -r requirements/log_extras.txt
+-r requirements/dataflow_extras.txt
 twine
 freezegun
