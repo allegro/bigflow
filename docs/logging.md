@@ -73,3 +73,7 @@ bigflow.log.init_workflow_logging(workflow)
 raise ValueError("message")
 ```
 The code above contains an unhandled `ValueError` exception, which will be also available at Cloud Logging.
+
+
+## Bigflow logs command
+To access logs, use the CLI command Bigflow logs. [`logs`](./cli.md#generating-link-to-gcp-logging).

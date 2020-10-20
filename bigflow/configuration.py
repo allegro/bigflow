@@ -1,4 +1,5 @@
 import os
+import io
 import pprint
 
 
@@ -10,12 +11,9 @@ class EnvConfig:
         self.properties = properties
 
 
-class StringStream:
-    def __init__(self):
-        self.value = ''
-
-    def write(self, text):
-        self.value += text
+def current_env():
+    """Returns current env name (specified via 'bigflow --config' option)"""
+    return os.environ.get('bf_env')
 
 
 class Config:
@@ -51,13 +49,14 @@ class Config:
         return self._resolve_property_from_os_env(property_name)
 
     def pretty_print(self, env_name: str = None):
-        s = StringStream()
+        s = io.StringIO()
         pp = pprint.PrettyPrinter(indent=4, stream=s)
 
         env_config = self._get_env_config(env_name)
         s.write(env_config.name + ' config:\n')
         pp.pprint(self.resolve(env_name))
-        return s.value[:-1]
+
+        return s.getvalue()[:-1]
 
     def resolve(self, env_name: str = None) -> dict:
         env_config = self._get_env_config(env_name)

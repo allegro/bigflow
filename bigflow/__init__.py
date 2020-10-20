@@ -1,5 +1,5 @@
 from . import resources
-from .workflow import Workflow, Definition
+from .workflow import Workflow, Definition, Job, JobContext
 from .configuration import Config
 
 from bigflow._version import __version__
@@ -8,9 +8,11 @@ from bigflow._version import __version__
 __all__ = [
     # core
     'Workflow',
+    'Job',
+    'JobContext',
     'Definition',
     'Config',
-    'resources',
+    'resources'
 ]
 
 try:

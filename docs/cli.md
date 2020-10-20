@@ -1,7 +1,7 @@
 # BigFlow CLI
 
 BigFlow package offers a command-line tool called `bigflow`.
-It lets you run, build, and deploy your workflows from command-line on any machine with Python.
+It lets you run, build, access logs, and deploy your workflows from command-line on any machine with Python.
 
 BigFlow CLI is the recommended way of working with BigFlow projects
 on a local machine as well as for build and deployment automation on CI/CD servers.  
@@ -24,7 +24,7 @@ Welcome to BiggerQuery CLI. Type: bigflow {command} -h to print detailed
 help for a selected command.
 
 positional arguments:
-  {run,deploy-dags,deploy-image,deploy,build-dags,build-image,build-package,build,start-project,project-version}
+  {run,deploy-dags,deploy-image,deploy,build-dags,build-image,build-package,build,start-project,project-version,logs}
                         BigFlow command to execute
 
 ...
@@ -303,6 +303,17 @@ You can change this location by setting the `deployment-config-path` parameter:
 ```shell
 bigflow deploy --deployment-config-path '/tmp/my_deployment_config.py'
 ```
+
+### Accessing logs
+The `bigflow logs` command lets you generate a link leading to your project/workflow logs in GCP Logging. It will generate 
+link for every workflow that has [logging configuration](logging.md).
+The output of `bigflow logs` command consists of two parts, an infrastructure link, and a workflow link. 
+Workflow link contains logs from user code, dataflow jobs, and exceptions that may occur during executing the workflow.
+The links will be created for every workflow found by Bigflow in the project directory.
+The infrastructure link contains logs from Kubernetes pods/containers and dataflow workers. The links will be created 
+for every unique project id found in workflows.
+
+
 
 ## Scaffold project
 Use the `bigflow start-project` command to create a [sample project](scaffold.md) and try all of the above commands yourself.
