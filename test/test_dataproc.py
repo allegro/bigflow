@@ -9,7 +9,7 @@ import google.cloud.dataproc_v1
 from google.cloud.dataproc_v1.services import job_controller
 import google.cloud.storage
 
-
+import bigflow
 import bigflow.dataproc
 import bigflow.resources
 
@@ -224,7 +224,7 @@ class PySparkJobTest(unittest.TestCase):
 
         # when
         with self.assertLogs() as logs:
-            pyspark_job.run("2020-02-02")
+            pyspark_job.execute(bigflow.JobContext.make())
 
         # then
         cluster_controller.create_cluster.assert_called_once()
