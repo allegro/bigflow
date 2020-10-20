@@ -783,34 +783,33 @@ another-project-id                         ANOTHER PROJECT                002242
         print_mock.assert_called_with(
             '\n*************************LOGS LINK*************************\nInfrastructure logs:'
             ' \nsome-project-id: https://console.cloud.google.com/logs/query;query=%28'
-            'severity%3E%3D%22WARNING%22%0'
+            'severity%3E%3D%22INFO%22%0'
             'Aresource.type%3D%22k8s_pod%22%0A%22'
             'Error%3A%22%29%0AOR%0A%28'
-            'severity%3E%3D%22WARNING%22%0A'
+            'severity%3E%3D%22INFO%22%0A'
             'resource.type%3D%22k8s_container%22%0A'
             'resource.labels.container_name%3D%22base%22%0A%29%0A'
             'OR%0A%28'
             'resource.type%3D%22dataflow_step%22%0A'
             'log_name%3D%22projects%2Fsome-project-id%2Flogs%2Fdataflow.googleapis.com%252Fjob-message%22%0A'
             'labels.workflow_id%3D%22ID_1%22%0A'
-            'severity%3E%3D%22WARNING%22%0A%29\n'
+            'severity%3E%3D%22INFO%22%0A%29\n'
             'another-project-id: https://console.cloud.google.com/logs/query;query=%28'
-            'severity%3E%3D%22WARNING%22%0A'
+            'severity%3E%3D%22INFO%22%0A'
             'resource.type%3D%22k8s_pod%22%0A%22'
             'Error%3A%22%29%0AOR%0A%28'
-            'severity%3E%3D%22WARNING%22%0A'
+            'severity%3E%3D%22INFO%22%0A'
             'resource.type%3D%22k8s_container%22%0A'
             'resource.labels.container_name%3D%22base%22%0A%29%0A'
             'OR%0A%28'
             'resource.type%3D%22dataflow_step%22%0A'
             'log_name%3D%22projects%2Fanother-project-id%2Flogs%2Fdataflow.googleapis.com%252Fjob-message%22%0A'
             'labels.workflow_id%3D%22ID_2%22%0A'
-            'severity%3E%3D%22WARNING%22%0A%29\nWorkflow logs: \nID_1: https://console.cloud.google.com/logs/query;query='
+            'severity%3E%3D%22INFO%22%0A%29\nWorkflow logs: \nID_1: https://console.cloud.google.com/logs/query;query='
             'logName%3D%22projects%2Fsome-project-id%2Flogs%2FID_1%22%0Alabels.workflow_id%3D%22ID_1%22%0A'
             '\nID_2: https://console.cloud.google.com/logs/query;query='
             'logName%3D%22projects%2Fanother-project-id%2Flogs%2FID_2%22%0Alabels.workflow_id%3D%22ID_2%22%0A'
             '\n***********************************************************')
-
 
     @mock.patch('builtins.print')
     def test_should_call_cli_logs_and_use_log_name_if_provided(self, print_mock):
@@ -822,21 +821,19 @@ another-project-id                         ANOTHER PROJECT                002242
         print_mock.assert_called_with(
             '\n*************************LOGS LINK*************************\nInfrastructure logs: \nsome-project-id: '
             'https://console.cloud.google.com/logs/query;query=%28'
-            'severity%3E%3D%22WARNING%22%0A'
+            'severity%3E%3D%22INFO%22%0A'
             'resource.type%3D%22k8s_pod%22%0A%22'
             'Error%3A%22%29%0AOR%0A%28'
-            'severity%3E%3D%22WARNING%22%0A'
+            'severity%3E%3D%22INFO%22%0A'
             'resource.type%3D%22k8s_container%22%0A'
             'resource.labels.container_name%3D%22base%22%0A%29%0A'
             'OR%0A%28'
             'resource.type%3D%22dataflow_step%22%0A'
             'log_name%3D%22projects%2Fsome-project-id%2Flogs%2Fdataflow.googleapis.com%252Fjob-message%22%0A'
             'labels.workflow_id%3D%22ID_1%22%0A'
-            'severity%3E%3D%22WARNING%22%0A%29\nWorkflow logs: \nID_1: https://console.cloud.google.com/logs/query;query='
+            'severity%3E%3D%22INFO%22%0A%29\nWorkflow logs: \nID_1: https://console.cloud.google.com/logs/query;query='
             'logName%3D%22projects%2Fsome-project-id%2Flogs%2Fname-log%22%0A'
             'labels.workflow_id%3D%22ID_1%22%0A\n***********************************************************')
-
-
 
     @mock.patch('builtins.print')
     def test_should_deduplicate_projects_id(self, print_mock):
@@ -848,22 +845,20 @@ another-project-id                         ANOTHER PROJECT                002242
         print_mock.assert_called_with(
             '\n*************************LOGS LINK*************************\nInfrastructure logs: '
             '\nsome-project-id: https://console.cloud.google.com/logs/query;query=%28'
-            'severity%3E%3D%22WARNING%22%0A'
+            'severity%3E%3D%22INFO%22%0A'
             'resource.type%3D%22k8s_pod%22%0A%22'
             'Error%3A%22%29%0AOR%0A%28'
-            'severity%3E%3D%22WARNING%22%0A'
+            'severity%3E%3D%22INFO%22%0A'
             'resource.type%3D%22k8s_container%22%0A'
             'resource.labels.container_name%3D%22base%22%0A%29%0AOR%0A%28'
             'resource.type%3D%22dataflow_step%22%0A'
             'log_name%3D%22projects%2Fsome-project-id%2Flogs%2Fdataflow.googleapis.com%252Fjob-message%22%0A'
             'labels.workflow_id%3D%22ID_2%22%0A'
-            'severity%3E%3D%22WARNING%22%0A%29\nWorkflow logs: \nID_1: https://console.cloud.google.com/logs/query;query='
+            'severity%3E%3D%22INFO%22%0A%29\nWorkflow logs: \nID_1: https://console.cloud.google.com/logs/query;query='
             'logName%3D%22projects%2Fsome-project-id%2Flogs%2FID_1%22%0A'
             'labels.workflow_id%3D%22ID_1%22%0A\nID_2: https://console.cloud.google.com/logs/query;query='
             'logName%3D%22projects%2Fsome-project-id%2Flogs%2FID_2%22%0Alabels.workflow_id%3D%22ID_2%22%0A'
             '\n***********************************************************')
-
-
 
     def test_should_raise_exception_if_no_workflow_with_log_config_found(self):
         root_package = find_root_package("fake_project_name", None)

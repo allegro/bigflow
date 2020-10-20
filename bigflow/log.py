@@ -135,14 +135,14 @@ Workflow logs:
 
 
 def get_infrastrucutre_bigflow_project_logs(project_id, workflow_id):
-    pod_errors = _generate_cl_log_view_query({"severity>=": "WARNING"}) + _generate_cl_log_view_query(
+    pod_errors = _generate_cl_log_view_query({"severity>=": "INFO"}) + _generate_cl_log_view_query(
         {"resource.type=": "k8s_pod"}) + '"Error:"'
-    container_errors = _generate_cl_log_view_query({"severity>=": "WARNING"}) + _generate_cl_log_view_query(
+    container_errors = _generate_cl_log_view_query({"severity>=": "INFO"}) + _generate_cl_log_view_query(
         {"resource.type=": "k8s_container", "resource.labels.container_name=": "base"})
     dataflow_errors = _generate_cl_log_view_query({"resource.type=": "dataflow_step",
                                                    "log_name=": f"projects/{project_id}/logs/dataflow.googleapis.com%2Fjob-message",
                                                    "labels.workflow_id=": workflow_id}) + _generate_cl_log_view_query(
-        {"severity>=": "WARNING"})
+        {"severity>=": "INFO"})
 
     result = []
     for entry in [pod_errors, container_errors, dataflow_errors]:
@@ -179,8 +179,8 @@ def init_logging(config: LogConfigDict, workflow_id: str):
 
     root = logging.getLogger()
     if not root.handlers:
-        # logs are not configured yet - print to stderr
-        logging.basicConfig(level=log_level)
+        # logs are not configured yet - print to stdout
+        logging.basicConfig(level=log_level, stream=sys.stdout)
     elif log_level:
         root.setLevel(min(root.level, logging._checkLevel(log_level)))
 
