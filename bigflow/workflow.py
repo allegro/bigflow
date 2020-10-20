@@ -99,7 +99,8 @@ class Workflow(object):
         self.start_time_factory = start_time_factory
         self.log_config = log_config
 
-    def _execute_job(self, job, context):
+    @staticmethod
+    def _execute_job(job, context):
         if not isinstance(job, Job):
             logger.debug("It is recommended to inherit your job %r from `bigflow.Job` class", job)
         if hasattr(job, 'execute'):
@@ -145,7 +146,7 @@ class Workflow(object):
         return [WorkflowJob(job, i) for i, job in enumerate(job_list)]
 
 
-class WorkflowJob:
+class WorkflowJob(Job):
 
     def __init__(self, job, name):
         self.job = job
@@ -155,11 +156,16 @@ class WorkflowJob:
     def id(self):
         return self.job.id
 
-    def run(self, runtime):
-        self.job.run(runtime)
+    @property
+    def retries(self):
+        return self.job.retries
+
+    @property
+    def retry_count(self):
+        return self.job.retry_count
 
     def execute(self, context: JobContext):
-        self.job.execute(context)
+        Workflow._execute_job(self.job, context)
 
     def __hash__(self):
         return hash(self.name)
