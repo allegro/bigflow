@@ -781,6 +781,28 @@ another-project-id                         ANOTHER PROJECT                002242
         f.write_text(content)
         return f
 
+    @mock.patch('bigflow.cli._cli_build')
+    @mock.patch.object(logging.root, 'handlers', new=[])
+    def test_should_enble_info_logging(self, cli_build):
+        # when
+        cli(["build"])
+
+        # then
+        self.assertEqual(len(logging.root.handlers), 1)
+        self.assertIsInstance(logging.root.handlers[0], logging.StreamHandler)
+        self.assertEqual(logging.root.level, logging.INFO)
+
+    @mock.patch('bigflow.cli._cli_build')
+    @mock.patch.object(logging.root, 'handlers', new=[])
+    def test_should_enble_debug_logging_when_verbose_flag_is_specified(self, cli_build):
+        # when
+        cli(["--verbose", "build"])
+
+        # then
+        self.assertEqual(len(logging.root.handlers), 1)
+        self.assertIsInstance(logging.root.handlers[0], logging.StreamHandler)
+        self.assertEqual(logging.root.level, logging.DEBUG)
+
 
 class ValidateProjectSetupTestCase(TestCase):
 
