@@ -1,10 +1,12 @@
 import logging
 import time
 import datetime
+import functools
 
 import googleapiclient.discovery
 
 logger = logging.getLogger(__name__)
+
 
 BIGFLOW_JOB_FAILURE_METRIC_TYPE = 'custom.googleapis.com/bigflow'
 BIGFLOW_JOB_FAILURE_METRIC = {
@@ -150,15 +152,22 @@ class MonitoringConfig(object):
 
 
 def meter_job_run_failures(job, monitoring_config):
-    original_run = job.run
 
-    def metered_run(runtime):
-        try:
-            return original_run(runtime)
-        except Exception as e:
-            logger.exception(e)
-            increment_job_failure_count(monitoring_config, job.id)
-            raise e
+    def meter(f):
+        @functools.wraps(f)
+        def wrapper(*args, **kwargs):
+            try:
+                return f(*args, **kwargs)
+            except Exception as e:
+                logger.exception(e)
+                increment_job_failure_count(monitoring_config, job.id)
+                raise e
+        return wrapper
 
-    job.run = metered_run
+    # TODO(anjensan): Don't use direct monkey-patching
+    if hasattr(job, 'run'):
+        job.run = meter(job.run)
+    if hasattr(job, 'execute'):
+        job.execute = meter(job.execute)
+
     return job
