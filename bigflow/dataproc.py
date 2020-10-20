@@ -36,7 +36,7 @@ DEFAULT_REQUIREMENTS = [
 ]
 
 
-class PySparkJob:
+class PySparkJob(bigflow.Job):
 
     def __init__(
         self,
@@ -91,23 +91,29 @@ class PySparkJob:
             self._project,
             self._any_file_inside_project)
 
-    def _generate_internal_jobid(self, runtime):
+    def _generate_internal_jobid(self, context):
         job_random_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=10))
         job_timestamp = datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S")  # FIXME: use 'runtime' ?
         jobid = f"{self.id.lower()}-{self.env or 'none'}-{job_timestamp}-{job_random_suffix}"
         logger.info("Internal job is %r", jobid)
         return jobid
 
-    def _prepare_driver_callable(self, runtime):
-        kwargs = dict(self.driver_arguments)
-        kwargs['runtime'] = runtime
-        
+    def _prepare_driver_callable(self, context: bigflow.JobContext):
+        kwargs = dict(self.driver_arguments or {})
         envs = {}
         if self.env:
             logger.debug("Will set env variable 'env' on pyspark driver to %r", self.env)
             envs['env'] = self.env
 
-        return _PySparkDriverWrapper(self.driver_callable, (), kwargs, envs)
+        context_wwf = context._replace(workflow=None)  # XXX
+
+        return _PySparkDriverWrapper(
+            self.driver_callable, (context_wwf,), 
+            kwargs,
+            envs,
+            context.workflow.log_config if context.workflow else None,
+            context.workflow.workflow_id if context.workflow else None,
+        )
 
     @contextlib.contextmanager
     def _with_temp_cluster(self, cluster_name):
@@ -129,27 +135,31 @@ class PySparkJob:
             logger.debug("Delete temp cluster %r", cluster_name)
             _delete_cluster(dataproc_cluster_client, self.gcp_project_id, self.gcp_region, cluster_name)
 
-    def _prepare_pyspark_properties(self):
+    def _prepare_pyspark_properties(self, context):
         ps = {
             'spark.app.name': self.id,
         }
         if self.env:
             ps['spark.workerEnv.bf_env'] = self.env            
             ps['spark.executorEnv.bf_env'] = self.env
+
+        if context.workflow and context.workflow.log_config:
+            ps['spark.workerEnv._bf_initlog'] = context.workflow.workflow_id
+
         logger.debug("Pyspark properties are %r", ps)
         return ps
 
-    def run(self, runtime):
+    def execute(self, context: bigflow.JobContext):
         logger.info("Run job %r", self.id)
 
         self._ensure_has_setup_file()
-        job_internal_id = self._generate_internal_jobid(runtime)
+        job_internal_id = self._generate_internal_jobid(context)
 
         client_options = {'api_endpoint': f"{self.gcp_region}-dataproc.googleapis.com:443"}
         storage_client = storage.Client(project=self.gcp_project_id)
         dataproc_job_client = dataproc_v1.JobControllerClient(client_options=client_options)
 
-        driver = self._prepare_driver_callable(runtime)
+        driver = self._prepare_driver_callable(context)
 
         logger.info("Prapare and upload python package...")
         bucket = storage_client.get_bucket(self.bucket_id)
@@ -169,7 +179,7 @@ class PySparkJob:
                 jar_file_uris=self.jar_file_uris,
                 driver_path=driver_path,
                 egg_path=egg_path,
-                properties=self._prepare_pyspark_properties(),
+                properties=self._prepare_pyspark_properties(context),
             )
             try:
                 _wait_for_job_to_finish(dataproc_job_client, self.gcp_project_id, self.gcp_region, job)
@@ -181,15 +191,26 @@ class PySparkJob:
 
 class _PySparkDriverWrapper:
 
-    def __init__(self, callable, args, kwargs, envs):
+    def __init__(self, callable, args, kwargs, envs, log_config, workflow_id):
         self.callable = callable
         self.args = args
         self.kwargs = kwargs
         self.envs = envs
+        self.log_config = log_config
+        self.workflow_id = workflow_id
 
     def __call__(self):
-        # TODO(anjensan): Configure logging (depends on #90)
-        os.environ.update(self.envs)
+
+        if self.log_config:
+            try:
+                import bigflow.log
+            except ImportError:
+                pass
+            else:
+                bigflow.log.init_logging(self.log_config, self.workflow_id)
+
+        os.environ.update(self.envs or [])
+
         self.callable(*self.args, **self.kwargs)
 
 
