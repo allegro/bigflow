@@ -6,6 +6,8 @@ import traceback
 
 from textwrap import dedent
 
+import bigflow
+
 from google.cloud import logging_v2
 from google.cloud.logging_v2.gapic.enums import LogSeverity
 from urllib.parse import quote_plus
@@ -179,7 +181,7 @@ def init_logging(config: LogConfigDict, workflow_id: str):
 
     root = logging.getLogger()
     if not root.handlers:
-        # logs are not configured yet - print to stderr
+        # logs are not configured yet - print to stdout
         logging.basicConfig(level=log_level)
     elif log_level:
         root.setLevel(min(root.level, logging._checkLevel(log_level)))
