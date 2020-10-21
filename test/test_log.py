@@ -2,6 +2,8 @@ import logging
 import contextlib
 import io
 import sys
+import json
+import os
 
 from unittest import TestCase, mock
 
@@ -129,3 +131,22 @@ class LoggerTestCase(TestCase):
             message_re="message",
             severity=200,
         )
+
+
+    @mock.patch.dict('os.environ')
+    @mock.patch.dict('sys.modules')
+    @mock.patch('bigflow.log.init_logging')
+    def test_logging_should_autoinitialize_via_env_variables(
+        self, 
+        init_logging_mock,
+    ):
+        # given
+        del sys.modules['bigflow']
+        self._clear_all_root_loggers()
+        os.environ['bf_log_config'] = json.dumps({'log_level': "INFO"})
+
+        # when
+        import bigflow
+
+        # then
+        self.assertEqual(logging.root.level, logging.INFO)
