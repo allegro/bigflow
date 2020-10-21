@@ -176,12 +176,12 @@ def init_logging(config: LogConfigDict, workflow_id: str):
 
     root = logging.getLogger()
     if not root.handlers:
-        logging.basicConfig(level=logging.INFO)
+        root.setLevel(logging.INFO)
         h1 = logging.StreamHandler(sys.stdout)
         h1.setLevel(logging.DEBUG)
         h1.addFilter(lambda record: record.levelno <= logging.INFO)
-        h2 = logging.StreamHandler()
-        h2.setLevel(logging.WARNING)
+        h2 = logging.StreamHandler(sys.stderr)
+        h2.setLevel(logging.ERROR)
         root.addHandler(h1)
         root.addHandler(h2)
 
