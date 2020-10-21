@@ -97,7 +97,6 @@ _LOGGING_CONFIGURED = False
 class LogConfigDict(TypedDict):
     gcp_project_id: str
     log_name: str
-    log_level: typing.Union[str, int]
 
 
 def _generate_cl_log_view_query(params: dict):
@@ -169,7 +168,6 @@ def init_logging(config: LogConfigDict, workflow_id: str):
 
     gcp_project_id = config['gcp_project_id']
     log_name = config.get('log_name', workflow_id)
-    log_level = config.get('log_level', 'INFO')
     run_uuid = str(uuid.uuid4())
 
     labels = {
@@ -179,10 +177,13 @@ def init_logging(config: LogConfigDict, workflow_id: str):
 
     root = logging.getLogger()
     if not root.handlers:
-        # logs are not configured yet - print to stdout
-        logging.basicConfig(level=log_level, stream=sys.stdout)
-    elif log_level:
-        root.setLevel(min(root.level, logging._checkLevel(log_level)))
+        h1 = logging.StreamHandler(sys.stdout)
+        h1.setLevel(logging.DEBUG)
+        h1.addFilter(lambda record: record.levelno <= logging.INFO)
+        h2 = logging.StreamHandler()
+        h2.setLevel(logging.WARNING)
+        root.addHandler(h1)
+        root.addHandler(h2)
 
     full_log_name = f"projects/{gcp_project_id}/logs/{log_name}"
     infrastructure_logs = get_infrastrucutre_bigflow_project_logs(gcp_project_id, workflow_id)
@@ -198,7 +199,7 @@ def init_logging(config: LogConfigDict, workflow_id: str):
            Only this run logs: {this_execution_logs_link}
            ***********************************************************"""))
     gcp_logger_handler = GCPLoggerHandler(gcp_project_id, log_name, labels)
-    gcp_logger_handler.setLevel(log_level or logging.INFO)
+    gcp_logger_handler.setLevel(logging.INFO)
     # TODO: add formatter?
     root.addHandler(gcp_logger_handler)
 
