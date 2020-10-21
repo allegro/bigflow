@@ -1,5 +1,4 @@
 import logging
-import typing
 import sys
 import uuid
 import traceback
@@ -177,6 +176,7 @@ def init_logging(config: LogConfigDict, workflow_id: str):
 
     root = logging.getLogger()
     if not root.handlers:
+        logging.basicConfig(level=logging.INFO)
         h1 = logging.StreamHandler(sys.stdout)
         h1.setLevel(logging.DEBUG)
         h1.addFilter(lambda record: record.levelno <= logging.INFO)
