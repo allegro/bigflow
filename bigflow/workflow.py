@@ -36,7 +36,11 @@ class JobContext(typing.NamedTuple):
 
     runtime: typing.Optional[dt.datetime]
     runtime_str: typing.Optional[str]
+
     workflow: typing.Optional['Workflow']
+    workflow_id: typing.Optional[str]
+
+    env: typing.Optional[str]
     # TODO: add unique 'workflow execution id' (for tracing/logging)
 
     @classmethod
@@ -46,24 +50,52 @@ class JobContext(typing.NamedTuple):
         runtime: typing.Union[str, dt.datetime, None] = None,
         runtime_str: typing.Optional[str] = None,
         workflow: typing.Optional['Workflow'] = None,
+        workflow_id: typing.Optional[str] = None,
+        env: typing.Optional[str] = None,
     ):
+        logger.debug("Build new JobContext...")
+
         if isinstance(runtime, str):
+            # Parse 'runtime' when it is a string
             warnings.warn("Using `str` as `runtime` value is deprecated, please provide instance of `datetime`", DeprecationWarning)
             runtime_str = runtime_str or runtime
             runtime = _parse_runtime_str(runtime)
-        elif isinstance(runtime, dt.date):
+        elif isinstance(runtime, dt.date) and not isinstance(runtime, dt.datetime):
+            logger.debug("Runtime has type `date`, convert to `datetime`")
             runtime = dt.datetime(runtime.year, runtime.month, runtime.day)
         elif runtime is None:
+            # No 'runtime'  -  fallback to current date-time
+            logger.info("No runtime specified - use current datetime %s", runtime)
             runtime = dt.datetime.now()
 
         if not runtime_str and runtime:
             runtime_str = runtime.strftime(_RUNTIME_FORMATS[0])
 
-        return cls(
+        if not env:
+            logger.debug("No explicit env specified - try to capture it from env variables")
+            env = bigflow.configuration.current_env()
+            logger.debug("Env is %r", env)
+
+        if workflow and workflow_id and workflow.workflow_id != workflow_id:
+            raise ValueError(f"Explicitly specified `workflow_id` {workflow_id} doesn math to real {workflow.workflow_id}")
+
+        if workflow and not workflow_id:
+            workflow_id = workflow.workflow_id
+            logger.debug("Workflow id is %s", workflow_id)
+        elif workflow_id and not workflow:
+            # TODO: Try to load/reconstruct workflow based on its id?
+            pass
+
+        jc = cls(
             runtime=runtime,
             runtime_str=runtime_str,
             workflow=workflow,
+            workflow_id=workflow_id,
+            env=env,
         )
+
+        logger.debug("JobContext is %r", jc)
+        return jc
 
 
 class Job(abc.ABC):

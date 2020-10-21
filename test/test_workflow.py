@@ -1,5 +1,7 @@
 import datetime
 import bigflow
+import freezegun
+
 from collections import OrderedDict
 from unittest import TestCase, mock
 
@@ -21,7 +23,7 @@ class WorkflowTestCase(TestCase):
         # then
         for step in definition:
             step.assert_has_calls([
-                mock.call.execute(JobContext(
+                mock.call.execute(JobContext.make(
                     runtime=datetime.datetime(2019, 1, 1),
                     runtime_str='2019-01-01 00:00:00',
                     workflow=workflow,
@@ -110,6 +112,56 @@ class WorkflowTestCase(TestCase):
         self.assertIsNotNone(context)
         self.assertEqual(context.runtime, datetime.datetime(2020, 1, 1))
         self.assertIs(context.workflow, workflow)
+
+    @freezegun.freeze_time("2020-01-02 03:04:05")
+    def test_should_auto_fill_runtime_field(self):
+        # when
+        jc = bigflow.JobContext.make()
+
+        # then
+        self.assertIsInstance(jc.runtime, datetime.datetime)
+        self.assertEqual(jc.runtime, datetime.datetime.now())
+        self.assertEqual(jc.runtime_str, "2020-01-02 03:04:05")
+
+    @mock.patch.dict('os.environ', bf_env="my-env")
+    def test_should_auto_capture_env(self):
+        # when
+        jc = bigflow.JobContext.make()
+
+        # then
+        self.assertEqual(jc.env, "my-env")
+
+    def test_should_auto_fill_workflow_id(self):
+        # given
+        workflow = mock.Mock()
+        workflow.workflow_id = "the_workflow"
+
+        # when
+        jc = bigflow.JobContext.make(workflow=workflow)
+
+        # then
+        self.assertIs(jc.workflow, workflow)
+        self.assertEqual(jc.workflow_id, "the_workflow")
+
+    def test_should_parse_string_runtime(self):
+        for dt_str, expected in [
+            ("2020-01-02", datetime.datetime(2020, 1, 2)),
+            ("2020-01-02 10:15:20", datetime.datetime(2020, 1, 2, 10, 15, 20)),
+        ]:
+            jc = bigflow.JobContext.make(runtime=dt_str)
+            self.assertEqual(jc.runtime, expected)
+
+    def test_should_convert_date_to_datetime(self):
+        # given
+        dt = datetime.date(2020, 1, 2)
+
+        # when
+        jc = bigflow.JobContext.make(runtime=dt)
+
+        # then
+        self.assertIsInstance(jc.runtime, datetime.datetime)
+        self.assertEqual(jc.runtime, datetime.datetime(2020, 1, 2, 0, 0, 0))
+        self.assertEqual(jc.runtime, datetime.datetime(2020, 1, 2, 0, 0, 0))
 
     def test_should_have_id_and_schedule_interval(self):
         # given
