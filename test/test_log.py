@@ -39,11 +39,10 @@ class LoggerTestCase(TestCase):
         bigflow.log._LOGGING_CONFIGURED = False
 
     def test_should_create_correct_logging_link(self):
-
         # when
         f = io.StringIO()
         with contextlib.redirect_stdout(f):
-            # stderr handler is created only when no other handlers are registered
+            # stdout handler is created only when no other handlers are registered
             self._clear_all_root_loggers()
             self.configure_mocked_logging('project-id', 'another_log_name', 'workflow_id')
 
@@ -53,7 +52,46 @@ class LoggerTestCase(TestCase):
         self.assertIn("https://console.cloud.google.com/logs/query;query=", out)
         self.assertIn("labels.workflow_id%3D%22workflow_id%22", out)
 
-    def _assert_single_log_event(self, message_re, severity=None, labels=None):
+    def test_should_log_to_correct_streams(self):
+        # given
+        err = io.StringIO()
+        out = io.StringIO()
+
+        # when
+        with contextlib.redirect_stdout(out):
+            self._clear_all_root_loggers()
+            self.configure_mocked_logging('project-id', 'another_log_name', 'workflow_id')
+            logger = logging.getLogger()
+            logger.info("info")
+            logger.warning("watch out")
+            logger.error("oh no")
+            logger.critical("nooo...")
+
+        # then
+        out = out.getvalue()
+        self.assertIn("info", out)
+        self.assertIn("watch out", out)
+        self.assertNotIn("oh no", out)
+        self.assertNotIn("nooo...", out)
+
+        # when
+        with contextlib.redirect_stderr(err):
+            self._clear_all_root_loggers()
+            self.configure_mocked_logging('project-id', 'another_log_name', 'workflow_id')
+            logger = logging.getLogger()
+            logger.info("info")
+            logger.warning("watch out")
+            logger.error("oh no")
+            logger.critical("nooo...")
+
+        # then
+        err_out = err.getvalue()
+        self.assertNotIn("info", err_out)
+        self.assertNotIn("watch out", err_out)
+        self.assertIn("oh no", err_out)
+        self.assertIn("nooo...", err_out)
+
+    def _assert_single_log_event(self, message_re, severity=None):
         self.assertEqual(1, self.logging_client.write_log_entries.call_count)
         calls = self.logging_client.write_log_entries.call_args_list[0][0]
         le = calls[0][0]

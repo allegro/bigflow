@@ -178,8 +178,8 @@ def init_logging(config: LogConfigDict, workflow_id: str):
     if not root.handlers:
         root.setLevel(logging.INFO)
         h1 = logging.StreamHandler(sys.stdout)
-        h1.setLevel(logging.DEBUG)
-        h1.addFilter(lambda record: record.levelno <= logging.INFO)
+        h1.setLevel(logging.INFO)
+        h1.addFilter(lambda record: record.levelno <= logging.WARNING)
         h2 = logging.StreamHandler(sys.stderr)
         h2.setLevel(logging.ERROR)
         root.addHandler(h1)
