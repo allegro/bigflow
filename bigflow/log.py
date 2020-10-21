@@ -5,6 +5,8 @@ import traceback
 
 from textwrap import dedent
 
+import bigflow
+
 from google.cloud import logging_v2
 from google.cloud.logging_v2.gapic.enums import LogSeverity
 from urllib.parse import quote_plus

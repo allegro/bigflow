@@ -36,22 +36,19 @@ The first one says Hello, and the second one says Goodbye:
 [hello_world_workflow.py](examples/cli/hello_world_workflow.py):
 
 ```python
-from bigflow.workflow import Workflow
+import bigflow
+
+class HelloWorldJob(bigflow.Job):
+    id = 'hello_world'
+
+    def execute(self, context: bigflow.JobContext):
+        print(f'Hello world on {context.runtime}!')
 
 
-class HelloWorldJob:
-    def __init__(self):
-        self.id = 'hello_world'
+class SayGoodbyeJob(bigflow.Job):
+    id = 'say_goodbye'
 
-    def run(self, runtime):
-        print(f'Hello world on {runtime}!')
-
-
-class SayGoodbyeJob:
-    def __init__(self):
-        self.id = 'say_goodbye'
-
-    def run(self, runtime):
+    def execute(self, context: bigflow.JobContext):
         print(f'Goodbye!')
 
 
@@ -59,7 +56,9 @@ hello_world_workflow = Workflow(
     workflow_id='hello_world_workflow',
     definition=[
         HelloWorldJob(),
-        SayGoodbyeJob()])
+        SayGoodbyeJob(),
+    ],
+)
 ```
 
 The [`bigflow run`](cli.md#running-workflows) command lets you run this workflow directly
@@ -129,8 +128,9 @@ deployment_config = Config(
     properties={
         'gcp_project_id': 'my_gcp_project_id',
         'docker_repository': 'eu.gcr.io/{gcp_project_id}/docs-project',
-        'dags_bucket': 'my_composer_dags_bucket'
-    })
+        'dags_bucket': 'my_composer_dags_bucket',
+    },
+)
 ```  
 
 [Read more](deployment.md#managing-configuration-in-deployment_configpy) about `deployment_config.py`.
@@ -211,32 +211,37 @@ Here we show how to create the workflow which prints different messaged for each
 [`hello_config_workflow.py`](examples/cli/hello_config_workflow.py):
 
 ```python
-from bigflow import Config
-from bigflow.workflow import Workflow
+import bigflow
+
+config = bigflow.Config(
+    name='dev',
+    properties={
+        'message_to_print': 'Message to print on DEV'
+    },
+).add_configuration(
+    name='prod',
+    properties={
+        'message_to_print': 'Message to print on PROD'
+    },
+)
 
 
-config = Config(name='dev',
-                properties={
-                        'message_to_print': 'Message to print on DEV'
-                }).add_configuration(
-                name='prod',
-                properties={
-                       'message_to_print': 'Message to print on PROD'
-                })
+class HelloConfigJob(bigflow.Job):
+    id = 'hello_config_job'
 
-
-class HelloConfigJob:
     def __init__(self, message_to_print):
-        self.id = 'hello_config_job'
         self.message_to_print = message_to_print
 
-    def run(self, runtime):
+    def execute(self, context):
         print(self.message_to_print)
 
 
 hello_world_workflow = Workflow(
     workflow_id='hello_config_workflow',
-    definition=[HelloConfigJob(config.resolve_property('message_to_print'))])
+    definition=[
+        HelloConfigJob(config.resolve_property('message_to_print')),
+    ],
+)
 
 ```
 

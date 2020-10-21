@@ -1,3 +1,5 @@
+import bigflow
+
 from inspect import getargspec
 from .dataset_manager import create_dataset_manager
 
@@ -5,7 +7,8 @@ DEFAULT_RETRY_COUNT = 3
 DEFAULT_RETRY_PAUSE_SEC = 60
 
 
-class Job(object):
+class Job(bigflow.Job):
+
     def __init__(self,
                  component,
                  id=None,
@@ -18,8 +21,8 @@ class Job(object):
         self.retry_count = retry_count
         self.retry_pause_sec = retry_pause_sec
 
-    def run(self, runtime):
-        return self._run_component(self._build_dependencies(runtime))
+    def execute(self, context: bigflow.JobContext):
+        return self._run_component(self._build_dependencies(context.runtime_str))
 
     def _build_dependencies(self, runtime):
         return {
@@ -47,6 +50,7 @@ class Job(object):
         raise ValueError("Can't find config for dependency: " + target_dependency_name)
 
     def _build_dependency(self, dependency_config, runtime):
-        _, dataset_manager = create_dataset_manager(runtime=runtime,
+        _, dataset_manager = create_dataset_manager(
+            runtime=runtime,
             **dependency_config._as_dict())
         return dataset_manager

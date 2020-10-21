@@ -1,18 +1,21 @@
-import datetime as dt
+import abc
+import collections
 import typing
-
-from collections import OrderedDict
-from typing import Optional
+import warnings
+import datetime as dt
 
 import bigflow
-from bigflow.commons import now
-
 
 import logging
 logger = logging.getLogger(__name__)
 
 
 DEFAULT_SCHEDULE_INTERVAL = '@daily'
+
+_RUNTIME_FORMATS = [
+    "%Y-%m-%d %H:%M:%S",
+    "%Y-%m-%d",
+]
 
 
 def get_timezone_offset_seconds() -> int:
@@ -27,6 +30,57 @@ def hourly_start_time(start_time: dt.datetime) -> dt.datetime:
 def daily_start_time(start_time: dt.datetime) -> dt.datetime:
     td = dt.timedelta(hours=24)
     return start_time.replace(hour=0, minute=0, second=0, microsecond=0) - td
+
+
+class JobContext(typing.NamedTuple):
+
+    runtime: typing.Optional[dt.datetime]
+    runtime_str: typing.Optional[str]
+    workflow: typing.Optional['Workflow']
+    # TODO: add unique 'workflow execution id' (for tracing/logging)
+
+    @classmethod
+    def make(
+        cls,
+        *,
+        runtime: typing.Union[str, dt.datetime, None] = None,
+        runtime_str: typing.Optional[str] = None,
+        workflow: typing.Optional['Workflow'] = None,
+    ):
+        if isinstance(runtime, str):
+            warnings.warn("Using `str` as `runtime` value is deprecated, please provide instance of `datetime`", DeprecationWarning)
+            runtime_str = runtime_str or runtime
+            runtime = _parse_runtime_str(runtime)
+        elif isinstance(runtime, dt.date):
+            runtime = dt.datetime(runtime.year, runtime.month, runtime.day)
+        elif runtime is None:
+            runtime = dt.datetime.now()
+
+        if not runtime_str and runtime:
+            runtime_str = runtime.strftime(_RUNTIME_FORMATS[0])
+
+        return cls(
+            runtime=runtime,
+            runtime_str=runtime_str,
+            workflow=workflow,
+        )
+
+
+class Job(abc.ABC):
+    """Base abstract class for bigflow.Jobs.  It is recommended to inherit all your jobs from this class."""
+
+    id: str
+    retries: int = 3
+    retry_delay: float = 60
+
+    @abc.abstractmethod
+    def execute(self, context: JobContext):
+        raise NotImplementedError
+
+    def run(self, runtime):
+        warnings.warn("Method `Job.run` is deprecated, use `Job.execute()` instead")
+        context = JobContext.make(runtime=runtime)
+        return self.execute(context)
 
 
 class Workflow(object):
@@ -45,24 +99,34 @@ class Workflow(object):
         self.start_time_factory = start_time_factory
         self.log_config = log_config
 
-    def run(self, runtime: Optional[str] = None):
-        if runtime is None:
-            runtime = self._auto_runtime()
-        for job in self.build_sequential_order():
-            job.run(runtime=runtime)
+    @staticmethod
+    def _execute_job(job, context):
+        if not isinstance(job, Job):
+            logger.debug("It is recommended to inherit your job %r from `bigflow.Job` class", job)
+        if hasattr(job, 'execute'):
+            job.execute(context)
+        else:
+            # fallback to old api
+            warnings.warn("Old bigflow.Job api is used, please implement method `execute` (see bigflow.Job)")
+            job.run(context.runtime_str)
 
-    def run_job(self, job_id, runtime: Optional[str] = None):
-        if runtime is None:
-            runtime = self._auto_runtime()
+    def _make_job_context(self, runtime):
+        return JobContext.make(workflow=self, runtime=runtime)
+
+    def run(self, runtime: typing.Union[dt.date, str, None] = None):
+        context = self._make_job_context(runtime)
+        for job in self.build_sequential_order():
+            self._execute_job(job, context)
+
+    def find_job(self, job_id) -> Job:
         for job_wrapper in self.build_sequential_order():
             if job_wrapper.job.id == job_id:
-                job_wrapper.job.run(runtime)
-                break
-        else:
-            raise ValueError(f'Job {job_id} not found.')
+                return job_wrapper.job
+        raise ValueError(f'Job {job_id} not found.')
 
-    def _auto_runtime(self):
-        return now("%Y-%m-%d %H:%M:%S")
+    def run_job(self, job_id: str, runtime: typing.Union[dt.date, str, None] = None):
+        context = self._make_job_context(runtime)
+        self._execute_job(self.find_job(job_id), context)
 
     def build_sequential_order(self):
         return self.definition.sequential_order()
@@ -82,13 +146,26 @@ class Workflow(object):
         return [WorkflowJob(job, i) for i, job in enumerate(job_list)]
 
 
-class WorkflowJob:
+class WorkflowJob(Job):
+
     def __init__(self, job, name):
         self.job = job
         self.name = name
 
-    def run(self, runtime):
-        self.job.run(runtime=runtime)
+    @property
+    def id(self):
+        return self.job.id
+
+    @property
+    def retries(self):
+        return self.job.retries
+
+    @property
+    def retry_count(self):
+        return self.job.retry_count
+
+    def execute(self, context: JobContext):
+        Workflow._execute_job(self.job, context)
 
     def __hash__(self):
         return hash(self.name)
@@ -130,7 +207,7 @@ class Definition:
 
     @staticmethod
     def _convert_list_to_graph(job_list):
-        graph_as_dict = OrderedDict()
+        graph_as_dict = collections.OrderedDict()
         if len(job_list) == 1:
             graph_as_dict[job_list[0]] = []
         else:
@@ -197,7 +274,7 @@ class JobOrderResolver:
 
     def _build_parental_map(self):
         visited = set()
-        parental_map = OrderedDict()
+        parental_map = collections.OrderedDict()
         for job in self.job_graph:
             self._fill_parental_map(job, parental_map, visited)
         return parental_map
@@ -225,3 +302,12 @@ class JobOrderResolver:
             self._call_on_graph_node_helper(
                 parent, parental_map, visited, consumer)
         consumer(job, parental_map[job])
+
+
+def _parse_runtime_str(runtime: str):
+    for format in _RUNTIME_FORMATS:
+        try:
+            return dt.datetime.strptime(runtime, format)
+        except ValueError:
+            pass
+    raise ValueError("Unable to parse 'runtime' %r" % rt)
