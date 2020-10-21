@@ -1,3 +1,4 @@
+import json
 import base64
 import functools
 import datetime
@@ -55,9 +56,11 @@ class PySparkJob(bigflow.Job):
     ):
         self.id = id
 
-        self.driver_filename = 'driver.py'
-        self.driver_callable = driver_callable
-        self.driver_arguments = driver_arguments or {}
+        if driver_arguments:
+            driver_callable = functools.partial(driver_callable, **driver_arguments)
+
+        self.driver = driver_callable
+        self.driver_filename = f"{id}__driver.py"
 
         self.bucket_id = bucket_id
         self.gcp_project_id = gcp_project_id
@@ -99,20 +102,17 @@ class PySparkJob(bigflow.Job):
         return jobid
 
     def _prepare_driver_callable(self, context: bigflow.JobContext):
-        kwargs = dict(self.driver_arguments or {})
-        envs = {}
-        if self.env:
-            logger.debug("Will set env variable 'env' on pyspark driver to %r", self.env)
-            envs['env'] = self.env
+        # Remove 'workflow' from context but keeps 'workflow_id'.
+        # In most cases Workflow is not pickleable as it keeps references to custom user jobs.
+        cleaned_context = context._replace(workflow=None)
 
-        context_wwf = context._replace(workflow=None)  # XXX
+        envs = self._prepare_env_variables(context)
+        logger.debug("Driver envs: %r", envs)
 
         return _PySparkDriverWrapper(
-            self.driver_callable, (context_wwf,), 
-            kwargs,
+            self.driver, 
+            cleaned_context,
             envs,
-            context.workflow.log_config if context.workflow else None,
-            context.workflow.workflow_id if context.workflow else None,
         )
 
     @contextlib.contextmanager
@@ -135,18 +135,23 @@ class PySparkJob(bigflow.Job):
             logger.debug("Delete temp cluster %r", cluster_name)
             _delete_cluster(dataproc_cluster_client, self.gcp_project_id, self.gcp_region, cluster_name)
 
+    def _prepare_env_variables(self, context):
+        res = {}
+        if context.env:
+            res['bf_env'] = context.env
+        if context.workflow and context.workflow.log_config:
+            res['bf_log_config'] = json.dumps(context.workflow.log_config)
+        if context.workflow_id:
+            res['bf_workflow_id'] = context.workflow_id
+        return res
+
     def _prepare_pyspark_properties(self, context):
+        env = self._prepare_env_variables(context)
         ps = {
             'spark.app.name': self.id,
+            **{f"spark.workerEnv.{k}": v for k, v in env.items()}
         }
-        if self.env:
-            ps['spark.workerEnv.bf_env'] = self.env            
-            ps['spark.executorEnv.bf_env'] = self.env
-
-        if context.workflow and context.workflow.log_config:
-            ps['spark.workerEnv._bf_initlog'] = context.workflow.workflow_id
-
-        logger.debug("Pyspark properties are %r", ps)
+        logger.debug("pyspark properties are %r", ps)
         return ps
 
     def execute(self, context: bigflow.JobContext):
@@ -191,27 +196,24 @@ class PySparkJob(bigflow.Job):
 
 class _PySparkDriverWrapper:
 
-    def __init__(self, callable, args, kwargs, envs, log_config, workflow_id):
+    def __init__(self, callable, context, envs):
         self.callable = callable
-        self.args = args
-        self.kwargs = kwargs
+        self.context = context
         self.envs = envs
-        self.log_config = log_config
-        self.workflow_id = workflow_id
 
     def __call__(self):
 
-        if self.log_config:
-            try:
-                import bigflow.log
-            except ImportError:
-                pass
-            else:
-                bigflow.log.init_logging(self.log_config, self.workflow_id)
+        # replace environment variables for driver program
+        # workers give the same env map via 'spark.workerEnv.*' properties
+        os.environ.update(self.envs or {})
 
-        os.environ.update(self.envs or [])
+        # 'os.environ' was just replaced - try to reload logging configuration
+        bigflow._maybe_init_logging_from_env()
 
-        self.callable(*self.args, **self.kwargs)
+        logging.info("Job context is: %r", self.context)
+        logging.debug("Execute driver callable %r", self.callable)
+
+        self.callable(self.context)
 
 
 def generate_driver_script(callable):

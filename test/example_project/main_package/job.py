@@ -10,15 +10,15 @@ class ExampleJob(bigflow.Job):
         pass
 
 
-def some_callable(runtime):
+def some_callable(context):
     pass
 
 
 def create_pyspark_job():
     import bigflow.dataproc
     return bigflow.dataproc.PySparkJob(
-        id='pyspark_job',
-        driver_callable=some_callable,
+        'pyspark_job',
+        some_callable,
         bucket_id="test-bucket",
         gcp_project_id="test-project",
         gcp_region="us-west1",

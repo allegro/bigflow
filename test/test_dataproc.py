@@ -1,7 +1,10 @@
+import datetime
 import unittest
 import pathlib
 import contextlib
 import io
+import os
+import json
 
 from unittest import mock
 
@@ -204,6 +207,11 @@ class PySparkJobTest(unittest.TestCase):
         storage_client_cls,
     ):
         # given
+        context = bigflow.JobContext.make(
+            workflow_id="some_workflow",
+            runtime="2020-02-02",
+        )
+
         from test.example_project.main_package.job import create_pyspark_job
         pyspark_job = create_pyspark_job()
 
@@ -224,7 +232,7 @@ class PySparkJobTest(unittest.TestCase):
 
         # when
         with self.assertLogs() as logs:
-            pyspark_job.execute(bigflow.JobContext.make())
+            pyspark_job.execute(context)
 
         # then
         cluster_controller.create_cluster.assert_called_once()
@@ -236,4 +244,97 @@ class PySparkJobTest(unittest.TestCase):
             job=mock.ANY,
         )
 
+        job = job_controller.submit_job.call_args[1]['job']
+        self.assertEqual(job['pyspark_job']['properties'], pyspark_job._prepare_pyspark_properties(context))
+
         self.assertTrue(any("JOB OUTPUT:" in line for line in logs.output))
+
+    def test_should_pass_job_context_to_callable(self):
+        # given
+        runtime = datetime.datetime(2020, 1, 2, 3, 4)
+
+        workflow = mock.Mock()
+        workflow.workflow_id = "some_workflow"
+        workflow.log_config = {"level": "DEBUG"}
+
+        jc = bigflow.JobContext.make(
+            workflow=workflow,
+            runtime=runtime,
+        )
+
+        callback = mock.Mock()
+        job = bigflow.dataproc.PySparkJob(
+            "some_job",
+            callback,
+            bucket_id="no-bucket",
+            gcp_project_id="no-project",
+            gcp_region="no-region",
+        )
+       
+        # when
+        driver = job._prepare_driver_callable(jc)
+        driver()
+
+        # then
+        callback.assert_called_once()
+        (jc2,), _kwargs = callback.call_args
+
+        self.assertIsNone(jc2.workflow)
+        self.assertEqual(jc2.workflow_id, workflow.workflow_id)
+        self.assertEqual(jc2.runtime, runtime)
+
+    @mock.patch('os.environ')
+    @mock.patch('bigflow._maybe_init_logging_from_env')
+    def test_should_initialize_logging_on_driver(self, maybe_init_logging, os_environ):
+
+        # given
+        os.environ = {}
+        workflow = mock.Mock()
+        workflow.workflow_id = "some_workflow"
+        workflow.log_config = {"level": "DEBUG"}
+
+        jc = bigflow.JobContext.make(workflow=workflow)
+
+        callback = lambda context: None
+        job = bigflow.dataproc.PySparkJob(
+            "some_job",
+            callback,
+            bucket_id="no-bucket",
+            gcp_project_id="no-project",
+            gcp_region="no-region",
+        )
+       
+        # when
+        driver = job._prepare_driver_callable(jc)
+        driver()
+
+        # then
+        self.assertIn('bf_log_config', os.environ)
+        self.assertDictEqual(json.loads(os.environ['bf_log_config']), workflow.log_config)
+        self.assertEqual(os.environ['bf_workflow_id'], workflow.workflow_id)
+        maybe_init_logging.assert_called_once()
+
+    def test_should_initialize_logging_on_workers(self):
+        
+        # given
+        workflow = mock.Mock()
+        workflow.workflow_id = "some_workflow"
+        workflow.log_config = {"level": "DEBUG"}
+
+        jc = bigflow.JobContext.make(workflow=workflow)
+
+        callback = lambda context: None
+        job = bigflow.dataproc.PySparkJob(
+            "some_job",
+            callback,
+            bucket_id="no-bucket",
+            gcp_project_id="no-project",
+            gcp_region="no-region",
+        )
+       
+        # when
+        props = job._prepare_pyspark_properties(jc)
+
+        # then
+        self.assertIn('spark.workerEnv.bf_log_config', props)
+        self.assertIn('spark.workerEnv.bf_workflow_id', props)
