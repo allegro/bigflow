@@ -51,7 +51,7 @@ A job is just an object with a unique `id` and the `execute` method.
 
 The `id` parameter is a string that should be a valid Python variable name. For example — `'my_example_job'`, `'MY_EXAMPLE_JOB'`, `'job1234'`.
 
-The Job `run` method a single argument — `context`. The `context` parameter is an object of type `bigflow.JobContext`.
+The Job `execute` method has a single argument `context` of a type `bigflow.JobContext`.
 It keeps execution timestamp, reference to workflow. You can find more information about `context`
 and scheduling [workflow scheduling options](#workflow-scheduling-options).
 
