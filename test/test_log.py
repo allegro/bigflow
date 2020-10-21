@@ -118,7 +118,7 @@ class LoggerTestCase(TestCase):
 
         # given
         self._clear_all_root_loggers()
-        logging.basicConfig(level=logging.ERROR)
+        logging.basicConfig(level=logging.INFO)
 
         # when
         self.configure_mocked_logging('project-id', 'logger_name', 'workflow_id')
