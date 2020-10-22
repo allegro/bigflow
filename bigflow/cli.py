@@ -671,6 +671,7 @@ def init_console_logging(verbose):
             format="%(message)s",
         )
 
+
 def cli_logs(root_package):
     projects_id = []
     workflows_links = {}
@@ -696,7 +697,7 @@ def _is_log_module_installed():
 def cli(raw_args) -> None:
     project_name = read_project_name_from_setup()
     parsed_args = _parse_args(project_name, raw_args)
-    # init_console_logging(parsed_args.verbose)
+    init_console_logging(parsed_args.verbose)
 
     operation = parsed_args.operation
 
