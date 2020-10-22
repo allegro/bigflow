@@ -42,7 +42,7 @@ class LoggerTestCase(TestCase):
         # when
         f = io.StringIO()
         with contextlib.redirect_stderr(f):
-            # stdout handler is created only when no other handlers are registered
+            # stderr handler is created only when no other handlers are registered
             self._clear_all_root_loggers()
             self.configure_mocked_logging('project-id', 'another_log_name', 'workflow_id')
 
@@ -118,7 +118,7 @@ class LoggerTestCase(TestCase):
 
         # given
         self._clear_all_root_loggers()
-        logging.basicConfig(level=logging.INFO)
+        logging.basicConfig(level=logging.ERROR)
 
         # when
         self.configure_mocked_logging('project-id', 'logger_name', 'workflow_id')
