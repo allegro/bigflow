@@ -178,15 +178,7 @@ def init_logging(config: LogConfigDict, workflow_id: str):
     }
 
     root = logging.getLogger()
-    if not root.handlers:
-        root.setLevel(logging.INFO)
-        h1 = logging.StreamHandler(sys.stdout)
-        h1.setLevel(logging.INFO)
-        h1.addFilter(lambda record: record.levelno <= logging.WARNING)
-        h2 = logging.StreamHandler(sys.stderr)
-        h2.setLevel(logging.ERROR)
-        root.addHandler(h1)
-        root.addHandler(h2)
+    logging.basicConfig(level=logging.INFO)
 
     full_log_name = f"projects/{gcp_project_id}/logs/{log_name}"
     infrastructure_logs = get_infrastrucutre_bigflow_project_logs(gcp_project_id, workflow_id)
