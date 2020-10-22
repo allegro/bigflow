@@ -151,14 +151,15 @@ def get_infrastructure_bigflow_project_logs(project_id):
     return prepare_gcp_logs_link(condition)
 
 
-def init_workflow_logging(workflow: 'bigflow.Workflow'):
+def init_workflow_logging(workflow: 'bigflow.Workflow', banner=True):
     if workflow.log_config:
-        init_logging(workflow.log_config, workflow.workflow_id)
+        init_logging(workflow.log_config, workflow.workflow_id, banner=banner)
     else:
         print("Log config is not provided for the Workflow")
 
 
-def init_logging(config: LogConfigDict, workflow_id: str):
+def init_logging(config: LogConfigDict, workflow_id: str, banner=True):
+
     global _LOGGING_CONFIGURED
     if _LOGGING_CONFIGURED:
         import warnings
@@ -190,14 +191,17 @@ def init_logging(config: LogConfigDict, workflow_id: str):
     this_execution_logs_link = prepare_gcp_logs_link(
         _generate_cl_log_view_query({'logName=': full_log_name, 'labels.run_uuid=': run_uuid}))
 
-    logger.info(dedent(f"""
-           *************************LOGS LINK*************************
-           Infrastructure logs:{infrastructure_logs}
-           Workflow logs (all runs): {workflow_logs_link}
-           Only this run logs: {this_execution_logs_link}
-           ***********************************************************"""))
+    if banner:
+        logger.info(dedent(f"""
+               *************************LOGS LINK*************************
+               Infrastructure logs:{infrastructure_logs}
+               Workflow logs (all runs): {workflow_logs_link}
+               Only this run logs: {this_execution_logs_link}
+               ***********************************************************"""))
+    
     gcp_logger_handler = GCPLoggerHandler(gcp_project_id, log_name, labels)
     gcp_logger_handler.setLevel(log_level or logging.INFO)
+
     # TODO: add formatter?
     root.addHandler(gcp_logger_handler)
 

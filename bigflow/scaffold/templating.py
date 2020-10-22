@@ -75,8 +75,11 @@ def render_templates(
 
         if not dst_path.parent.exists():
             dst_path.parent.mkdir(parents=True)
-        if dst_path.exists():
-            dst_path.unlink(True)
+
+        try:
+            dst_path.unlink()
+        except FileNotFoundError:
+            pass
 
         logger.info("create file %s", dst_path)
         dst_path.write_text(body)

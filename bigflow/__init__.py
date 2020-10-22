@@ -40,7 +40,7 @@ def _maybe_init_logging_from_env():
         print("bigflow[log] is not installed", file=sys.stderr)
         return
 
-    if 'log_config' not in os.environ:
+    if 'bf_log_config' not in os.environ:
         return
 
     log_config = os.environ.get('bf_log_config', "{}")
@@ -55,7 +55,7 @@ def _maybe_init_logging_from_env():
     else:
         workflow_id = os.environ.get('bf_workflow_id')
 
-    bigflow.log.init_logging(log_config, workflow_id or 'none')
+    bigflow.log.init_logging(log_config, workflow_id or 'none', banner=False)
 
 
 # proactively try to initialize bigflow-specific logging
