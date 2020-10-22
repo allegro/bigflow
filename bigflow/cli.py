@@ -133,7 +133,7 @@ def execute_job(root_package: Path, workflow_id: str, job_id: str, runtime=None)
 
     @param runtime: str determine partition that will be used for write operations.
     """
-    w = find_workflow(root_package, workflow_id) #todo verbose powinnoo byc podawane w configu
+    w = find_workflow(root_package, workflow_id)
     _init_workflow_log(w)
     w.run_job(job_id, runtime)
 

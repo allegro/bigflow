@@ -119,7 +119,7 @@ def workflow_logs_link_for_cli(log_config, workflow_id):
 def infrastructure_logs_link_for_cli(projects_config):
     links = {}
     for project_id, workflow_id in projects_config:
-        links[project_id] = get_infrastrucutre_bigflow_project_logs(project_id, workflow_id)
+        links[project_id] = get_infrastructure_bigflow_project_logs(project_id, workflow_id)
     return links
 
 
@@ -135,18 +135,16 @@ Workflow logs:
 ***********************************************************"""))
 
 
-def get_infrastrucutre_bigflow_project_logs(project_id, workflow_id):
+def get_infrastructure_bigflow_project_logs(project_id, workflow_id):
     pod_errors = _generate_cl_log_view_query({"severity>=": "INFO"}) + _generate_cl_log_view_query(
         {"resource.type=": "k8s_pod"}) + '"Error:"'
-    container_errors = _generate_cl_log_view_query({"severity>=": "INFO"}) + _generate_cl_log_view_query(
-        {"resource.type=": "k8s_container", "resource.labels.container_name=": "base"})
     dataflow_errors = _generate_cl_log_view_query({"resource.type=": "dataflow_step",
                                                    "log_name=": f"projects/{project_id}/logs/dataflow.googleapis.com%2Fjob-message",
                                                    "labels.workflow_id=": workflow_id}) + _generate_cl_log_view_query(
         {"severity>=": "INFO"})
 
     result = []
-    for entry in [pod_errors, container_errors, dataflow_errors]:
+    for entry in [pod_errors, dataflow_errors]:
         result.append(f'({entry})')
 
     condition = '\nOR\n'.join(result)
@@ -186,7 +184,7 @@ def init_logging(config: LogConfigDict, workflow_id: str):
         root.setLevel(min(root.level, logging._checkLevel(log_level)))
 
     full_log_name = f"projects/{gcp_project_id}/logs/{log_name}"
-    infrastructure_logs = get_infrastrucutre_bigflow_project_logs(gcp_project_id, workflow_id)
+    infrastructure_logs = get_infrastructure_bigflow_project_logs(gcp_project_id, workflow_id)
     workflow_logs_link = prepare_gcp_logs_link(
         _generate_cl_log_view_query({'logName=': full_log_name, 'labels.workflow_id=': workflow_id}))
     this_execution_logs_link = prepare_gcp_logs_link(
