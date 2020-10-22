@@ -99,7 +99,7 @@ _LOGGING_CONFIGURED = False
 class LogConfigDict(TypedDict):
     gcp_project_id: str
     log_name: str
-    lov_level: typing.Union[str, int]
+    log_level: typing.Union[str, int]
 
 
 def _generate_cl_log_view_query(params: dict):
