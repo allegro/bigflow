@@ -1,12 +1,19 @@
 import os
+import logging
+
 from pathlib import Path
 
 import bigflow
+
+from bigflow.scaffold.templating import render_builtin_templates
 
 from bigflow.scaffold.scaffold_templates import beam_workflow_template, beam_processing_template, \
     beam_pipeline_template, project_setup_template, basic_deployment_config_template, \
     advanced_deployment_config_template, docker_template, basic_beam_config_template, requirements_template, \
     readme_template, advanced_beam_config_template, gitignore_template, test_wordcount_workflow_template, bq_workflow_template
+
+
+logger = logging.getLogger(__name__)
 
 
 def start_project(config):
@@ -84,8 +91,15 @@ def create_dirs_and_files(config, templates):
     create_module_files({'__init__.py': ''}, workflows_path.resolve())
     create_module_files({'.gitignore': gitignore_template}, project_path.resolve())
 
+    render_builtin_templates(
+        project_path,
+        "new-project",
+        variables=config,
+    )
+
 
 def create_module_files(templates, path):
     for filename, template in templates.items():
         with open(os.path.join(path, filename), 'w+') as f:
             f.write(template)
+

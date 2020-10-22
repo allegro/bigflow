@@ -6,8 +6,8 @@ import bigflow
 import bigflow.dataproc
 import bigflow.resources
 
-from {{project_name}}.{{pyspark_package}}.config import job_config
-from {{project_name}}.{{pyspark_package}}.driver import run_pyspark_job
+from {{project_name}}.pyspark.config import job_config
+from {{project_name}}.pyspark.driver import run_pyspark_job
 
 
 pyspark_job = bigflow.dataproc.PySparkJob(
