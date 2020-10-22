@@ -68,7 +68,6 @@ def build_module_path(root_package: Path, module_dir: Path, module_file: str) ->
     res = _removesuffix(res, ".py")
     res = _removesuffix(res, "/__init__")
     res = res.lstrip("/").replace(os.sep, ".")
-    print(">>>>>>", res)
     return res
 
 
