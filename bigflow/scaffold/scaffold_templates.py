@@ -55,7 +55,7 @@ advanced_deployment_config_template = '''.add_configuration(
                                 'dags_bucket': '{dags_bucket}',
                             }})
 '''
-requirements_template = '''bigflow[bigquery,log]=={bigflow_version}
+requirements_template = '''bigflow[bigquery,log,dataproc]=={bigflow_version}
 apache-beam[gcp]==2.23.0
 '''
 

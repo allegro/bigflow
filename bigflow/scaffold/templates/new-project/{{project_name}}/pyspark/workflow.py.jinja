@@ -1,13 +1,14 @@
 {% skip_file_unless pyspark_job -%}
 
 import functools
+import pathlib
 
 import bigflow
 import bigflow.dataproc
 import bigflow.resources
 
-from {{project_name}}.pyspark.config import job_config
-from {{project_name}}.pyspark.driver import run_pyspark_job
+from {{project_name}}.pyspark.config import workflow_config
+from {{project_name}}.pyspark.processing import run_pyspark_job
 
 
 pyspark_job = bigflow.dataproc.PySparkJob(
@@ -17,22 +18,22 @@ pyspark_job = bigflow.dataproc.PySparkJob(
     # Other arguments may be added by user via 'functools.partial' 
     driver=functools.partial(
         run_pyspark_job,
-        points=int(job_config.resolve_property('points')),
+        points=int(workflow_config.resolve_property('points')),
         partitions=4,
     ),
 
     # Deploy options
-    bucket_id=job_config.resolve_property('staging_bucket'),
-    gcp_project_id=job_config.resolve_property('gcp_project_id'),
-    gcp_region=job_config.resolve_property('gcp_region'),
+    bucket_id=workflow_config.resolve_property('staging_bucket'),
+    gcp_project_id=workflow_config.resolve_property('gcp_project_id'),
+    gcp_region=workflow_config.resolve_property('gcp_region'),
     
     # Use the same set of dependencies as '{{project_name}}'
-    pip_packages=bigflow.resources.get_resource_absolute_path('requirements.txt', Path(__file__)),
+    pip_packages=bigflow.resources.get_resource_absolute_path('requirements.txt', pathlib.Path(__file__)),
 )
 
 
 pyspark_demo_workflow = bigflow.Workflow(
-    workflow_id="pyspark_demo_workflow",
+    workflow_id="pyspark_workflow",
     definition=[
         pyspark_job,
     ],
