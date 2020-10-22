@@ -635,6 +635,9 @@ def _cli_start_project():
         config['is_basic'] = True
         config['projects_id'].append(gcp_project_flow(0))
         config['composers_bucket'].append(gcp_bucket_input())
+
+        config['pyspark_job'] = True
+
     start_project(config)
     print('Bigflow project created successfully.')
 
