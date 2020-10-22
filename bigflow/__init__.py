@@ -26,9 +26,3 @@ try:
     __all__.append('monitoring')
 except ImportError:
     pass
-
-try:
-    from . import dataflow
-    __all__.append('dataflow')
-except ImportError:
-    pass
