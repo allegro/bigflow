@@ -1,10 +1,16 @@
 import shutil
 import subprocess
 import unittest
+import tempfile
+import shutil
+
 from pathlib import Path
 from unittest import TestCase, mock
 
+import jinja2
+
 from bigflow.cli import cli
+from bigflow.scaffold import templating as tt
 
 
 class ProjectScaffoldE2ETestCase(TestCase):
@@ -167,3 +173,91 @@ internationalports_workflow = Workflow(
 
 def clear_project_leftovers(image_dir: Path):
     shutil.rmtree(image_dir, ignore_errors=True)
+
+
+class TemplatingTestCase(unittest.TestCase):
+
+    def setUp(self):
+        self.tmp_dir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp_dir)
+
+    def readfile(self, path):
+        p = Path(self.tmp_dir) / Path(path)
+        self.assertTrue(p.exists())
+        return p.read_text()
+
+    def test_basic_generate_templates(self):
+        # given
+        loader = jinja2.DictLoader({
+            "dir1/dir2/template1.txt.jinja": "{% if a %}A{% else %}B{% endif %}",
+            "dir1/dir2/template2.txt.j2": "{{ a }}",
+            "dir1/dir2/template3.txt": "{{ a | title }}",
+        })
+
+        # when
+        tt.render_templates(self.tmp_dir, loader, {'a': "value"})
+
+        # when
+        self.assertEqual(self.readfile("dir1/dir2/template1.txt"), "A")
+        self.assertEqual(self.readfile("dir1/dir2/template2.txt"), "value")
+        self.assertEqual(self.readfile("dir1/dir2/template3.txt"), "Value")
+
+    def test_substitute_filenames(self):
+        # given
+        loader = jinja2.DictLoader({
+            "{{one}}/{{two}}.txt": "OK",
+            "{{10 * 20}}.txt": "OK",
+            "a/{{long_path}}/b": "OK",
+            "filename.{{ext}}": "OK",
+        })
+
+        # when
+        tt.render_templates(
+            self.tmp_dir, loader, {
+                'one': 1, 
+                'two': 2, 
+                'long_path': "x/y/z",
+                'ext': "xyz",
+            })
+
+        # then
+        for expected_file in [
+            "1/2.txt",
+            "200.txt",
+            "a/x/y/z/b",
+            "filename.xyz",
+        ]:
+            self.assertEqual(self.readfile(expected_file), "OK")
+
+
+    def test_conditional_render(self):
+        # given
+        loader = jinja2.DictLoader({
+            "a1": "{% skip_file_when a %}X",
+            "a2": "{% skip_file_unless a %}OK",
+            "b1": "{% skip_file_when b %}OK",
+            "b2": "{% skip_file_unless b %}X",
+            "c1": "{% skip_file_when c %}OK",
+            "c2": "{% skip_file_unless c %}X",
+        })
+
+        # when
+        tt.render_templates(
+            self.tmp_dir, loader, {
+                'a': True,
+                'b': False,
+                'c': False,
+            })
+
+        # then
+        for expected_file in [
+            "a2", "b1", "c1",
+        ]:
+            self.assertEqual(self.readfile(expected_file), "OK")
+
+        for should_not_exist in [
+            "a1", "b2", "c2",
+        ]:
+            self.assertFalse((Path(self.tmp_dir) / should_not_exist).exists())

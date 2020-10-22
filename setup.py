@@ -27,6 +27,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/allegro/bigflow",
     packages=setuptools.find_packages(exclude=('test', 'e2e')),
+    include_package_data=True,
     data_files=[
         ('requirements', [
             'requirements/base.txt',
@@ -47,5 +48,5 @@ setuptools.setup(
         'log': read_requirements("log_extras.txt"),
         'dataproc': read_requirements("dataproc_extras.txt"),
     },
-    scripts=["scripts/bf", "scripts/bigflow"]
+    scripts=["scripts/bf", "scripts/bigflow"],
 )
