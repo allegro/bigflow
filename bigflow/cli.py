@@ -3,6 +3,8 @@ import importlib
 import os
 import subprocess
 import sys
+import logging
+
 from argparse import Namespace
 from datetime import datetime
 from importlib import import_module
@@ -14,13 +16,12 @@ import bigflow as bf
 from typing import Optional
 from glob import glob1
 
-import bigflow
-
 from bigflow import Config
-from bigflow.deploy import deploy_dags_folder, deploy_docker_image, load_image_from_tar
+from bigflow.deploy import deploy_dags_folder, deploy_docker_image
 from bigflow.resources import find_file
 from bigflow.scaffold import start_project
 from bigflow.version import get_version, release
+from bigflow.log import workflow_logs_link_for_cli, infrastructure_logs_link_for_cli, print_log_links_message
 from .commons import run_process
 
 SETUP_VALIDATION_MESSAGE = 'BigFlow setup is valid.'
@@ -104,7 +105,6 @@ def find_workflow(root_package: Path, workflow_id: str) -> bf.Workflow:
             return workflow
     raise ValueError('Workflow with id {} not found in package {}'.format(workflow_id, root_package))
 
-
 def set_configuration_env(env):
     """
     Sets 'bf_env' env variable
@@ -150,7 +150,7 @@ def execute_workflow(root_package: Path, workflow_id: str, runtime=None):
 
 
 def read_project_name_from_setup() -> Optional[str]:
-    try:
+    try: # todo this method needs to be changed because is not working in tests which uses find_root_package method
         sys.path.insert(1, os.getcwd())
         import project_setup
         return project_setup.PROJECT_NAME
@@ -232,6 +232,14 @@ def cli_run(project_package: str,
 def _parse_args(project_name: Optional[str], args) -> Namespace:
     parser = argparse.ArgumentParser(description=f'Welcome to BigFlow CLI.'
                                                   '\nType: bigflow {command} -h to print detailed help for a selected command.')
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action='store_true',
+        default=False, 
+        help="Print verbose output for debugging",
+    )
+
     subparsers = parser.add_subparsers(dest='operation',
                                        required=True,
                                        help='BigFlow command to execute')
@@ -249,8 +257,13 @@ def _parse_args(project_name: Optional[str], args) -> Namespace:
     _create_project_version_parser(subparsers)
     _create_release_parser(subparsers)
     _create_start_project_parser(subparsers)
+    _create_logs_parser(subparsers)
 
     return parser.parse_args(args)
+
+
+def _create_logs_parser(subparsers):
+    subparsers.add_parser('logs', description='Returns a link leading to a workflow logs in GCP Logging.')
 
 
 def _create_start_project_parser(subparsers):
@@ -646,9 +659,45 @@ def _cli_release(args):
     release(args.ssh_identity_file)
 
 
+def init_console_logging(verbose):
+    if verbose:
+        logging.basicConfig(
+            level=logging.DEBUG,
+            format="%(asctime)s| %(message)s",
+        )
+    else:
+        logging.basicConfig(
+            level=logging.INFO,
+            format="%(message)s",
+        )
+
+def cli_logs(root_package):
+    projects_id = []
+    workflows_links = {}
+    for workflow in walk_workflows(root_package):
+        if workflow.log_config:
+            projects_id.append((workflow.log_config['gcp_project_id'], workflow.workflow_id))
+            workflows_links[workflow.workflow_id] = workflow_logs_link_for_cli(workflow.log_config, workflow.workflow_id)
+    if not projects_id:
+        raise Exception("Found no workflows with configured logging.")
+    deduplicated_projects_id = sorted(set(projects_id), key=lambda x: projects_id.index(x))
+    infra_links = infrastructure_logs_link_for_cli(deduplicated_projects_id)
+    print_log_links_message(workflows_links, infra_links)
+
+
+def _is_log_module_installed():
+    try:
+        import bigflow.log
+        return True
+    except ImportError:
+        raise Exception("bigflow.log module not found.")
+
+
 def cli(raw_args) -> None:
     project_name = read_project_name_from_setup()
     parsed_args = _parse_args(project_name, raw_args)
+    init_console_logging(parsed_args.verbose)
+
     operation = parsed_args.operation
 
     if operation == 'run':
@@ -676,5 +725,9 @@ def cli(raw_args) -> None:
         _cli_project_version(parsed_args)
     elif operation == 'release':
         _cli_release(parsed_args)
+    elif operation == 'logs':
+        _is_log_module_installed()
+        root_package = find_root_package(project_name, None)
+        cli_logs(root_package)
     else:
         raise ValueError(f'Operation unknown - {operation}')

@@ -5,7 +5,7 @@ class SimpleJob:
     def __init__(self):
         self.id = 'simple_job'
 
-    def run(self, runtime):
+    def execute(self, runtime):
         print(f'Running a simple job')
 
 

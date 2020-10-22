@@ -1,23 +1,18 @@
-from bigflow.workflow import Workflow, hourly_start_time
+import datetime
+import bigflow
+from bigflow.workflow import hourly_start_time
 
-from datetime import datetime
-from datetime import timedelta
+class HourlyJob(bigflow.Job):
+    id = 'hourly_job'
 
+    def execute(self, context):
+        print(f'I should process data with timestamps from: {context.runtime} '
+              f'to {context.runtime + datetime.timedelta(minutes=59, seconds=59)}')
 
-class HourlyJob:
-    def __init__(self):
-        self.id = 'hourly_job'
-
-    def run(self, runtime):
-        print(f'I should process data with timestamps from: {runtime} '
-              f'to {datetime.strptime(runtime, "%Y-%m-%d %H:%M:%S") + timedelta(minutes=59, seconds=59)}')
-
-
-hourly_workflow = Workflow(
+hourly_workflow = bigflow.Workflow(
     workflow_id='hourly_workflow',
     schedule_interval='@hourly',
     start_time_factory=hourly_start_time,
-    definition=[HourlyJob()])
-
-if __name__ == '__main__':
-    hourly_workflow.run('2020-01-01 00:00:00')
+    definition=[HourlyJob()],
+)
+hourly_workflow.run(datetime.datetime(2020, 1, 1, 10))

@@ -1,6 +1,7 @@
 from unittest import TestCase, mock
 from datetime import datetime
 
+import bigflow
 from bigflow import monitoring
 from freezegun import freeze_time
 
@@ -203,7 +204,7 @@ class FailingJob(object):
     def __init__(self, id):
         self.id = id
 
-    def run(self, runtime):
+    def execute(self, context):
         raise Exception('Panic!')
 
 
@@ -221,7 +222,7 @@ class MeterJobRunFailuresTestCase(TestCase):
 
         # when
         with self.assertRaises(Exception):
-            metered_job.run('2019-01-01')
+            metered_job.execute(bigflow.JobContext.make(runtime='2019-01-01'))
 
         # then
         increment_job_failure_count_mock.assert_called_once_with(monitoring_config, 'job1')

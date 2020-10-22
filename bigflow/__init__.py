@@ -12,7 +12,7 @@ __all__ = [
     'JobContext',
     'Definition',
     'Config',
-    'resources',
+    'resources'
 ]
 
 try:

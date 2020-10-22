@@ -1,12 +1,15 @@
 from __future__ import absolute_import
 
 import functools
-from inspect import getfullargspec
 import hashlib
 import logging
 
+from inspect import getfullargspec
+
 import pandas as pd
 from google.api_core.exceptions import BadRequest
+
+import bigflow
 
 from .job import Job
 from .job import DEFAULT_RETRY_COUNT
@@ -184,9 +187,10 @@ class InteractiveComponent(object):
 
     @log_syntax_error
     def run(self, runtime=DEFAULT_RUNTIME, operation_name=None):
-         _, component_callable = decorate_component_dependencies_with_operation_level_dataset_manager(
-             self._standard_component, operation_name=operation_name)
-         return Job(component_callable, **self._dependency_config).run(runtime)
+        _, component_callable = decorate_component_dependencies_with_operation_level_dataset_manager(
+            self._standard_component, operation_name=operation_name)
+        job = Job(component_callable, **self._dependency_config)
+        job.execute(bigflow.JobContext.make(runtime=runtime))
 
     @log_syntax_error
     def peek(self, runtime, operation_name=DEFAULT_OPERATION_NAME, limit=DEFAULT_PEEK_LIMIT):
@@ -197,7 +201,10 @@ class InteractiveComponent(object):
         not_none_or_error(limit, 'limit')
         results_container, component_callable = decorate_component_dependencies_with_operation_level_dataset_manager(
             self._standard_component, operation_name=operation_name, peek=True, peek_limit=limit)
-        Job(component_callable, **self._dependency_config).run(runtime)
+
+        job = Job(component_callable, **self._dependency_config)
+        job.execute(bigflow.JobContext.make(runtime=runtime))
+
         try:
             return results_container[0]
         except IndexError:

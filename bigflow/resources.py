@@ -1,7 +1,9 @@
 import os
 import time
+import inspect
 from typing import List, Iterable
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 from .commons import resolve
 
 __all__ = [
@@ -12,7 +14,8 @@ __all__ = [
     'find_setup',
     'create_file_if_not_exists',
     'create_setup_body',
-    'find_or_create_setup_for_main_project_package'
+    'find_or_create_setup_for_main_project_package',
+    'create_tmp_file'
 ]
 
 
@@ -133,5 +136,12 @@ setuptools.setup(
 '''
 
 
-def find_or_create_setup_for_main_project_package(project_name: str, search_start_file: Path) -> Path:
+def find_or_create_setup_for_main_project_package(project_name: str = __name__.split('.')[0], search_start_file: Path = None) -> Path:
+    search_start_file = search_start_file or inspect.getmodule(inspect.stack()[1][0]).__file__
     return create_file_if_not_exists(find_file(project_name, Path(search_start_file)).parent / 'setup.py', create_setup_body(project_name))
+
+
+def create_tmp_file(file_content: str) -> Path:
+    with NamedTemporaryFile(delete=False) as result_file:
+        result_file.write(file_content)
+        return Path(result_file.name)
