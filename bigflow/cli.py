@@ -24,6 +24,10 @@ from bigflow.version import get_version, release
 from bigflow.log import workflow_logs_link_for_cli, infrastructure_logs_link_for_cli, print_log_links_message
 from .commons import run_process
 
+
+logger = logging.getLogger(__name__)
+
+
 SETUP_VALIDATION_MESSAGE = 'BigFlow setup is valid.'
 
 
@@ -40,11 +44,17 @@ def walk_module_files(root_package: Path) -> Iterator[Tuple[str, str]]:
 
     @return: (absolute_path: str, name: str)
     """
+    logger.debug("walk module files %s", root_package)
     resolved_root_package = resolve(root_package)
     for subdir, dirs, files in os.walk(resolved_root_package):
         for file in files:
             if file.endswith('.py'):
+                logger.debug("found python file %s/%s", subdir, file)
                 yield subdir, file
+
+
+def _removesuffix(s, suffix):
+    return s[:-len(suffix)] if s.endswith(suffix) else s
 
 
 def build_module_path(root_package: Path, module_dir: Path, module_file: str) -> str:
@@ -53,10 +63,13 @@ def build_module_path(root_package: Path, module_dir: Path, module_file: str) ->
     """
     full_module_file_path = resolve(module_dir / module_file)
     full_module_file_path = full_module_file_path.replace(resolve(root_package.parent), '')
-    return full_module_file_path \
-               .replace(os.sep, '.')[1:] \
-        .replace('.py', '') \
-        .replace('.__init__', '')
+
+    res = full_module_file_path
+    res = _removesuffix(res, ".py")
+    res = _removesuffix(res, "/__init__")
+    res = res.lstrip("/").replace(os.sep, ".")
+    print(">>>>>>", res)
+    return res
 
 
 def walk_module_paths(root_package: Path) -> Iterator[str]:
@@ -64,7 +77,9 @@ def walk_module_paths(root_package: Path) -> Iterator[str]:
     Returning all the module paths in the `root_package`
     """
     for module_dir, module_file in walk_module_files(root_package):
-        yield build_module_path(root_package, Path(module_dir), module_file)
+        mpath = build_module_path(root_package, Path(module_dir), module_file)
+        logger.debug("%s / %s / %s resolved to module %r", root_package, module_dir, module_file, mpath)
+        yield mpath
 
 
 def walk_modules(root_package: Path) -> Iterator[ModuleType]:
@@ -73,6 +88,7 @@ def walk_modules(root_package: Path) -> Iterator[ModuleType]:
     """
     for module_path in walk_module_paths(root_package):
         try:
+            logger.debug("import module %r", module_path)
             yield import_module(module_path)
         except ValueError as e:
             print(f"Skipping module {module_path}. Can't import due to exception {str(e)}.")
@@ -82,6 +98,7 @@ def walk_module_objects(module: ModuleType, expect_type: type) -> Iterator[Tuple
     """
     Returns module items of the set type
     """
+    logger.debug("scan module %r for object of type %r", module, expect_type)
     for name, obj in module.__dict__.items():
         if isinstance(obj, expect_type):
             yield name, obj
