@@ -671,6 +671,7 @@ def init_console_logging(verbose):
             format="%(message)s",
         )
 
+
 def cli_logs(root_package):
     projects_id = []
     workflows_links = {}

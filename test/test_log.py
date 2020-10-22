@@ -39,7 +39,6 @@ class LoggerTestCase(TestCase):
         bigflow.log._LOGGING_CONFIGURED = False
 
     def test_should_create_correct_logging_link(self):
-
         # when
         f = io.StringIO()
         with contextlib.redirect_stderr(f):
@@ -53,7 +52,8 @@ class LoggerTestCase(TestCase):
         self.assertIn("https://console.cloud.google.com/logs/query;query=", out)
         self.assertIn("labels.workflow_id%3D%22workflow_id%22", out)
 
-    def _assert_single_log_event(self, message_re, severity=None, labels=None):
+
+    def _assert_single_log_event(self, message_re, severity=None):
         self.assertEqual(1, self.logging_client.write_log_entries.call_count)
         calls = self.logging_client.write_log_entries.call_args_list[0][0]
         le = calls[0][0]
