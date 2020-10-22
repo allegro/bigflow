@@ -8,9 +8,8 @@ workflow_config = bigflow.Config(
     properties={
         'project_name': {{ project_name | pprint }},
         'gcp_project_id': "{project_id}",
-        'staging_location': "{project_name}/pyspark_job/staging",
-        'temp_location': "{project_name}/pyspark_job/temp",
-        'region': "europe-west1",
+        'gcp_region': "europe-west1",
+        'staging_bucket': "{project_name}",
         'points': "100",
     },
 )
