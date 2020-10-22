@@ -21,10 +21,10 @@ class CountWordsDriver:
         self.context = None
         self.pipeline = None
 
-    def run(self, pipeline: Pipeline, context: JobContext, words_to_filter, words_to_count):
-        words_input = pipeline | 'LoadingWordsInput' >> beam.Create(words_to_count)
+    def run(self, pipeline: Pipeline, context: JobContext, driver_arguments: dict):
+        words_input = pipeline | 'LoadingWordsInput' >> beam.Create(driver_arguments['words_to_count'])
         self.result = (words_input
-                       | 'FilterWords' >> beam.Filter(lambda w: w in words_to_filter)
+                       | 'FilterWords' >> beam.Filter(lambda w: w in driver_arguments['words_to_filter'])
                        | 'MapToCount' >> beam.Map(lambda w: (w, 1))
                        | 'GroupWords' >> beam.GroupByKey()
                        | 'CountWords' >> beam.ParDo(CountWordsFn()))
