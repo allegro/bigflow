@@ -545,35 +545,31 @@ deployment_config = Config(name='dev',
         cli(['build-dags'])
 
         # then
-        _cli_build_dags_mock.assert_called_with(Namespace(operation='build-dags', start_time=None, workflow=None))
+        _cli_build_dags_mock.assert_called_with(Namespace(operation='build-dags', start_time=None, workflow=None, verbose=False))
 
         # when
         cli(['build-dags', '-t', '2020-01-01 00:00:00'])
 
         # then
-        _cli_build_dags_mock.assert_called_with(
-            Namespace(operation='build-dags', start_time='2020-01-01 00:00:00', workflow=None))
+        _cli_build_dags_mock.assert_called_with(Namespace(operation='build-dags', start_time='2020-01-01 00:00:00', workflow=None, verbose=False))
 
         # when
         cli(['build-dags', '-w', 'some_workflow'])
 
         # then
-        _cli_build_dags_mock.assert_called_with(
-            Namespace(operation='build-dags', start_time=None, workflow='some_workflow'))
+        _cli_build_dags_mock.assert_called_with(Namespace(operation='build-dags', start_time=None, workflow='some_workflow', verbose=False))
 
         # when
         cli(['build-dags', '-w', 'some_workflow', '-t', '2020-01-01 00:00:00'])
 
         # then
-        _cli_build_dags_mock.assert_called_with(
-            Namespace(operation='build-dags', start_time='2020-01-01 00:00:00', workflow='some_workflow'))
+        _cli_build_dags_mock.assert_called_with(Namespace(operation='build-dags', start_time='2020-01-01 00:00:00', workflow='some_workflow', verbose=False))
 
         # when
         cli(['build-dags', '-w', 'some_workflow', '-t', '2020-01-01'])
 
         # then
-        _cli_build_dags_mock.assert_called_with(
-            Namespace(operation='build-dags', start_time='2020-01-01', workflow='some_workflow'))
+        _cli_build_dags_mock.assert_called_with(Namespace(operation='build-dags', start_time='2020-01-01', workflow='some_workflow', verbose=False))
 
         # when
         with self.assertRaises(SystemExit):
@@ -585,7 +581,7 @@ deployment_config = Config(name='dev',
         cli(['build-image'])
 
         # then
-        _cli_build_image_mock.assert_called_with(Namespace(operation='build-image'))
+        _cli_build_image_mock.assert_called_with(Namespace(operation='build-image', verbose=False))
 
     @mock.patch('bigflow.cli.run_process')
     @mock.patch('bigflow.cli.validate_project_setup')
@@ -615,21 +611,20 @@ deployment_config = Config(name='dev',
         cli(['build'])
 
         # then
-        _cli_build_mock.assert_called_with(Namespace(operation='build', start_time=None, workflow=None))
+        _cli_build_mock.assert_called_with(Namespace(operation='build', start_time=None, workflow=None, verbose=False))
 
         # when
         cli(['build', '--start-time', '2020-01-01 00:00:00'])
 
         # then
-        _cli_build_mock.assert_called_with(
-            Namespace(operation='build', start_time='2020-01-01 00:00:00', workflow=None))
+
+        _cli_build_mock.assert_called_with(Namespace(operation='build', start_time='2020-01-01 00:00:00', workflow=None, verbose=False))
 
         # when
         cli(['build', '--start-time', '2020-01-01 00:00:00', '--workflow', 'some_workflow'])
 
         # then
-        _cli_build_mock.assert_called_with(
-            Namespace(operation='build', start_time='2020-01-01 00:00:00', workflow='some_workflow'))
+        _cli_build_mock.assert_called_with(Namespace(operation='build', start_time='2020-01-01 00:00:00', workflow='some_workflow', verbose=False))
 
     @mock.patch('bigflow.cli.run_process')
     @mock.patch('bigflow.cli.validate_project_setup')
@@ -783,34 +778,23 @@ another-project-id                         ANOTHER PROJECT                002242
         print_mock.assert_called_with(
             '\n*************************LOGS LINK*************************\nInfrastructure logs:'
             ' \nsome-project-id: https://console.cloud.google.com/logs/query;query=%28'
-            'severity%3E%3D%22WARNING%22%0'
-            'Aresource.type%3D%22k8s_pod%22%0A%22'
-            'Error%3A%22%29%0AOR%0A%28'
-            'severity%3E%3D%22WARNING%22%0A'
-            'resource.type%3D%22k8s_container%22%0A'
-            'resource.labels.container_name%3D%22base%22%0A%29%0A'
-            'OR%0A%28'
-            'resource.type%3D%22dataflow_step%22%0A'
-            'log_name%3D%22projects%2Fsome-project-id%2Flogs%2Fdataflow.googleapis.com%252Fjob-message%22%0A'
-            'labels.workflow_id%3D%22ID_1%22%0A'
-            'severity%3E%3D%22WARNING%22%0A%29\n'
-            'another-project-id: https://console.cloud.google.com/logs/query;query=%28'
-            'severity%3E%3D%22WARNING%22%0A'
+            'severity%3E%3D%22INFO%22%0A'
             'resource.type%3D%22k8s_pod%22%0A%22'
             'Error%3A%22%29%0AOR%0A%28'
-            'severity%3E%3D%22WARNING%22%0A'
-            'resource.type%3D%22k8s_container%22%0A'
-            'resource.labels.container_name%3D%22base%22%0A%29%0A'
-            'OR%0A%28'
+            'resource.type%3D%22dataflow_step%22%0A'
+            'log_name%3D%22projects%2Fsome-project-id%2Flogs%2Fdataflow.googleapis.com%252Fjob-message%22%0A'
+            'severity%3E%3D%22INFO%22%0A%29\n'
+            'another-project-id: https://console.cloud.google.com/logs/query;query=%28'
+            'severity%3E%3D%22INFO%22%0A'
+            'resource.type%3D%22k8s_pod%22%0A%22'
+            'Error%3A%22%29%0AOR%0A%28'
             'resource.type%3D%22dataflow_step%22%0A'
             'log_name%3D%22projects%2Fanother-project-id%2Flogs%2Fdataflow.googleapis.com%252Fjob-message%22%0A'
-            'labels.workflow_id%3D%22ID_2%22%0A'
-            'severity%3E%3D%22WARNING%22%0A%29\nWorkflow logs: \nID_1: https://console.cloud.google.com/logs/query;query='
+            'severity%3E%3D%22INFO%22%0A%29\nWorkflow logs: \nID_1: https://console.cloud.google.com/logs/query;query='
             'logName%3D%22projects%2Fsome-project-id%2Flogs%2FID_1%22%0Alabels.workflow_id%3D%22ID_1%22%0A'
             '\nID_2: https://console.cloud.google.com/logs/query;query='
             'logName%3D%22projects%2Fanother-project-id%2Flogs%2FID_2%22%0Alabels.workflow_id%3D%22ID_2%22%0A'
             '\n***********************************************************')
-
 
     @mock.patch('builtins.print')
     def test_should_call_cli_logs_and_use_log_name_if_provided(self, print_mock):
@@ -822,21 +806,14 @@ another-project-id                         ANOTHER PROJECT                002242
         print_mock.assert_called_with(
             '\n*************************LOGS LINK*************************\nInfrastructure logs: \nsome-project-id: '
             'https://console.cloud.google.com/logs/query;query=%28'
-            'severity%3E%3D%22WARNING%22%0A'
+            'severity%3E%3D%22INFO%22%0A'
             'resource.type%3D%22k8s_pod%22%0A%22'
             'Error%3A%22%29%0AOR%0A%28'
-            'severity%3E%3D%22WARNING%22%0A'
-            'resource.type%3D%22k8s_container%22%0A'
-            'resource.labels.container_name%3D%22base%22%0A%29%0A'
-            'OR%0A%28'
             'resource.type%3D%22dataflow_step%22%0A'
             'log_name%3D%22projects%2Fsome-project-id%2Flogs%2Fdataflow.googleapis.com%252Fjob-message%22%0A'
-            'labels.workflow_id%3D%22ID_1%22%0A'
-            'severity%3E%3D%22WARNING%22%0A%29\nWorkflow logs: \nID_1: https://console.cloud.google.com/logs/query;query='
+            'severity%3E%3D%22INFO%22%0A%29\nWorkflow logs: \nID_1: https://console.cloud.google.com/logs/query;query='
             'logName%3D%22projects%2Fsome-project-id%2Flogs%2Fname-log%22%0A'
             'labels.workflow_id%3D%22ID_1%22%0A\n***********************************************************')
-
-
 
     @mock.patch('builtins.print')
     def test_should_deduplicate_projects_id(self, print_mock):
@@ -848,22 +825,16 @@ another-project-id                         ANOTHER PROJECT                002242
         print_mock.assert_called_with(
             '\n*************************LOGS LINK*************************\nInfrastructure logs: '
             '\nsome-project-id: https://console.cloud.google.com/logs/query;query=%28'
-            'severity%3E%3D%22WARNING%22%0A'
+            'severity%3E%3D%22INFO%22%0A'
             'resource.type%3D%22k8s_pod%22%0A%22'
             'Error%3A%22%29%0AOR%0A%28'
-            'severity%3E%3D%22WARNING%22%0A'
-            'resource.type%3D%22k8s_container%22%0A'
-            'resource.labels.container_name%3D%22base%22%0A%29%0AOR%0A%28'
             'resource.type%3D%22dataflow_step%22%0A'
             'log_name%3D%22projects%2Fsome-project-id%2Flogs%2Fdataflow.googleapis.com%252Fjob-message%22%0A'
-            'labels.workflow_id%3D%22ID_2%22%0A'
-            'severity%3E%3D%22WARNING%22%0A%29\nWorkflow logs: \nID_1: https://console.cloud.google.com/logs/query;query='
+            'severity%3E%3D%22INFO%22%0A%29\nWorkflow logs: \nID_1: https://console.cloud.google.com/logs/query;query='
             'logName%3D%22projects%2Fsome-project-id%2Flogs%2FID_1%22%0A'
             'labels.workflow_id%3D%22ID_1%22%0A\nID_2: https://console.cloud.google.com/logs/query;query='
             'logName%3D%22projects%2Fsome-project-id%2Flogs%2FID_2%22%0Alabels.workflow_id%3D%22ID_2%22%0A'
             '\n***********************************************************')
-
-
 
     def test_should_raise_exception_if_no_workflow_with_log_config_found(self):
         root_package = find_root_package("fake_project_name", None)
@@ -891,6 +862,28 @@ another-project-id                         ANOTHER PROJECT                002242
         f.touch()
         f.write_text(content)
         return f
+
+    @mock.patch('bigflow.cli._cli_build')
+    @mock.patch.object(logging.root, 'handlers', new=[])
+    def test_should_enble_info_logging(self, cli_build):
+        # when
+        cli(["build"])
+
+        # then
+        self.assertEqual(len(logging.root.handlers), 1)
+        self.assertIsInstance(logging.root.handlers[0], logging.StreamHandler)
+        self.assertEqual(logging.root.level, logging.INFO)
+
+    @mock.patch('bigflow.cli._cli_build')
+    @mock.patch.object(logging.root, 'handlers', new=[])
+    def test_should_enble_debug_logging_when_verbose_flag_is_specified(self, cli_build):
+        # when
+        cli(["--verbose", "build"])
+
+        # then
+        self.assertEqual(len(logging.root.handlers), 1)
+        self.assertIsInstance(logging.root.handlers[0], logging.StreamHandler)
+        self.assertEqual(logging.root.level, logging.DEBUG)
 
 
 class ValidateProjectSetupTestCase(TestCase):

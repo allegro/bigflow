@@ -3,6 +3,8 @@ import importlib
 import os
 import subprocess
 import sys
+import logging
+
 from argparse import Namespace
 from datetime import datetime
 from importlib import import_module
@@ -230,6 +232,14 @@ def cli_run(project_package: str,
 def _parse_args(project_name: Optional[str], args) -> Namespace:
     parser = argparse.ArgumentParser(description=f'Welcome to BigFlow CLI.'
                                                   '\nType: bigflow {command} -h to print detailed help for a selected command.')
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action='store_true',
+        default=False, 
+        help="Print verbose output for debugging",
+    )
+
     subparsers = parser.add_subparsers(dest='operation',
                                        required=True,
                                        help='BigFlow command to execute')
@@ -652,6 +662,19 @@ def _cli_release(args):
     release(args.ssh_identity_file)
 
 
+def init_console_logging(verbose):
+    if verbose:
+        logging.basicConfig(
+            level=logging.DEBUG,
+            format="%(asctime)s| %(message)s",
+        )
+    else:
+        logging.basicConfig(
+            level=logging.INFO,
+            format="%(message)s",
+        )
+
+
 def cli_logs(root_package):
     projects_id = []
     workflows_links = {}
@@ -677,6 +700,8 @@ def _is_log_module_installed():
 def cli(raw_args) -> None:
     project_name = read_project_name_from_setup()
     parsed_args = _parse_args(project_name, raw_args)
+    init_console_logging(parsed_args.verbose)
+
     operation = parsed_args.operation
 
     if operation == 'run':
