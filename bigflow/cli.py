@@ -133,7 +133,7 @@ def execute_job(root_package: Path, workflow_id: str, job_id: str, runtime=None)
 
     @param runtime: str determine partition that will be used for write operations.
     """
-    w = find_workflow(root_package, workflow_id)
+    w = find_workflow(root_package, workflow_id) #todo verbose powinnoo byc podawane w configu
     _init_workflow_log(w)
     w.run_job(job_id, runtime)
 
@@ -696,7 +696,7 @@ def _is_log_module_installed():
 def cli(raw_args) -> None:
     project_name = read_project_name_from_setup()
     parsed_args = _parse_args(project_name, raw_args)
-    init_console_logging(parsed_args.verbose)
+    # init_console_logging(parsed_args.verbose)
 
     operation = parsed_args.operation
 

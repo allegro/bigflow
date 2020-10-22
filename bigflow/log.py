@@ -98,6 +98,7 @@ _LOGGING_CONFIGURED = False
 class LogConfigDict(TypedDict):
     gcp_project_id: str
     log_name: str
+    verbose: bool
 
 
 def _generate_cl_log_view_query(params: dict):
