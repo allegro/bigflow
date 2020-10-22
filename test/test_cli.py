@@ -42,14 +42,14 @@ class CliTestCase(TestCase):
     def test_should_build_module_path_for_example_file(self):
         # given
         root_path = TEST_MODULE_PATH.parent
-        module_file = "Unused1.py"
+        module_file = "py_unused1.py"
         file_path = TEST_MODULE_PATH
 
         # when
         res = build_module_path(root_path, file_path, module_file)
 
         # then
-        self.assertEqual("test.test_module.Unused1", res)
+        self.assertEqual("test.test_module.py_unused1", res)
 
     def test_should_walk_through_all_modules_inside_package_tree(self):
         # when
