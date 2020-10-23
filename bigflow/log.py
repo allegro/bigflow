@@ -2,7 +2,6 @@ import logging
 import typing
 import sys
 import uuid
-import traceback
 
 from textwrap import dedent
 
@@ -10,9 +9,6 @@ import bigflow
 
 import google.cloud.logging
 import google.cloud.logging.handlers
-
-from google.cloud import logging_v2
-from google.cloud.logging_v2.gapic.enums import LogSeverity
 
 from urllib.parse import quote_plus
 
