@@ -8,5 +8,5 @@ class SimpleRetriableJob(bigflow.Job):
         self.retry_pause_sec = 100
 
     def execute(self, context: bigflow.JobContext):
-        print("execution runtime as `datetime` object": context.runtime)
+        print("execution runtime as `datetime` object", context.runtime)
         print("reference to workflow", context.workflow)
