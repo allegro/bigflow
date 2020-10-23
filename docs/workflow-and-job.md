@@ -1,5 +1,3 @@
-from docs.examples.workflow_and_job.run_workflow_and_job import simple_workflow# Workflow & job
-
 ## Overview
 
 BigFlow workflow is a series of jobs. Each job is a Python object which executes your data processing logic.
