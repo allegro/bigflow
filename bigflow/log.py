@@ -32,6 +32,7 @@ def create_gcp_log_handler(
 ):
     client = google.cloud.logging.Client(project=project_id)
     handler = google.cloud.logging.handlers.CloudLoggingHandler(client, name=log_name, labels=labels)
+    handler.addFilter(lambda r: not r.name.startswith("google.cloud.logging"))
     return handler
 
 
@@ -153,6 +154,10 @@ def init_logging(config: LogConfigDict, workflow_id: str, banner=True):
                ***********************************************************"""))
     gcp_logger_handler = create_gcp_log_handler(gcp_project_id, log_name, labels)
     gcp_logger_handler.setLevel(log_level or logging.INFO)
+
+    # Disable logs from 'google.cloud.logging'
+    gclogging_logger = logging.getLogger("google.cloud.logging")
+    gclogging_logger.setLevel(logging.WARNING)
 
     # TODO: add formatter?
     root.addHandler(gcp_logger_handler)
