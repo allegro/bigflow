@@ -8,8 +8,12 @@ from textwrap import dedent
 
 import bigflow
 
+import google.cloud.logging
+import google.cloud.logging.handlers
+
 from google.cloud import logging_v2
 from google.cloud.logging_v2.gapic.enums import LogSeverity
+
 from urllib.parse import quote_plus
 
 try:
@@ -21,65 +25,14 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-class GCPLoggerHandler(logging.Handler):
-
-    def __init__(self, project_id, log_name, labels):
-        super().__init__()
-
-        self.client = self.create_logging_client()
-        self.project_id = project_id
-        self.log_name = log_name
-        self.labels = labels
-
-        self._log_entry_prototype = logging_v2.types.LogEntry(
-            log_name=f"projects/{self.project_id}/logs/{self.log_name}",
-            labels=dict(labels),
-            resource={
-                "type": "global",
-                "labels": {
-                    "project_id": str(self.project_id),
-                },
-            },
-        )
-
-    def create_logging_client(self):
-        return logging_v2.LoggingServiceV2Client()
-
-    def emit(self, record: logging.LogRecord):
-
-        # CloudLogging list of supported log levels is a superset of python logging level names
-        cl_log_level = record.levelname
-
-        json = {
-            'message': record.getMessage(),
-            'name': record.name,
-            'filename': record.filename,
-            'module': record.module,
-            'lineno': record.lineno,
-        }
-
-        # mimic caching behaviour of `logging.Formatter.format`
-        # render/cache exception info in the same way as default `logging.Formatter`
-        if record.exc_info and not record.exc_text:
-            record.exc_text = self._format_exception(record.exc_info)
-        if record.exc_text:
-            json['exc_text'] = str(record.exc_text)
-
-        if record.stack_info:
-            json['stack_info'] = str(record.stack_info)
-
-        self.write_log_entries(json, cl_log_level)
-
-    def _format_exception(self, exc_info):
-        etype, value, tb = exc_info
-        return "\n".join(traceback.format_exception(etype, value, tb))
-
-    def write_log_entries(self, json, severity):
-        entry = logging_v2.types.LogEntry()
-        entry.CopyFrom(self._log_entry_prototype)
-        entry.json_payload.update(json)
-        entry.severity = LogSeverity[severity]
-        self.client.write_log_entries([entry])
+def create_gcp_log_handler(
+    project_id, 
+    log_name, 
+    labels,
+):
+    client = google.cloud.logging.Client(project=project_id)
+    handler = google.cloud.logging.handlers.CloudLoggingHandler(client, name=log_name, labels=labels)
+    return handler
 
 
 def prepare_gcp_logs_link(query: str):
@@ -198,8 +151,7 @@ def init_logging(config: LogConfigDict, workflow_id: str, banner=True):
                Workflow logs (all runs): {workflow_logs_link}
                Only this run logs: {this_execution_logs_link}
                ***********************************************************"""))
-    
-    gcp_logger_handler = GCPLoggerHandler(gcp_project_id, log_name, labels)
+    gcp_logger_handler = create_gcp_log_handler(gcp_project_id, log_name, labels)
     gcp_logger_handler.setLevel(log_level or logging.INFO)
 
     # TODO: add formatter?

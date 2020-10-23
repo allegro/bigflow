@@ -15,8 +15,10 @@ import bigflow.log
 class LoggerTestCase(TestCase):
 
     def configure_mocked_logging(self, project_id, log_name, workflow_id=None):
-        self.logging_client = mock.MagicMock(return_value=mock.create_autospec(logging_v2.LoggingServiceV2Client))
-        with mock.patch.object(bigflow.log.GCPLoggerHandler, 'create_logging_client', return_value=self.logging_client):
+        self.gcp_handler = mock.Mock()
+        self.gcp_handler.level = logging.INFO
+
+        with mock.patch('bigflow.log.create_gcp_log_handler', return_value=self.gcp_handler):
             bigflow.log._LOGGING_CONFIGURED = False
             bigflow.log.init_logging(
                 workflow_id=workflow_id,
@@ -56,18 +58,13 @@ class LoggerTestCase(TestCase):
 
 
     def _assert_single_log_event(self, message_re, severity=None):
-        self.assertEqual(1, self.logging_client.write_log_entries.call_count)
-        calls = self.logging_client.write_log_entries.call_args_list[0][0]
-        le = calls[0][0]
+        self.assertEqual(1, self.gcp_handler.handle.call_count)
+        le: logging.LogRecord = self.gcp_handler.handle.call_args_list[0][0][0]
 
-        self.assertEqual(le.resource.type, "global")
-        self.assertEqual(le.resource.labels, {"project_id": "project-id"})
-        self.assertEqual(le.log_name, "projects/project-id/logs/logger_name")
-        
         if severity:
-            self.assertEqual(le.severity, severity)
+            self.assertEqual(le.levelname, severity)
         if message_re:
-            self.assertRegexpMatches(le.json_payload['message'], message_re)
+            self.assertRegexpMatches(le.message, message_re)
 
         return le
 
@@ -82,9 +79,9 @@ class LoggerTestCase(TestCase):
         # then
         le = self._assert_single_log_event(
             message_re="Uncaught exception: oh no... i\'m dying",
-            severity=500,
+            severity='ERROR',
         )
-        self.assertIn("ValueError", le.json_payload['exc_text'])
+        self.assertTrue(le.exc_info)
 
     def test_should_handle_warning(self):
         # when
@@ -93,7 +90,7 @@ class LoggerTestCase(TestCase):
         # then
         self._assert_single_log_event(
             message_re="warning message",
-            severity=400,
+            severity='WARNING',
         )
 
     def test_should_handle_info(self):
@@ -103,7 +100,7 @@ class LoggerTestCase(TestCase):
         # then
         self._assert_single_log_event(
             message_re="info message",
-            severity=200,
+            severity='INFO',
         )
 
     def test_should_handle_error(self):
@@ -113,7 +110,7 @@ class LoggerTestCase(TestCase):
         # then
         self._assert_single_log_event(
             message_re="error message",
-            severity=500,
+            severity='ERROR',
         )
 
     def test_should_install_gcp_handler_when_logging_already_exists(self):
@@ -129,7 +126,7 @@ class LoggerTestCase(TestCase):
         # then
         self._assert_single_log_event(
             message_re="message",
-            severity=200,
+            severity='INFO',
         )
 
 
