@@ -35,7 +35,7 @@ except ImportError:
 def _maybe_init_logging_from_env():
 
     try:
-        import bigflow.log
+        from bigflow import log
     except ImportError:
         print("bigflow[log] is not installed", file=sys.stderr)
         return
@@ -55,7 +55,7 @@ def _maybe_init_logging_from_env():
     else:
         workflow_id = os.environ.get('bf_workflow_id')
 
-    bigflow.log.init_logging(log_config, workflow_id or 'none', banner=False)
+    log.init_logging(log_config, workflow_id or 'none', banner=False)
 
 
 # proactively try to initialize bigflow-specific logging

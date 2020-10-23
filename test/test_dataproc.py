@@ -255,7 +255,7 @@ class PySparkJobTest(unittest.TestCase):
 
         workflow = mock.Mock()
         workflow.workflow_id = "some_workflow"
-        workflow.log_config = {"level": "DEBUG"}
+        workflow.log_config = None
 
         jc = bigflow.JobContext.make(
             workflow=workflow,
@@ -336,5 +336,5 @@ class PySparkJobTest(unittest.TestCase):
         props = job._prepare_pyspark_properties(jc)
 
         # then
-        self.assertIn('spark.workerEnv.bf_log_config', props)
-        self.assertIn('spark.workerEnv.bf_workflow_id', props)
+        self.assertIn('spark.executorEnv.bf_log_config', props)
+        self.assertIn('spark.executorEnv.bf_workflow_id', props)
