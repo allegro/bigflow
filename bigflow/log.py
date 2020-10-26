@@ -154,6 +154,8 @@ def init_logging(config: LogConfigDict, workflow_id: str, banner=True):
     # Disable logs from 'google.cloud.logging'
     gclogging_logger = logging.getLogger("google.cloud.logging")
     gclogging_logger.setLevel(logging.WARNING)
+    gclogging_logger.propagate = False
+    gclogging_logger.addHandler(logging.StreamHandler())
 
     # TODO: add formatter?
     root.addHandler(gcp_logger_handler)
