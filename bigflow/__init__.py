@@ -1,6 +1,8 @@
 import os
 import sys
 import json
+import warnings
+import importlib
 
 from . import resources
 from .workflow import Workflow, Definition, Job, JobContext
@@ -16,18 +18,19 @@ __all__ = [
     'JobContext',
     'Definition',
     'Config',
-    'resources'
 ]
 
-try:
-    from . import bigquery
-except ImportError:
-    pass
 
-try:
-    from . import monitoring
-except ImportError:
-    pass
+def __getattr__(name):
+    if name in {
+        'bigquery',
+        'monitoring',
+        'resources',
+    }:
+        importlib.import_module(f"bigflow.{name}")
+        msg = f"Don't use `bigflow.{name}` directly, add explicit import `from bigflow import {name}` instead"
+        warnings.warn(msg, DeprecationWarning)
+        print("!!!", msg, file=sys.stderr)
 
 
 def _maybe_init_logging_from_env():
