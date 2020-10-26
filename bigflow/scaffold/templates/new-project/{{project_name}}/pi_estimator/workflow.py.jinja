@@ -7,17 +7,17 @@ import bigflow
 import bigflow.dataproc
 import bigflow.resources
 
-from {{project_name}}.pyspark.config import workflow_config
-from {{project_name}}.pyspark.processing import run_pyspark_job
+from {{project_name}}.pi_estimator.config import workflow_config
+from {{project_name}}.pi_estimator.processing import do_pi_estimation
 
 
-pyspark_job = bigflow.dataproc.PySparkJob(
-    id='pyspark_job',
+pi_estimator_job = bigflow.dataproc.PySparkJob(
+    id='pi_estimator_job',
 
     # Job entry point. First arguments of this function is 'bigflow.JobContext'
     # Other arguments may be added by user via 'functools.partial' 
     driver=functools.partial(
-        run_pyspark_job,
+        do_pi_estimation,
         points=int(workflow_config.resolve_property('points')),
         partitions=4,
     ),
@@ -32,9 +32,9 @@ pyspark_job = bigflow.dataproc.PySparkJob(
 )
 
 
-pyspark_demo_workflow = bigflow.Workflow(
-    workflow_id="pyspark_workflow",
+pi_estimator_workflow = bigflow.Workflow(
+    workflow_id="pi_estimator_workflow",
     definition=[
-        pyspark_job,
+        pi_estimator_job,
     ],
 )
