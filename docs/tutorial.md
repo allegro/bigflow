@@ -52,7 +52,7 @@ class SayGoodbyeJob(bigflow.Job):
         print(f'Goodbye!')
 
 
-hello_world_workflow = Workflow(
+hello_world_workflow = bigflow.Workflow(
     workflow_id='hello_world_workflow',
     definition=[
         HelloWorldJob(),
@@ -236,7 +236,7 @@ class HelloConfigJob(bigflow.Job):
         print(self.message_to_print)
 
 
-hello_world_workflow = Workflow(
+hello_world_workflow = bigflow.Workflow(
     workflow_id='hello_config_workflow',
     definition=[
         HelloConfigJob(config.resolve_property('message_to_print')),

@@ -15,4 +15,5 @@ hourly_workflow = bigflow.Workflow(
     start_time_factory=hourly_start_time,
     definition=[HourlyJob()],
 )
-hourly_workflow.run(datetime.datetime(2020, 1, 1, 10))
+if __name__ == '__main__':
+    hourly_workflow.run(datetime.datetime(2020, 1, 1, 10))

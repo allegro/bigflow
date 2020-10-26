@@ -1,5 +1,3 @@
-# Workflow & job
-
 ## Overview
 
 BigFlow workflow is a series of jobs. Each job is a Python object which executes your data processing logic.
@@ -70,7 +68,7 @@ class SimpleRetriableJob(bigflow.Job):
         self.retry_pause_sec = 100
 
     def execute(self, context: bigflow.JobContext):
-        print("execution runtime as `datetime` object": context.runtime)
+        print("execution runtime as `datetime` object", context.runtime)
         print("reference to workflow", context.workflow)
 ```
 
@@ -85,7 +83,7 @@ There are two ways of specifying the job arrangement. When your jobs are execute
 
 [`sequential_workflow.py`](examples/workflow_and_job/sequential_workflow.py)
 ```python
-from bigflow.workflow import Workflow
+import bigflow
 
 class Job(bigflow.Job):
 
@@ -95,7 +93,7 @@ class Job(bigflow.Job):
     def execute(self, context: bigflow.JobContext):
         print(f'Running job {self.id} at {context.runtime}')
 
-example_workflow = Workflow(
+example_workflow = bigflow.Workflow(
     workflow_id='example_workflow',
     definition=[Job('1'), Job('2')],
 )
@@ -124,6 +122,7 @@ The implementation:
 
 [`graph_workflow.py`](examples/workflow_and_job/graph_workflow.py)
 ```python
+from bigflow import Workflow, Job, Definition
 job1, job2, job3, job4 = Job('1'), Job('2'), Job('3'), Job('4')
 
 graph_workflow = Workflow(
@@ -151,6 +150,8 @@ without providing the `runtime` parameter, the `Workflow` class passes the curre
 
 [`run_workflow_and_job.py`](examples/workflow_and_job/run_workflow_and_job.py)
 ```python
+import datetime
+from bigflow import Workflow, Job
 simple_workflow = Workflow(
     workflow_id='simple_workflow',
     definition=[Job('1')],
@@ -175,7 +176,7 @@ where batch means: all units of data having timestamps within a given period. Th
 When a workflow is deployed on Airflow, the `runtime` parameter is taken from Airflow `execution_date`. 
 It will be formatted as `YYYY-MM-DD hh-mm-ss`.
 
-### The `schedule_interal` parameter
+### The `schedule_interval` parameter
 
 The `schedule_interval` parameter defines when a workflow should be run. It can be a cron expression or a "shortcut". 
 For example: `'@daily'`, `'@hourly'`, `'@once'`, `'0 0 * * 0'`.
@@ -211,6 +212,7 @@ Returned `datetime` is used as the final `start-time` for a workflow.
 The default value of the `start_time_factory` supports daily workflows. It looks like this:
 
 ```python
+import datetime as dt
 def daily_start_time(start_time: dt.datetime) -> dt.datetime:
     td = dt.timedelta(hours=24)
     return start_time.replace(hour=0, minute=0, second=0, microsecond=0) - td
@@ -226,6 +228,9 @@ For example:
 
 [`daily_workflow.py`](examples/workflow_and_job/daily_workflow.py):
 ```python
+import bigflow
+from bigflow import Workflow
+import datetime
 class DailyJob(bigflow.Job):
     id = 'daily_job'
 
