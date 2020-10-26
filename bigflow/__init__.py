@@ -4,7 +4,6 @@ import json
 import warnings
 import importlib
 
-from . import resources
 from .workflow import Workflow, Definition, Job, JobContext
 from .configuration import Config
 
@@ -28,9 +27,11 @@ def __getattr__(name):
         'resources',
     }:
         importlib.import_module(f"bigflow.{name}")
-        msg = f"Don't use `bigflow.{name}` directly, add explicit import `from bigflow import {name}` instead"
+        msg = f"Don't use `bigflow.{name}` directly, add explicit import `import bigflow.{name}` instead"
         warnings.warn(msg, DeprecationWarning)
         print("!!!", msg, file=sys.stderr)
+        return globals()[name]
+    raise AttributeError
 
 
 def _maybe_init_logging_from_env():
