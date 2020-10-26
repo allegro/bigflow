@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import inspect
 import warnings
 import importlib
 
@@ -20,17 +21,23 @@ __all__ = [
 ]
 
 
+# TODO(anjensan): Remove at 1.0
 def __getattr__(name):
+    if "importlib" in inspect.stack()[1].filename:
+        # Skip imports like 'from bigflow import xxx'
+        raise AttributeError
+
     if name in {
         'bigquery',
         'monitoring',
         'resources',
     }:
         importlib.import_module(f"bigflow.{name}")
-        msg = f"Don't use `bigflow.{name}` directly, add explicit import `import bigflow.{name}` instead"
+        msg = f"Module `bigflow.{name}` should be explicitly imported with `import bigflow.{name}`"
         warnings.warn(msg, DeprecationWarning)
         print("!!!", msg, file=sys.stderr)
         return globals()[name]
+
     raise AttributeError
 
 
