@@ -37,7 +37,7 @@ pyspark_job = bigflow.dataproc.PySparkJob(
 )
 ```
 
-Value of `driver` arguments must be `pickle`able function: it may be global function, an object with `__call__` method,
+Value of `driver` argument must be `pickle`able function: it may be global function, an object with `__call__` method,
 a bounded object method, instance of [`functools.partial`](https://docs.python.org/3/library/functools.html#functools.partial).
 
 It is convinient to use `functools.partial` to pass additional options to driver:
