@@ -83,16 +83,48 @@ deployment_config = Config(
        'gcp_project_id': 'my_gcp_project',
        'dags_bucket': 'my_gcp_bucket'})
 ''')
-        self.check_file_content(Path('my_project_project') / 'my_project' / 'wordcount' / 'config.py', '''from bigflow.configuration import Config
+        self.check_file_content(Path('my_project_project') / 'my_project' / 'wordcount' / 'pipeline.py', '''import uuid
+import logging
 
-workflow_config = Config(name='dev',
+from bigflow.configuration import Config
+from bigflow.resources import find_or_create_setup_for_main_project_package, resolve, get_resource_absolute_path
+from apache_beam.options.pipeline_options import SetupOptions, StandardOptions, WorkerOptions, GoogleCloudOptions, \
+    PipelineOptions
+
+logger = logging.getLogger(__name__)
+
+workflow_config = Config(
+    name='dev',
     properties={
-        'project_name': 'my_project',
         'gcp_project_id': 'my_gcp_project',
         'staging_location': 'my_project/beam_runner/staging',
         'temp_location': 'my_project/beam_runner/temp',
         'region': 'europe-west1',
-        'machine_type': 'n1-standard-1'}).resolve()''')
+        'machine_type': 'n1-standard-1'}).resolve()
+
+
+def dataflow_pipeline_options():
+    options = PipelineOptions()
+
+    google_cloud_options = options.view_as(GoogleCloudOptions)
+    google_cloud_options.project = workflow_config['gcp_project_id']
+    google_cloud_options.job_name = f'beam-wordcount-{uuid.uuid4()}'
+    google_cloud_options.staging_location = f"gs://{workflow_config['staging_location']}"
+    google_cloud_options.temp_location = f"gs://{workflow_config['temp_location']}"
+    google_cloud_options.region = workflow_config['region']
+
+    options.view_as(WorkerOptions).machine_type = workflow_config['machine_type']
+    options.view_as(WorkerOptions).max_num_workers = 2
+    options.view_as(WorkerOptions).autoscaling_algorithm = 'THROUGHPUT_BASED'
+    options.view_as(StandardOptions).runner = 'DataflowRunner'
+
+    setup_file_path = find_or_create_setup_for_main_project_package()
+    requirements_file_path = get_resource_absolute_path('requirements.txt')
+    options.view_as(SetupOptions).setup_file = resolve(setup_file_path)
+    options.view_as(SetupOptions).requirements_file = resolve(requirements_file_path)
+
+    logger.info(f"Run beam pipeline with options {str(options)}")
+    return options''')
 
     def scaffolded_advanced_project_should_have_three_environments(self):
         self.check_file_content(Path('my_project_project') / 'deployment_config.py', '''from bigflow.configuration import Config

@@ -55,8 +55,8 @@ advanced_deployment_config_template = '''.add_configuration(
                                 'dags_bucket': '{dags_bucket}',
                             }})
 '''
-requirements_template = '''bigflow[bigquery,log,dataproc]=={bigflow_version}
-apache-beam[gcp]==2.23.0
+requirements_template = '''bigflow[bigquery,log,dataproc,dataflow]=={bigflow_version}
+apache-beam[gcp]==2.24.0
 '''
 
 project_setup_template = '''from bigflow.build import default_project_setup
@@ -69,37 +69,46 @@ if __name__ == '__main__':
 
 beam_pipeline_template = '''import uuid
 import logging
-from pathlib import Path
 
-import apache_beam as beam
-from apache_beam.options.pipeline_options import SetupOptions, StandardOptions, WorkerOptions, GoogleCloudOptions, PipelineOptions
-
+from bigflow.configuration import Config
+from bigflow.resources import find_or_create_setup_for_main_project_package, resolve, get_resource_absolute_path
+from apache_beam.options.pipeline_options import SetupOptions, StandardOptions, WorkerOptions, GoogleCloudOptions, \
+    PipelineOptions
 
 logger = logging.getLogger(__name__)
 
+workflow_config = Config(
+    name='dev',
+    properties={
+        'gcp_project_id': '%(project_id)s',
+        'staging_location': '%(project_name)s/beam_runner/staging',
+        'temp_location': '%(project_name)s/beam_runner/temp',
+        'region': 'europe-west1',
+        'machine_type': 'n1-standard-1'}).resolve()
 
-def dataflow_pipeline(gcp_project_id, staging_location, temp_location, region, machine_type, project_name):
-    from bigflow.resources import find_or_create_setup_for_main_project_package, resolve, get_resource_absolute_path
+
+def dataflow_pipeline_options():
     options = PipelineOptions()
 
     google_cloud_options = options.view_as(GoogleCloudOptions)
-    google_cloud_options.project = gcp_project_id
+    google_cloud_options.project = workflow_config['gcp_project_id']
     google_cloud_options.job_name = f'beam-wordcount-{uuid.uuid4()}'
-    google_cloud_options.staging_location = f"gs://{staging_location}"
-    google_cloud_options.temp_location = f"gs://{temp_location}"
-    google_cloud_options.region = region
+    google_cloud_options.staging_location = f"gs://{workflow_config['staging_location']}"
+    google_cloud_options.temp_location = f"gs://{workflow_config['temp_location']}"
+    google_cloud_options.region = workflow_config['region']
 
-    options.view_as(WorkerOptions).machine_type = machine_type
+    options.view_as(WorkerOptions).machine_type = workflow_config['machine_type']
     options.view_as(WorkerOptions).max_num_workers = 2
     options.view_as(WorkerOptions).autoscaling_algorithm = 'THROUGHPUT_BASED'
     options.view_as(StandardOptions).runner = 'DataflowRunner'
 
-    options.view_as(SetupOptions).setup_file = resolve(find_or_create_setup_for_main_project_package(project_name, Path(__file__)))
-    options.view_as(SetupOptions).requirements_file = resolve(get_resource_absolute_path('requirements.txt', Path(__file__)))
+    setup_file_path = find_or_create_setup_for_main_project_package()
+    requirements_file_path = get_resource_absolute_path('requirements.txt')
+    options.view_as(SetupOptions).setup_file = resolve(setup_file_path)
+    options.view_as(SetupOptions).requirements_file = resolve(requirements_file_path)
 
-    logger.info("Run beam pipeline with options %s", options)
-    return beam.Pipeline(options=options)
-'''
+    logger.info(f"Run beam pipeline with options {str(options)}")
+    return options'''
 beam_processing_template = '''import logging
 
 import apache_beam as beam
@@ -117,68 +126,35 @@ def count_words(p, target_method):
 '''
 beam_workflow_template = '''import logging
 
-from apache_beam.io import WriteToText
-
+from apache_beam import Pipeline
 import bigflow
+from apache_beam.io import WriteToText
+from bigflow.dataflow import BeamJob
 
-from .pipeline import dataflow_pipeline
-from .config import workflow_config
+from .pipeline import dataflow_pipeline_options, workflow_config
 from .processing import count_words
 
 
 logger = logging.getLogger(__name__)
 
 
-class WordcountJob(bigflow.Job):
-
-    def __init__(self, id, gcp_project_id, staging_location, temp_location, region, machine_type, project_name):
-        logger.debug("Init workflow %s", id)
-
-        self.id = id
-        self.retry_count = 20
-        self.retry_pause_sec = 100
-
-        self.gcp_project_id = gcp_project_id
-        self.staging_location = staging_location
-        self.temp_location = temp_location
-        self.region = region
-        self.machine_type = machine_type
-        self.project_name = project_name
-
-    def execute(self, context: bigflow.JobContext):
-        logger.info("Run workflow %s at %s", self.id, context.runtime)
-        p = dataflow_pipeline(self.gcp_project_id, self.staging_location, self.temp_location, self.region,
-                              self.machine_type, self.project_name)
-        count_words(p, WriteToText("gs://{}/beam_wordcount".format(self.temp_location)))
-        p.run().wait_until_finish()
+def wordcount_driver(pipeline: Pipeline, context: bigflow.JobContext, driver_arguments: dict):
+    logger.info(f'Running wordcount at {context.runtime_str}')
+    count_words(pipeline, WriteToText("gs://{}/beam_wordcount".format(driver_arguments['temp_location'])))
 
 
-simple_workflow = bigflow.Workflow(
+wordcount_workflow = bigflow.Workflow(
     workflow_id="wordcount",
     log_config={
         'gcp_project_id': workflow_config['gcp_project_id'],
         'log_level': 'INFO',
     },
-    definition=[WordcountJob(
-        'test_workflow',
-        gcp_project_id=workflow_config['gcp_project_id'],
-        staging_location=workflow_config['staging_location'],
-        temp_location=workflow_config['temp_location'],
-        region=workflow_config['region'],
-        machine_type=workflow_config['machine_type'],
-        project_name=workflow_config['project_name']
+    definition=[BeamJob(
+        id='wordcount_job',
+        driver_callable=wordcount_driver,
+        pipeline_options=dataflow_pipeline_options(),
+        driver_arguments={'temp_location': workflow_config['temp_location']}
     )])
-'''
-basic_beam_config_template = '''from bigflow.configuration import Config
-
-workflow_config = Config(name='dev',
-    properties={{
-        'project_name': '{project_name}',
-        'gcp_project_id': '{project_id}',
-        'staging_location': '{project_name}/beam_runner/staging',
-        'temp_location': '{project_name}/beam_runner/temp',
-        'region': 'europe-west1',
-        'machine_type': 'n1-standard-1'}})
 '''
 
 advanced_beam_config_template = '''.add_configuration(name='{env}',
