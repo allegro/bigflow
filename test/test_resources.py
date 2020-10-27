@@ -54,6 +54,12 @@ class GetResourceAbsolutePathTestCase(TestCase):
         # then
         self.assertEqual(result_path, Path(__file__).parent / 'resources' / 'test_resource')
 
+        # when
+        result_path = get_resource_absolute_path('test_resource')
+
+        # then
+        self.assertEqual(result_path, Path(__file__).parent / 'resources' / 'test_resource')
+
     def test_should_raise_error_when_resource_not_found(self):
         # then
         with self.assertRaises(ValueError) as e:
