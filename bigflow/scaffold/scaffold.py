@@ -9,8 +9,8 @@ from bigflow.scaffold.templating import render_builtin_templates
 
 from bigflow.scaffold.scaffold_templates import beam_workflow_template, beam_processing_template, \
     beam_pipeline_template, project_setup_template, basic_deployment_config_template, \
-    advanced_deployment_config_template, docker_template, basic_beam_config_template, requirements_template, \
-    readme_template, advanced_beam_config_template, gitignore_template, test_wordcount_workflow_template, bq_workflow_template
+    advanced_deployment_config_template, docker_template, requirements_template, \
+    readme_template, gitignore_template, test_wordcount_workflow_template, bq_workflow_template
 
 
 logger = logging.getLogger(__name__)
@@ -22,7 +22,6 @@ def start_project(config):
 
 
 def format_templates(config):
-    beam_config_template = basic_beam_config_template.format(project_id=config['projects_id'][0], project_name=config['project_name'])
     test_templates = {
         '__init__.py': '',
         'test_wordcount_workflow.py': test_wordcount_workflow_template.format(project_name=config['project_name'])}
@@ -32,18 +31,14 @@ def format_templates(config):
             bigflow_version=bigflow.__version__,
         ),
     }
-    deployment_config_template = basic_deployment_config_template.format(project_id=config['projects_id'][0], dags_bucket=config['composers_bucket'][0])
+    deployment_config_template = basic_deployment_config_template.format(
+        project_id=config['projects_id'][0],
+        dags_bucket=config['composers_bucket'][0])
 
     if not config['is_basic']:
         for i in range(1, len(config['projects_id'])):
             deployment_config_template = deployment_config_template.strip()
             deployment_config_template += advanced_deployment_config_template.format(env=config['envs'][i], project_id=config['projects_id'][i], dags_bucket=config['composers_bucket'][i])
-
-            beam_config_template = beam_config_template.strip()
-            beam_config_template += advanced_beam_config_template.format(env=config['envs'][i], project_id=config['projects_id'][i], dags_bucket=config['composers_bucket'][i])
-
-    beam_config_template = beam_config_template.strip()
-    beam_config_template += '.resolve()'
 
     main_templates = {
         'project_setup.py': project_setup_template.format(project_name=config['project_name']),
@@ -51,10 +46,11 @@ def format_templates(config):
         'Dockerfile': docker_template,
         'README.md': readme_template.format(project_name=config['project_name'])}
     beam_templates = {
-        'config.py': beam_config_template,
         'workflow.py': beam_workflow_template,
         'processing.py': beam_processing_template,
-        'pipeline.py': beam_pipeline_template,
+        'pipeline.py': beam_pipeline_template % {
+            'project_id': config['projects_id'][0],
+            'project_name': config['project_name']},
         '__init__.py': ''}
     bq_templates = {
         '__init__.py': '',

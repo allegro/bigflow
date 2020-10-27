@@ -54,6 +54,12 @@ class GetResourceAbsolutePathTestCase(TestCase):
         # then
         self.assertEqual(result_path, Path(__file__).parent / 'resources' / 'test_resource')
 
+        # when
+        result_path = get_resource_absolute_path('test_resource')
+
+        # then
+        self.assertEqual(result_path, Path(__file__).parent / 'resources' / 'test_resource')
+
     def test_should_raise_error_when_resource_not_found(self):
         # then
         with self.assertRaises(ValueError) as e:
@@ -148,11 +154,22 @@ class FindOrCreateSetupForMainProjectPackageTestCase(TestCase):
         self.assertEqual(path, self.setup_py)
 
 
-class FindOrCreateSetupForDefaultProjectPackageTestCase(TestCase):
-    def setUp(self):
-        self.setup_py = Path(__file__).parent.parent / 'setup.py'
+class FakeModule:
+    def __init__(self):
+        self.__file__ = __file__
+        self.__name__ = 'test.test_resources'
 
-    def test_should_find_existing_setup_py_with_default_args(self):
+
+class FindOrCreateSetupForDefaultProjectPackageTestCase(TestCase):
+
+    @mock.patch('bigflow.resources.inspect.getmodule')
+    def test_should_find_existing_setup_py_with_default_args(self, getmodule_mock):
+        # given
+        getmodule_mock.return_value = FakeModule()
+
+        # when
         path = find_or_create_setup_for_main_project_package()
 
-        self.assertEqual(path, self.setup_py)
+        # then
+        self.assertEqual(path, Path(__file__).parent.parent / 'setup.py')
+        self.assertEqual(getmodule_mock.call_args[0][0].f_locals['self'], self)

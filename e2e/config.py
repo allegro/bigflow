@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 PROJECT_ID = None
 CREDENTIALS = None
 

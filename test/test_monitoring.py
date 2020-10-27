@@ -2,7 +2,8 @@ from unittest import TestCase, mock
 from datetime import datetime
 
 import bigflow
-from bigflow import monitoring
+import bigflow.monitoring as monitoring
+
 from freezegun import freeze_time
 
 
