@@ -1,0 +1,53 @@
+{% skip_file_unless pyspark_job -%}
+
+import unittest
+import random
+import math
+
+import pyspark
+
+import {{project_name}}.pi_estimator.processing as p
+
+
+class PiEstimatorTestCase(unittest.TestCase):
+
+    # PySpark-free unit tests
+
+    def setUp(self):
+        random.seed(123)
+
+    def test_generated_random_points_should_be_inside_square1(self):
+        for n in range(100):
+            x, y = p.random_point()
+            self.assertTrue(-1 <= x <= 1)
+            self.assertTrue(-1 <= y <= 1)
+
+    def test_generated_points_should_be_random(self):
+        ps = [p.random_point() for _ in range(10)]
+        self.assertEqual(len(set(ps)), 10)
+
+
+class PiEstimatorSparkTestCase(unittest.TestCase):
+
+    # Tests for which SparkContext/SQLContext is required
+
+    def setUp(self):
+        random.seed(123)
+        self.sc = pyspark.SparkContext("local[2]", str(self))
+        self.spark = pyspark.SQLContext(self.sc)
+
+    def tearDown(self):
+        self.sc.stop()
+
+    def test_pipeline(self):
+        pi = p.estimate_pi(self.sc, 100000, 8)
+        self.assertAlmostEqual(pi, math.pi, delta=0.1)
+        
+    def test_precision_increases(self):
+        pi1 = p.estimate_pi(self.sc, 100, 4)
+        pi2 = p.estimate_pi(self.sc, 1000, 4)
+        pi3 = p.estimate_pi(self.sc, 10000, 4)
+        diff = lambda x: abs(math.pi - x)
+
+        self.assertLess(diff(pi3), diff(pi2))
+        self.assertLess(diff(pi2), diff(pi1))
