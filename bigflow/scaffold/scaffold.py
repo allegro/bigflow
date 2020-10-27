@@ -95,8 +95,8 @@ def create_dirs_and_files(config, templates):
         project_path,
         "new-project",
         variables={
+            'project_id': config['projects_id'][0],
             **config,
-            project_id=project_id=config['projects_id'][0],
         },
     )
 
