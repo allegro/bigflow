@@ -27,48 +27,52 @@ It happens, that Apache Beam supports [running jobs as a Python package](https:/
 Thanks to that, running Beam jobs requires almost no support.
 
 The BigFlow project starter provides an example Beam workflow called `wordcount`.
-The interesting part of this example is the `wordcount.pipeline` module:
+The first interesting part of this example is the `wordcount.pipeline` module:
 
 ```python
-def dataflow_pipeline(gcp_project_id, staging_location, temp_location, region, machine_type, project_name):
-    from bigflow.resources import find_or_create_setup_for_main_project_package, resolve, get_resource_absolute_path
+def dataflow_pipeline_options():
     options = PipelineOptions()
 
     google_cloud_options = options.view_as(GoogleCloudOptions)
-    google_cloud_options.project = gcp_project_id
+    google_cloud_options.project = workflow_config['gcp_project_id']
     google_cloud_options.job_name = f'beam-wordcount-{uuid.uuid4()}'
-    google_cloud_options.staging_location = f"gs://{staging_location}"
-    google_cloud_options.temp_location = f"gs://{temp_location}"
-    google_cloud_options.region = region
+    google_cloud_options.staging_location = f"gs://{workflow_config['staging_location']}"
+    google_cloud_options.temp_location = f"gs://{workflow_config['temp_location']}"
+    google_cloud_options.region = workflow_config['region']
 
-    options.view_as(WorkerOptions).machine_type = machine_type
+    options.view_as(WorkerOptions).machine_type = workflow_config['machine_type']
     options.view_as(WorkerOptions).max_num_workers = 2
     options.view_as(WorkerOptions).autoscaling_algorithm = 'THROUGHPUT_BASED'
     options.view_as(StandardOptions).runner = 'DataflowRunner'
 
-    options.view_as(SetupOptions).setup_file = resolve(find_or_create_setup_for_main_project_package(project_name, Path(__file__)))
-    options.view_as(SetupOptions).requirements_file = resolve(get_resource_absolute_path('requirements.txt', Path(__file__)))
-    return beam.Pipeline(options=options)
+    setup_file_path = find_or_create_setup_for_main_project_package()
+    requirements_file_path = get_resource_absolute_path('requirements.txt')
+    options.view_as(SetupOptions).setup_file = resolve(setup_file_path)
+    options.view_as(SetupOptions).requirements_file = resolve(requirements_file_path)
+
+    logger.info(f"Run beam pipeline with options {str(options)}")
+    return options
 ```
 
-The `dataflow_pipeline` function creates a [Beam pipeline](https://cloud.google.com/dataflow/docs/guides/specifying-exec-params#setting-other-cloud-dataflow-pipeline-options). The following line is the key:
+The `dataflow_pipeline_options` function creates a [Beam pipeline options](https://cloud.google.com/dataflow/docs/guides/specifying-exec-params#setting-other-cloud-dataflow-pipeline-options). 
+The following line is the key:
 
 ```python
-options.view_as(SetupOptions).setup_file = resolve(find_or_create_setup_for_main_project_package(project_name, Path(__file__)))
+options.view_as(SetupOptions).setup_file = resolve(setup_file_path)
 ```
 
 If you want to provide requirements for your Beam process, you can do it through the
 `SetupOptions`. You can store requirements for your processes in the [`resources`](./project_setup.py#project-structure) directory.
 
 ```python
-options.view_as(SetupOptions).requirements_file = resolve(get_resource_absolute_path('requirements.txt', Path(__file__)))
+options.view_as(SetupOptions).requirements_file = resolve(requirements_file_path)
 ```
 
 Note that the project requirements (`resources/requirements.txt` by default) and a Beam process requirements are two 
 separate things. Your Beam process might need just a subset of the project requirements.
 
 ```python
-options.view_as(SetupOptions).requirements_file = resolve(get_resource_absolute_path('my-beam-process-requirements.txt', Path(__file__)))
+options.view_as(SetupOptions).requirements_file = resolve(get_resource_absolute_path('my-beam-process-requirements.txt'))
 ```
 
 The pipeline configuration contains `staging_location` and `temp_location` directories.
@@ -82,6 +86,51 @@ temp_location = 'my-bucket/temp'
 google_cloud_options.staging_location = f"gs://{staging_location}"
 google_cloud_options.temp_location = f"gs://{temp_location}"
 ```
+
+The second important part of the `wordcount` example is the `workflow.py` module:
+
+```python
+import logging
+
+import apache_beam as beam
+import bigflow
+from apache_beam.io import WriteToText
+from bigflow.dataflow import BeamJob
+
+from .pipeline import dataflow_pipeline_options, workflow_config
+from .processing import count_words
+
+
+logger = logging.getLogger(__name__)
+
+
+def wordcount_driver(pipeline: beam.Pipeline, context: bigflow.JobContext, driver_arguments: dict):
+    logger.info(f'Running wordcount at {context.runtime_str}')
+    count_words(pipeline, WriteToText("gs://{}/beam_wordcount".format(driver_arguments['temp_location'])))
+
+
+wordcount_workflow = bigflow.Workflow(
+    workflow_id="wordcount",
+    log_config={
+        'gcp_project_id': workflow_config['gcp_project_id'],
+        'log_level': 'INFO',
+    },
+    definition=[BeamJob(
+        id='wordcount_job',
+        driver_callable=wordcount_driver,
+        pipeline_options=dataflow_pipeline_options(),
+        driver_arguments={'temp_location': workflow_config['temp_location']}
+    )])
+```
+
+The `BeamJob` class is a recommended way of running Beam jobs in BigFlow. It takes the following arguments:
+
+* The `id` parameter, which is part of the standard [job interface](workflow-and-job.md#job).
+* The `driver_callable` parameter, which should be a callable (for example a function). A driver executes a user job,
+given a pipeline, job context, and additional arguments (`driver_arguments`).
+* The `pipeline_options` parameter should be a `beam.PipelineOptions` object, based on which, the `BeamJob` class produces
+a pipeline for a driver.
+* The `driver_arguments` parameter should be a dictionary. It can be used in a driver as a configuration holder.
 
 ## BigQuery
 
