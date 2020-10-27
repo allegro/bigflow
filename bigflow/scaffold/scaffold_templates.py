@@ -126,7 +126,7 @@ def count_words(p, target_method):
 '''
 beam_workflow_template = '''import logging
 
-import apache_beam as beam
+from apache_beam import Pipeline
 import bigflow
 from apache_beam.io import WriteToText
 from bigflow.dataflow import BeamJob
@@ -138,7 +138,7 @@ from .processing import count_words
 logger = logging.getLogger(__name__)
 
 
-def wordcount_driver(pipeline: beam.Pipeline, context: bigflow.JobContext, driver_arguments: dict):
+def wordcount_driver(pipeline: Pipeline, context: bigflow.JobContext, driver_arguments: dict):
     logger.info(f'Running wordcount at {context.runtime_str}')
     count_words(pipeline, WriteToText("gs://{}/beam_wordcount".format(driver_arguments['temp_location'])))
 
