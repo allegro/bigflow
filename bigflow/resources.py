@@ -67,7 +67,7 @@ def find_file(file_name: str, search_start_file: Path, max_depth: int = 10) -> P
     raise ValueError(f"Can't find the {file_name}")
 
 
-def get_resource_absolute_path(relative_resource_path: str, search_start_file: Path) -> Path:
+def get_resource_absolute_path(resource_file_name: str, search_start_file: Path = None) -> Path:
     '''
     Method allows you to access a file from the resources directory.
 
@@ -83,8 +83,9 @@ def get_resource_absolute_path(relative_resource_path: str, search_start_file: P
     Inside beam_process.py:
     options.view_as(SetupOptions).requirements_file = get_resource_absolute_path('requirements.txt')
     '''
+    search_start_file = search_start_file or inspect.getmodule(inspect.stack()[1][0]).__file__
     resource_dir_path = find_file('resources', search_start_file)
-    result = resource_dir_path / relative_resource_path
+    result = resource_dir_path / resource_file_name
     if not os.path.isfile(result):
         raise ValueError("Can't find the specified resource or resource is not a file.")
     return result
@@ -136,8 +137,11 @@ setuptools.setup(
 '''
 
 
-def find_or_create_setup_for_main_project_package(project_name: str = __name__.split('.')[0], search_start_file: Path = None) -> Path:
-    search_start_file = search_start_file or inspect.getmodule(inspect.stack()[1][0]).__file__
+def find_or_create_setup_for_main_project_package(project_name: str = None, search_start_file: Path = None) -> Path:
+    caller_stack_frame = inspect.stack()[1][0]
+    caller_module = inspect.getmodule(caller_stack_frame)
+    search_start_file = search_start_file or Path(caller_module.__file__)
+    project_name = project_name or caller_module.__name__.split('.')[0]
     return create_file_if_not_exists(find_file(project_name, Path(search_start_file)).parent / 'setup.py', create_setup_body(project_name))
 
 
