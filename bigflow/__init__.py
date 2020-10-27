@@ -1,8 +1,10 @@
 import os
 import sys
 import json
+import inspect
+import warnings
+import importlib
 
-from . import resources
 from .workflow import Workflow, Definition, Job, JobContext
 from .configuration import Config
 
@@ -16,20 +18,27 @@ __all__ = [
     'JobContext',
     'Definition',
     'Config',
-    'resources'
 ]
 
-try:
-    from . import bigquery
-    __all__.append('bigquery')
-except ImportError:
-    pass
 
-try:
-    from . import monitoring
-    __all__.append('monitoring')
-except ImportError:
-    pass
+# TODO(anjensan): Remove at 1.0
+def __getattr__(name):
+    if "importlib" in inspect.stack()[1].filename:
+        # Skip imports like 'from bigflow import xxx'
+        raise AttributeError
+
+    if name in {
+        'bigquery',
+        'monitoring',
+        'resources',
+    }:
+        importlib.import_module(f"bigflow.{name}")
+        msg = f"Module `bigflow.{name}` should be explicitly imported with `import bigflow.{name}`"
+        warnings.warn(msg, DeprecationWarning)
+        print("!!!", msg, file=sys.stderr)
+        return globals()[name]
+
+    raise AttributeError
 
 
 def _maybe_init_logging_from_env():
