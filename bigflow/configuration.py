@@ -33,7 +33,6 @@ class Config:
 
         self.default_env_name = None
         self._update_default_env_name(name, is_default)
-        self._check_docker_repository(properties)
 
     def __str__(self):
         return '\n'.join(list(map(lambda e: self.pretty_print(e), self.configs.keys())))
@@ -73,8 +72,6 @@ class Config:
         all_properties = self._get_master_properties()
         all_properties.update(properties)
 
-        self._check_docker_repository(properties)
-
         self.configs[name] = EnvConfig(name, all_properties)
 
         self._update_default_env_name(name, is_default)
@@ -113,6 +110,7 @@ class Config:
         return self.configs[self.default_env_name]
 
     def _resolve_property_with_os_env_fallback(self, key, value):
+
         if value is None:
             return self._resolve_property_from_os_env(key)
         else:
@@ -141,7 +139,3 @@ class Config:
         else:
             return value
 
-    def _check_docker_repository(self, properties):
-        if "docker_repository" in properties.keys():
-            if not properties["docker_repository"].islower():
-                raise ValueError("docker_repository variable should be in lower case")
