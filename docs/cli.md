@@ -110,7 +110,7 @@ bigflow run --workflow hello_config_workflow --config prod
 
 ### Building Airflow DAGs
 
-There are four commands to build your [deployment artifacts](project_setup_and_build.md#deployment-artifacts):
+There are four commands to build your [deployment artifacts](project_structure_and_build.md#deployment-artifacts):
 
 1. `build-dags` generates Airflow DAG files from your workflows. 
     DAG files are saved to a local `.dags` dir.
@@ -157,7 +157,7 @@ bigflow build-dags --workflow hello_world_workflow --start-time '2020-08-01 10:0
 
 Call the `build-package` command to build a PIP package from your project.
 The command requires no parameters, all configuration is taken from `project_setup.py` and `deployment_config.py`
-(see [project_setup_and_build.md](project_setup_and_build.md)). 
+(see [project_structure_and_build.md](project_structure_and_build.md)). 
 Your PIP package is saved to a `wheel` file in the `dist` dir. 
 
 ```shell
@@ -185,7 +185,7 @@ bigflow build
  
 ### Deploying to GCP
 
-On this stage, you should have two [deployment artifacts](project_setup_and_build.md#deployment-artifacts)
+On this stage, you should have two [deployment artifacts](project_structure_and_build.md#deployment-artifacts)
 created by the [`bigflow build`](#building-airflow-dags) command.
 
 There are three commands to [deploy](deployment.md) your workflows

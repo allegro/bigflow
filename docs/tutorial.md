@@ -137,11 +137,11 @@ deployment_config = Config(
 
 ### Build the deployment artifacts
 
-There are two deployment artifacts, which are being [built](project_setup_and_build.md) from your BigFlow
+There are two deployment artifacts, which are being [built](project_structure_and_build.md) from your BigFlow
 project:
 
-1. Airflow [DAG](project_setup_and_build.md#dag) files with workflows definitions,
-1. Docker [image](project_setup_and_build.md#docker-image) with workflows computation code.
+1. Airflow [DAG](project_structure_and_build.md#dag) files with workflows definitions,
+1. Docker [image](project_structure_and_build.md#docker-image) with workflows computation code.
 
 Build both artifacts with the single command
 (we recommend to focus one the single workflow here, you can build all workflows in your project

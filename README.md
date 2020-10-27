@@ -9,7 +9,7 @@
 1. [BigFlow tutorial](docs/tutorial.md)
 1. [CLI](docs/cli.md)
 1. [Configuration](./docs/configuration.md)
-1. [Project structure and build](./docs/project_setup_and_build.md)
+1. [Project structure and build](./docs/project_structure_and_build.md)
 1. [Deployment](docs/deployment.md)
 1. [Workflow & Job](./docs/workflow-and-job.md)
 1. [Starter](./docs/scaffold.md)
@@ -23,11 +23,11 @@ BigFlow is a Python framework for data processing pipelines on [GCP](https://clo
 
 The main features are:
 
-* [Dockerized deployment environment](./docs/project_setup_and_build.md#overview)
+* [Dockerized deployment environment](./docs/project_structure_and_build.md#overview)
 * [Powerful CLI](./docs/cli.md)
-* [Automated build](./docs/project_setup_and_build.md#overview), [deployment](./docs/deployment.md), 
-[versioning](./docs/project_setup_and_build.md#project-versioning) and [configuration](./docs/configuration.md)
-* [Unified project structure](./docs/project_setup_and_build.md#project-structure)
+* [Automated build](./docs/project_structure_and_build.md#overview), [deployment](./docs/deployment.md), 
+[versioning](./docs/project_structure_and_build.md#project-versioning) and [configuration](./docs/configuration.md)
+* [Unified project structure](./docs/project_structure_and_build.md#project-structure)
 * [Support for the major data processing technologies](./docs/technologies.md) — [Dataproc](https://cloud.google.com/dataproc) (Apache Spark),
 [Dataflow](https://beam.apache.org/) (Apache Beam) and [BigQuery](https://cloud.google.com/bigquery)
 * [Project starter](./docs/scaffold.md)
