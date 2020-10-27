@@ -83,7 +83,7 @@ def get_resource_absolute_path(resource_file_name: str, search_start_file: Path 
     Inside beam_process.py:
     options.view_as(SetupOptions).requirements_file = get_resource_absolute_path('requirements.txt')
     '''
-    search_start_file = search_start_file or inspect.getmodule(inspect.stack()[1][0]).__file__
+    search_start_file = search_start_file or Path(inspect.getmodule(inspect.stack()[1][0]).__file__)
     resource_dir_path = find_file('resources', search_start_file)
     result = resource_dir_path / resource_file_name
     if not os.path.isfile(result):
