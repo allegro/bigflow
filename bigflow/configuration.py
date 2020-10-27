@@ -1,6 +1,7 @@
 import os
 import io
 import pprint
+import typing
 
 
 class EnvConfig:
@@ -18,11 +19,11 @@ def current_env():
 
 class Config:
     def __init__(self,
-                 name: str,
-                 properties: dict,
-                 is_master: bool = True,
-                 is_default: bool = True,
-                 environment_variables_prefix: str = 'bf_'):
+        name: str,
+        properties: typing.Dict[str, str],
+        is_master: bool = True,
+        is_default: bool = True,
+    ):
         if is_master:
             self.master_config_name = name
 
@@ -32,9 +33,6 @@ class Config:
 
         self.default_env_name = None
         self._update_default_env_name(name, is_default)
-
-        self.environment_variables_prefix = environment_variables_prefix
-
         self._check_docker_repository(properties)
 
     def __str__(self):
@@ -120,11 +118,8 @@ class Config:
         else:
             return value
 
-    def _os_env_variable_name(self, key):
-        return self.environment_variables_prefix + key
-
     def _check_property_from_os_env(self, key):
-        env_var_name = self._os_env_variable_name(key)
+        env_var_name = f"bf_{key}"
         if env_var_name in os.environ:
             return os.environ[env_var_name]
         return None
@@ -132,7 +127,7 @@ class Config:
     def _resolve_property_from_os_env(self, property_name):
         property = self._check_property_from_os_env(property_name)
         if not property:
-            os_env_var_name = self._os_env_variable_name(property_name)
+            os_env_var_name = f"bf_{property_name}"
             raise ValueError(f"Failed to load property '{property_name}' from OS environment, no such env variable: '{os_env_var_name}'.")
         return property
 

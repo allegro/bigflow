@@ -72,18 +72,6 @@ class TestConfig(TestCase):
         # then
         self.assertEqual(config.resolve(), {'bb': 2})
 
-
-    def test_should_resolve_config_given_by_os_env_variable_with_prefix(self):
-        # when
-        self._set_os_env('test', 'my_namespace_env')
-
-        config = Config('prod', {'bb': 'prod'}, environment_variables_prefix='my_namespace_')\
-            .add_configuration('test', {'bb': 'test'})
-
-        # then
-        self.assertEqual(config.resolve(), {'bb': 'test'})
-
-
     def test_should_give_priority_to_explicit_properties_rather_than_os_env_variables(self):
         # when
         os.environ['bf_bb'] = 'x'
