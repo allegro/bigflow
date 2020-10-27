@@ -24,7 +24,7 @@ class PiEstimatorTestCase(unittest.TestCase):
 
     def test_generated_points_should_be_random(self):
         ps = [p.random_point() for _ in range(10)]
-        self.assertLen(ps, 10)
+        self.assertEqual(len(set(ps)), 10)
 
 
 class PiEstimatorSparkTestCase(unittest.TestCase):
@@ -40,11 +40,14 @@ class PiEstimatorSparkTestCase(unittest.TestCase):
         self.sc.stop()
 
     def test_pipeline(self):
-        pi = p.estimate_pi(self.sc, 1000, math.pi, 2)
+        pi = p.estimate_pi(self.sc, 100000, 8)
+        self.assertAlmostEqual(pi, math.pi, delta=0.1)
         
     def test_precision_increases(self):
-        pi1 = p.estimate_pi(self.sc, 20, math.pi, 2)
-        pi2 = p.estimate_pi(self.sc, 100, math.pi, 2)
-        pi3 = p.estimate_pi(self.sc, 1000, math.pi, 2)
+        pi1 = p.estimate_pi(self.sc, 100, 4)
+        pi2 = p.estimate_pi(self.sc, 1000, 4)
+        pi3 = p.estimate_pi(self.sc, 10000, 4)
+        diff = lambda x: abs(math.pi - x)
 
-        self.assertTrue(abs(math.pi - pi3) < abs(math.pi - pi2) < abs(math.pi - pi1))
+        self.assertLess(diff(pi3), diff(pi2))
+        self.assertLess(diff(pi2), diff(pi1))

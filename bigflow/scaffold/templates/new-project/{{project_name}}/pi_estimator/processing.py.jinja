@@ -46,7 +46,7 @@ def do_pi_estimation(
     points,
     partitions,
 ):
-    sc = pyspark.sql.SparkSession.builder.getOrCreate()
+    sc = pyspark.SparkContext.getOrCreate()
     logger.info("Calculate Pi, partitions=%s", partitions)
 
     pi = estimate_pi(sc, points=points, partitions=partitions)
