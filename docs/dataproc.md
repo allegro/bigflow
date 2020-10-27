@@ -1,7 +1,8 @@
 ## Integration with DataProc / PySpark
 
 Bigflow provides integration with Pyspark running on Dataproc.
-It allows to adapt any python callable/function with PySpark code into `dataflow` Job.
+It allows you to easily build, run, configure, and schedule a Dataproc job.
+At this time only 'PySpark' jobs are supported.
 
 ### Installation
 
@@ -11,7 +12,7 @@ pip install bigflow[dataproc]
 
 ### Define basic job
 
-Each PySpark job must have an entry point: python callable, passed as `driver` parameter. 
+Each PySpark job must have an entry point: python callable (for example, a function), passed as `driver` parameter. 
 Also some additional deployment options must be specified: GCP project name, GCP region name, GCS bucket/path to store deployments artifacts.
 
 ```python
@@ -37,7 +38,7 @@ pyspark_job = bigflow.dataproc.PySparkJob(
 ```
 
 Value of `driver` arguments must be `pickle`able function: it may be global function, an object with `__call__` method,
-a bounded object method, instance of `functools.partial`.
+a bounded object method, instance of [`functools.partial`](https://docs.python.org/3/library/functools.html#functools.partial).
 
 It is convinient to use `functools.partial` to pass additional options to driver:
 
@@ -81,7 +82,7 @@ pyspark_job = bigflow.dataproc.PySparkJob(
 ```
 
 NOTE: Future version of `bigflow` might allow to run jobs on PySpark via GKE clusters.
-Main advantage of this is thj ability to fully customize job environment, including 
+Main advantage of this is the ability to fully customize job environment, including 
 installation of python C-extensions and libraries.  However this feature is not awailable yet.
 
 ### Submit / execute
