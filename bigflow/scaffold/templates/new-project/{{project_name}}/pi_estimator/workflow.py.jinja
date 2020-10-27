@@ -28,7 +28,7 @@ pi_estimator_job = bigflow.dataproc.PySparkJob(
     gcp_region=workflow_config.resolve_property('gcp_region'),
     
     # Use the same set of dependencies as '{{project_name}}'
-    pip_packages=bigflow.resources.get_resource_absolute_path('requirements.txt', pathlib.Path(__file__)),
+    pip_packages=bigflow.resources.get_resource_absolute_path('requirements.txt'),
 )
 
 

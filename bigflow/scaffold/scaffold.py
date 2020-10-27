@@ -94,7 +94,10 @@ def create_dirs_and_files(config, templates):
     render_builtin_templates(
         project_path,
         "new-project",
-        variables=config,
+        variables={
+            **config,
+            project_id=project_id=config['projects_id'][0],
+        },
     )
 
 

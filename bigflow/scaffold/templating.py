@@ -48,6 +48,8 @@ def render_templates(
         loader=templates,
         extensions=[SkipTemplateTagExtension],
     )
+    env.filters['repr'] = repr
+    env.filters['str'] = str
 
     logger.debug("jinja2 globals: %r", variables)
     env.globals = variables

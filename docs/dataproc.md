@@ -29,7 +29,7 @@ def do_pyspark_pipeline(context: bigflow.JobContext):
 pyspark_job = bigflow.dataproc.PySparkJob(
     id='pyspark_job',
     driver=do_pyspark_pipeline,
-    staging_location="gs://bucket-name/path",
+    bucket_id="gcs-bucket-name",
     gcp_project_id="my-project",
     gcp_region="us-west-1",
     # ... other pyspark job options

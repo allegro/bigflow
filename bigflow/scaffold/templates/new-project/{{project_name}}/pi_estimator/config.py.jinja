@@ -6,10 +6,9 @@ workflow_config = bigflow.Config(
     name='dev',
     is_master=True,
     properties={
-        'project_name': {{ project_name | pprint }},
-        'gcp_project_id': "{project_id}",
+        'gcp_project_id': {{ project_id|repr }},
+        'staging_bucket': {{ project_name|repr }},
         'gcp_region': "europe-west1",
-        'staging_bucket': "{project_name}",
         'points': "100",
     },
 )
