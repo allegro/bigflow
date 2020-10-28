@@ -239,7 +239,7 @@ bigflow deploy-dags \
 **Deploy Docker image**
 
 Upload a Docker image imported from a `.tar` file with the default path
-(default path is: the first file from the `image` dir with a name with pattern `.*-.*\.tar`). 
+(default path is: the first file from the `.image` dir with a name with pattern `.*-.*\.tar`). 
 Configuration is taken from [`deployment_config.py`](deployment.md#managing-configuration-in-deployment_configpy).
 [Local account](deployment.md#local-account-authentication) authentication is used:
 
