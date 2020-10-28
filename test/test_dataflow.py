@@ -40,8 +40,8 @@ class BeamJobTestCase(TestCase):
         driver = CountWordsDriver()
         job = BeamJob(
             id='count_words',
-            driver_callable=driver.run,
-            driver_arguments={
+            entry_point=driver.run,
+            entry_point_arguments={
                 'words_to_filter': ['trash'],
                 'words_to_count': ['trash', 'valid', 'word', 'valid']
             },
