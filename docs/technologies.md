@@ -126,11 +126,11 @@ wordcount_workflow = bigflow.Workflow(
 The `BeamJob` class is a recommended way of running Beam jobs in BigFlow. It takes the following arguments:
 
 * The `id` parameter, which is part of the standard [job interface](workflow-and-job.md#job).
-* The `entry_point` parameter, which should be a callable (for example a function). A driver executes a user job,
+* The `entry_point` parameter, which should be a callable (for example a function). A entry point executes a user job,
 given a pipeline, job context, and additional arguments (`entry_point_arguments`).
 * The `pipeline_options` parameter should be a `beam.PipelineOptions` object, based on which, the `BeamJob` class produces
 a pipeline for a driver.
-* The `entry_point_arguments` parameter should be a dictionary. It can be used in a driver as a configuration holder.
+* The `entry_point_arguments` parameter should be a dictionary. It can be used in a entry point as a configuration holder.
 
 ## BigQuery
 
