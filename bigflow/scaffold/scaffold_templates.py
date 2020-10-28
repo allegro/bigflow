@@ -385,8 +385,8 @@ dmypy.json
 # Pyre type checker
 .pyre/
 .dags
-image
+.image
 .dags/
-image/
+.image/
 .idea'''
 
