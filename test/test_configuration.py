@@ -157,10 +157,15 @@ class TestConfig(TestCase):
 
         # when
         self._set_os_env('prod')
+        config._cache_clear()
         self.assertEqual(config.resolve(), {'a': 'prod2'})
+
         self._set_os_env('dev')
+        config._cache_clear()
         self.assertEqual(config.resolve(), {'a': 'dev1'})
+
         self._set_os_env('test')
+        config._cache_clear()
         self.assertEqual(config.resolve(), {'a': 'test3'})
 
     def test_should_use_default_env_from_secondary_config_when_no_env_is_given(self):
