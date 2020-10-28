@@ -151,9 +151,9 @@ wordcount_workflow = bigflow.Workflow(
     },
     definition=[BeamJob(
         id='wordcount_job',
-        driver_callable=wordcount_driver,
+        entry_point=wordcount_driver,
         pipeline_options=dataflow_pipeline_options(),
-        driver_arguments={'temp_location': workflow_config['temp_location']}
+        entry_point_arguments={'temp_location': workflow_config['temp_location']}
     )])
 '''
 
