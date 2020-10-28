@@ -2,7 +2,6 @@ import os
 import io
 import pprint
 import typing
-import functools
 
 
 class EnvConfig(typing.NamedTuple):
@@ -15,12 +14,7 @@ def current_env():
     return os.environ.get('bf_env')
 
 
-def _cache(f):
-    return functools.lru_cache(maxsize=None)(f)
-
-
 class Config:
-
     def __init__(self,
         name: str,
         properties: typing.Dict[str, str],
@@ -30,15 +24,7 @@ class Config:
         self.master_properties = properties if is_master else {}
         self.default_env_name = None
         self.configs = {}
-
-        self._wrap_cached_methods()
         self.add_configuration(name, properties, is_default)
-
-    def _wrap_cached_methods(self):
-        self.resolve = _cache(self.resolve)
-
-    def _cache_clear(self):
-        self.resolve.cache_clear()
 
     def __str__(self):
         return "\n".join(map(self.pretty_print, self.config.keys()))
@@ -79,7 +65,6 @@ class Config:
         all_properties.update(properties)
         self.configs[name] = EnvConfig(name, all_properties)
         self._update_default_env_name(name, is_default)
-        self._cache_clear()
         return self
 
     def _update_default_env_name(self, name: str, is_default: bool):
