@@ -2,7 +2,7 @@
 
 ## Overview
 
-To see how easy it is to use Bigflow you can use `start-project` which creates a sample standalone project with a [standard structure](https://github.com/allegro/bigflow/blob/master/docs/project_setup_and_build.md#project-structure).
+To see how easy it is to use Bigflow you can use `start-project` which creates a sample standalone project with a [standard structure](https://github.com/allegro/bigflow/blob/master/docs/project_structure_and_build.md#project-structure).
 This project contains an Apache Beam workflow and a BigQuery workflow.
 You will be able to deploy those workflows on your GCP project providing information like project_id/bucket etc.
 

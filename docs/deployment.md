@@ -20,7 +20,7 @@ Docker images are heavy files, so pushing them only once to GCP greatly
 reduces subsequent deployment time (it's safe because images are immutable).
 Moreover, this approach ensures that artifacts are environment-independent.
   
-There are two [deployment artifacts](project_setup_and_build.md#deployment-artifacts):
+There are two [deployment artifacts](project_structure_and_build.md#deployment-artifacts):
 
 1. Airflow DAG files with workflows definitions,
 1. a Docker image with workflows computation code.
@@ -28,7 +28,7 @@ There are two [deployment artifacts](project_setup_and_build.md#deployment-artif
 During deployment, BigFlow uploads your DAG files to Composer's [DAGs folder](#composers-dags-folder)
 and pushes your Docker image to Docker Registry.
 
-Read more about deployment artifacts in [Project setup and build](project_setup_and_build.md).
+Read more about deployment artifacts in [Project setup and build](project_structure_and_build.md).
 
 ## Cloud Composer
 
