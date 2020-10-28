@@ -13,14 +13,15 @@ Here is the example of a `Config`:
 ```python
 from bigflow import Config
 
-deployment_config = Config(name='dev',
-                           properties={
-                               'gcp_project_id': '{env}-project-id',
-                               'docker_repository_project':  'my-shared-docker-project-id',
-                               'docker_repository': 'eu.gcr.io/{docker_repository_project}/my-analytics',
-                               'vault_endpoint': 'https://example.com/vault',
-        'dags_bucket': 'europe-west1-my-1234-bucket',
-    },
+deployment_config = Config(
+   name='dev',
+   properties={
+       'gcp_project_id': '{env}-project-id',
+       'docker_repository_project':  'my-shared-docker-project-id',
+       'docker_repository': 'eu.gcr.io/{docker_repository_project}/my-analytics',
+       'vault_endpoint': 'https://example.com/vault',
+       'dags_bucket': 'europe-west1-my-1234-bucket',
+   },
 ).add_configuration(
     name='prod',
     properties={
@@ -63,6 +64,17 @@ prod config:
     'docker_repository_project': 'my-shared-docker-project-id',
     'gcp_project_id': 'prod-project-id',
     'vault_endpoint': 'https://example.com/vault'}
+```
+
+You can get config for particular environment by calling `resolve(env)` method.
+It return instance of `dict`, which contains all resolved options for specified environment.
+Environment may be ommited, in such case `bigflow` will try to resolve current environment name
+by inspecting command line arguments and/or os envionment (looking for `bf_env` variable).
+
+```python
+config = deployment_config.resolve()
+print(config['dags_bucket'])
+print(config['gcp_project_id'])
 ```
 
 ### String interpolation
