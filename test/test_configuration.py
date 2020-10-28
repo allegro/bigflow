@@ -1,4 +1,6 @@
 import os
+import copy
+
 from unittest import TestCase
 
 from bigflow.configuration import Config
@@ -6,8 +8,12 @@ from bigflow.bigquery.dataset_configuration import DatasetConfig
 
 
 class TestConfig(TestCase):
+
     def setUp(self):
-        self._set_os_env()
+        self.old_os_environ = os.environ.copy()
+
+    def tearDown(self):
+        os.environ = self.old_os_environ
 
     def test_should_resolve_explicit_properties_in_simple_config(self):
         # when
@@ -98,29 +104,6 @@ class TestConfig(TestCase):
         # expect
         self.assertEqual(config.resolve('dev'),  {'a': 1})
         self.assertEqual(config.resolve('prod'), {'a': 1})
-
-
-    def test_should_resolve_env_variables_laizyly_when_calling_resolve_property(self):
-        # when
-        config = Config('dev', {'a': 'dev1'})
-
-        #then
-        self.assertEqual(config.resolve(), {'a': 'dev1'})
-        self.assertEqual(config.resolve_property('a'), 'dev1')
-        self.assertEqual(config.resolve_property('a', 'dev'), 'dev1')
-        with self.assertRaises(ValueError):
-            config.resolve_property('b')
-
-        # when
-        os.environ['bf_b'] = 'b_from_env'
-
-        # then
-        self.assertEqual(config.resolve(), {'a': 'dev1'})
-        self.assertEqual(config.resolve_property('b'), 'b_from_env')
-        self.assertEqual(config.resolve_property('b', 'dev'), 'b_from_env')
-        with self.assertRaises(ValueError):
-            config.resolve_property('c')
-
 
     def test_should_use_bg_as_the_default_environment_variables_prefix(self):
         self._set_os_env('prod', 'bf_env')
@@ -265,3 +248,18 @@ class TestConfig(TestCase):
                                            'output_topic_name': 'projects/my_prod_project_id/topics/mini',
                                            'window_period_seconds': '60'
                                        })
+
+    def test_should_resolve_env_variables_via_resolve_method(self):
+        # when
+        config = Config('dev', {'a': 'dev1'})
+
+        #then
+        self.assertEqual(config.resolve(), {'a': 'dev1'})
+        self.assertEqual(config.resolve('dev'), {'a': 'dev1'})
+
+        # when
+        os.environ['bf_b'] = 'b_from_env'
+
+        # then
+        self.assertEqual(config.resolve(), {'a': 'dev1', 'b': 'b_from_env'})
+        self.assertEqual(config.resolve('dev'), {'a': 'dev1', 'b': 'b_from_env'})
