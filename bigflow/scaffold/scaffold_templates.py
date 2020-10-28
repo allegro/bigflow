@@ -384,9 +384,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-.dags
-.image
-.dags/
-.image/
+
+# BigFlow deployment artifacts
+/.dags/
+/.image/
 .idea'''
 
