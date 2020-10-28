@@ -104,9 +104,9 @@ from .processing import count_words
 logger = logging.getLogger(__name__)
 
 
-def wordcount_driver(pipeline: beam.Pipeline, context: bigflow.JobContext, driver_arguments: dict):
+def wordcount_entry_point(pipeline: beam.Pipeline, context: bigflow.JobContext, entry_point_arguments: dict):
     logger.info(f'Running wordcount at {context.runtime_str}')
-    count_words(pipeline, WriteToText("gs://{}/beam_wordcount".format(driver_arguments['temp_location'])))
+    count_words(pipeline, WriteToText("gs://{}/beam_wordcount".format(entry_point_arguments['temp_location'])))
 
 
 wordcount_workflow = bigflow.Workflow(
@@ -117,20 +117,20 @@ wordcount_workflow = bigflow.Workflow(
     },
     definition=[BeamJob(
         id='wordcount_job',
-        driver_callable=wordcount_driver,
+        entry_point=wordcount_entry_point,
         pipeline_options=dataflow_pipeline_options(),
-        driver_arguments={'temp_location': workflow_config['temp_location']}
+        entry_point_arguments={'temp_location': workflow_config['temp_location']}
     )])
 ```
 
 The `BeamJob` class is a recommended way of running Beam jobs in BigFlow. It takes the following arguments:
 
 * The `id` parameter, which is part of the standard [job interface](workflow-and-job.md#job).
-* The `driver_callable` parameter, which should be a callable (for example a function). A driver executes a user job,
-given a pipeline, job context, and additional arguments (`driver_arguments`).
+* The `entry_point` parameter, which should be a callable (for example a function). A driver executes a user job,
+given a pipeline, job context, and additional arguments (`entry_point_arguments`).
 * The `pipeline_options` parameter should be a `beam.PipelineOptions` object, based on which, the `BeamJob` class produces
 a pipeline for a driver.
-* The `driver_arguments` parameter should be a dictionary. It can be used in a driver as a configuration holder.
+* The `entry_point_arguments` parameter should be a dictionary. It can be used in a driver as a configuration holder.
 
 ## BigQuery
 
