@@ -138,9 +138,9 @@ from .processing import count_words
 logger = logging.getLogger(__name__)
 
 
-def wordcount_driver(pipeline: Pipeline, context: bigflow.JobContext, driver_arguments: dict):
+def wordcount_entry_point(pipeline: Pipeline, context: bigflow.JobContext, entry_point_arguments: dict):
     logger.info(f'Running wordcount at {context.runtime_str}')
-    count_words(pipeline, WriteToText("gs://{}/beam_wordcount".format(driver_arguments['temp_location'])))
+    count_words(pipeline, WriteToText("gs://{}/beam_wordcount".format(entry_point_arguments['temp_location'])))
 
 
 wordcount_workflow = bigflow.Workflow(
@@ -151,7 +151,7 @@ wordcount_workflow = bigflow.Workflow(
     },
     definition=[BeamJob(
         id='wordcount_job',
-        entry_point=wordcount_driver,
+        entry_point=wordcount_entry_point,
         pipeline_options=dataflow_pipeline_options(),
         entry_point_arguments={'temp_location': workflow_config['temp_location']}
     )])
