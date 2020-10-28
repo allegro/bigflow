@@ -35,6 +35,8 @@ readme_template = '''## Run project
 docker_template = '''FROM python:3.7
 COPY ./dist /dist
 RUN apt-get -y update && apt-get install -y libzbar-dev libc-dev musl-dev
+RUN pip install --force-reinstall pip==20.0.2
+RUN pip uninstall typing
 RUN for i in /dist/*.whl; do pip install $i; done
 '''
 
