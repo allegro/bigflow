@@ -207,7 +207,7 @@ def auto_configuration(project_name: str, project_dir: Path = Path('.').parent):
         'test_package': project_dir / 'test',
         'dags_dir': project_dir / '.dags',
         'dist_dir': project_dir / 'dist',
-        'image_dir': project_dir / 'image',
+        'image_dir': project_dir / '.image',
         'eggs_dir': project_dir / f'{project_name}.egg-info',
         'deployment_config_file': deployment_config_file,
         'version': secure_get_version(),
