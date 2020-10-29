@@ -2,6 +2,8 @@ import os
 import io
 import pprint
 
+DEFAULT_CONFIG_ENV_VAR_PREFIX = 'bf_'
+
 
 class EnvConfig:
     def __init__(self,
@@ -21,8 +23,7 @@ class Config:
                  name: str,
                  properties: dict,
                  is_master: bool = True,
-                 is_default: bool = True,
-                 environment_variables_prefix: str = 'bf_'):
+                 is_default: bool = True):
         if is_master:
             self.master_config_name = name
 
@@ -33,7 +34,7 @@ class Config:
         self.default_env_name = None
         self._update_default_env_name(name, is_default)
 
-        self.environment_variables_prefix = environment_variables_prefix
+        self.environment_variables_prefix = DEFAULT_CONFIG_ENV_VAR_PREFIX
 
         self._check_docker_repository(properties)
 
@@ -150,3 +151,17 @@ class Config:
         if "docker_repository" in properties.keys():
             if not properties["docker_repository"].islower():
                 raise ValueError("docker_repository variable should be in lower case")
+
+
+class DeploymentConfig(Config):
+    def __init__(self,
+                 name: str,
+                 properties: dict,
+                 is_master: bool = True,
+                 is_default: bool = True,
+                 environment_variables_prefix: str = DEFAULT_CONFIG_ENV_VAR_PREFIX):
+        super().__init__(
+            name=name,
+            properties=properties,
+            is_master=is_master, is_default=is_default)
+        self.environment_variables_prefix = environment_variables_prefix
