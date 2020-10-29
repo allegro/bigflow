@@ -33,6 +33,7 @@ class TestConfig(TestCase):
         # then
         self.assertEqual(config.resolve('dev'), {'a':1, 'b':'x'})
 
+
     def test_should_smartly_resolve_properties_with_placeholders(self):
         # when
         config = Config('dev', {
@@ -139,11 +140,6 @@ class TestConfig(TestCase):
             Config('dev', {'a': 1}, is_default=True)\
                 .add_configuration('prod', {'a': 2}, is_default=True)
 
-    def test_should_raise_an_error_when_docker_repository_not_in_lower_case(self):
-        with self.assertRaises(ValueError):
-            Config('dev', {'docker_repository': 'Docker_repository'})
-        with self.assertRaises(ValueError):
-            Config('dev', {'docker_repository': 'docker_repository'}).add_configuration('prod', {'docker_repository': 'Docker_repository'})
 
     def test_should_use_default_env_from_master_config_when_no_env_is_given(self):
         # when
