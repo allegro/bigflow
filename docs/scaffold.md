@@ -13,7 +13,7 @@ The BigQuery workflow example creates necessary tables then populates one of the
 
   1. Log in to the GCP, using Google Cloud SDK:
   
-         gcloud auth application-default login.
+         gcloud auth application-default login
     
   1. Create a [Cloud Composer](https://cloud.google.com/composer/docs/how-to/managing/creating#creating_a_new_environment) instance.
   1. You need to create a GCS bucket with the same name as your project and inside this bucket create directories `beam_runner/staging` and `beam_runner/temp`. [Dataflow documentation](https://cloud.google.com/dataflow/docs/guides/specifying-exec-params#configuring-pipelineoptions-for-execution-on-the-cloud-dataflow-service)
