@@ -35,8 +35,6 @@ readme_template = '''## Run project
 docker_template = '''FROM python:3.7
 COPY ./dist /dist
 RUN apt-get -y update && apt-get install -y libzbar-dev libc-dev musl-dev
-RUN pip install --force-reinstall pip==20.0.2
-RUN pip uninstall typing
 RUN for i in /dist/*.whl; do pip install $i; done
 '''
 
@@ -57,9 +55,7 @@ advanced_deployment_config_template = '''.add_configuration(
                                 'dags_bucket': '{dags_bucket}',
                             }})
 '''
-requirements_template = '''bigflow[bigquery,log,dataproc,dataflow]=={bigflow_version}
-apache-beam[gcp]==2.24.0
-'''
+requirements_template = '''bigflow[bigquery,log,dataproc,dataflow]=={bigflow_version}'''
 
 project_setup_template = '''from bigflow.build import default_project_setup
 
