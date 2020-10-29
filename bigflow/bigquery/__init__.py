@@ -12,3 +12,8 @@ __all__ = [
     'DatasetConfig',
     'Job'
 ]
+
+# To avoid using pyarrow in the to_dataframe method. Beam requires obsolete version of pyarrow, which is missing a feature
+# required by the google-cloud-bigquery
+from google.cloud.bigquery import table
+table.pyarrow = None
