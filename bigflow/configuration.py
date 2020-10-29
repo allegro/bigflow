@@ -13,7 +13,7 @@ class EnvConfig(typing.NamedTuple):
 
 def current_env():
     """Returns current env name (specified via 'bigflow --config' option)"""
-    return os.environ.get('bf_env')
+    return os.environ.get(f'{DEFAULT_CONFIG_ENV_VAR_PREFIX}env')
 
 
 class Config:
@@ -27,6 +27,7 @@ class Config:
         self.default_env_name = None
         self.configs = {}
         self.add_configuration(name, properties, is_default)
+        self.environment_variables_prefix = DEFAULT_CONFIG_ENV_VAR_PREFIX
 
     def __str__(self):
         return "\n".join(map(self.pretty_print, self.config.keys()))
@@ -77,7 +78,7 @@ class Config:
         self.default_env_name = name
 
     def _get_env_config(self, name: str) -> EnvConfig:
-        explicit_env_name = name or os.environ.get('bf_env')
+        explicit_env_name = name or os.environ.get(f'{self.environment_variables_prefix}env')
         if not explicit_env_name:
             return self._get_default_config()
         try:
@@ -97,7 +98,7 @@ class Config:
             return value
 
     def _resolve_property_from_os_env(self, property_name):
-        os_env_var_name = f"bf_{property_name}"
+        os_env_var_name = f"{self.environment_variables_prefix}{property_name}"
         property = os.environ.get(os_env_var_name)
         if not property:
             raise ValueError(f"Failed to load property '{property_name}' from OS environment, no such env variable: '{os_env_var_name}'.")
