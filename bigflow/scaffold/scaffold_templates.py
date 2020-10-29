@@ -39,9 +39,9 @@ RUN pip install pip==20.2.4
 RUN for i in /dist/*.whl; do pip install $i --use-feature=2020-resolver; done
 '''
 
-basic_deployment_config_template = '''from bigflow.configuration import Config
+basic_deployment_config_template = '''from bigflow.configuration import DeploymentConfig
 
-deployment_config = Config(
+deployment_config = DeploymentConfig(
     name='dev',
     properties={{
        'docker_repository': 'test_repository',
@@ -383,9 +383,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-.dags
-image
-.dags/
-image/
+
+# BigFlow deployment artifacts
+/.dags/
+/.image/
 .idea'''
 

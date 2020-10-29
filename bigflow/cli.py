@@ -21,7 +21,7 @@ from bigflow.deploy import deploy_dags_folder, deploy_docker_image
 from bigflow.resources import find_file
 from bigflow.scaffold import start_project
 from bigflow.version import get_version, release
-from bigflow.log import workflow_logs_link_for_cli, infrastructure_logs_link_for_cli, print_log_links_message
+
 from .commons import run_process
 
 
@@ -252,7 +252,7 @@ def _parse_args(project_name: Optional[str], args) -> Namespace:
         "-v",
         "--verbose",
         action='store_true',
-        default=False, 
+        default=False,
         help="Print verbose output for debugging",
     )
 
@@ -692,17 +692,19 @@ def init_console_logging(verbose):
 
 
 def cli_logs(root_package):
+    import bigflow.log as log
+
     projects_id = []
     workflows_links = {}
     for workflow in walk_workflows(root_package):
         if workflow.log_config:
             projects_id.append((workflow.log_config['gcp_project_id'], workflow.workflow_id))
-            workflows_links[workflow.workflow_id] = workflow_logs_link_for_cli(workflow.log_config, workflow.workflow_id)
+            workflows_links[workflow.workflow_id] = log.workflow_logs_link_for_cli(workflow.log_config, workflow.workflow_id)
     if not projects_id:
         raise Exception("Found no workflows with configured logging.")
     deduplicated_projects_id = sorted(set(projects_id), key=lambda x: projects_id.index(x))
-    infra_links = infrastructure_logs_link_for_cli(deduplicated_projects_id)
-    print_log_links_message(workflows_links, infra_links)
+    infra_links = log.infrastructure_logs_link_for_cli(deduplicated_projects_id)
+    log.print_log_links_message(workflows_links, infra_links)
 
 
 def _is_log_module_installed():
@@ -710,7 +712,7 @@ def _is_log_module_installed():
         import bigflow.log
         return True
     except ImportError:
-        raise Exception("bigflow.log module not found.")
+        raise Exception("bigflow.log module not found. You need install bigflow with 'log' extras.")
 
 
 def cli(raw_args) -> None:

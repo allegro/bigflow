@@ -17,12 +17,12 @@ They make your job easier. Example use cases:
 * Creating a BigQuery table.
 * Performing read/write operation on a BigQuery table.
 
-The BigFlow [project starter](./scaffold.md) provides examples each technology. Before you dive into the next chapters, 
+The BigFlow [project starter](./scaffold.md) provides examples each technology. Before you dive into the next chapters,
 [create an example project](./scaffold.md#start-project) using the starter.
 
 ## Dataflow (Apache Beam)
 
-The standard BigFlow project is a Python package. 
+The standard BigFlow project is a Python package.
 It happens, that Apache Beam supports [running jobs as a Python package](https://beam.apache.org/documentation/sdks/python-pipeline-dependencies/#multiple-file-dependencies).
 Thanks to that, running Beam jobs requires almost no support.
 
@@ -54,7 +54,7 @@ def dataflow_pipeline_options():
     return options
 ```
 
-The `dataflow_pipeline_options` function creates a [Beam pipeline options](https://cloud.google.com/dataflow/docs/guides/specifying-exec-params#setting-other-cloud-dataflow-pipeline-options). 
+The `dataflow_pipeline_options` function creates a [Beam pipeline options](https://cloud.google.com/dataflow/docs/guides/specifying-exec-params#setting-other-cloud-dataflow-pipeline-options).
 The following line is the key:
 
 ```python
@@ -68,7 +68,7 @@ If you want to provide requirements for your Beam process, you can do it through
 options.view_as(SetupOptions).requirements_file = resolve(requirements_file_path)
 ```
 
-Note that the project requirements (`resources/requirements.txt` by default) and a Beam process requirements are two 
+Note that the project requirements (`resources/requirements.txt` by default) and a Beam process requirements are two
 separate things. Your Beam process might need just a subset of the project requirements.
 
 ```python
@@ -76,9 +76,9 @@ options.view_as(SetupOptions).requirements_file = resolve(get_resource_absolute_
 ```
 
 The pipeline configuration contains `staging_location` and `temp_location` directories.
-These directories are placed in a Cloud Storage Bucket. 
+These directories are placed in a Cloud Storage Bucket.
 Beam uses these directories during processing to store temp files. The specified bucket and directories are not created automatically.
-Below is an example configuration of `staging_location` and `temp_location`. 
+Below is an example configuration of `staging_location` and `temp_location`.
 
 ```python
 staging_location= 'my-bucket/staging'
@@ -144,7 +144,7 @@ To start using the BigQuery utils, install the `bigflow[bigquery]` extras:
 
 `pip install bigflow[bigquery]`
 
-The project starter generates the workflow called `internationalports`. 
+The project starter generates the workflow called `internationalports`.
 This workflow is based solely on BigQuery.
 
 The workflow fits the single `internationalports.workflow` module:
@@ -186,7 +186,7 @@ select_polish_ports = dataset.write_truncate('ports', '''
 
 populate_ports_table = dataset.collect('''
         INSERT INTO `{more_ports}` (port_name, port_latitude, port_longitude, country, index_number)
-        VALUES 
+        VALUES
         ('GDYNIA', 54.533333, 18.55, 'POL', '28740'),
         ('GDANSK', 54.35, 18.666667, 'POL', '28710'),
         ('SANKT-PETERBURG', 59.933333, 30.3, 'RUS', '28370'),
@@ -259,8 +259,8 @@ to call BigQuery SQL.
 
 * `project_id` &mdash; GCP project Id of an internal dataset.
 * `dataset_name` &mdash; Internal dataset name.
-* `internal_tables` &mdash; List of table names in an internal dataset. 
-  Fully qualified names of internal tables are resolved to `{project_id}.{dataset_name}.{table_name}`.  
+* `internal_tables` &mdash; List of table names in an internal dataset.
+  Fully qualified names of internal tables are resolved to `{project_id}.{dataset_name}.{table_name}`.
 * `external_tables` &mdash; Dict that defines aliases for external table names.
   Fully qualified names of those tables have to be declared explicitly.
 
@@ -287,17 +287,17 @@ dataset_config = DatasetConfig(env='dev',
                                )\
             .add_configuration('prod',
                                project_id='my-project-prod')
-``` 
-  
+```
+
 Having that, a `Dataset` object can be easily created:
 
 ```python
 dataset = dataset_config.create_dataset()
-``` 
+```
 
 Then, you can use short table names in SQL, a `Dataset` object resolves them to fully qualified names.
 
-For example, in this SQL, a short name of an internal table: 
+For example, in this SQL, a short name of an internal table:
 
 ```python
 dataset.collect('select * from {quality_metric}')
@@ -305,7 +305,7 @@ dataset.collect('select * from {quality_metric}')
 
 is resolved to `my-project-dev.scorer.quality_metric`.
 
-In this SQL, an alias of an external table: 
+In this SQL, an alias of an external table:
 
 ```python
 dataset.collect('select * from {offer_ctr}')
@@ -315,7 +315,7 @@ is resolved to `not-my-project.offer_scorer.offer_ctr_long_name`.
 
 ### Dataset
 
-A [`Dataset`](../bigflow/bigquery/interface.py) object allows you to perform various operations on a dataset. All the 
+A [`Dataset`](../bigflow/bigquery/interface.py) object allows you to perform various operations on a dataset. All the
 methods are lazy and return a [`BigQueryOperation`](../bigflow/bigquery/interface.py) object.
 
 You can turn a lazy operation into a job or simply run it (useful for ad-hoc queries or debugging).
@@ -332,7 +332,7 @@ job_which_you_can_put_into_workflow = create_target_table_operation.to_job('crea
 create_target_table_operation.run()
 ```
 
-A SQL code that you provide to the methods is templated (as mentioned in the previous section). 
+A SQL code that you provide to the methods is templated (as mentioned in the previous section).
 Besides a configuration parameters, you can access the
 `runtime` parameter. It's available as the `dt` variable. For example:
 
@@ -483,4 +483,101 @@ You can us it as a ad-hoc tool or put a labeling job to a workflow as well.
 
 ## Dataproc
 
-TODO
+Bigflow provides integration with Pyspark running on Dataproc.
+It allows you to easily build, run, configure, and schedule a Dataproc job.
+At this time only 'PySpark' jobs are supported.
+
+### Installation
+
+```shell
+pip install bigflow[dataproc]
+```
+
+### Define basic job
+
+Each PySpark job must have an entry point: python callable (for example, a function), passed as `driver` parameter.
+Also some additional deployment options must be specified: GCP project name, GCP region name, GCS bucket/path to store deployments artifacts.
+
+```python
+import bigflow
+import bigflow.dataproc
+
+import operator
+import pyspark
+
+def do_pyspark_pipeline(context: bigflow.JobContext):
+    sc = pyspark.SparkContext()
+    # Any PySpark code....
+    print(sc.range(100).reduce(operator.add))
+
+pyspark_job = bigflow.dataproc.PySparkJob(
+    id='pyspark_job',
+    driver=do_pyspark_pipeline,
+    bucket_id="gcs-bucket-name",
+    gcp_project_id="my-project",
+    gcp_region="us-west-1",
+    # ... other pyspark job options
+)
+```
+
+Value of `driver` argument must be `pickle`able function: it may be global function, an object with `__call__` method,
+a bounded object method, instance of [`functools.partial`](https://docs.python.org/3/library/functools.html#functools.partial).
+
+It is convinient to use `functools.partial` to pass additional options to driver:
+
+```python
+import functools
+
+def do_pyspark_pipeline(context, extra_arg):
+    ...
+
+pyspark_job = bigflow.dataproc.PySparkJob(
+    id='pyspark_job',
+    driver=functools.partial(
+        do_pyspark_pipeline,
+        extra_arg="any-extra_value",
+    ),
+    ...
+)
+```
+
+### Cluster management
+
+At this time `PySparkJob` creates a separate dataproc cluster for each job instance.
+It allows to install any custom 'python' requirements during cluster initialization.
+
+There are also other options to customize created cluster:
+* `worker_num_instances` - size of created cluster (number of worker machines);
+* `worker_machine_type` - VM size for worker machines.
+
+```python
+pyspark_job = bigflow.dataproc.PySparkJob(
+    id='pyspark_job',
+    driver=do_pyspark_job,
+    pip_requirements=[
+        # Any python libraries might be added here
+        "pandas>=1.1",
+    ],
+    worker_num_instances=10,
+    worker_machine_type="n1-standard-1",
+    ...
+)
+```
+
+NOTE: Future version of `bigflow` might allow to run jobs on PySpark via GKE clusters.
+Main advantage of this is the ability to fully customize job environment, including
+installation of python C-extensions and libraries.  However this feature is not awailable yet.
+
+### Submit / execute
+
+PySpark jobs might be executed in the same way as any other `bigflow` jobs:
+they might be packed into a workflow and sheduled for execution via Airflow:
+
+```python
+pyspark_workflow = bigflow.Workflow(
+    workflow_id="pyspark_workflow",
+    definition=[
+        pyspark_job,
+    ],
+)
+```

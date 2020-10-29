@@ -34,7 +34,7 @@ The `bigflow build` command should produce:
 
 * The `dist` directory with a **Python package** (intermediate artifact)
 * The `build` directory with **JUnit test results** (intermediate artifact)
-* The `image` directory with a **deployment configuration** and **Docker image** as `.tar` (deployment artifact)
+* The `.image` directory with a **deployment configuration** and **Docker image** as `.tar` (deployment artifact)
 * The `.dags` directory with Airflow **DAGs**, generated from workflows (deployment artifact)
 
 The `bigflow build` command uses three subcommands to generate all the 

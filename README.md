@@ -25,7 +25,7 @@ The main features are:
 
 * [Dockerized deployment environment](./docs/project_structure_and_build.md#overview)
 * [Powerful CLI](./docs/cli.md)
-* [Automated build](./docs/project_structure_and_build.md#overview), [deployment](./docs/deployment.md), 
+* [Automated build](./docs/project_structure_and_build.md#overview), [deployment](./docs/deployment.md),
 [versioning](./docs/project_structure_and_build.md#project-versioning) and [configuration](./docs/configuration.md)
 * [Unified project structure](./docs/project_structure_and_build.md#project-structure)
 * [Support for the major data processing technologies](./docs/technologies.md) — [Dataproc](https://cloud.google.com/dataproc) (Apache Spark),
@@ -34,8 +34,8 @@ The main features are:
 
 ## Getting started
 
-Start from [setting up a development environment](#installing-bigflow). 
-Next, go through the BigFlow [tutorial](./docs/tutorial.md). 
+Start from installing BigFlow on your local machine.
+Next, go through the BigFlow [tutorial](./docs/tutorial.md).
 
 ## Installing BigFlow
 
@@ -43,9 +43,9 @@ Next, go through the BigFlow [tutorial](./docs/tutorial.md).
 
 1. [Python](https://www.python.org/downloads/) == 3.7
 2. [Google Cloud SDK](https://cloud.google.com/sdk/docs/downloads-interactive)
-3. [Docker Engine](https://docs.docker.com/engine/install/)  
+3. [Docker Engine](https://docs.docker.com/engine/install/)
 
-You can install the `bigflow` package globally but we recommend to 
+You can install the `bigflow` package globally but we recommend to
 install it locally with `venv`, in your project's folder:
 
 ```bash
@@ -56,7 +56,7 @@ source .bigflow_env/bin/activate
 Install the `bigflow` PIP package:
 
 ```bash
-pip install bigflow==1.0.dev67
+pip install bigflow
 ```
 
 Test it:
