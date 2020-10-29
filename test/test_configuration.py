@@ -13,7 +13,8 @@ class TestConfig(TestCase):
         self.old_os_environ = os.environ.copy()
 
     def tearDown(self):
-        os.environ = self.old_os_environ
+        os.environ.clear()
+        os.environ.update(self.old_os_environ)
 
     def test_should_resolve_explicit_properties_in_simple_config(self):
         # when
