@@ -13,6 +13,7 @@ from google.cloud.dataproc_v1.services import job_controller
 import google.cloud.storage
 
 import bigflow
+from bigflow import dataproc
 import bigflow.dataproc
 import bigflow.resources
 
@@ -62,34 +63,42 @@ class PySparkJobTest(unittest.TestCase):
             _someobject_tags.clear()
 
             # when
-            script = bigflow.dataproc.generate_driver_script(callable)
+            script = bigflow.dataproc.generate_driver_script(callable, {})
             exec(script)
 
-            # then 
+            # then
             # callable was serialized/deserialized/called
             self.assertIn(expected_tag, _someobject_tags)
 
-    
+    @mock.patch.dict('os.environ')
+    def test_generated_driver_updates_os_environ(self):
+        # when
+        script = bigflow.dataproc.generate_driver_script(_SomeObject(), {'some-env': "value"})
+        exec(script)
+
+        # then
+        self.assertEqual(os.environ.get('some-env'), "value")
+
     def test_uploads_driver_to_gcs(self):
         # given
-        driver_callable = _some_global_func
+        driver_script = "some python code"
         driver_path = 'some-driver.py'
 
         gsbucket = mock.Mock()
         gsbucket.blob = mock.Mock()
 
         # when
-        bigflow.dataproc.generate_and_upload_driver(driver_callable, gsbucket, driver_path)
+        bigflow.dataproc._upload_driver_script(driver_script, gsbucket, driver_path)
 
         # then
         gsbucket.blob.assert_called_with(driver_path)
         gsbucket.blob.return_value.upload_from_string.assert_called_once_with(
-            data=mock.ANY,  # don't werify
+            data=driver_script,
             content_type='application/octet-stream',
         )
 
     def test_build_python_egg_file_for_project(self):
-        
+
         # given
         setup_py = pathlib.Path(__file__).parent / "example_project/setup.py"
         bigflow.resources.find_or_create_setup_for_main_project_package(
@@ -119,7 +128,7 @@ class PySparkJobTest(unittest.TestCase):
 
         # when
         bigflow.dataproc._create_cluster(
-            cluster_client, 
+            cluster_client,
             project_id,
             region,
             cluster_name,
@@ -190,7 +199,7 @@ class PySparkJobTest(unittest.TestCase):
         # then
         dataproc_job_client.submit_job.assert_called_once_with(
             project_id=project_id, region=region, job=mock.ANY)
-            
+
         (_, call_kwargs) = dataproc_job_client.submit_job.call_args
         job = call_kwargs['job']
 
@@ -270,7 +279,7 @@ class PySparkJobTest(unittest.TestCase):
             gcp_project_id="no-project",
             gcp_region="no-region",
         )
-       
+
         # when
         driver = job._prepare_driver_callable(jc)
         driver()
@@ -295,7 +304,7 @@ class PySparkJobTest(unittest.TestCase):
 
         jc = bigflow.JobContext.make(workflow=workflow)
 
-        callback = lambda context: None
+        callback = id
         job = bigflow.dataproc.PySparkJob(
             "some_job",
             callback,
@@ -303,10 +312,10 @@ class PySparkJobTest(unittest.TestCase):
             gcp_project_id="no-project",
             gcp_region="no-region",
         )
-       
+
         # when
-        driver = job._prepare_driver_callable(jc)
-        driver()
+        driver_script = job._prepare_driver_script(jc)
+        exec(driver_script)
 
         # then
         self.assertIn('bf_log_config', os.environ)
@@ -315,7 +324,7 @@ class PySparkJobTest(unittest.TestCase):
         maybe_init_logging.assert_called_once()
 
     def test_should_initialize_logging_on_workers(self):
-        
+
         # given
         workflow = mock.Mock()
         workflow.workflow_id = "some_workflow"
@@ -331,7 +340,7 @@ class PySparkJobTest(unittest.TestCase):
             gcp_project_id="no-project",
             gcp_region="no-region",
         )
-       
+
         # when
         props = job._prepare_pyspark_properties(jc)
 
