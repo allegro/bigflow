@@ -121,9 +121,9 @@ class DeploymentConfig(Config):
                  properties: dict,
                  is_master: bool = True,
                  is_default: bool = True,
-                 environment_variables_prefix: str = DEFAULT_CONFIG_ENV_VAR_PREFIX):
+                 environment_variables_prefix: str = None):
         super().__init__(
             name=name,
             properties=properties,
             is_master=is_master, is_default=is_default)
-        self.environment_variables_prefix = environment_variables_prefix
+        self.environment_variables_prefix = environment_variables_prefix or DEFAULT_CONFIG_ENV_VAR_PREFIX
