@@ -137,6 +137,8 @@ class CliTestCase(TestCase):
             # when just workflow id
             cli_run(root_package, full_job_id="ID_1")
 
+
+    @mock.patch.dict('os.environ')
     def test_should_set_configuration_env(self):
         # given
         import os

@@ -1,4 +1,6 @@
 import os
+import copy
+
 from unittest import TestCase
 
 from bigflow.configuration import Config, DeploymentConfig
@@ -15,15 +17,20 @@ def _set_os_env(value=None, env_var_name='bf_env'):
 
 
 class TestConfig(TestCase):
+
     def setUp(self):
-        _set_os_env()
+        self.old_os_environ = os.environ.copy()
+
+    def tearDown(self):
+        os.environ.clear()
+        os.environ.update(self.old_os_environ)
 
     def test_should_resolve_explicit_properties_in_simple_config(self):
         # when
         config = Config('dev', {'a':1, 'b':'2'})
 
         #expect
-        self.assertEqual(config.resolve('dev'), {'a':1, 'b':'2'})
+        self.assertEqual(config.resolve('dev'), {'a':1, 'b':'2', 'env': 'dev'})
 
     def test_should_resolve_to_os_env_variable_when_property_value_is_None(self):
         # when
@@ -31,7 +38,7 @@ class TestConfig(TestCase):
         config = Config('dev', {'a': 1, 'b': None})
 
         # then
-        self.assertEqual(config.resolve('dev'), {'a':1, 'b':'x'})
+        self.assertEqual(config.resolve('dev'), {'a':1, 'b': 'x', 'env': 'dev'})
 
 
     def test_should_smartly_resolve_properties_with_placeholders(self):
@@ -66,7 +73,7 @@ class TestConfig(TestCase):
         config = Config('prod', {'bb': 1}).add_configuration('dev', {'bb': 2})
 
         # then
-        self.assertEqual(config.resolve(), {'bb': 2})
+        self.assertEqual(config.resolve(), {'bb': 2, 'env': 'dev'})
 
     def test_should_give_priority_to_explicit_properties_rather_than_os_env_variables(self):
         # when
@@ -74,8 +81,8 @@ class TestConfig(TestCase):
         config = Config('dev', {'bb': 1})
 
         # then
-        self.assertEqual(config.resolve('dev'), {'bb': 1})
-        self.assertEqual(config.resolve(), {'bb': 1})
+        self.assertEqual(config.resolve('dev'), {'bb': 1, 'env': 'dev'})
+        self.assertEqual(config.resolve(), {'bb': 1, 'env': 'dev'})
         self.assertEqual(config.resolve_property('bb', 'dev'), 1)
         self.assertEqual(config.resolve_property('bb'), 1)
 
@@ -89,8 +96,8 @@ class TestConfig(TestCase):
             .add_configuration('prod', {'a': 5, 'b':10, 'c':20})
 
         # then
-        self.assertEqual(config.resolve('dev'), {'a': 1, 'b': 2})
-        self.assertEqual(config.resolve('prod'), {'a': 5, 'b': 10, 'c': 20})
+        self.assertEqual(config.resolve('dev'), {'a': 1, 'b': 2, 'env': 'dev'})
+        self.assertEqual(config.resolve('prod'), {'a': 5, 'b': 10, 'c': 20, 'env': 'prod'})
 
     def test_should_resolve_from_master_config_when_property_is_missing(self):
         # when
@@ -98,29 +105,8 @@ class TestConfig(TestCase):
             .add_configuration('prod', {})
 
         # expect
-        self.assertEqual(config.resolve('dev'),  {'a': 1})
-        self.assertEqual(config.resolve('prod'), {'a': 1})
-
-    def test_should_resolve_env_variables_laizyly_when_calling_resolve_property(self):
-        # when
-        config = Config('dev', {'a': 'dev1'})
-
-        #then
-        self.assertEqual(config.resolve(), {'a': 'dev1'})
-        self.assertEqual(config.resolve_property('a'), 'dev1')
-        self.assertEqual(config.resolve_property('a', 'dev'), 'dev1')
-        with self.assertRaises(ValueError):
-            config.resolve_property('b')
-
-        # when
-        os.environ['bf_b'] = 'b_from_env'
-
-        # then
-        self.assertEqual(config.resolve(), {'a': 'dev1'})
-        self.assertEqual(config.resolve_property('b'), 'b_from_env')
-        self.assertEqual(config.resolve_property('b', 'dev'), 'b_from_env')
-        with self.assertRaises(ValueError):
-            config.resolve_property('c')
+        self.assertEqual(config.resolve('dev'),  {'a': 1, 'env': 'dev'})
+        self.assertEqual(config.resolve('prod'), {'a': 1, 'env': 'prod'})
 
     def test_should_use_bg_as_the_default_environment_variables_prefix(self):
         _set_os_env('prod', 'bf_env')
@@ -129,7 +115,7 @@ class TestConfig(TestCase):
             .add_configuration('prod', {'a': 'prod2'})
 
         #expect
-        self.assertEqual(config.resolve(), {'a': 'prod2'})
+        self.assertEqual(config.resolve(), {'a': 'prod2', 'env': 'prod'})
 
     def test_should_raise_Error_no_explicit_env_is_given_nor_default_env_is_defined(self):
         with self.assertRaises(ValueError):
@@ -148,18 +134,20 @@ class TestConfig(TestCase):
             .add_configuration('test', {'a': 'test3'})
 
         # expect
-        self.assertEqual(config.resolve(), {'a': 'dev1'})
-        self.assertEqual(config.resolve('dev'), {'a': 'dev1'})
-        self.assertEqual(config.resolve('prod'), {'a': 'prod2'})
-        self.assertEqual(config.resolve('test'), {'a': 'test3'})
+        self.assertEqual(config.resolve(), {'a': 'dev1', 'env': 'dev'})
+        self.assertEqual(config.resolve('dev'), {'a': 'dev1', 'env': 'dev'})
+        self.assertEqual(config.resolve('prod'), {'a': 'prod2', 'env': 'prod'})
+        self.assertEqual(config.resolve('test'), {'a': 'test3', 'env': 'test'})
 
         # when
         _set_os_env('prod')
-        self.assertEqual(config.resolve(), {'a': 'prod2'})
+        self.assertEqual(config.resolve(), {'a': 'prod2', 'env': 'prod'})
+
         _set_os_env('dev')
-        self.assertEqual(config.resolve(), {'a': 'dev1'})
+        self.assertEqual(config.resolve(), {'a': 'dev1', 'env': 'dev'})
+
         _set_os_env('test')
-        self.assertEqual(config.resolve(), {'a': 'test3'})
+        self.assertEqual(config.resolve(), {'a': 'test3', 'env': 'test'})
 
     def test_should_use_default_env_from_secondary_config_when_no_env_is_given(self):
         # when
@@ -168,10 +156,10 @@ class TestConfig(TestCase):
             .add_configuration('test', {'a': 'test3'})
 
         # expect
-        self.assertEqual(config.resolve(), {'a': 'prod2'})
-        self.assertEqual(config.resolve('dev'), {'a': 'dev1'})
-        self.assertEqual(config.resolve('prod'), {'a': 'prod2'})
-        self.assertEqual(config.resolve('test'), {'a': 'test3'})
+        self.assertEqual(config.resolve(), {'a': 'prod2', 'env': 'prod'})
+        self.assertEqual(config.resolve('dev'), {'a': 'dev1', 'env': 'dev'})
+        self.assertEqual(config.resolve('prod'), {'a': 'prod2', 'env': 'prod'})
+        self.assertEqual(config.resolve('test'), {'a': 'test3', 'env': 'test'})
 
     def test_should_use_default_env_from_master_config_in_DatasetConfig(self):
         # when
@@ -252,6 +240,21 @@ class TestConfig(TestCase):
                                            'window_period_seconds': '60'
                                        })
 
+    def test_should_resolve_env_variables_via_resolve_method(self):
+        # when
+        config = Config('dev', {'a': 'dev1'})
+
+        #then
+        self.assertEqual(config.resolve(), {'a': 'dev1', 'env': 'dev'})
+        self.assertEqual(config.resolve('dev'), {'a': 'dev1', 'env': 'dev'})
+
+        # when
+        os.environ['bf_b'] = 'b_from_env'
+
+        # then
+        self.assertEqual(config.resolve(), {'a': 'dev1', 'b': 'b_from_env', 'env': 'dev'})
+        self.assertEqual(config.resolve('dev'), {'a': 'dev1', 'b': 'b_from_env', 'env': 'dev'})
+
 
 class DeploymentConfigTestCase(TestCase):
     def test_should_use_os_environment_variable_prefix_if_given(self):
@@ -260,7 +263,7 @@ class DeploymentConfigTestCase(TestCase):
         config = DeploymentConfig('dev', {'b': None}, environment_variables_prefix='my_namespace_')
 
         # then
-        self.assertEqual(config.resolve('dev'), {'b': 'x'})
+        self.assertEqual(config.resolve('dev'), {'b': 'x', 'env': 'dev'})
 
     def test_should_resolve_config_given_by_os_env_variable_with_prefix(self):
         # when
@@ -270,4 +273,4 @@ class DeploymentConfigTestCase(TestCase):
             .add_configuration('test', {'bb': 'test'})
 
         # then
-        self.assertEqual(config.resolve(), {'bb': 'test'})
+        self.assertEqual(config.resolve(), {'bb': 'test', 'env': 'test'})
