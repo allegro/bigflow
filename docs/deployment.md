@@ -246,3 +246,9 @@ In both cases, we recommend granting the project-level
 Of course, you can also grant bucket-level access only to these two buckets.
 
 
+## Dataflow
+
+Running a Dataflow pipeline requires two Cloud Storage folders:
+
+
+
