@@ -34,7 +34,7 @@ The main features are:
 
 ## Getting started
 
-Start from [setting up a development environment](#installing-bigflow). 
+Start from installing BigFlow on your local machine. 
 Next, go through the BigFlow [tutorial](./docs/tutorial.md). 
 
 ## Installing BigFlow
