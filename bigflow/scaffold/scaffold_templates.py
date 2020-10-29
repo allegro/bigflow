@@ -38,9 +38,9 @@ RUN apt-get -y update && apt-get install -y libzbar-dev libc-dev musl-dev
 RUN for i in /dist/*.whl; do pip install $i; done
 '''
 
-basic_deployment_config_template = '''from bigflow.configuration import Config
+basic_deployment_config_template = '''from bigflow.configuration import DeploymentConfig
 
-deployment_config = Config(
+deployment_config = DeploymentConfig(
     name='dev',
     properties={{
        'docker_repository': 'test_repository',
