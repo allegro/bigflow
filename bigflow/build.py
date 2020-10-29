@@ -166,12 +166,18 @@ def clear_package_leftovers(dist_dir: Path, eggs_dir: Path, build_dir: Path):
         print(f'Removing: {str(to_delete.absolute())}')
         shutil.rmtree(to_delete, ignore_errors=True)
 
+def _validate_deployment_config(config):
+    if "docker_repository" in config:
+        if not config["docker_repository"].islower():
+            raise ValueError("`docker_repository` variable should be in lower case")
 
 def get_docker_repository_from_deployment_config(deployment_config_file: Path):
     try:
         config = import_deployment_config(resolve(deployment_config_file), 'docker_repository')
     except ValueError:
         raise ValueError(f"Can't find the specified deployment configuration: {resolve(deployment_config_file)}")
+
+    _validate_deployment_config(config.resolve())
     docker_repository = config.resolve_property('docker_repository', None)
 
     if docker_repository is None:

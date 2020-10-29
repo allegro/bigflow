@@ -256,9 +256,9 @@ my_secret: 123456
 ```
 
 There are two important aspects here.
-**First**, by default, OS environment variable names
-must be prefixed with `bf_`. You can change this prefix by setting
-the `environment_variables_prefix` parameter in the `Config` init method.
+
+**First**, OS environment variable names
+must be prefixed with `bf_`.
 
 **Second**, since secret properties don't exist in Python code
 they are resolved always lazily and only by name, using the `Config.resolve_property()` function.

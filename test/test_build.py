@@ -3,11 +3,14 @@ import json
 import shutil
 import datetime
 import subprocess
+import tempfile
+
 from datetime import timedelta
 
 from pathlib import Path
 from unittest import TestCase, mock
 
+import bigflow.build
 from bigflow.cli import walk_module_files, SETUP_VALIDATION_MESSAGE
 from bigflow.build import now, get_docker_image_id, build_docker_image_tag, auto_configuration, \
     get_docker_repository_from_deployment_config, project_setup, secure_get_version, default_project_setup, \
@@ -327,5 +330,14 @@ class AutoConfigurationTestCase(TestCase):
         # then
         setup_mock.assert_called_with(**project_setup(**auto_configuration('example_project',  Path(__file__).parent / 'example_project')))
 
+    def test_should_raise_an_error_when_docker_repository_not_in_lower_case(self):
+        with tempfile.NamedTemporaryFile(mode='w+t') as f:
+            f.write("""
+               import bigflow
+               deployment_config = bigflow.Config(properties={'docker_repository': "Docker_Repository"})
+            """)
+            with self.assertRaises(ValueError):
+                bigflow.build.get_docker_repository_from_deployment_config(Path(f.name))
+    
     def get_version_error(self):
         raise RuntimeError('get_version error')

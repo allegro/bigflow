@@ -26,15 +26,6 @@ class TestConfig(TestCase):
         self.assertEqual(config.resolve('dev'), {'a':1, 'b':'x'})
 
 
-    def test_should_use_os_environment_variable_prefix_if_given(self):
-        # when
-        os.environ['my_namespace_b'] = 'x'
-        config = Config('dev', {'b': None}, environment_variables_prefix='my_namespace_')
-
-        # then
-        self.assertEqual(config.resolve('dev'), {'b':'x'})
-
-
     def test_should_smartly_resolve_properties_with_placeholders(self):
         # when
         config = Config('dev', {
@@ -71,18 +62,6 @@ class TestConfig(TestCase):
 
         # then
         self.assertEqual(config.resolve(), {'bb': 2})
-
-
-    def test_should_resolve_config_given_by_os_env_variable_with_prefix(self):
-        # when
-        self._set_os_env('test', 'my_namespace_env')
-
-        config = Config('prod', {'bb': 'prod'}, environment_variables_prefix='my_namespace_')\
-            .add_configuration('test', {'bb': 'test'})
-
-        # then
-        self.assertEqual(config.resolve(), {'bb': 'test'})
-
 
     def test_should_give_priority_to_explicit_properties_rather_than_os_env_variables(self):
         # when
@@ -162,13 +141,6 @@ class TestConfig(TestCase):
         with self.assertRaises(ValueError):
             Config('dev', {'a': 1}, is_default=True)\
                 .add_configuration('prod', {'a': 2}, is_default=True)
-
-
-    def test_should_raise_an_error_when_docker_repository_not_in_lower_case(self):
-        with self.assertRaises(ValueError):
-            Config('dev', {'docker_repository': 'Docker_repository'})
-        with self.assertRaises(ValueError):
-            Config('dev', {'docker_repository': 'docker_repository'}).add_configuration('prod', {'docker_repository': 'Docker_repository'})
 
 
     def test_should_use_default_env_from_master_config_when_no_env_is_given(self):

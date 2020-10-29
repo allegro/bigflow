@@ -1,14 +1,12 @@
 import os
 import io
 import pprint
+import typing
 
 
-class EnvConfig:
-    def __init__(self,
-                 name: str,
-                 properties: dict):
-        self.name = name
-        self.properties = properties
+class EnvConfig(typing.NamedTuple):
+    name: str
+    properties: dict
 
 
 def current_env():
@@ -18,27 +16,18 @@ def current_env():
 
 class Config:
     def __init__(self,
-                 name: str,
-                 properties: dict,
-                 is_master: bool = True,
-                 is_default: bool = True,
-                 environment_variables_prefix: str = 'bf_'):
-        if is_master:
-            self.master_config_name = name
-
-        self.configs = {
-            name: EnvConfig(name, properties)
-        }
-
+        name: str,
+        properties: typing.Dict[str, str],
+        is_master: bool = True,
+        is_default: bool = True,
+    ):
+        self.master_properties = properties if is_master else {}
         self.default_env_name = None
-        self._update_default_env_name(name, is_default)
-
-        self.environment_variables_prefix = environment_variables_prefix
-
-        self._check_docker_repository(properties)
+        self.configs = {}
+        self.add_configuration(name, properties, is_default)
 
     def __str__(self):
-        return '\n'.join(list(map(lambda e: self.pretty_print(e), self.configs.keys())))
+        return "\n".join(map(self.pretty_print, self.config.keys()))
 
     def resolve_property(self, property_name: str, env_name: str = None):
         static_props = self.resolve(env_name)
@@ -53,7 +42,8 @@ class Config:
         pp = pprint.PrettyPrinter(indent=4, stream=s)
 
         env_config = self._get_env_config(env_name)
-        s.write(env_config.name + ' config:\n')
+        s.write(env_config.name)
+        s.write(" config:\n")
         pp.pprint(self.resolve(env_name))
 
         return s.getvalue()[:-1]
@@ -71,43 +61,27 @@ class Config:
                 for (key, value) in properties_with_placeholders.items()}
 
     def add_configuration(self, name: str, properties: dict, is_default: bool = False):
-
-        all_properties = self._get_master_properties()
+        all_properties = dict(self.master_properties)
         all_properties.update(properties)
-
-        self._check_docker_repository(properties)
-
         self.configs[name] = EnvConfig(name, all_properties)
-
         self._update_default_env_name(name, is_default)
-
         return self
 
     def _update_default_env_name(self, name: str, is_default: bool):
-        if is_default:
-            if self.default_env_name:
-                raise ValueError(f"default env is already set to '{self.default_env_name}', you can set only one default env")
-            self.default_env_name = name
-
-    def _get_master_properties(self) -> dict:
-        if not self._has_master_config():
-            return {}
-
-        return self._get_env_config(self.master_config_name).properties.copy()
-
-    def _has_master_config(self) -> bool :
-        return hasattr(self, 'master_config_name')
+        if not is_default:
+            return
+        if self.default_env_name:
+            raise ValueError(f"default env is already set to '{self.default_env_name}', you can set only one default env")
+        self.default_env_name = name
 
     def _get_env_config(self, name: str) -> EnvConfig:
-
-        explicit_env_name = name or self._check_property_from_os_env('env')
-
+        explicit_env_name = name or os.environ.get('bf_env')
         if not explicit_env_name:
             return self._get_default_config()
-        else:
-            if explicit_env_name not in self.configs:
-                raise ValueError(f"no such config name '{explicit_env_name}'")
+        try:
             return self.configs[explicit_env_name]
+        except KeyError:
+                raise ValueError(f"no such config name '{explicit_env_name}'")
 
     def _get_default_config(self) -> EnvConfig:
         if not self.default_env_name:
@@ -120,33 +94,20 @@ class Config:
         else:
             return value
 
-    def _os_env_variable_name(self, key):
-        return self.environment_variables_prefix + key
-
-    def _check_property_from_os_env(self, key):
-        env_var_name = self._os_env_variable_name(key)
-        if env_var_name in os.environ:
-            return os.environ[env_var_name]
-        return None
-
     def _resolve_property_from_os_env(self, property_name):
-        property = self._check_property_from_os_env(property_name)
+        os_env_var_name = f"bf_{property_name}"
+        property = os.environ.get(os_env_var_name)
         if not property:
-            os_env_var_name = self._os_env_variable_name(property_name)
             raise ValueError(f"Failed to load property '{property_name}' from OS environment, no such env variable: '{os_env_var_name}'.")
         return property
 
-    def _resolve_placeholders(self, value, variables:dict):
+    def _resolve_placeholders(self, value, variables: dict):
         if isinstance(value, str):
             modified_value = value
             for k, v in variables.items():
                 if v != value:
-                    modified_value = modified_value.replace('{' + k + '}', v)
+                    modified_value = modified_value.replace("{%s}" % k, v)
             return modified_value
         else:
             return value
 
-    def _check_docker_repository(self, properties):
-        if "docker_repository" in properties.keys():
-            if not properties["docker_repository"].islower():
-                raise ValueError("docker_repository variable should be in lower case")
