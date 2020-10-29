@@ -74,9 +74,9 @@ class ProjectScaffoldE2E(ProjectScaffoldE2ETestCase):
         self.assertEqual(output[-2:], 'OK')
 
     def scaffolded_basic_project_should_have_one_environment(self):
-        self.check_file_content(Path('my_project_project') / 'deployment_config.py', '''from bigflow.configuration import Config
+        self.check_file_content(Path('my_project_project') / 'deployment_config.py', '''from bigflow.configuration import DeploymentConfig
 
-deployment_config = Config(
+deployment_config = DeploymentConfig(
     name='dev',
     properties={
        'docker_repository': 'test_repository',

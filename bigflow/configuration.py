@@ -3,10 +3,12 @@ import io
 import pprint
 import typing
 
+DEFAULT_CONFIG_ENV_VAR_PREFIX = 'bf_'
+
 
 def current_env():
     """Returns current env name (specified via 'bigflow --config' option)"""
-    return os.environ.get('bf_env')
+    return os.environ.get(f'{DEFAULT_CONFIG_ENV_VAR_PREFIX}env')
 
 
 class Config:
@@ -20,6 +22,7 @@ class Config:
         self.default_env_name = None
         self.configs = {}
         self.add_configuration(name, properties, is_default)
+        self.environment_variables_prefix = DEFAULT_CONFIG_ENV_VAR_PREFIX
 
     def __str__(self):
         return "".join(map(self.pretty_print, self.config.keys())).rstrip("\n")
@@ -28,7 +31,9 @@ class Config:
         try:
             return self.resolve(env_name)[property_name]
         except KeyError:
-            raise ValueError(f"Failed to load property '{property_name}' from config, also there is no 'bf_{property_name}' env variable.")
+            raise ValueError(
+                f"Failed to load property '{property_name}' from config, "
+                f"also there is no '{self.environment_variables_prefix}{property_name}' env variable.")
 
     def pretty_print(self, env_name: str = None):
         s = io.StringIO()
@@ -41,13 +46,14 @@ class Config:
 
         return s.getvalue()
 
-    @staticmethod
-    def _capture_osenv_properties():
+    def _capture_osenv_properties(self):
+        prefix = self.environment_variables_prefix
+        prefix_len = len(prefix)
         return {
-            k[3:]: v
+            k[prefix_len:]: v
             for k, v in os.environ.items()
-            if k.startswith("bf_")
-            and k != 'bf_env'
+            if k.startswith(prefix)
+            and k != f"{self.environment_variables_prefix}env"
         }
 
     def resolve(self, env_name: str = None) -> dict:
@@ -61,7 +67,9 @@ class Config:
 
         for k, v in properties_with_placeholders.items():
             if v is None:
-                raise ValueError(f"Failed to load property '{k}' from OS environment, no such env variable: 'bf_{k}'.")
+                raise ValueError(
+                    f"Failed to load property '{k}' from OS environment, "
+                    f"no such env variable: '{self.environment_variables_prefix}{k}'.")
 
         res = {
             key: self._resolve_placeholders(value, properties_with_placeholders)
@@ -91,8 +99,7 @@ class Config:
         self.default_env_name = name
 
     def _get_env_config(self, name: str) -> typing.Tuple[dict, str]:
-        explicit_env_name = name or os.environ.get('bf_env')
-
+        explicit_env_name = name or os.environ.get(f'{self.environment_variables_prefix}env')
         if not explicit_env_name:
             if not self.default_env_name:
                 raise ValueError("No explicit env name is given and no default env is defined, can't resolve properties.")
@@ -113,3 +120,16 @@ class Config:
         else:
             return value
 
+
+class DeploymentConfig(Config):
+    def __init__(self,
+                 name: str,
+                 properties: dict,
+                 is_master: bool = True,
+                 is_default: bool = True,
+                 environment_variables_prefix: str = None):
+        super().__init__(
+            name=name,
+            properties=properties,
+            is_master=is_master, is_default=is_default)
+        self.environment_variables_prefix = environment_variables_prefix or DEFAULT_CONFIG_ENV_VAR_PREFIX
