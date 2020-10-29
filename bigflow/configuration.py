@@ -21,8 +21,9 @@ class Config:
         self.master_properties = properties if is_master else {}
         self.default_env_name = None
         self.configs = {}
-        self.add_configuration(name, properties, is_default)
         self.environment_variables_prefix = DEFAULT_CONFIG_ENV_VAR_PREFIX
+
+        self.add_configuration(name, properties, is_default)
 
     def __str__(self):
         return "".join(map(self.pretty_print, self.config.keys())).rstrip("\n")
@@ -53,7 +54,6 @@ class Config:
             k[prefix_len:]: v
             for k, v in os.environ.items()
             if k.startswith(prefix)
-            and k != f"{self.environment_variables_prefix}env"
         }
 
     def resolve(self, env_name: str = None) -> dict:
@@ -63,7 +63,6 @@ class Config:
         for k, v in self._capture_osenv_properties().items():
             if properties_with_placeholders.get(k, None) is None:
                 properties_with_placeholders[k] = v
-        properties_with_placeholders.setdefault('env', env_name)
 
         for k, v in properties_with_placeholders.items():
             if v is None:
@@ -71,21 +70,18 @@ class Config:
                     f"Failed to load property '{k}' from OS environment, "
                     f"no such env variable: '{self.environment_variables_prefix}{k}'.")
 
-        res = {
+        return {
             key: self._resolve_placeholders(value, properties_with_placeholders)
             for key, value in properties_with_placeholders.items()
         }
-
-        if 'env' not in env_config:
-            # For backward compatability - don't show "magic" 'env' variable to user
-            res.pop('env', None)
-
-        return res
 
     def add_configuration(self, name: str, properties: dict, is_default: bool = False):
         props = {}
         props.update(self.master_properties)
         props.update(properties)
+
+        assert 'env' not in properties or properties['env'] == name
+        props['env'] = name
 
         self.configs[name] = props
         self._update_default_env_name(name, is_default)
