@@ -577,6 +577,34 @@ deployment_config = Config(name='dev',
         with self.assertRaises(SystemExit):
             cli(['build-dags', '-w', 'some_workflow', '-t', '20200101'])
 
+    @mock.patch('bigflow.cli.run_process')
+    @mock.patch('bigflow.cli.validate_project_setup')
+    def test_should_call_cli_build_dags_commands_with_NOW_and_ALL(
+            self, validate_project_setup_mock, run_process_mock):
+        # given
+        validate_project_setup_mock.return_value = '.'
+
+        # when
+        cli(['build-dags','--workflow', 'ALL', '--start-time', 'NOW'])
+
+        # then
+        self.assertEqual(run_process_mock.call_count, 1)
+        run_process_mock.assert_any_call('python project_setup.py build_project --build-dags'.split(' '))
+
+    @mock.patch('bigflow.cli.run_process')
+    @mock.patch('bigflow.cli.validate_project_setup')
+    def test_should_call_cli_build_commands_with_NOW_and_ALL(
+            self, validate_project_setup_mock, run_process_mock):
+        # given
+        validate_project_setup_mock.return_value = '.'
+
+        # when
+        cli(['build','--workflow', 'ALL', '--start-time', 'NOW'])
+
+        # then
+        self.assertEqual(run_process_mock.call_count, 1)
+        run_process_mock.assert_any_call('python project_setup.py build_project'.split(' '))
+
     @mock.patch('bigflow.cli._cli_build_image')
     def test_should_call_cli_build_image_command(self, _cli_build_image_mock):
         # when
@@ -598,6 +626,9 @@ deployment_config = Config(name='dev',
         # then
         self.assertEqual(run_process_mock.call_count, 1)
         run_process_mock.assert_any_call('python project_setup.py build_project'.split(' '))
+
+        # when
+        cli(['build-dags','--workflow','ALL', '--start-time', 'NOW'])
 
     @mock.patch('bigflow.cli._cli_build_package')
     def test_should_call_cli_build_package_command(self, _cli_build_package_mock):
