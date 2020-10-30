@@ -1,35 +1,59 @@
-readme_template = '''## Run project
+readme_template = '''# New BigFlow project
 
-### Requirements & preparations
-[Installing BigFlow](https://github.com/allegro/bigflow/blob/master/README.md#installing-bigflow)
+## Requirements & preparations
 
-[Preparations](https://github.com/allegro/bigflow/blob/master/docs/scaffold.md#preparation)
+Follow the instructions in 
+[Preparations](https://github.com/allegro/bigflow/blob/master/docs/scaffold.md#preparation).
 
-### Running locally
-  1. To run bigquery workflow type in project directory. 
-  
-    bf run --workflow internationalports
-  1. To run apache beam workflow on Dataflow type in project directory. 
-  
-    bf run --workflow wordcount
-  
-### Building & deploying
-  [Build](https://github.com/allegro/bigflow/blob/master/docs/cli.md#building-airflow-dags) the project:
     
-    bigflow build
+## Example worklfows
+
+There are two example workflows here: **internationalports** and  **wordcount**.
+The first one is based only on BigQuery and the second one uses Beam (Dataflow).
+
+Run them and check the results.
+
+1. The results of `internationalports` are saved in BigQuery under the `bigflow_test` dataset
+   in the `ports` and `more_ports` tables.
+
+1. The results of `wordcount` are saved in the `PROJECT_ID_PLACEHOLDER` folder
+   in the `beam_runner/temp` Storage bucket used by Dataflow.
+
+
+## Running locally
+To run a workflow, type in command line (in a project directory): 
+
+```  
+bigflow run --workflow internationalports
+```
+
+or
+
+```  
+bigflow run --workflow wordcount
+```
+
+See [Running workflows](https://github.com/allegro/bigflow/blob/master/docs/cli.md#running-workflows)
+cheat sheet.    
   
-  [Deploy](https://github.com/allegro/bigflow/blob/master/docs/cli.md#deploying-to-gcp) the project to Composer:
+  
+## Building & deploying
+  
+Build the project:
+
+```java
+bigflow build
+```
+
+Deploy it:
     
-    bigflow deploy
-  
-  [Run](https://github.com/allegro/bigflow/blob/master/docs/cli.md#running-jobs-and-workflows) a workflow on given env:
-    
-    bigflow run ...
-  
-  
-### Results
-  1. You can find results of `internationalports` workflow in your BigQuery under `bigflow_test` dataset. The results
-  of `wordcount` you can find in your `{project_name}` bucket used by dataflow in `beam_runner/temp` directory.
+```
+bigflow deploy
+```   
+
+See [Building](https://github.com/allegro/bigflow/blob/master/docs/cli.md#building-airflow-dags) 
+and [Deploying](https://github.com/allegro/bigflow/blob/master/docs/cli.md#deploying-to-gcp) 
+cheat sheet.  
 '''
 
 docker_template = '''FROM python:3.7
