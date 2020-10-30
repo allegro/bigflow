@@ -533,9 +533,10 @@ def _cli_deploy_image(args):
 
 
 def find_image_file():
-    files = glob1("image", "*-*.tar")
+    # TODO parametrize ".image" using settings from build.py
+    files = glob1(".image", "*-*.tar")
     if files:
-        return os.path.join("image", files[0])
+        return os.path.join(".image", files[0])
     else:
         raise ValueError('File containing image to deploy not found')
 

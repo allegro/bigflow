@@ -485,7 +485,7 @@ deployment_config = Config(name='dev',
     @mock.patch('bigflow.cli.deploy_docker_image')
     def test_should_find_tar_in_image_directory(self, deploy_docker_image_mock):
         # given
-        dc_file = self._touch_file('image-123.tar', '', 'image')
+        dc_file = self._touch_file('image-123.tar', '', '.image')
 
         # when
         cli(['deploy-image',
@@ -498,7 +498,7 @@ deployment_config = Config(name='dev',
         # then
         deploy_docker_image_mock.assert_called_with(auth_method='vault',
                                                     docker_repository='my-docker-repository',
-                                                    image_tar_path='image/image-123.tar',
+                                                    image_tar_path='.image/image-123.tar',
                                                     vault_endpoint='my-vault-endpoint',
                                                     vault_secret='secrett')
 
