@@ -4,7 +4,7 @@ import uuid
 
 import pandas as pd
 
-from bigflow.bigquery import create_dataset_manager
+from bigflow.bigquery.dataset_manager import create_dataset_manager
 from . import config
 
 
