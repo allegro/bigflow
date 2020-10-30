@@ -301,7 +301,7 @@ def _valid_datetime(dt):
         return dt
     except ValueError:
         try:
-            datetime.strptime(dt, "%Y-%m-%d")
+            dt == 'NOW' or datetime.strptime(dt, "%Y-%m-%d")
             return dt
         except ValueError:
             raise ValueError("Not a valid date: '{0}'.".format(dt))
@@ -568,10 +568,10 @@ def _cli_build_dags(args):
 def _cli_build(args):
     validate_project_setup()
     cmd = ['python', 'project_setup.py', 'build_project']
-    if args.workflow:
+    if args.workflow and args.workflow != 'ALL':  # ALL for CI/CD
         cmd.append('--workflow')
         cmd.append(args.workflow)
-    if args.start_time:
+    if args.start_time and args.start_time != 'NOW':  # NOW for CI/CD
         cmd.append('--start-time')
         cmd.append(args.start_time)
     run_process(cmd)
