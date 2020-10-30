@@ -29,14 +29,17 @@ def find_all_resources(resources_dir: Path) -> Iterable[str]:
 
 def read_requirements(requirements_path: Path) -> List[str]:
     result: List[str] = []
-    with open(str(requirements_path.absolute()), 'r') as base_requirements:
-        for l in base_requirements.readlines():
-            if '-r ' in l:
-                subrequirements_file_name = l.strip().replace('-r ', '')
+    with open(requirements_path) as base_requirements:
+        for line in base_requirements:
+            if "#" in line:
+                line, _ = line.split("#", 1)
+            line = line.strip()
+            if line.startswith("-r "):
+                subrequirements_file_name = line.replace("-r ", "")
                 subrequirements_path = requirements_path.parent / subrequirements_file_name
                 result.extend(read_requirements(subrequirements_path))
-            else:
-                result.append(l.strip())
+            elif line:
+                result.append(line)
         return result
 
 

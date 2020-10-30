@@ -1,2 +1,5 @@
--r requirements_base.txt
-datetime_truncate==1.1.0
+# comments are allowed
+-r requirements_base.txt# comment
+
+# a few empty lines
+datetime_truncate==1.1.0# another # comment with ### inside
