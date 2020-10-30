@@ -498,7 +498,7 @@ deployment_config = Config(name='dev',
         # then
         deploy_docker_image_mock.assert_called_with(auth_method='vault',
                                                     docker_repository='my-docker-repository',
-                                                    image_tar_path='image/image-123.tar',
+                                                    image_tar_path='.image/image-123.tar',
                                                     vault_endpoint='my-vault-endpoint',
                                                     vault_secret='secrett')
 
