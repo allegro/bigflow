@@ -246,3 +246,21 @@ In both cases, we recommend granting the project-level
 Of course, you can also grant bucket-level access only to these two buckets.
 
 
+## Dataflow
+
+If you want to run a Dataflow process, you need to prepare two Cloud Storage folders:
+
+* The `staging_location` folder, which Dataflow uses to store all the assets needed to run a job.
+* The `temp_location` folder, which Dataflow uses to store temporary files during the execution.
+
+To create the folders, you need to create a bucket first. Provide a unique id for the bucket and 
+choose the location which is closest to you. You can leave the rest of the form fields with the defaults.
+
+![Dataflow bucket](./images/brand_new_bucket.png)
+
+When you have a bucket, you can create folders.
+
+
+
+439 742 026
+439 699 728 - deduplicated
