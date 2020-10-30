@@ -627,9 +627,6 @@ deployment_config = Config(name='dev',
         self.assertEqual(run_process_mock.call_count, 1)
         run_process_mock.assert_any_call('python project_setup.py build_project'.split(' '))
 
-        # when
-        cli(['build-dags','--workflow','ALL', '--start-time', 'NOW'])
-
     @mock.patch('bigflow.cli._cli_build_package')
     def test_should_call_cli_build_package_command(self, _cli_build_package_mock):
         # when
