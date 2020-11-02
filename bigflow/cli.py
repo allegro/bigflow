@@ -296,12 +296,15 @@ def _create_build_package_parser(subparsers):
 
 
 def _valid_datetime(dt):
+    if dt == 'NOW':
+        return
+
     try:
         datetime.strptime(dt, "%Y-%m-%d %H:%M:%S")
         return dt
     except ValueError:
         try:
-            dt == 'NOW' or datetime.strptime(dt, "%Y-%m-%d")
+            datetime.strptime(dt, "%Y-%m-%d")
             return dt
         except ValueError:
             raise ValueError("Not a valid date: '{0}'.".format(dt))
@@ -310,7 +313,7 @@ def _valid_datetime(dt):
 def _add_build_dags_parser_arguments(parser):
     parser.add_argument('-w', '--workflow',
                         type=str,
-                        help="Leave empty to build DAGs from all workflows. "
+                        help="Skip or set to ALL to build DAGs from all workflows. "
                              "Set a workflow Id to build selected workflow only. "
                              "For example to build only this workflow: bigflow.Workflow(workflow_id='workflow1',"
                              " definition=[ExampleJob('job1')]) you should use --workflow workflow1")
@@ -318,8 +321,8 @@ def _add_build_dags_parser_arguments(parser):
                         help='The first runtime of a workflow. '
                              'For workflows triggered hourly -- datetime in format: Y-m-d H:M:S, for example 2020-01-01 00:00:00. '
                              'For workflows triggered daily -- date in format: Y-m-d, for example 2020-01-01. '
-                             'If empty, current hour is used for hourly workflows and '
-                             'today for daily workflows. ',
+                             'If not set or set to NOW -- current hour is used for hourly workflows and '
+                             'today for daily workflows.',
                         type=_valid_datetime)
 
 
@@ -556,10 +559,10 @@ def _cli_build_package():
 def _cli_build_dags(args):
     validate_project_setup()
     cmd = ['python', 'project_setup.py', 'build_project', '--build-dags']
-    if args.workflow:
+    if _is_workflow_selected(args):
         cmd.append('--workflow')
         cmd.append(args.workflow)
-    if args.start_time:
+    if _is_starttime_selected(args):
         cmd.append('--start-time')
         cmd.append(args.start_time)
     run_process(cmd)
@@ -568,13 +571,21 @@ def _cli_build_dags(args):
 def _cli_build(args):
     validate_project_setup()
     cmd = ['python', 'project_setup.py', 'build_project']
-    if args.workflow and args.workflow != 'ALL':  # ALL for CI/CD
+    if _is_workflow_selected(args):
         cmd.append('--workflow')
         cmd.append(args.workflow)
-    if args.start_time and args.start_time != 'NOW':  # NOW for CI/CD
+    if _is_starttime_selected(args):
         cmd.append('--start-time')
         cmd.append(args.start_time)
     run_process(cmd)
+
+
+def _is_workflow_selected(args):
+    return args.workflow and args.workflow != 'ALL'
+
+
+def _is_starttime_selected(args):
+    return args.start_time and args.start_time != 'NOW'
 
 
 def project_type_input():
