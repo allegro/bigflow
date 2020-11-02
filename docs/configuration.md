@@ -314,7 +314,7 @@ dev config:
 
 `DeploymentConfig` is a subclass of the `Config` class with one additional, optional argument – `environment_variables_prefix`.
 Contrary to the `Config` class, the `DeploymentConfig` allows you to set a custom environment variables name prefix (overriding the default `bf_` value).
-It's useful in CI/CD systems like Bamboo.
+It's useful in CI/CD servers. Bamboo is a good example because it adds the `bamboo_` prefix for each environmental variable. 
 
 ```python
 from bigflow.configuration import DeploymentConfig
