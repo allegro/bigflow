@@ -154,7 +154,7 @@ bigflow build --workflow hello_world_workflow
 List the freshly generated deployment artifacts:
 
 ```bash
-ls dags image
+ls .dags .image
 ```
 
 Output:

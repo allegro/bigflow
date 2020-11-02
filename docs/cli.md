@@ -135,7 +135,7 @@ The `build-dags` command takes two optional parameters:
 
 * `--start-time` &mdash; the first [runtime](workflow-and-job.md#the-runtime-parameter)
   of your workflows. If empty, a current hour (`datetime.datetime.now().replace(minute=0, second=0, microsecond=0)`)
-  is used for hourly workflows and `datetime.date.today()` for daily workflows.
+  is used.
 * `--workflow` &mdash; leave empty to build DAGs from all workflows.
    Set a workflow Id to build a selected workflow only.
 
@@ -157,7 +157,7 @@ bigflow build-dags --workflow hello_world_workflow --start-time '2020-08-01 10:0
 
 Call the `build-package` command to build a PIP package from your project.
 The command requires no parameters, all configuration is taken from `project_setup.py` and `deployment_config.py`
-(see [project_structure_and_build.md](project_structure_and_build.md)). 
+(see [Project structure and build](project_structure_and_build.md)). 
 Your PIP package is saved to a `wheel` file in the `dist` dir. 
 
 ```shell
@@ -168,7 +168,7 @@ bigflow build-package
 
 The `build-image` command builds 
 a Docker image with Python, your project's PIP package, and
-all requirements. Next, the image is exported to a `tar` file in the `./image` dir.
+all requirements. Next, the image is exported to a `tar` file in the `./.image` dir.
 
 ```shell
 bigflow build-image
@@ -308,12 +308,12 @@ bigflow deploy --deployment-config-path '/tmp/my_deployment_config.py'
 The `bigflow logs` command lets you generate a link leading to your project/workflow logs in GCP Logging. It will generate 
 link for every workflow that has [logging configuration](logging.md).
 The output of `bigflow logs` command consists of two parts, an infrastructure link, and a workflow link. 
-Workflow link contains logs from user code, dataflow jobs, and exceptions that may occur during executing the workflow.
+Workflow link contains logs from user code, Dataflow jobs, Dataproc jobs, and exceptions that may occur during executing the workflow.
 The links will be created for every workflow found by Bigflow in the project directory.
-The infrastructure link contains logs from Kubernetes pods/containers and dataflow workers. The links will be created 
+The infrastructure link contains logs from Kubernetes pods/containers and Dataflow workers. The links will be created 
 for every unique project id found in workflows.
 
 
 
-## Scaffold project
+## Project scaffold
 Use the `bigflow start-project` command to create a [sample project](scaffold.md) and try all of the above commands yourself.
