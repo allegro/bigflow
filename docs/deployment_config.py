@@ -7,3 +7,5 @@ deployment_config = Config(
         'docker_repository': 'eu.gcr.io/{gcp_project_id}/docs-project',
         'dags_bucket': 'my_composer_dags_bucket'
     })
+
+

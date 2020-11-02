@@ -98,15 +98,16 @@ to
 Interpolation is **contextual**, meaning that, it is aware of a current environment. For example:
 
 ```python
-config = Config(name='dev',
-                properties={
-                    'offers': 'fake_offers',
-                    'transactions': '{offers}_transactions'
-                }).add_configuration(
-                name='prod',
-                properties={
-                   'offers': 'real_offers'
-                })
+config = Config(
+    name='dev',
+    properties={
+        'offers': 'fake_offers',
+        'transactions': '{offers}_transactions'
+    }).add_configuration(
+    name='prod',
+    properties={
+        'offers': 'real_offers'
+    })
 
 print(config)
 ```
@@ -139,12 +140,13 @@ By default, the configuration defined in the `Config` init method is the master 
 
 
 ```python
-config = Config(name='dev',
-                properties={
-                   'my_project': 'my_value'
-                }).add_configuration(
-                name='prod',
-                properties={})
+config = Config(
+    name='dev',
+    properties={
+        'my_project': 'my_value'
+    }).add_configuration(
+    name='prod',
+    properties={})
 
 print(config)
 ```
@@ -161,13 +163,14 @@ prod config:
 You can disable properties inheritance by setting the `is_master` flag to `False`:
 
 ```python
-config = Config(name='dev',
-                is_master=False,
-                properties={
-                   'my_project': 'my_value'
-                }).add_configuration(
-                name='prod',
-                properties={})
+config = Config(
+    name='dev',
+    is_master=False,
+    properties={
+        'my_project': 'my_value'
+    }).add_configuration(
+    name='prod',
+    properties={})
 
 print(config)
 ```
@@ -189,12 +192,13 @@ It is chosen while resolving properties, when `env_name` is `None`. For example:
 
 
 ```python
-config = Config(name='dev',
-                properties={
-                   'my_project': 'I_am_{env}'
-                }).add_configuration(
-                name='prod',
-                properties={})
+config = Config(
+    name='dev',
+    properties={
+        'my_project': 'I_am_{env}'
+    }).add_configuration(
+    name='prod',
+    properties={})
 
 print(config.pretty_print())
 print(config.pretty_print('dev'))
@@ -213,18 +217,18 @@ dev config:
 You can change the roles by setting the `is_default` flag:
 
 ```python
-config = Config(name='dev',
-                is_default=False,
-                properties={
-                   'my_project': 'I_am_{env}'
-                }).add_configuration(
-                name='prod',
-                is_default=True,
-                properties={})
+config = Config(
+    name='dev',
+    is_default=False,
+    properties={
+        'my_project': 'I_am_{env}'
+    }).add_configuration(
+    name='prod',
+    is_default=True,
+    properties={})
 
 print(config.pretty_print())
 print(config.pretty_print('dev'))
-
 ```
 
 output:
@@ -252,13 +256,13 @@ from bigflow import Config
 
 os.environ['bf_my_secret'] = '123456'
 
-config = Config(name='dev',
-                properties={
-                   'my_project': 'I_am_{env}'
-                })
+config = Config(
+    name='dev',
+    properties={
+        'my_project': 'I_am_{env}'})
 
 print(config)
-print ('my_secret:', config.resolve()['my_secret'], 'dev'))
+print('my_secret:', config.resolve()['my_secret'], 'dev')
 ```
 
 output:
@@ -283,12 +287,13 @@ More interestingly, you can even resolve a current configuration name from OS en
 import os
 from bigflow import Config
 
-config = Config(name='dev',
-                properties={
-                   'my_project': 'I_am_{env}'
-                }).add_configuration(
-                name='prod',
-                properties={})
+config = Config(
+    name='dev',
+    properties={
+        'my_project': 'I_am_{env}'
+    }).add_configuration(
+    name='prod',
+    properties={})
 
 os.environ['bf_env'] = 'prod'
 print(config.pretty_print(''))
@@ -303,4 +308,22 @@ prod config:
 {'my_project': 'I_am_prod'}
 dev config:
 {'my_project': 'I_am_dev'}
+```
+
+## Deployment config
+
+`DeploymentConfig` is a subclass of the `Config` class with one additional, optional argument – `environment_variables_prefix`.
+Contrary to the `Config` class, the `DeploymentConfig` allows you to set a custom environment variables name prefix (overriding the default `bf_` value).
+It's useful in CI/CD systems like Bamboo.
+
+```python
+from bigflow.configuration import DeploymentConfig
+
+deployment_config = DeploymentConfig(
+    name='dev',
+    environment_variables_prefix='bamboo_bf_',
+    properties={{
+       'docker_repository': 'your_repository',
+       'gcp_project_id': '{project_id}',
+       'dags_bucket': '{dags_bucket}'}})
 ```

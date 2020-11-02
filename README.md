@@ -56,7 +56,7 @@ source .bigflow_env/bin/activate
 Install the `bigflow` PIP package:
 
 ```bash
-pip install bigflow
+pip install bigflow[bigquery,dataflow,dataproc,log]
 ```
 
 Test it:
