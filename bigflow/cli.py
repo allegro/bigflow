@@ -318,8 +318,7 @@ def _add_build_dags_parser_arguments(parser):
                         help='The first runtime of a workflow. '
                              'For workflows triggered hourly -- datetime in format: Y-m-d H:M:S, for example 2020-01-01 00:00:00. '
                              'For workflows triggered daily -- date in format: Y-m-d, for example 2020-01-01. '
-                             'If empty, current hour is used for hourly workflows and '
-                             'today for daily workflows. ',
+                             'If empty, current hour is used.',
                         type=_valid_datetime)
 
 
