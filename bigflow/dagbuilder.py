@@ -43,7 +43,7 @@ default_args = {{
             'start_date': {start_date_as_str},
             'email_on_failure': False,
             'email_on_retry': False,
-            'execution_timeout': datetime.timedelta(minutes=90),
+            'execution_timeout': datetime.timedelta(minutes=180),
 }}
 
 dag = DAG(
@@ -75,7 +75,7 @@ dag = DAG(
     is_delete_operator_pod=True,
     retries={retries},
     retry_delay=datetime.timedelta(seconds={retry_delay}),
-    dag=dag)            
+    dag=dag)
 """.format(job_var=job_var,
           task_id=task_id,
           docker_image = docker_repository+":"+build_ver,
