@@ -91,7 +91,7 @@ default_args = {
             'start_date': datetime.datetime(2020, 7, 2, 8, 0),
             'email_on_failure': False,
             'email_on_retry': False,
-            'execution_timeout': datetime.timedelta(minutes=90),
+            'execution_timeout': datetime.timedelta(minutes=180),
 }
 
 dag = DAG(
@@ -112,7 +112,7 @@ tjob1 = kubernetes_pod_operator.KubernetesPodOperator(
     is_delete_operator_pod=True,
     retries=10,
     retry_delay=datetime.timedelta(seconds=20),
-    dag=dag)            
+    dag=dag)
 
 
 tjob2 = kubernetes_pod_operator.KubernetesPodOperator(
@@ -125,7 +125,7 @@ tjob2 = kubernetes_pod_operator.KubernetesPodOperator(
     is_delete_operator_pod=True,
     retries=100,
     retry_delay=datetime.timedelta(seconds=200),
-    dag=dag)            
+    dag=dag)
 
 tjob2.set_upstream(tjob1)
 
@@ -139,7 +139,7 @@ tjob3 = kubernetes_pod_operator.KubernetesPodOperator(
     is_delete_operator_pod=True,
     retries=100,
     retry_delay=datetime.timedelta(seconds=200),
-    dag=dag)            
+    dag=dag)
 
 tjob3.set_upstream(tjob2)
 tjob3.set_upstream(tjob1)
@@ -186,7 +186,7 @@ default_args = {
             'start_date': datetime.datetime(2020, 7, 1, 0, 0),
             'email_on_failure': False,
             'email_on_retry': False,
-            'execution_timeout': datetime.timedelta(minutes=90),
+            'execution_timeout': datetime.timedelta(minutes=180),
 }
 
 dag = DAG(
@@ -207,7 +207,7 @@ tjob1 = kubernetes_pod_operator.KubernetesPodOperator(
     is_delete_operator_pod=True,
     retries=10,
     retry_delay=datetime.timedelta(seconds=20),
-    dag=dag)            
+    dag=dag)
 
 '''
         self.assert_files_are_equal(expected_dag_content, dag_file_content)
