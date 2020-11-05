@@ -259,8 +259,3 @@ choose the location which is closest to you. You can leave the rest of the form 
 ![Dataflow bucket](./images/brand_new_bucket.png)
 
 When you have a bucket, you can create folders.
-
-
-
-439 742 026
-439 699 728 - deduplicated
