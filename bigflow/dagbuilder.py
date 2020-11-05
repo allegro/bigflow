@@ -43,7 +43,7 @@ default_args = {{
             'start_date': {start_date_as_str},
             'email_on_failure': False,
             'email_on_retry': False,
-            'execution_timeout': datetime.timedelta(minutes=90),
+            'execution_timeout': datetime.timedelta(minutes=120),
 }}
 
 dag = DAG(
