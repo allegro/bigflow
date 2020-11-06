@@ -260,5 +260,6 @@ the project where you run your Dataflow pipeline. Next, create the "Create Bucke
 ![Dataflow bucket](./images/brand_new_bucket.png)
 
 Provide a unique id for the bucket and choose the location which is closest to you. 
-You can leave the rest of the form fields with the defaults.
+You can leave the rest of the form fields with the defaults. After you hit the "Create" button,
+your bucket is ready.
 
