@@ -255,7 +255,7 @@ If you want to run a Dataflow process, you need to prepare a Cloud Storage bucke
 **You only need to create a bucket**, Dataflow creates the required folders in the specified bucket. 
 
 To create a bucket, go to the [Cloud Storage browser](https://console.cloud.google.com/storage/browser) and choose 
-the project where your run your pipeline. Next, create the "Create Bucket" button to open the bucket creator form.
+the project where you run your Dataflow pipeline. Next, create the "Create Bucket" button to open the bucket creator form.
 
 ![Dataflow bucket](./images/brand_new_bucket.png)
 
