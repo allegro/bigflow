@@ -46,7 +46,6 @@ def _maybe_init_logging_from_env():
     try:
         from bigflow import log
     except ImportError:
-        print("bigflow[log] is not installed", file=sys.stderr)
         return
 
     if 'bf_log_config' not in os.environ:
@@ -56,7 +55,7 @@ def _maybe_init_logging_from_env():
     try:
         log_config = json.loads(log_config)
     except ValueError as e:
-        print("invalid 'log_config' json:", e, file=sys.stderr)        
+        print("invalid 'log_config' json:", e, file=sys.stderr)
         return
 
     if 'workflow_id' in log_config:

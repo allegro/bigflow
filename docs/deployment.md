@@ -245,4 +245,21 @@ In both cases, we recommend granting the project-level
 
 Of course, you can also grant bucket-level access only to these two buckets.
 
+## Dataflow
+
+If you want to run a Dataflow process, you need to prepare a Cloud Storage bucket for the two required folders:
+
+* The `staging_location` folder, which Dataflow uses to store all the assets needed to run a job.
+* The `temp_location` folder, which Dataflow uses to store temporary files during the execution.
+
+**You only need to create a bucket**, Dataflow creates the required folders in the specified bucket. 
+
+To create a bucket, go to the [Cloud Storage browser](https://console.cloud.google.com/storage/browser) and choose 
+the project where you run your Dataflow pipeline. Next, create the "Create Bucket" button to open the bucket creator form.
+
+![Dataflow bucket](./images/brand_new_bucket.png)
+
+Provide a unique id for the bucket and choose the location which is closest to you. 
+You can leave the rest of the form fields with the defaults. After you hit the "Create" button,
+your bucket is ready.
 
