@@ -19,16 +19,16 @@ The concept of BigFlow deployment artifacts looks like this:
 ![BigFlow artifact schema](./images/bigflow-artifact.png)
 
 BigFlow turns your project into a standard Python package (which can be uploaded to [pypi](https://pypi.org/) or
-installed locally using `pip`). 
+installed locally using `pip`).
 Next, the package is installed on a Docker [image](#docker-image) with a fixed Python version.
 Finally, BigFlow generates Airflow [DAG files](#dag) which use this image.
 
-From each of your [workflows](./workflow-and-job.md#workflow), BigFlow generates a DAG file. 
+From each of your [workflows](./workflow-and-job.md#workflow), BigFlow generates a DAG file.
 Every produced DAG consists only of [`KubernetesPodOperator`](https://airflow.apache.org/docs/stable/_api/airflow/contrib/operators/kubernetes_pod_operator/index.html) objects, which
 executes operations on a Docker image.
 
 To build a project you need to use the [`bigflow build`](./cli.md#building-airflow-dags) command. The documentation, you are reading, is also a valid BigFlow
-project. Go to the [`docs`](../docs) directory and run the `bigflow build` command to see how the build process works. 
+project. Go to the [`docs`](../docs) directory and run the `bigflow build` command to see how the build process works.
 
 The `bigflow build` command should produce:
 
@@ -37,7 +37,7 @@ The `bigflow build` command should produce:
 * The `.image` directory with a **deployment configuration** and **Docker image** as `.tar` (deployment artifact)
 * The `.dags` directory with Airflow **DAGs**, generated from workflows (deployment artifact)
 
-The `bigflow build` command uses three subcommands to generate all the 
+The `bigflow build` command uses three subcommands to generate all the
 artifacts: [`bigflow build-package`](./cli.md#building-pip-package), [`bigflow build-image`](./cli.md#building-docker-image), [`bigflow build-dags`](./cli.md#building-dag-files).
 
 Now, let us go through each building element in detail, starting from the Python package.
@@ -63,14 +63,14 @@ project_dir/
 ```
 
 Let us start with the `project_package`. It's the Python package which contains the processing logic of your workflows.
-It also contains `Workflow` objects, which arranges parts of your processing logic into 
+It also contains `Workflow` objects, which arranges parts of your processing logic into
 a [DAG](https://en.wikipedia.org/wiki/Directed_acyclic_graph) (read the [Workflow & Job chapter](./workflow-and-job.md) to learn more about workflows and jobs).
 The `project_package` is used to create a standard Python package, which can be installed using `pip`.
 
-`project_setup.py` is the build script for the project. It turns the `project_package` into a `.whl` package. 
+`project_setup.py` is the build script for the project. It turns the `project_package` into a `.whl` package.
 It's based on the standard Python tool — [setuptool](https://packaging.python.org/key_projects/#setuptools).
 
-There is also the special variable — `PROJECT_NAME` inside `project_setup.py`. In the example project, it is 
+There is also the special variable — `PROJECT_NAME` inside `project_setup.py`. In the example project, it is
 `PROJECT_NAME = 'project_package'`. It tells BigFlow CLI which package inside the `project_dir` is the main package with
 your processing logic and workflows.
 
@@ -103,7 +103,7 @@ Welcome inside the example resource!
 
 The two remaining files  — `Dockerfile` and `deployment_config.py` don't take a part in the Python package build process.
 
-Because every BigFlow project is a standard Python package, we suggest going through the 
+Because every BigFlow project is a standard Python package, we suggest going through the
 [official Python packaging tutorial](https://packaging.python.org/tutorials/packaging-projects/).
 
 ### Package builder
@@ -111,13 +111,13 @@ Because every BigFlow project is a standard Python package, we suggest going thr
 The `bigflow build-package` command takes three steps to build a Python package from your project:
 
 1. Cleans leftovers from a previous build.
-1. Runs tests from the `test` package and generates a JUnit xml report, 
+1. Runs tests from the `test` package and generates a JUnit xml report,
 using the [`unittest-xml-reporting`](https://pypi.org/project/unittest-xml-reporting/) package. You can find the generated report
 inside the `project_dir/build/junit-reports` directory.
 1. Runs the `bdist_wheel` setup tools command. It generates a `.whl` package which you can
 upload to `pypi` or install locally - `pip install your_generated_package.whl`.
 
-Go to the [`docs`](../docs) project and run the `bigflow build-package` command to observe the result. Now you can install the 
+Go to the [`docs`](../docs) project and run the `bigflow build-package` command to observe the result. Now you can install the
 generated package using `pip install dist/examples-0.1.0-py3-none-any.whl`. After you install the `.whl` file, you can
 run jobs and workflows from the `docs/examples` package. They are now installed in your virtual environment, so you can run them
 anywhere in your directory tree, for example:
@@ -132,7 +132,7 @@ works as you expect in the form of a package (and not just as a package in your 
 
 ### Project versioning
 
-Deployment artifacts, like Docker images, need to be versioned. BigFlow provides automatic versioning based on 
+Deployment artifacts, like Docker images, need to be versioned. BigFlow provides automatic versioning based on
 the git tags system. There are two commands you need to know.
 
 The `bigflow project-version` command prints the current version of your project:
@@ -179,7 +179,7 @@ bigflow release -i keys.pem
 
 ## Docker image
 
-To run a job in a desired environment, BigFlow makes use of Docker. Each job is executed from a Docker container, 
+To run a job in a desired environment, BigFlow makes use of Docker. Each job is executed from a Docker container,
 which runs a Docker image built from your project. The default [`Dockerfile`](https://docs.docker.com/engine/reference/builder/)
 generated from the scaffolding tool looks like this:
 
@@ -226,7 +226,7 @@ default_args = {
             'start_date': datetime.datetime(2020, 8, 30),
             'email_on_failure': False,
             'email_on_retry': False,
-            'execution_timeout': datetime.timedelta(minutes=90),
+            'execution_timeout': datetime.timedelta(minutes=180),
 }
 
 dag = DAG(
@@ -250,8 +250,8 @@ print_resource_job = kubernetes_pod_operator.KubernetesPodOperator(
     dag=dag)
 ```
 
-Every [job](./workflow-and-job.md#job) in a [workflow](./workflow-and-job.md#workflow) maps to 
+Every [job](./workflow-and-job.md#job) in a [workflow](./workflow-and-job.md#workflow) maps to
 [`KubernetesPodOperator`](https://airflow.apache.org/docs/stable/_api/airflow/contrib/operators/kubernetes_pod_operator/index.html).
-BigFlow sets a reasonable default value for the required operator arguments. You can modify 
-[some of them](./workflow-and-job.md#job), by setting properties on a job. 
+BigFlow sets a reasonable default value for the required operator arguments. You can modify
+[some of them](./workflow-and-job.md#job), by setting properties on a job.
 Similarly, you can modify a DAG property, by setting [properties on a workflow](./workflow-and-job.md#workflow-scheduling-options).
