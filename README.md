@@ -15,7 +15,7 @@
 1. [Starter](./docs/scaffold.md)
 1. [Technologies](./docs/technologies.md)
 1. [Logging](./docs/logging.md)
-1. Roadmap
+1. [Monitoring](./docs/monitoring.md)
 
 ## What is BigFlow?
 

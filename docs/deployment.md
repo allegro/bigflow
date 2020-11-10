@@ -1,7 +1,7 @@
 # Deployment
 
 One of the key features of BigFlow is the full automation of the build and deployment process.
-BigFlow can dockerize your workflows and deploy them to Google Cloud Composer.
+BigFlow dockerizes your workflows and deploy them to Google Cloud Composer.
 
 ## GCP runtime environment
 

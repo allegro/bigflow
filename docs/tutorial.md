@@ -183,7 +183,13 @@ Check if you are authenticated:
 gcloud info
 ```
 
-If not, run the following command:
+If not, set the default project:
+
+```bash
+gcloud config set <your-project>
+```
+
+And then, log in:
 
 ```bash
 gcloud auth application-default login
