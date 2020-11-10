@@ -1,1 +1,1 @@
-bigflow[bigquery,log,dataflow,dataproc]
+bigflow[log]
