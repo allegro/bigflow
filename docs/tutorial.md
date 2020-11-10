@@ -186,7 +186,7 @@ gcloud info
 If not, set the default project:
 
 ```bash
-gcloud config set <your-project>
+gcloud config set project <your-project>
 ```
 
 And then, log in:
