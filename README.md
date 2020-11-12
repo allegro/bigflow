@@ -67,6 +67,19 @@ bigflow -h
 
 Read more about [BigFlow CLI](docs/cli.md).
 
+To interact with GCP you need to set a default project and log in:
+
+```shell script
+gcloud config set project <your-gcp-project-id>
+gcloud auth application-default login
+```
+
+Finally, check if your Docker is running:
+
+```shell script
+docker info
+```
+
 ## Help me
 
 You can ask questions on our [gitter channel](https://gitter.im/allegro/bigflow) or [stackoverflow](https://stackoverflow.com/questions/tagged/bigflow).
