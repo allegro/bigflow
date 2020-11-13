@@ -188,7 +188,7 @@ class InteractiveComponent(object):
         _, component_callable = decorate_component_dependencies_with_operation_level_dataset_manager(
             self._standard_component, operation_name=operation_name)
         job = Job(component_callable, **self._dependency_config)
-        job.execute(bigflow.JobContext.make(runtime=runtime))
+        return job.execute(bigflow.JobContext.make(runtime=runtime))
 
     @log_syntax_error
     def peek(self, runtime, operation_name=DEFAULT_OPERATION_NAME, limit=DEFAULT_PEEK_LIMIT):
