@@ -6,6 +6,8 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 from .commons import resolve
 
+import bigflow.build
+
 __all__ = [
     'find_all_resources',
     'read_requirements',
@@ -27,7 +29,10 @@ def find_all_resources(resources_dir: Path) -> Iterable[str]:
             yield relative_path
 
 
-def read_requirements(requirements_path: Path) -> List[str]:
+def read_requirements(requirements_path: Path, recompile_check=True) -> List[str]:
+    if recompile_check and bigflow.build.check_requirements_needs_recompile(requirements_path):
+        raise ValueError("Requirements needs to be recompiled with 'pip-tools'")
+
     result: List[str] = []
     with open(requirements_path) as base_requirements:
         for line in base_requirements:

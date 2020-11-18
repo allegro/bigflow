@@ -1,2 +1,0 @@
-freezegun==0.3.14
-schedule

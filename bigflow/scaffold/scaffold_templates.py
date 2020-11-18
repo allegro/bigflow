@@ -15,7 +15,6 @@ advanced_deployment_config_template = '''.add_configuration(
                                 'dags_bucket': '{dags_bucket}',
                             }})
 '''
-requirements_template = '''bigflow[bigquery,log,dataproc,dataflow]=={bigflow_version}'''
 
 project_setup_template = '''from bigflow.build import default_project_setup
 

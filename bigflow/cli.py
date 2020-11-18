@@ -1,6 +1,7 @@
 import argparse
 import importlib
 import os
+import pathlib
 import subprocess
 import sys
 import logging
@@ -21,6 +22,8 @@ from bigflow.deploy import deploy_dags_folder, deploy_docker_image
 from bigflow.resources import find_file
 from bigflow.scaffold import start_project
 from bigflow.version import get_version, release
+
+import bigflow.build
 
 from .commons import run_process
 
@@ -274,6 +277,8 @@ def _parse_args(project_name: Optional[str], args) -> Namespace:
     _create_release_parser(subparsers)
     _create_start_project_parser(subparsers)
     _create_logs_parser(subparsers)
+
+    _create_pip_compile_parser(subparsers)
 
     return parser.parse_args(args)
 
@@ -579,6 +584,24 @@ def _cli_build(args):
     run_process(cmd)
 
 
+def _create_pip_compile_parser(subparsers):
+    parser = subparsers.add_parser(
+        'pip-compile',
+        description="Compiles *.txt from *.in specs",
+    )
+    parser.add_argument(
+        'in_file',
+        type=str,
+        nargs='?',
+        default="resources/requirements.in",  # FIXME: read 'project_setup.py'
+    )
+
+
+def _cli_pip_compile(args):
+    in_file = pathlib.Path(args.in_file)
+    bigflow.build.pip_compile(in_file)
+
+
 def _is_workflow_selected(args):
     return args.workflow and args.workflow != 'ALL'
 
@@ -762,5 +785,7 @@ def cli(raw_args) -> None:
         _is_log_module_installed()
         root_package = find_root_package(project_name, None)
         cli_logs(root_package)
+    elif operation == 'pip-compile':
+        _cli_pip_compile(parsed_args)
     else:
         raise ValueError(f'Operation unknown - {operation}')

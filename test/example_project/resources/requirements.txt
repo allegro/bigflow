@@ -1,5 +1,12 @@
-# comments are allowed
--r requirements_base.txt# comment
+# *** AUTO GENERATED: DON'T EDIT ***
+# $source-hash: sha256:2e06e9e87d7310f50ff5602ef2382a4d8bf16dc0bd7c6883a0b5c0273d000f33
+# $source-file: resources/requirements.in
+#
+# Run 'bigflow pip-compile resources/requirements.in' to update this file
 
-# a few empty lines
-datetime_truncate==1.1.0# another # comment with ### inside
+datetime_truncate==1.1.0  # via -r resources/requirements.in
+freezegun==0.3.14         # via -r resources/requirements_base.in
+python-dateutil==2.8.1    # via freezegun
+schedule==0.6.0           # via -r resources/requirements_base.in
+six==1.15.0               # via datetime-truncate, freezegun, python-dateutil
+typing==3.7.4.3           # via datetime-truncate
