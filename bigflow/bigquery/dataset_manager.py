@@ -2,8 +2,6 @@ import uuid
 import logging
 import functools
 
-from google.cloud import bigquery
-
 DEFAULT_REGION = 'europe-west1'
 DEFAULT_MACHINE_TYPE = 'n1-standard-1'
 DEFAULT_LOCATION = 'EU'
@@ -221,6 +219,7 @@ class DatasetManager(object):
         return self.write(table_id, sql, 'WRITE_TRUNCATE')
 
     def write(self, table_id, sql, mode):
+        from google.cloud import bigquery
         self.logger.info('%s to %s', mode, table_id)
         job_config = bigquery.QueryJobConfig()
         job_config.use_legacy_sql = False
@@ -246,6 +245,7 @@ class DatasetManager(object):
             raise ValueError('Table {id} does not exist'.format(id=table_id))
 
     def create_table(self, create_query):
+        from google.cloud import bigquery
         self.logger.info('CREATE TABLE: %s', create_query)
         job_config = bigquery.QueryJobConfig()
         job_config.use_legacy_sql = False
@@ -263,6 +263,7 @@ class DatasetManager(object):
         return list(self._query(sql).result())
 
     def dry_run(self, sql):
+        from google.cloud import bigquery
         job_config = bigquery.QueryJobConfig()
         job_config.dry_run = True
         query_job = self._query(sql, job_config=job_config)
@@ -313,6 +314,7 @@ class DatasetManager(object):
 
 
 def create_dataset(dataset_name, bigquery_client, location=DEFAULT_LOCATION):
+    from google.cloud import bigquery
     dataset = bigquery.Dataset('{project_id}.{dataset_name}'.format(
         project_id=bigquery_client.project,
         dataset_name=dataset_name))
@@ -325,6 +327,7 @@ def random_uuid(suffix=''):
 
 
 def create_bigquery_client(project_id, credentials, location):
+    from google.cloud import bigquery
     return bigquery.Client(
         project=project_id,
         credentials=credentials,
