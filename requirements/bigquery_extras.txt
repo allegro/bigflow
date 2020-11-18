@@ -1,5 +1,5 @@
-google-cloud-core==1.4.1
-google-cloud-bigquery==1.28.0
+google-cloud-core~=1.4
+google-cloud-bigquery~=1.28
 google-auth>=1.20.1,<2.0dev
-google-apitools==0.5.31
+google-apitools>=0.5.31,<0.6
 pandas~=1.1
