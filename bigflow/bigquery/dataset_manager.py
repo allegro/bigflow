@@ -6,6 +6,8 @@ DEFAULT_REGION = 'europe-west1'
 DEFAULT_MACHINE_TYPE = 'n1-standard-1'
 DEFAULT_LOCATION = 'EU'
 
+# hidden BQ and pandas imports due to https://github.com/allegro/bigflow/issues/149
+
 
 class AliasNotFoundError(ValueError):
     pass

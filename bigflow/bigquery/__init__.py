@@ -14,11 +14,12 @@ __all__ = [
     'Job'
 ]
 
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 
 try:
     # To avoid using pyarrow in the to_dataframe method. Beam requires obsolete version of pyarrow, which is missing a feature
     # required by the google-cloud-bigquery
+    # in exception clause because of https://github.com/allegro/bigflow/issues/149
     from google.cloud.bigquery import table
     table.pyarrow = None
 except Exception as e:
