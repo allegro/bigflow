@@ -358,7 +358,7 @@ def pip_compile(
             # $source-hash: {source_hash}
             # $source-file: {req_in}
             #
-            # Run 'bigflow pip-compile {req_in}' to update this file
+            # run 'bigflow pip-compile {req_in}' to update this file
 
         """))
         out.writelines(reqs_content)

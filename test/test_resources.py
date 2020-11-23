@@ -1,34 +1,64 @@
+from bigflow.scaffold import templating
 import os
+import tempfile
+
 from unittest import TestCase, mock
 from pathlib import Path
 from bigflow.resources import *
 
-TEST_PROJECT_PATH = Path(__file__).parent / 'example_project'
-
 
 class FindAllResourcesTestCase(TestCase):
     def test_should_find_all_resource_file_paths(self):
-        # when
-        resources = list(find_all_resources(TEST_PROJECT_PATH / 'resources'))
+        with tempfile.TemporaryDirectory() as d:
+            dp = Path(d)
+            for f in [
+                dp / "file1",
+                dp / "file2",
+                dp / "file.txt",
+                dp / "dir" / "file3",
+                dp / "dir" / "subdir" / "file4",
+            ]:
+                f.parent.mkdir(parents=True, exist_ok=True)
+                f.touch()
 
-        # then
-        self.assertCountEqual(resources, [
-            'resources/requirements.txt',
-            'resources/requirements_base.txt',
-        ])
+            resources = list(find_all_resources(dp))
+
+            # then
+            self.assertSequenceEqual(sorted(resources), sorted([
+                f"{dp.name}/file1",
+                f"{dp.name}/file2",
+                f"{dp.name}/file.txt",
+                f"{dp.name}/dir/file3",
+                f"{dp.name}/dir/subdir/file4",
+            ]))
 
 
 class ReadRequirementsTestCase(TestCase):
     def test_should_return_all_requirements_from_the_hierarchy(self):
-        # when
-        requirements = read_requirements(TEST_PROJECT_PATH / 'resources' / 'requirements.txt')
 
-        # then
-        self.assertEqual(requirements, [
-            'freezegun==0.3.14',
-            'schedule',
-            'datetime_truncate==1.1.0',
-        ])
+        with tempfile.TemporaryDirectory() as d:
+            dp = Path(d)
+            (dp / "requirements.txt").write_text("""
+                # comments are allowed
+                -r requirements_base.txt  # comment
+
+                # a few empty lines
+                datetime_truncate==1.1.0  # another # comment with ### inside
+            """)
+            (dp / "requirements_base.txt").write_text("""
+                freezegun==0.3.14
+                schedule
+            """)
+
+            # when
+            requirements = read_requirements(dp / "requirements.txt")
+
+            # then
+            self.assertEqual(requirements, [
+                'freezegun==0.3.14',
+                'schedule',
+                'datetime_truncate==1.1.0',
+            ])
 
 
 class FindFileTestCase(TestCase):
