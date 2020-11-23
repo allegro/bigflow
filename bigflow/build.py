@@ -14,8 +14,16 @@ import textwrap
 
 from .cli import walk_workflows, import_deployment_config, _valid_datetime, SETUP_VALIDATION_MESSAGE
 from .dagbuilder import generate_dag_file
-from .resources import read_requirements, find_all_resources
-from .commons import resolve, now, run_process, remove_docker_image_from_local_registry, get_docker_image_id, build_docker_image_tag
+from .resources import read_requirements, find_all_resources, check_requirements_needs_recompile
+from .commons import (
+    resolve,
+    now,
+    run_process,
+    remove_docker_image_from_local_registry,
+    get_docker_image_id,
+    build_docker_image_tag,
+    generate_file_hash,
+)
 from .version import get_version
 
 from bigflow.commons import run_process
@@ -310,36 +318,6 @@ def project_setup(
 
 def default_project_setup(project_name, project_dir: Path = Path('.').parent):
     return setup(**project_setup(**auto_configuration(project_name, project_dir=project_dir)))
-
-
-def generate_file_hash(fname: Path) -> str:
-    logger.debug("Calculate hash of %s", fname)
-    return "sha256:" + hashlib.sha256(fname.read_bytes()).hexdigest()
-
-
-def check_requirements_needs_recompile(req: Path) -> bool:
-    req_txt = req.with_suffix(".txt")
-    req_in = req.with_suffix(".in")
-    logger.debug("Check if file %s should be recompiled", req_txt)
-
-    if not req_in.exists():
-        logger.info("No file %s - pip-tools is not used", req_in)
-        return False
-
-    if not req_txt.exists():
-        logger.info("File %s does not exist - need to be compiled by 'pip-compile'", req_txt)
-        return True
-
-    req_txt_content = req_txt.read_text()
-    hash1 = generate_file_hash(req_in)
-    same_hash = hash1 in req_txt_content
-
-    if same_hash:  # dirty but works ;)
-        logger.info("Don't need to compile %s file", req_txt)
-        return False
-    else:
-        logger.warn("File %s needs to be recompiled with 'bigflow pip-compile' command", req_txt)
-        return True
 
 
 def detect_piptools_source_files(reqs_dir: Path) -> typing.List[Path]:

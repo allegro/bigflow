@@ -1,5 +1,6 @@
 import subprocess
 import sys
+import hashlib
 from pathlib import Path
 import logging
 from datetime import datetime
@@ -15,7 +16,7 @@ def now(template: str = "%Y-%m-%d %H:00:00"):
 def run_process(cmd, **kwargs):
     if isinstance(cmd, str):
         cmd = cmd.split(' ')
-    logger.debug("RUN: %s", " ".join(cmd))
+    logger.debug("RUN: %s", cmd)
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE, **kwargs)
     result_output = ''
     for c in iter(lambda: process.stdout.read(1), b''):
@@ -24,6 +25,14 @@ def run_process(cmd, **kwargs):
         result_output += l
     process.wait()
     return result_output
+
+
+
+def generate_file_hash(fname: Path, algorithm: str = 'sha256') -> str:
+    logger.debug("Calculate hash of %s", fname)
+    h = hashlib.new(algorithm)
+    h.update(fname.read_bytes())
+    return algorithm + ":" + h.hexdigest()
 
 
 def resolve(path: Path):
