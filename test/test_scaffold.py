@@ -71,7 +71,7 @@ class ProjectScaffoldE2E(ProjectScaffoldE2ETestCase):
 
     def scaffolded_project_tests_should_work(self):
         output = subprocess.getoutput("python -m unittest discover -s my_project_project -p '*.py'")
-        self.assertEqual(output[-2:], 'OK')
+        self.assertRegexpMatches(output, ".*OK")
 
     def scaffolded_basic_project_should_have_one_environment(self):
         self.check_file_content(Path('my_project_project') / 'deployment_config.py', '''from bigflow.configuration import DeploymentConfig
@@ -180,7 +180,7 @@ select_polish_ports = dataset.write_truncate('ports', '''
 
 populate_ports_table = dataset.collect('''
         INSERT INTO `{more_ports}` (port_name, port_latitude, port_longitude, country, index_number)
-        VALUES 
+        VALUES
         ('GDYNIA', 54.533333, 18.55, 'POL', '28740'),
         ('GDANSK', 54.35, 18.666667, 'POL', '28710'),
         ('MURMANSK', 68.983333, 33.05, 'RUS', '62950'),
@@ -248,8 +248,8 @@ class TemplatingTestCase(unittest.TestCase):
         # when
         tt.render_templates(
             self.tmp_dir, loader, {
-                'one': 1, 
-                'two': 2, 
+                'one': 1,
+                'two': 2,
                 'long_path': "x/y/z",
                 'ext': "xyz",
             })
