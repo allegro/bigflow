@@ -23,8 +23,6 @@ from bigflow.resources import find_file
 from bigflow.scaffold import start_project
 from bigflow.version import get_version, release
 
-import bigflow.build
-
 from .commons import run_process
 
 
@@ -598,6 +596,7 @@ def _create_pip_compile_parser(subparsers):
 
 
 def _cli_pip_compile(args):
+    import bigflow.build
     in_file = pathlib.Path(args.in_file)
     bigflow.build.pip_compile(in_file)
 
