@@ -2,10 +2,10 @@ readme_template = '''# New BigFlow project
 
 ## Requirements & preparations
 
-Follow the instructions in 
+Follow the instructions in
 [Preparations](https://github.com/allegro/bigflow/blob/master/docs/scaffold.md#preparation).
 
-    
+
 ## Example worklfows
 
 There are two example workflows here: **internationalports** and  **wordcount**.
@@ -21,24 +21,24 @@ Run them and check the results.
 
 
 ## Running locally
-To run a workflow, type in command line (in a project directory): 
+To run a workflow, type in command line (in a project directory):
 
-```  
+```
 bigflow run --workflow internationalports
 ```
 
 or
 
-```  
+```
 bigflow run --workflow wordcount
 ```
 
 See [Running workflows](https://github.com/allegro/bigflow/blob/master/docs/cli.md#running-workflows)
-cheat sheet.    
-  
-  
+cheat sheet.
+
+
 ## Building & deploying
-  
+
 Build the project:
 
 ```java
@@ -46,14 +46,14 @@ bigflow build
 ```
 
 Deploy it:
-    
+
 ```
 bigflow deploy
-```   
+```
 
-See [Building](https://github.com/allegro/bigflow/blob/master/docs/cli.md#building-airflow-dags) 
-and [Deploying](https://github.com/allegro/bigflow/blob/master/docs/cli.md#deploying-to-gcp) 
-cheat sheet.  
+See [Building](https://github.com/allegro/bigflow/blob/master/docs/cli.md#building-airflow-dags)
+and [Deploying](https://github.com/allegro/bigflow/blob/master/docs/cli.md#deploying-to-gcp)
+cheat sheet.
 '''
 
 docker_template = '''FROM python:3.7
@@ -94,7 +94,7 @@ beam_pipeline_template = '''import uuid
 import logging
 
 from bigflow.configuration import Config
-from bigflow.resources import find_or_create_setup_for_main_project_package, resolve, get_resource_absolute_path
+from bigflow.resources import find_or_create_setup_for_main_project_package, get_resource_absolute_path
 from apache_beam.options.pipeline_options import SetupOptions, StandardOptions, WorkerOptions, GoogleCloudOptions, \
     PipelineOptions
 
@@ -127,8 +127,8 @@ def dataflow_pipeline_options():
 
     setup_file_path = find_or_create_setup_for_main_project_package()
     requirements_file_path = get_resource_absolute_path('requirements.txt')
-    options.view_as(SetupOptions).setup_file = resolve(setup_file_path)
-    options.view_as(SetupOptions).requirements_file = resolve(requirements_file_path)
+    options.view_as(SetupOptions).setup_file = str(setup_file_path)
+    options.view_as(SetupOptions).requirements_file = str(requirements_file_path)
 
     logger.info(f"Run beam pipeline with options {str(options)}")
     return options'''
@@ -223,7 +223,7 @@ select_polish_ports = dataset.write_truncate('ports', '''
 
 populate_ports_table = dataset.collect('''
         INSERT INTO `{ports}` (port_name, port_latitude, port_longitude, country, index_number)
-        VALUES 
+        VALUES
         ('GDYNIA', 54.533333, 18.55, 'POL', '28740'),
         ('GDANSK', 54.35, 18.666667, 'POL', '28710'),
         ('SANKT-PETERBURG', 59.933333, 30.3, 'RUS', '28370'),

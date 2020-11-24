@@ -12,7 +12,7 @@ from unittest import TestCase, mock
 
 import bigflow.build
 from bigflow.cli import walk_module_files, SETUP_VALIDATION_MESSAGE
-from bigflow.build import now, get_docker_image_id, build_docker_image_tag, auto_configuration, \
+from bigflow.build import get_docker_image_id, build_docker_image_tag, auto_configuration, \
     get_docker_repository_from_deployment_config, project_setup, secure_get_version, default_project_setup, \
     clear_image_leftovers, clear_dags_leftovers, clear_package_leftovers, build_image
 from example_project.project_setup import DOCKER_REPOSITORY, PROJECT_NAME
@@ -317,7 +317,7 @@ class AutoConfigurationTestCase(TestCase):
         self.assertTrue(project_setup(**auto_configuration('example_project', project_dir)))
 
     @mock.patch('bigflow.build.get_version')
-    @mock.patch('bigflow.build.setup')
+    @mock.patch('setuptools.setup')
     @mock.patch('bigflow.build.build_command')
     def test_should_produce_default_project_setup_using_autoconfiguration(self, build_command_mock, setup_mock, get_version_mock):
         # given
@@ -338,6 +338,6 @@ class AutoConfigurationTestCase(TestCase):
             """)
             with self.assertRaises(ValueError):
                 bigflow.build.get_docker_repository_from_deployment_config(Path(f.name))
-    
+
     def get_version_error(self):
         raise RuntimeError('get_version error')

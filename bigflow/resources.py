@@ -3,8 +3,6 @@ import time
 import inspect
 from typing import List, Iterable
 from pathlib import Path
-from tempfile import NamedTemporaryFile
-from .commons import resolve
 
 __all__ = [
     'find_all_resources',
@@ -15,13 +13,12 @@ __all__ = [
     'create_file_if_not_exists',
     'create_setup_body',
     'find_or_create_setup_for_main_project_package',
-    'create_tmp_file'
 ]
 
 
 def find_all_resources(resources_dir: Path) -> Iterable[str]:
     for path in resources_dir.rglob('*'):
-        current_dir_path = resolve(resources_dir.parent)
+        current_dir_path = str(resources_dir.parent.absolute())
         relative_path = str(path.resolve()).replace(current_dir_path + os.sep, '')
         if path.is_file():
             yield relative_path
@@ -146,9 +143,3 @@ def find_or_create_setup_for_main_project_package(project_name: str = None, sear
     search_start_file = search_start_file or Path(caller_module.__file__)
     project_name = project_name or caller_module.__name__.split('.')[0]
     return create_file_if_not_exists(find_file(project_name, Path(search_start_file)).parent / 'setup.py', create_setup_body(project_name))
-
-
-def create_tmp_file(file_content: str) -> Path:
-    with NamedTemporaryFile(delete=False) as result_file:
-        result_file.write(file_content)
-        return Path(result_file.name)

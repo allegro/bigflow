@@ -1,17 +1,18 @@
 import os
-from pathlib import Path
 import shutil
 import distutils.cmd
-import setuptools
 import unittest
-from setuptools import setup
+import setuptools
+
+from datetime import datetime
+from pathlib import Path
 
 import xmlrunner
 
 from .cli import walk_workflows, import_deployment_config, _valid_datetime, SETUP_VALIDATION_MESSAGE
 from .dagbuilder import generate_dag_file
 from .resources import read_requirements, find_all_resources
-from .commons import resolve, now, run_process, remove_docker_image_from_local_registry, get_docker_image_id, build_docker_image_tag
+from .commons import run_process, remove_docker_image_from_local_registry, get_docker_image_id, build_docker_image_tag
 from .version import get_version
 
 
@@ -23,8 +24,8 @@ __all__ = [
 
 
 def run_tests(build_dir: Path, test_package: Path):
-    runner = xmlrunner.XMLTestRunner(output=resolve(build_dir / 'junit-reports'))
-    suite = unittest.TestLoader().discover(start_dir=resolve(test_package))
+    runner = xmlrunner.XMLTestRunner(output=str(build_dir / 'junit-reports'))
+    suite = unittest.TestLoader().discover(start_dir=str(test_package))
     result = runner.run(suite)
     if result.errors:
         raise ValueError('Test suite failed.')
@@ -33,16 +34,16 @@ def run_tests(build_dir: Path, test_package: Path):
 def export_docker_image_to_file(tag: str, target_dir: Path, version: str):
     image_target_path = target_dir / f'image-{version}.tar'
     print(f'Exporting the image to file: {image_target_path}' )
-    run_process(f"docker image save {get_docker_image_id(tag)} -o {resolve(image_target_path)}")
+    run_process(f"docker image save {get_docker_image_id(tag)} -o {image_target_path}")
 
 
 def build_docker_image(project_dir: Path, tag: str):
     print('Building a Docker image. It might take a while.')
-    run_process(f'docker build {resolve(project_dir)} --tag {tag}')
+    run_process(f'docker build {project_dir} --tag {tag}')
 
 
 def build_dags(
-        root_package,
+        root_package: Path,
         project_dir,
         docker_repository,
         start_time,
@@ -53,12 +54,12 @@ def build_dags(
             continue
         print(f'Generating DAG file for {workflow.workflow_id}')
         generate_dag_file(
-            resolve(project_dir),
+            str(project_dir),
             docker_repository,
             workflow,
             start_time,
             version,
-            resolve(root_package).split(os.sep)[-1])
+            root_package.name)
 
 
 def build_image(
@@ -72,7 +73,7 @@ def build_image(
     build_docker_image(project_dir, tag)
     try:
         export_docker_image_to_file(tag, image_dir, version)
-        shutil.copyfile(deployment_config, image_dir / resolve(deployment_config).split(os.sep)[-1])
+        shutil.copyfile(deployment_config, image_dir / deployment_config.name)
     finally:
         remove_docker_image_from_local_registry(tag)
 
@@ -102,7 +103,7 @@ def build_command(
         ]
 
         def initialize_options(self) -> None:
-            self.start_time = now()
+            self.start_time = datetime.now().strftime("%Y-%m-%d %H:00:00")
             self.build_dags = False
             self.build_package = False
             self.build_image = False
@@ -173,15 +174,15 @@ def _validate_deployment_config(config):
 
 def get_docker_repository_from_deployment_config(deployment_config_file: Path):
     try:
-        config = import_deployment_config(resolve(deployment_config_file), 'docker_repository')
+        config = import_deployment_config(str(deployment_config_file), 'docker_repository')
     except ValueError:
-        raise ValueError(f"Can't find the specified deployment configuration: {resolve(deployment_config_file)}")
+        raise ValueError(f"Can't find the specified deployment configuration: {deployment_config_file}")
 
     _validate_deployment_config(config.resolve())
     docker_repository = config.resolve_property('docker_repository', None)
 
     if docker_repository is None:
-        raise ValueError(f"Can't find the 'docker_repository' property in the specified config file: {resolve(deployment_config_file)}")
+        raise ValueError(f"Can't find the 'docker_repository' property in the specified config file: {deployment_config_file}")
     return docker_repository
 
 
@@ -222,11 +223,6 @@ def auto_configuration(project_name: str, project_dir: Path = Path('.').parent):
     }
 
 
-def parameter_not_null_or_error(parameter_name: str, parameter_value):
-    if parameter_value is None:
-        raise ValueError(f"Parameter {parameter_name} can't be None.")
-
-
 def project_setup(
         project_name: str,
         docker_repository: str,
@@ -253,6 +249,7 @@ def project_setup(
 
     setup(project_setup(**auto_configuration('my_super_project')))
     '''
+
     params_to_check = [
         ('project_name', project_name),
         ('docker_repository', docker_repository),
@@ -270,7 +267,8 @@ def project_setup(
         ('project_requirements_file', project_requirements_file),
     ]
     for parameter_name, parameter_value in params_to_check:
-        parameter_not_null_or_error(parameter_name, parameter_value)
+        if parameter_value is None:
+            raise ValueError(f"Parameter {parameter_name} can't be None.")
 
     return {
         'name': project_name,
@@ -298,4 +296,4 @@ def project_setup(
 
 
 def default_project_setup(project_name, project_dir: Path = Path('.').parent):
-    return setup(**project_setup(**auto_configuration(project_name, project_dir=project_dir)))
+    return setuptools.setup(**project_setup(**auto_configuration(project_name, project_dir=project_dir)))
