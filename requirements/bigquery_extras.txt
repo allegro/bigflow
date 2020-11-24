@@ -1,4 +1,4 @@
 # TODO: Upgrade google-cloud-bigquery to ~2.0
 google-cloud-bigquery~=1.28
 pandas>=1.1,<2
-six>=1.14
+six>=1.14,<2  # workaround for https://github.com/googleapis/google-cloud-python/issues/9965

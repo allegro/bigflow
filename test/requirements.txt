@@ -1,4 +1,7 @@
+# Validate compatability with latest stable version of Ariflow
 apache-airflow>=1.10
+
+# testing/mocking libraries
 nose==1.3.7
-mock>=2.0
-responses>=0.10.15
+mock==4.0.2
+responses~=0.12.1
