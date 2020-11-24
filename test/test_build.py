@@ -351,32 +351,45 @@ class PipToolsTestCase(TestCase):
         self.addCleanup(shutil.rmtree, self.tempdir)
 
     def test_should_compile_requirements(self):
+        # given
         req_in = self.tempdir / "req.in"
+        req_txt = self.tempdir / "req.txt"
         req_in.write_text("pandas>=1.1")
+
+        # when
         bigflow.build.pip_compile(req_in)
 
-        req_txt = req_in.with_suffix(".txt")
+        # then
         reqs = req_txt.read_text()
         self.assertIn("pandas==", reqs)
         self.assertIn("", reqs)
 
     def test_should_detect_when_requirements_was_changed(self):
+
+        # given
         req_in = self.tempdir / "req.in"
         req_in.write_text("pandas>=1.1")
 
-        self.assertTrue(bigflow.build.check_requirements_needs_recompile(req_in))
-
+        # when
         bigflow.build.pip_compile(req_in, verbose=True)
+
+        # then
         self.assertFalse(bigflow.build.check_requirements_needs_recompile(req_in))
 
+        # when
         req_in.write_text("pandas>=1.1.1,<2")
+
+        # then
         self.assertTrue(bigflow.build.check_requirements_needs_recompile(req_in))
 
-
     def test_should_automatically_recompile_requirements(self):
+        # given
         req_in = self.tempdir / "req.in"
         req_txt = self.tempdir / "req.txt"
         req_in.write_text("numpy")
 
+        # when
         bigflow.build.maybe_recompile_requirements_file(req_txt)
+
+        # then
         self.assertTrue(req_txt.exists())
