@@ -236,7 +236,7 @@ def cli_run(project_package: str,
 
     # TODO: Check that installed libs in sync with `requirements.txt`
     import bigflow.build
-    bigflow.build.check_requirements_needs_recompile("resources/requirements.txt")
+    bigflow.build.check_requirements_needs_recompile(Path("resources/requirements.txt"))
 
     if full_job_id is not None:
         try:
