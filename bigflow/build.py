@@ -3,6 +3,7 @@ import shutil
 import distutils.cmd
 import unittest
 import setuptools
+import typing
 
 from datetime import datetime
 from pathlib import Path
@@ -44,11 +45,11 @@ def build_docker_image(project_dir: Path, tag: str):
 
 def build_dags(
         root_package: Path,
-        project_dir,
-        docker_repository,
-        start_time,
-        version,
-        specific_workflow=None):
+        project_dir: Path,
+        docker_repository: str,
+        start_time: str,
+        version: str,
+        specific_workflow: typing.Optional[str] = None):
     for workflow in walk_workflows(root_package):
         if specific_workflow is not None and specific_workflow != workflow.workflow_id:
             continue
@@ -167,12 +168,12 @@ def clear_package_leftovers(dist_dir: Path, eggs_dir: Path, build_dir: Path):
         print(f'Removing: {str(to_delete.absolute())}')
         shutil.rmtree(to_delete, ignore_errors=True)
 
-def _validate_deployment_config(config):
+def _validate_deployment_config(config: dict):
     if "docker_repository" in config:
         if not config["docker_repository"].islower():
             raise ValueError("`docker_repository` variable should be in lower case")
 
-def get_docker_repository_from_deployment_config(deployment_config_file: Path):
+def get_docker_repository_from_deployment_config(deployment_config_file: Path) -> str:
     try:
         config = import_deployment_config(str(deployment_config_file), 'docker_repository')
     except ValueError:
@@ -186,7 +187,7 @@ def get_docker_repository_from_deployment_config(deployment_config_file: Path):
     return docker_repository
 
 
-def secure_get_version():
+def secure_get_version() -> str:
     try:
         return get_version()
     except Exception as e:
@@ -195,7 +196,7 @@ def secure_get_version():
                          "you need to use git inside your project directory.")
 
 
-def auto_configuration(project_name: str, project_dir: Path = Path('.').parent):
+def auto_configuration(project_name: str, project_dir: Path = Path('.').parent) -> dict:
     '''
     Auto configuration for the standard BigFlow project structure (that you can generate through the CLI).
     The 'project_name' parameter should be a valid python package name.
@@ -237,7 +238,8 @@ def project_setup(
         deployment_config_file: Path,
         version: str,
         resources_dir: Path,
-        project_requirements_file: Path):
+        project_requirements_file: Path,
+) -> dict:
     '''
     This function produces arguments for setuptools.setup. The produced setup provides commands that allow you to build
     whl package, docker image and DAGs. Paired with auto_configuration function, it provides fully automated build
@@ -295,5 +297,5 @@ def project_setup(
     }
 
 
-def default_project_setup(project_name, project_dir: Path = Path('.').parent):
+def default_project_setup(project_name: str, project_dir: Path = Path('.').parent):
     return setuptools.setup(**project_setup(**auto_configuration(project_name, project_dir=project_dir)))
