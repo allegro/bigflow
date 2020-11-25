@@ -4,6 +4,8 @@ import inspect
 from typing import List, Iterable
 from pathlib import Path
 
+from bigflow.commons import resolve
+
 __all__ = [
     'find_all_resources',
     'read_requirements',
@@ -13,6 +15,7 @@ __all__ = [
     'create_file_if_not_exists',
     'create_setup_body',
     'find_or_create_setup_for_main_project_package',
+    'resolve',
 ]
 
 
