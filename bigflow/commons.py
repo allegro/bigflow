@@ -9,6 +9,15 @@ from datetime import datetime
 logger = logging.getLogger(__name__)
 
 
+def resolve(path: Path):
+    """
+    Convert aboslute path into string
+    DEPRECATED
+    """
+    logger.warning("Function `bigflow.resource.resolve(...)` is deprecated, please use str(x.absolute()) instead")
+    return str(path.absolute())
+
+
 def run_process(cmd, **kwargs):
     if isinstance(cmd, str):
         cmd = cmd.split(' ')
