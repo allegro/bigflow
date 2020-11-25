@@ -52,7 +52,7 @@ def check_requirements_needs_recompile(req: Path) -> bool:
         logger.info("Don't need to compile %s file", req_txt)
         return False
     else:
-        logger.warn("File %s needs to be recompiled with 'bigflow pip-compile' command", req_txt)
+        logger.warn("File %s needs to be recompiled with 'bigflow build-requirements' command", req_txt)
         return True
 
 

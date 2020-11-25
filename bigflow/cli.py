@@ -233,6 +233,11 @@ def cli_run(project_package: str,
     @param workflow_id: Optional[str] The id of the workflow that should be executed
     @return:
     """
+
+    # TODO: Check that installed libs in sync with `requirements.txt`
+    import bigflow.build
+    bigflow.build.check_requirements_needs_recompile("resources/requirements.txt")
+
     if full_job_id is not None:
         try:
             workflow_id, job_id = full_job_id.split('.')
@@ -276,7 +281,7 @@ def _parse_args(project_name: Optional[str], args) -> Namespace:
     _create_start_project_parser(subparsers)
     _create_logs_parser(subparsers)
 
-    _create_pip_compile_parser(subparsers)
+    _create_build_requirements_parser(subparsers)
 
     return parser.parse_args(args)
 
@@ -582,10 +587,10 @@ def _cli_build(args):
     run_process(cmd)
 
 
-def _create_pip_compile_parser(subparsers):
+def _create_build_requirements_parser(subparsers):
     parser = subparsers.add_parser(
-        'pip-compile',
-        description="Compiles *.txt from *.in specs",
+        'build-requirements',
+        description="Compiles requirements.txt from *.in specs",
     )
     parser.add_argument(
         'in_file',
@@ -595,7 +600,7 @@ def _create_pip_compile_parser(subparsers):
     )
 
 
-def _cli_pip_compile(args):
+def _cli_build_requirements(args):
     import bigflow.build
     in_file = pathlib.Path(args.in_file)
     bigflow.build.pip_compile(in_file)
@@ -785,6 +790,6 @@ def cli(raw_args) -> None:
         root_package = find_root_package(project_name, None)
         cli_logs(root_package)
     elif operation == 'pip-compile':
-        _cli_pip_compile(parsed_args)
+        _cli_build_requirements(parsed_args)
     else:
         raise ValueError(f'Operation unknown - {operation}')
