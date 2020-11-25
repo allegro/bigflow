@@ -1,5 +1,5 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python
+
 import setuptools
 import os
 
@@ -16,12 +16,12 @@ def read_requirements(name):
 with open(os.path.join('bigflow', '_version.py'), 'r') as version_file:
     version_globals = {}
     exec(version_file.read(), version_globals)
-    __version__ = version_globals['__version__']
+    version = version_globals['__version__']
 
 
 setuptools.setup(
     name="bigflow",
-    version=__version__,
+    version=version,
     author=u"Chi",
     author_email="chibox-team@allegrogroup.com",
     description="BigQuery client wrapper with clean API",

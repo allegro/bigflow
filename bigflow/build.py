@@ -1,23 +1,22 @@
 import os
-from pathlib import Path
 import shutil
 import distutils.cmd
-import setuptools
 import unittest
-from setuptools import setup
+import setuptools
+import typing
 import xmlrunner
 import logging
 import tempfile
 import typing
-import hashlib
 import textwrap
+
+from datetime import datetime
+from pathlib import Path
 
 from .cli import walk_workflows, import_deployment_config, _valid_datetime, SETUP_VALIDATION_MESSAGE
 from .dagbuilder import generate_dag_file
 from .resources import read_requirements, find_all_resources, check_requirements_needs_recompile
 from .commons import (
-    resolve,
-    now,
     run_process,
     remove_docker_image_from_local_registry,
     get_docker_image_id,
@@ -40,8 +39,8 @@ logger = logging.getLogger(__name__)
 
 
 def run_tests(build_dir: Path, test_package: Path):
-    runner = xmlrunner.XMLTestRunner(output=resolve(build_dir / 'junit-reports'))
-    suite = unittest.TestLoader().discover(start_dir=resolve(test_package))
+    runner = xmlrunner.XMLTestRunner(output=str(build_dir / 'junit-reports'))
+    suite = unittest.TestLoader().discover(start_dir=str(test_package))
     result = runner.run(suite)
     if result.errors:
         raise ValueError('Test suite failed.')
@@ -50,32 +49,32 @@ def run_tests(build_dir: Path, test_package: Path):
 def export_docker_image_to_file(tag: str, target_dir: Path, version: str):
     image_target_path = target_dir / f'image-{version}.tar'
     print(f'Exporting the image to file: {image_target_path}' )
-    run_process(f"docker image save {get_docker_image_id(tag)} -o {resolve(image_target_path)}")
+    run_process(f"docker image save {get_docker_image_id(tag)} -o {image_target_path}")
 
 
 def build_docker_image(project_dir: Path, tag: str):
     print('Building a Docker image. It might take a while.')
-    run_process(f'docker build {resolve(project_dir)} --tag {tag}')
+    run_process(f'docker build {project_dir} --tag {tag}')
 
 
 def build_dags(
-        root_package,
-        project_dir,
-        docker_repository,
-        start_time,
-        version,
-        specific_workflow=None):
+        root_package: Path,
+        project_dir: Path,
+        docker_repository: str,
+        start_time: str,
+        version: str,
+        specific_workflow: typing.Optional[str] = None):
     for workflow in walk_workflows(root_package):
         if specific_workflow is not None and specific_workflow != workflow.workflow_id:
             continue
         print(f'Generating DAG file for {workflow.workflow_id}')
         generate_dag_file(
-            resolve(project_dir),
+            str(project_dir),
             docker_repository,
             workflow,
             start_time,
             version,
-            resolve(root_package).split(os.sep)[-1])
+            root_package.name)
 
 
 def build_image(
@@ -89,7 +88,7 @@ def build_image(
     build_docker_image(project_dir, tag)
     try:
         export_docker_image_to_file(tag, image_dir, version)
-        shutil.copyfile(deployment_config, image_dir / resolve(deployment_config).split(os.sep)[-1])
+        shutil.copyfile(deployment_config, image_dir / deployment_config.name)
     finally:
         remove_docker_image_from_local_registry(tag)
 
@@ -119,7 +118,7 @@ def build_command(
         ]
 
         def initialize_options(self) -> None:
-            self.start_time = now()
+            self.start_time = datetime.now().strftime("%Y-%m-%d %H:00:00")
             self.build_dags = False
             self.build_package = False
             self.build_image = False
@@ -183,26 +182,26 @@ def clear_package_leftovers(dist_dir: Path, eggs_dir: Path, build_dir: Path):
         print(f'Removing: {str(to_delete.absolute())}')
         shutil.rmtree(to_delete, ignore_errors=True)
 
-def _validate_deployment_config(config):
+def _validate_deployment_config(config: dict):
     if "docker_repository" in config:
         if not config["docker_repository"].islower():
             raise ValueError("`docker_repository` variable should be in lower case")
 
-def get_docker_repository_from_deployment_config(deployment_config_file: Path):
+def get_docker_repository_from_deployment_config(deployment_config_file: Path) -> str:
     try:
-        config = import_deployment_config(resolve(deployment_config_file), 'docker_repository')
+        config = import_deployment_config(str(deployment_config_file), 'docker_repository')
     except ValueError:
-        raise ValueError(f"Can't find the specified deployment configuration: {resolve(deployment_config_file)}")
+        raise ValueError(f"Can't find the specified deployment configuration: {deployment_config_file}")
 
     _validate_deployment_config(config.resolve())
     docker_repository = config.resolve_property('docker_repository', None)
 
     if docker_repository is None:
-        raise ValueError(f"Can't find the 'docker_repository' property in the specified config file: {resolve(deployment_config_file)}")
+        raise ValueError(f"Can't find the 'docker_repository' property in the specified config file: {deployment_config_file}")
     return docker_repository
 
 
-def secure_get_version():
+def secure_get_version() -> str:
     try:
         return get_version()
     except Exception as e:
@@ -211,7 +210,7 @@ def secure_get_version():
                          "you need to use git inside your project directory.")
 
 
-def auto_configuration(project_name: str, project_dir: Path = Path('.').parent):
+def auto_configuration(project_name: str, project_dir: Path = Path('.').parent) -> dict:
     '''
     Auto configuration for the standard BigFlow project structure (that you can generate through the CLI).
     The 'project_name' parameter should be a valid python package name.
@@ -239,11 +238,6 @@ def auto_configuration(project_name: str, project_dir: Path = Path('.').parent):
     }
 
 
-def parameter_not_null_or_error(parameter_name: str, parameter_value):
-    if parameter_value is None:
-        raise ValueError(f"Parameter {parameter_name} can't be None.")
-
-
 def project_setup(
         project_name: str,
         docker_repository: str,
@@ -258,7 +252,8 @@ def project_setup(
         deployment_config_file: Path,
         version: str,
         resources_dir: Path,
-        project_requirements_file: Path):
+        project_requirements_file: Path,
+) -> dict:
     '''
     This function produces arguments for setuptools.setup. The produced setup provides commands that allow you to build
     whl package, docker image and DAGs. Paired with auto_configuration function, it provides fully automated build
@@ -270,6 +265,7 @@ def project_setup(
 
     setup(project_setup(**auto_configuration('my_super_project')))
     '''
+
     params_to_check = [
         ('project_name', project_name),
         ('docker_repository', docker_repository),
@@ -287,7 +283,8 @@ def project_setup(
         ('project_requirements_file', project_requirements_file),
     ]
     for parameter_name, parameter_value in params_to_check:
-        parameter_not_null_or_error(parameter_name, parameter_value)
+        if parameter_value is None:
+            raise ValueError(f"Parameter {parameter_name} can't be None.")
 
     maybe_recompile_requirements_file(project_requirements_file)
 
@@ -316,8 +313,8 @@ def project_setup(
     }
 
 
-def default_project_setup(project_name, project_dir: Path = Path('.').parent):
-    return setup(**project_setup(**auto_configuration(project_name, project_dir=project_dir)))
+def default_project_setup(project_name: str, project_dir: Path = Path('.').parent):
+    return setuptools.setup(**project_setup(**auto_configuration(project_name, project_dir=project_dir)))
 
 
 def detect_piptools_source_files(reqs_dir: Path) -> typing.List[Path]:

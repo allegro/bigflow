@@ -1,14 +1,13 @@
 import re
 import os
 from shutil import rmtree
-from uuid import uuid1
+import uuid
 import subprocess
 from pathlib import Path
 import tempfile
 from unittest import TestCase, mock
 
 from bigflow.version import VERSION_PATTERN, bump_minor, release, STARTING_VERSION
-from bigflow.commons import resolve
 
 NO_REPOSITORY_VERSION_PATTERN = re.compile(r'^0.1.0SNAPSHOT\w+$')
 NO_COMMITS_VERSION_PATTERN = NO_REPOSITORY_VERSION_PATTERN
@@ -31,7 +30,7 @@ BIGFLOW_PATH = os.path.join(os.sep, *bf_path_parts)
 class Project:
     def __init__(self):
         self.tmp_dir = Path(tempfile.gettempdir())
-        self.project_dir = resolve(self.tmp_dir / f'bigflow_test_version_{str(uuid1()).replace("-", "")}')
+        self.project_dir = str(self.tmp_dir / f'bigflow_test_version_{uuid.uuid4().hex}')
         os.mkdir(self.project_dir)
 
     def __enter__(self):

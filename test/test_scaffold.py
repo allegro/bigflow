@@ -87,7 +87,7 @@ deployment_config = DeploymentConfig(
 import logging
 
 from bigflow.configuration import Config
-from bigflow.resources import find_or_create_setup_for_main_project_package, resolve, get_resource_absolute_path
+from bigflow.resources import find_or_create_setup_for_main_project_package, get_resource_absolute_path
 from apache_beam.options.pipeline_options import SetupOptions, StandardOptions, WorkerOptions, GoogleCloudOptions, \
     PipelineOptions
 
@@ -120,8 +120,8 @@ def dataflow_pipeline_options():
 
     setup_file_path = find_or_create_setup_for_main_project_package()
     requirements_file_path = get_resource_absolute_path('requirements.txt')
-    options.view_as(SetupOptions).setup_file = resolve(setup_file_path)
-    options.view_as(SetupOptions).requirements_file = resolve(requirements_file_path)
+    options.view_as(SetupOptions).setup_file = str(setup_file_path)
+    options.view_as(SetupOptions).requirements_file = str(requirements_file_path)
 
     logger.info(f"Run beam pipeline with options {str(options)}")
     return options''')

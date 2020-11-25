@@ -5,9 +5,11 @@ import logging
 
 from typing import List, Iterable
 from pathlib import Path
-from tempfile import NamedTemporaryFile
 
-from .commons import resolve, generate_file_hash
+from bigflow.commons import (
+    resolve,
+    generate_file_hash,
+)
 
 
 __all__ = [
@@ -19,7 +21,7 @@ __all__ = [
     'create_file_if_not_exists',
     'create_setup_body',
     'find_or_create_setup_for_main_project_package',
-    'create_tmp_file'
+    'resolve',
 ]
 
 logger = logging.getLogger(__name__)
@@ -178,9 +180,3 @@ def find_or_create_setup_for_main_project_package(project_name: str = None, sear
     search_start_file = search_start_file or Path(caller_module.__file__)
     project_name = project_name or caller_module.__name__.split('.')[0]
     return create_file_if_not_exists(find_file(project_name, Path(search_start_file)).parent / 'setup.py', create_setup_body(project_name))
-
-
-def create_tmp_file(file_content: str) -> Path:
-    with NamedTemporaryFile(delete=False) as result_file:
-        result_file.write(file_content)
-        return Path(result_file.name)
