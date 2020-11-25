@@ -4,7 +4,6 @@ import logging
 
 from inspect import getfullargspec
 
-import pandas as pd
 from google.api_core.exceptions import BadRequest
 
 import bigflow
@@ -367,6 +366,7 @@ class OperationLevelDatasetManager(object):
         elif self._should_run_operation(operation_name):
             return method(*args, sql=sql, **kwargs)
         else:
+            import pandas as pd
             return pd.DataFrame()
 
     def _should_peek_operation_results(self, operation_name):
