@@ -25,13 +25,9 @@ EGGS_DIR_PATH = TEST_PROJECT_PATH / f'{PROJECT_NAME}.egg-info'
 BUILD_PATH = TEST_PROJECT_PATH / 'build'
 
 
-def resolve(path: Path):
-    return str(path.absolute())
-
-
 class TestProject:
     def run_build(self, cmd: str):
-        output = subprocess.getoutput(f'cd {resolve(TEST_PROJECT_PATH)};{cmd}')
+        output = subprocess.getoutput(f'cd {TEST_PROJECT_PATH};{cmd}')
         print(output)
         return output
 
