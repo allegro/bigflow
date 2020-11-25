@@ -23,7 +23,7 @@ class ScaffoldBigQueryExampleTestCase(TestCase):
         internationalports_workflow.run('2019-01-01')
         collect__mock.assert_called_with('''
         INSERT INTO `gcp-project.bigflow_test.ports` (port_name, port_latitude, port_longitude, country, index_number)
-        VALUES 
+        VALUES
         ('GDYNIA', 54.533333, 18.55, 'POL', '28740'),
         ('GDANSK', 54.35, 18.666667, 'POL', '28710'),
         ('SANKT-PETERBURG', 59.933333, 30.3, 'RUS', '28370'),

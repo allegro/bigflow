@@ -10,7 +10,7 @@ import jinja2.ext
 logger = logging.getLogger(__name__)
 
 
-class SkipThisTemplate(BaseException):
+class SkipThisTemplate(Exception):
     "May be raised from templates when the whole file should be skipped."
 
 
@@ -38,7 +38,7 @@ class SkipTemplateTagExtension(jinja2.ext.Extension):
 
 def render_templates(
     dest: os.PathLike,
-    templates: jinja2.BaseLoader, 
+    templates: jinja2.BaseLoader,
     variables: dict,
 ):
     dest = Path(dest)

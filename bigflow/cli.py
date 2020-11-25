@@ -31,10 +31,6 @@ logger = logging.getLogger(__name__)
 SETUP_VALIDATION_MESSAGE = 'BigFlow setup is valid.'
 
 
-def resolve(path: Path) -> str:
-    return str(path.absolute())
-
-
 def walk_module_files(root_package: Path) -> Iterator[Tuple[str, str]]:
     """
     Returning all the Python files in the `root_package`
@@ -45,8 +41,7 @@ def walk_module_files(root_package: Path) -> Iterator[Tuple[str, str]]:
     @return: (absolute_path: str, name: str)
     """
     logger.debug("walk module files %s", root_package)
-    resolved_root_package = resolve(root_package)
-    for subdir, dirs, files in os.walk(resolved_root_package):
+    for subdir, dirs, files in os.walk(str(root_package)):
         for file in files:
             if file.endswith('.py'):
                 logger.debug("found python file %s/%s", subdir, file)
@@ -61,8 +56,8 @@ def build_module_path(root_package: Path, module_dir: Path, module_file: str) ->
     """
     Returns module path that can be imported using `import_module`
     """
-    full_module_file_path = resolve(module_dir / module_file)
-    full_module_file_path = full_module_file_path.replace(resolve(root_package.parent), '')
+    full_module_file_path = str(module_dir.absolute() / module_file)
+    full_module_file_path = full_module_file_path.replace(str(root_package.parent.absolute()), '')
 
     res = full_module_file_path
     res = _removesuffix(res, ".py")
