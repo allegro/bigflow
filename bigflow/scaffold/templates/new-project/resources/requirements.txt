@@ -41,7 +41,7 @@ grpc-google-iam-v1==0.12.3  # via google-cloud-bigtable, google-cloud-pubsub, go
 grpcio-gcp==0.2.2         # via apache-beam, google-api-core
 grpcio==1.33.2            # via apache-beam, google-api-core, grpc-google-iam-v1, grpcio-gcp
 hdfs==2.5.8               # via apache-beam
-httplib2==0.17.4          # via apache-beam, google-apitools, oauth2client
+httplib2==0.18.0          # via apache-beam, google-apitools, oauth2client
 idna==2.10                # via requests
 jinja2==2.10.3            # via bigflow
 libcst==0.3.14            # via google-cloud-dataproc
