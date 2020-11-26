@@ -1,10 +1,16 @@
 import os
 import time
 import inspect
+import logging
+
 from typing import List, Iterable
 from pathlib import Path
 
-from bigflow.commons import resolve
+from bigflow.commons import (
+    resolve,
+    generate_file_hash,
+)
+
 
 __all__ = [
     'find_all_resources',
@@ -18,16 +24,44 @@ __all__ = [
     'resolve',
 ]
 
+logger = logging.getLogger(__name__)
+
 
 def find_all_resources(resources_dir: Path) -> Iterable[str]:
     for path in resources_dir.rglob('*'):
-        current_dir_path = str(resources_dir.parent.absolute())
-        relative_path = str(path.resolve()).replace(current_dir_path + os.sep, '')
         if path.is_file():
-            yield relative_path
+            yield str(path.relative_to(resources_dir.parent))
 
 
-def read_requirements(requirements_path: Path) -> List[str]:
+def check_requirements_needs_recompile(req: Path) -> bool:
+    req_txt = req.with_suffix(".txt")
+    req_in = req.with_suffix(".in")
+    logger.debug("Check if file %s should be recompiled", req_txt)
+
+    if not req_in.exists():
+        logger.info("No file %s - pip-tools is not used", req_in)
+        return False
+
+    if not req_txt.exists():
+        logger.info("File %s does not exist - need to be compiled by 'pip-compile'", req_txt)
+        return True
+
+    req_txt_content = req_txt.read_text()
+    hash1 = generate_file_hash(req_in)
+    same_hash = hash1 in req_txt_content
+
+    if same_hash:  # dirty but works ;)
+        logger.info("Don't need to compile %s file", req_txt)
+        return False
+    else:
+        logger.warn("File %s needs to be recompiled with 'bigflow build-requirements' command", req_txt)
+        return True
+
+
+def read_requirements(requirements_path: Path, recompile_check=True) -> List[str]:
+    if recompile_check and check_requirements_needs_recompile(requirements_path):
+        raise ValueError("Requirements needs to be recompiled with 'pip-tools'")
+
     result: List[str] = []
     with open(requirements_path) as base_requirements:
         for line in base_requirements:

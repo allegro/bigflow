@@ -1,5 +1,6 @@
 import subprocess
 import sys
+import hashlib
 import logging
 
 from pathlib import Path
@@ -21,13 +22,22 @@ def resolve(path: Path):
 def run_process(cmd, **kwargs):
     if isinstance(cmd, str):
         cmd = cmd.split(' ')
+    logger.debug("RUN: %s", cmd)
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE, **kwargs)
     result_output = ''
     for c in iter(lambda: process.stdout.read(1), b''):
         l = c.decode('utf-8')
         sys.stdout.write(c.decode('utf-8'))
         result_output += l
+    process.wait()
     return result_output
+
+
+def generate_file_hash(fname: Path, algorithm: str = 'sha256') -> str:
+    logger.debug("Calculate hash of %s", fname)
+    h = hashlib.new(algorithm)
+    h.update(fname.read_bytes())
+    return algorithm + ":" + h.hexdigest()
 
 
 def decode_version_number_from_file_name(file_path: Path):

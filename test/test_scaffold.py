@@ -71,7 +71,7 @@ class ProjectScaffoldE2E(ProjectScaffoldE2ETestCase):
 
     def scaffolded_project_tests_should_work(self):
         output = subprocess.getoutput("python -m unittest discover -s my_project_project -p '*.py'")
-        self.assertEqual(output[-2:], 'OK')
+        self.assertRegexpMatches(output, ".*OK")
 
     def scaffolded_basic_project_should_have_one_environment(self):
         self.check_file_content(Path('my_project_project') / 'deployment_config.py', '''from bigflow.configuration import DeploymentConfig

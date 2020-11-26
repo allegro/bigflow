@@ -151,6 +151,7 @@ class BuildProjectE2E(SetupTestCase):
         self.assertTrue(docker_image_as_file_built())
         self.assertFalse(docker_image_built_in_registry(DOCKER_REPOSITORY, '0.1.0'))
         self.assertTrue(deployment_config_copied())
+        self.assertTrue((TEST_PROJECT_PATH / "resources" / "requirements.txt").exists())
 
         # and
         self.assertFalse(package_leftovers_exist())
@@ -337,3 +338,54 @@ class AutoConfigurationTestCase(TestCase):
 
     def get_version_error(self):
         raise RuntimeError('get_version error')
+
+
+class PipToolsTestCase(TestCase):
+
+    def setUp(self):
+        self.tempdir = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.tempdir)
+
+    def test_should_compile_requirements(self):
+        # given
+        req_in = self.tempdir / "req.in"
+        req_txt = self.tempdir / "req.txt"
+        req_in.write_text("pandas>=1.1")
+
+        # when
+        bigflow.build.pip_compile(req_in)
+
+        # then
+        reqs = req_txt.read_text()
+        self.assertIn("pandas==", reqs)
+        self.assertIn("", reqs)
+
+    def test_should_detect_when_requirements_was_changed(self):
+
+        # given
+        req_in = self.tempdir / "req.in"
+        req_in.write_text("pandas>=1.1")
+
+        # when
+        bigflow.build.pip_compile(req_in, verbose=True)
+
+        # then
+        self.assertFalse(bigflow.build.check_requirements_needs_recompile(req_in))
+
+        # when
+        req_in.write_text("pandas>=1.1.1,<2")
+
+        # then
+        self.assertTrue(bigflow.build.check_requirements_needs_recompile(req_in))
+
+    def test_should_automatically_recompile_requirements(self):
+        # given
+        req_in = self.tempdir / "req.in"
+        req_txt = self.tempdir / "req.txt"
+        req_in.write_text("numpy")
+
+        # when
+        bigflow.build.maybe_recompile_requirements_file(req_txt)
+
+        # then
+        self.assertTrue(req_txt.exists())
