@@ -1,10 +1,16 @@
 import os
 import time
 import inspect
+import logging
+
 from typing import List, Iterable
 from pathlib import Path
-from tempfile import NamedTemporaryFile
-from .commons import resolve
+
+from bigflow.commons import (
+    resolve,
+    generate_file_hash,
+)
+
 
 __all__ = [
     'find_all_resources',
@@ -15,19 +21,47 @@ __all__ = [
     'create_file_if_not_exists',
     'create_setup_body',
     'find_or_create_setup_for_main_project_package',
-    'create_tmp_file'
+    'resolve',
 ]
+
+logger = logging.getLogger(__name__)
 
 
 def find_all_resources(resources_dir: Path) -> Iterable[str]:
     for path in resources_dir.rglob('*'):
-        current_dir_path = resolve(resources_dir.parent)
-        relative_path = str(path.resolve()).replace(current_dir_path + os.sep, '')
         if path.is_file():
-            yield relative_path
+            yield str(path.relative_to(resources_dir.parent))
 
 
-def read_requirements(requirements_path: Path) -> List[str]:
+def check_requirements_needs_recompile(req: Path) -> bool:
+    req_txt = req.with_suffix(".txt")
+    req_in = req.with_suffix(".in")
+    logger.debug("Check if file %s should be recompiled", req_txt)
+
+    if not req_in.exists():
+        logger.info("No file %s - pip-tools is not used", req_in)
+        return False
+
+    if not req_txt.exists():
+        logger.info("File %s does not exist - need to be compiled by 'pip-compile'", req_txt)
+        return True
+
+    req_txt_content = req_txt.read_text()
+    hash1 = generate_file_hash(req_in)
+    same_hash = hash1 in req_txt_content
+
+    if same_hash:  # dirty but works ;)
+        logger.info("Don't need to compile %s file", req_txt)
+        return False
+    else:
+        logger.warn("File %s needs to be recompiled with 'bigflow build-requirements' command", req_txt)
+        return True
+
+
+def read_requirements(requirements_path: Path, recompile_check=True) -> List[str]:
+    if recompile_check and check_requirements_needs_recompile(requirements_path):
+        raise ValueError("Requirements needs to be recompiled with 'pip-tools'")
+
     result: List[str] = []
     with open(requirements_path) as base_requirements:
         for line in base_requirements:
@@ -146,9 +180,3 @@ def find_or_create_setup_for_main_project_package(project_name: str = None, sear
     search_start_file = search_start_file or Path(caller_module.__file__)
     project_name = project_name or caller_module.__name__.split('.')[0]
     return create_file_if_not_exists(find_file(project_name, Path(search_start_file)).parent / 'setup.py', create_setup_body(project_name))
-
-
-def create_tmp_file(file_content: str) -> Path:
-    with NamedTemporaryFile(delete=False) as result_file:
-        result_file.write(file_content)
-        return Path(result_file.name)

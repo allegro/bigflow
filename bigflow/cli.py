@@ -1,6 +1,7 @@
 import argparse
 import importlib
 import os
+import pathlib
 import subprocess
 import sys
 import logging
@@ -31,10 +32,6 @@ logger = logging.getLogger(__name__)
 SETUP_VALIDATION_MESSAGE = 'BigFlow setup is valid.'
 
 
-def resolve(path: Path) -> str:
-    return str(path.absolute())
-
-
 def walk_module_files(root_package: Path) -> Iterator[Tuple[str, str]]:
     """
     Returning all the Python files in the `root_package`
@@ -45,8 +42,7 @@ def walk_module_files(root_package: Path) -> Iterator[Tuple[str, str]]:
     @return: (absolute_path: str, name: str)
     """
     logger.debug("walk module files %s", root_package)
-    resolved_root_package = resolve(root_package)
-    for subdir, dirs, files in os.walk(resolved_root_package):
+    for subdir, dirs, files in os.walk(str(root_package)):
         for file in files:
             if file.endswith('.py'):
                 logger.debug("found python file %s/%s", subdir, file)
@@ -61,8 +57,8 @@ def build_module_path(root_package: Path, module_dir: Path, module_file: str) ->
     """
     Returns module path that can be imported using `import_module`
     """
-    full_module_file_path = resolve(module_dir / module_file)
-    full_module_file_path = full_module_file_path.replace(resolve(root_package.parent), '')
+    full_module_file_path = str(module_dir.absolute() / module_file)
+    full_module_file_path = full_module_file_path.replace(str(root_package.parent.absolute()), '')
 
     res = full_module_file_path
     res = _removesuffix(res, ".py")
@@ -232,6 +228,11 @@ def cli_run(project_package: str,
     @param workflow_id: Optional[str] The id of the workflow that should be executed
     @return:
     """
+
+    # TODO: Check that installed libs in sync with `requirements.txt`
+    import bigflow.build
+    bigflow.build.check_requirements_needs_recompile(Path("resources/requirements.txt"))
+
     if full_job_id is not None:
         try:
             workflow_id, job_id = full_job_id.split('.')
@@ -274,6 +275,8 @@ def _parse_args(project_name: Optional[str], args) -> Namespace:
     _create_release_parser(subparsers)
     _create_start_project_parser(subparsers)
     _create_logs_parser(subparsers)
+
+    _create_build_requirements_parser(subparsers)
 
     return parser.parse_args(args)
 
@@ -579,6 +582,25 @@ def _cli_build(args):
     run_process(cmd)
 
 
+def _create_build_requirements_parser(subparsers):
+    parser = subparsers.add_parser(
+        'build-requirements',
+        description="Compiles requirements.txt from *.in specs",
+    )
+    parser.add_argument(
+        'in_file',
+        type=str,
+        nargs='?',
+        default="resources/requirements.in",  # FIXME: read 'project_setup.py'
+    )
+
+
+def _cli_build_requirements(args):
+    import bigflow.build
+    in_file = pathlib.Path(args.in_file)
+    bigflow.build.pip_compile(in_file)
+
+
 def _is_workflow_selected(args):
     return args.workflow and args.workflow != 'ALL'
 
@@ -762,5 +784,7 @@ def cli(raw_args) -> None:
         _is_log_module_installed()
         root_package = find_root_package(project_name, None)
         cli_logs(root_package)
+    elif operation == 'pip-compile':
+        _cli_build_requirements(parsed_args)
     else:
         raise ValueError(f'Operation unknown - {operation}')

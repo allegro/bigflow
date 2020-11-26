@@ -5,7 +5,8 @@ from typing import Type
 from apache_beam import Pipeline
 from apache_beam.options.pipeline_options import PipelineOptions, GoogleCloudOptions
 
-from .workflow import Job, JobContext
+from bigflow.workflow import Job, JobContext
+
 
 logger = logging.getLogger(__file__)
 

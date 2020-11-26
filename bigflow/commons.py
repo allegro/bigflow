@@ -1,44 +1,43 @@
 import subprocess
 import sys
-from pathlib import Path
+import hashlib
 import logging
+
+from pathlib import Path
 from datetime import datetime
 
 
 logger = logging.getLogger(__name__)
 
 
-def now(template: str = "%Y-%m-%d %H:00:00"):
-    return datetime.now().strftime(template)
+def resolve(path: Path):
+    """
+    Convert aboslute path into string
+    DEPRECATED
+    """
+    logger.warning("Function `bigflow.resource.resolve(...)` is deprecated, please use str(x.absolute()) instead")
+    return str(path.absolute())
 
 
 def run_process(cmd, **kwargs):
     if isinstance(cmd, str):
         cmd = cmd.split(' ')
+    logger.debug("RUN: %s", cmd)
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE, **kwargs)
     result_output = ''
     for c in iter(lambda: process.stdout.read(1), b''):
         l = c.decode('utf-8')
         sys.stdout.write(c.decode('utf-8'))
         result_output += l
+    process.wait()
     return result_output
 
 
-def resolve(path: Path):
-    return str(path.absolute())
-
-
-def not_none_or_error(arg_value, arg_name):
-    if arg_value is None:
-        raise ValueError("{} can't be None".format(arg_name))
-
-
-class ExtrasRequiredError(ImportError):
-    pass
-
-
-def merge_dicts(dict1, dict2):
-    return {**dict1, **dict2}
+def generate_file_hash(fname: Path, algorithm: str = 'sha256') -> str:
+    logger.debug("Calculate hash of %s", fname)
+    h = hashlib.new(algorithm)
+    h.update(fname.read_bytes())
+    return algorithm + ":" + h.hexdigest()
 
 
 def decode_version_number_from_file_name(file_path: Path):

@@ -156,17 +156,17 @@ class CliTestCase(TestCase):
         res = find_root_package(None, "test.test_module")
 
         # then
-        self.assertEqual(resolve(TEST_MODULE_PATH), resolve(res))
+        self.assertEqual(TEST_MODULE_PATH, res)
 
     def test_should_find_root_package_when_root_used_project_name_used(self):
         # given
-        test_module_src = resolve(TEST_MODULE_PATH)
+        test_module_src = str(TEST_MODULE_PATH)
 
         # when
         res = find_root_package(test_module_src, "some_other_path")
 
         # then
-        self.assertEqual(test_module_src, resolve(res))
+        self.assertEqual(test_module_src, str(res))
 
     def test_should_run_workflow(self):
         # given
@@ -870,7 +870,7 @@ another-project-id                         ANOTHER PROJECT                002242
         root_package = find_root_package("fake_project_name", None)
         with self.assertRaises(Exception) as e:
             cli_logs(root_package)
-        self.assertEqual(str(e.exception), 'Found no workflows with configured logging.')
+            self.assertEqual(str(e.exception), 'Found no workflows with configured logging.')
 
     def test_should_throw_if_log_module_is_not_installed(self):
         # given
