@@ -667,7 +667,7 @@ deployment_config = Config(name='dev',
         run_process_mock.assert_any_call('python project_setup.py build_project --build-package')
 
     @mock.patch('bigflow.cli.run_process')
-    @mock.patch('bigflow.cli.find_file')
+    @mock.patch('bigflow.resources.find_file')
     @mock.patch('bigflow.cli.validate_project_setup')
     def test_should_call_build_image_command_through_CLI(self, validate_project_setup_mock, find_file_mock,
                                                          run_process_mock):

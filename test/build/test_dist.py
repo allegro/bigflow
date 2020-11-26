@@ -12,12 +12,24 @@ from unittest import TestCase, mock
 
 import bigflow.build
 from bigflow.cli import walk_module_files, SETUP_VALIDATION_MESSAGE
-from bigflow.build import get_docker_image_id, build_docker_image_tag, auto_configuration, \
-    get_docker_repository_from_deployment_config, project_setup, secure_get_version, default_project_setup, \
-    clear_image_leftovers, clear_dags_leftovers, clear_package_leftovers, build_image
-from example_project.project_setup import DOCKER_REPOSITORY, PROJECT_NAME
+from bigflow.build.dist import (
+    get_docker_image_id,
+    build_docker_image_tag,
+    auto_configuration,
+    get_docker_repository_from_deployment_config,
+    project_setup,
+    secure_get_version,
+    default_project_setup,
+    clear_image_leftovers,
+    clear_dags_leftovers,
+    clear_package_leftovers,
+    build_image,
+)
 
-TEST_PROJECT_PATH = Path(__file__).parent / 'example_project'
+PROJECT_NAME = 'main_package'
+DOCKER_REPOSITORY = 'test_docker_repository'
+
+TEST_PROJECT_PATH = Path(__file__).parent / ".." / 'example_project'
 IMAGE_DIR_PATH = TEST_PROJECT_PATH / 'image'
 DAGS_DIR_PATH = TEST_PROJECT_PATH / '.dags'
 DIST_DIR_PATH = TEST_PROJECT_PATH / 'dist'
@@ -338,54 +350,3 @@ class AutoConfigurationTestCase(TestCase):
 
     def get_version_error(self):
         raise RuntimeError('get_version error')
-
-
-class PipToolsTestCase(TestCase):
-
-    def setUp(self):
-        self.tempdir = Path(tempfile.mkdtemp())
-        self.addCleanup(shutil.rmtree, self.tempdir)
-
-    def test_should_compile_requirements(self):
-        # given
-        req_in = self.tempdir / "req.in"
-        req_txt = self.tempdir / "req.txt"
-        req_in.write_text("pandas>=1.1")
-
-        # when
-        bigflow.build.pip_compile(req_in)
-
-        # then
-        reqs = req_txt.read_text()
-        self.assertIn("pandas==", reqs)
-        self.assertIn("", reqs)
-
-    def test_should_detect_when_requirements_was_changed(self):
-
-        # given
-        req_in = self.tempdir / "req.in"
-        req_in.write_text("pandas>=1.1")
-
-        # when
-        bigflow.build.pip_compile(req_in, verbose=True)
-
-        # then
-        self.assertFalse(bigflow.build.check_requirements_needs_recompile(req_in))
-
-        # when
-        req_in.write_text("pandas>=1.1.1,<2")
-
-        # then
-        self.assertTrue(bigflow.build.check_requirements_needs_recompile(req_in))
-
-    def test_should_automatically_recompile_requirements(self):
-        # given
-        req_in = self.tempdir / "req.in"
-        req_txt = self.tempdir / "req.txt"
-        req_in.write_text("numpy")
-
-        # when
-        bigflow.build.maybe_recompile_requirements_file(req_txt)
-
-        # then
-        self.assertTrue(req_txt.exists())

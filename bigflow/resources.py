@@ -8,9 +8,8 @@ from pathlib import Path
 
 from bigflow.commons import (
     resolve,
-    generate_file_hash,
 )
-
+import bigflow.build.pip as bf_pip
 
 __all__ = [
     'find_all_resources',
@@ -33,33 +32,8 @@ def find_all_resources(resources_dir: Path) -> Iterable[str]:
             yield str(path.relative_to(resources_dir.parent))
 
 
-def check_requirements_needs_recompile(req: Path) -> bool:
-    req_txt = req.with_suffix(".txt")
-    req_in = req.with_suffix(".in")
-    logger.debug("Check if file %s should be recompiled", req_txt)
-
-    if not req_in.exists():
-        logger.info("No file %s - pip-tools is not used", req_in)
-        return False
-
-    if not req_txt.exists():
-        logger.info("File %s does not exist - need to be compiled by 'pip-compile'", req_txt)
-        return True
-
-    req_txt_content = req_txt.read_text()
-    hash1 = generate_file_hash(req_in)
-    same_hash = hash1 in req_txt_content
-
-    if same_hash:  # dirty but works ;)
-        logger.info("Don't need to compile %s file", req_txt)
-        return False
-    else:
-        logger.warn("File %s needs to be recompiled with 'bigflow build-requirements' command", req_txt)
-        return True
-
-
 def read_requirements(requirements_path: Path, recompile_check=True) -> List[str]:
-    if recompile_check and check_requirements_needs_recompile(requirements_path):
+    if recompile_check and bf_pip.check_requirements_needs_recompile(requirements_path):
         raise ValueError("Requirements needs to be recompiled with 'pip-tools'")
 
     result: List[str] = []

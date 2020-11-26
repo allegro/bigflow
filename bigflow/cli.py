@@ -6,20 +6,23 @@ import subprocess
 import sys
 import logging
 
+import importlib.util
+
 from argparse import Namespace
 from datetime import datetime
 from importlib import import_module
 from pathlib import Path
 from types import ModuleType
 from typing import Tuple, Iterator
-import importlib.util
-import bigflow as bf
 from typing import Optional
 from glob import glob1
 
+import bigflow as bf
+import bigflow.build.pip
+import bigflow.resources
+
 from bigflow import Config
 from bigflow.deploy import deploy_dags_folder, deploy_docker_image
-from bigflow.resources import find_file
 from bigflow.scaffold import start_project
 from bigflow.version import get_version, release
 
@@ -230,8 +233,7 @@ def cli_run(project_package: str,
     """
 
     # TODO: Check that installed libs in sync with `requirements.txt`
-    import bigflow.build
-    bigflow.build.check_requirements_needs_recompile(Path("resources/requirements.txt"))
+    bigflow.build.pip.check_requirements_needs_recompile(Path("resources/requirements.txt"))
 
     if full_job_id is not None:
         try:
@@ -596,9 +598,8 @@ def _create_build_requirements_parser(subparsers):
 
 
 def _cli_build_requirements(args):
-    import bigflow.build
     in_file = pathlib.Path(args.in_file)
-    bigflow.build.pip_compile(in_file)
+    bigflow.build.pip.pip_compile(in_file)
 
 
 def _is_workflow_selected(args):
@@ -692,7 +693,7 @@ def _cli_start_project():
 
 
 def check_if_project_setup_exists():
-    find_file('project_setup.py', Path('.'), 1)
+    bigflow.resources.find_file('project_setup.py', Path('.'), 1)
 
 
 def validate_project_setup():

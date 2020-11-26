@@ -4,7 +4,7 @@ import logging
 from pathlib import Path
 
 import bigflow
-import bigflow.build
+import bigflow.build.pip as bf_pip
 
 from bigflow.scaffold.templating import render_builtin_templates
 
@@ -97,7 +97,7 @@ def create_dirs_and_files(config, templates):
         },
     )
 
-    bigflow.build.pip_compile(project_path / "resources" / "requirements.txt")
+    bf_pip.pip_compile(project_path / "resources" / "requirements.txt")
 
 
 def create_module_files(templates, path):
