@@ -13,7 +13,8 @@ import textwrap
 from datetime import datetime
 from pathlib import Path
 
-from .cli import walk_workflows, import_deployment_config, _valid_datetime, SETUP_VALIDATION_MESSAGE
+import bigflow.cli as cli
+
 from .dagbuilder import generate_dag_file
 from .resources import read_requirements, find_all_resources, check_requirements_needs_recompile
 from .commons import (
@@ -64,7 +65,7 @@ def build_dags(
         start_time: str,
         version: str,
         specific_workflow: typing.Optional[str] = None):
-    for workflow in walk_workflows(root_package):
+    for workflow in cli.walk_workflows(root_package):
         if specific_workflow is not None and specific_workflow != workflow.workflow_id:
             continue
         print(f'Generating DAG file for {workflow.workflow_id}')
@@ -133,10 +134,10 @@ def build_command(
 
         def run(self) -> None:
             if self.validate_project_setup:
-                print(SETUP_VALIDATION_MESSAGE)
+                print(cli.SETUP_VALIDATION_MESSAGE)
                 return
 
-            _valid_datetime(self.start_time)
+            cli._valid_datetime(self.start_time)  # FIXME: Don't use private functions.
             if self.build_package or self.should_run_whole_build():
                 print('Building the pip package')
                 clear_package_leftovers(dist_dir, eggs_dir, build_dir)
@@ -189,7 +190,7 @@ def _validate_deployment_config(config: dict):
 
 def get_docker_repository_from_deployment_config(deployment_config_file: Path) -> str:
     try:
-        config = import_deployment_config(str(deployment_config_file), 'docker_repository')
+        config = cli.import_deployment_config(str(deployment_config_file), 'docker_repository')
     except ValueError:
         raise ValueError(f"Can't find the specified deployment configuration: {deployment_config_file}")
 
