@@ -17,10 +17,10 @@ class BeamJob(Job):
             id: str,
             entry_point: typing.Callable[[Pipeline, JobContext, dict], None],
             pipeline_options: PipelineOptions,
-            pipeline: Type[Pipeline],
             entry_point_arguments: typing.Optional[dict] = None,
             wait_until_finish: bool = True,
             execution_timeout: int = 3600000,
+            pipeline: Type[Pipeline] = Pipeline
     ):
         self.id = id
         self.entry_point = entry_point
