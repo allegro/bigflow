@@ -1,7 +1,6 @@
 import os
 import sys
 import shutil
-import distutils.cmd
 import tempfile
 import unittest
 import setuptools
@@ -10,7 +9,6 @@ import xmlrunner
 import logging
 import typing
 import pickle
-import functools
 
 import distutils.cmd
 import distutils.dist
@@ -97,6 +95,43 @@ def build_image(
         shutil.copyfile(deployment_config, image_dir / deployment_config.name)
     finally:
         remove_docker_image_from_local_registry(tag)
+
+
+def _hook_pregenerate_sdist(command_cls):
+    """
+    Wraps existing distutils.Command class.
+    Runs 'sdist' and copy resutl into 'build/bf-project.tar.gz'
+    """
+
+    class command(command_cls, distutils.cmd.Command):
+
+        def run(self):
+
+            sdist = self.get_finalized_command('sdist')
+            sdist.run()
+            sdist_tarball = sdist.get_archive_files()
+
+            if len(sdist_tarball) > 1:
+                self.warn("ingnored 'sdist' results", sdist_tarball[1:])
+
+            self.mkpath("build")
+            self.copy_file(sdist_tarball[0], "build/bf-project.tar.gz")
+
+            return super().run()
+
+        def get_command_name(self) -> str:
+            return super().get_command_name()
+
+    return command
+
+
+def _hook_bdist_pregenerate_sdist():
+    d = distutils.dist.Distribution({'name': "fake"})
+    return {
+        cmd: _hook_pregenerate_sdist(d.get_command_class(cmd))
+        for cmd, _ in d.get_command_list()
+        if cmd.startswith("bdist")
+    }
 
 
 def build_command(
@@ -312,6 +347,7 @@ def _project_setup(
         'install_requires': bigflow.resources.read_requirements(project_requirements_file),
         'data_files': [
             ('resources', list(bigflow.resources.find_all_resources(resources_dir))),
+            (f"bigflow_project_tarball/{project_name}", ["build/bf-project.tar.gz"]),
         ],
         'cmdclass': {
             'build_project': build_command(
@@ -325,7 +361,8 @@ def _project_setup(
                 eggs_dir,
                 deployment_config_file,
                 docker_repository,
-                version)
+                version),
+            **_hook_bdist_pregenerate_sdist(),
         }
     }
 

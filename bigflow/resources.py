@@ -134,23 +134,9 @@ def create_file_if_not_exists(file_path: Path, body: str) -> Path:
     return file_path
 
 
-def create_setup_body(project_name: str) -> str:
-    return f'''
-import setuptools
-
-setuptools.setup(
-        name='{project_name}',
-        version='0.1.0',
-        packages=setuptools.find_packages(
-                exclude=tuple(
-                        p for p in setuptools.find_packages()
-                        if not p.startswith('{project_name}'))))
-'''
-
-
 def find_or_create_setup_for_main_project_package(project_name: str = None, search_start_file: Path = None) -> Path:
     caller_stack_frame = inspect.stack()[1][0]
     caller_module = inspect.getmodule(caller_stack_frame)
     search_start_file = search_start_file or Path(caller_module.__file__)
     project_name = project_name or caller_module.__name__.split('.')[0]
-    return create_file_if_not_exists(find_file(project_name, Path(search_start_file)).parent / 'setup.py', create_setup_body(project_name))
+    return find_file(project_name, Path(search_start_file)).parent / "setup.py"

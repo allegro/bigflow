@@ -2,6 +2,8 @@ import subprocess
 import sys
 import hashlib
 import logging
+import re
+import time
 
 from pathlib import Path
 from datetime import datetime
@@ -21,16 +23,29 @@ def resolve(path: Path):
 
 def run_process(cmd, **kwargs):
     if isinstance(cmd, str):
-        cmd = cmd.split(' ')
-    logger.debug("RUN: %s", cmd)
-    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, **kwargs)
-    result_output = ''
-    for c in iter(lambda: process.stdout.read(1), b''):
-        l = c.decode('utf-8')
-        sys.stdout.write(c.decode('utf-8'))
-        result_output += l
+        cmd = re.split(r"\s+", cmd)
+    else:
+        cmd = list(map(str, cmd))
+
+    logger.info("╒ run %s ═", cmd)
+    start = time.time()
+    process = subprocess.Popen(cmd, text=True, stdout=subprocess.PIPE, **kwargs)
+
+    result_output = []
+    while True:
+        line = process.stdout.readline()
+        done = process.poll() is not None
+        if not done or line:
+            logger.info("│ %s", line.rstrip("\n"))
+            result_output.append(line)
+        if done:
+            break
+
     process.wait()
-    return result_output
+    duration = time.time() - start
+    logger.info("╘ done in %s seconds, code %d", format(duration, ".2f"), process.returncode)
+
+    return "".join(result_output)
 
 
 def generate_file_hash(fname: Path, algorithm: str = 'sha256') -> str:
