@@ -67,7 +67,7 @@ class BeamJobTestCase(TestCase):
             id='count_words',
             entry_point=driver.run,
             entry_point_arguments={
-                'words_to_filter': ['valid', 'word', 'valid'],
+                'words_to_filter': ['valid', 'word'],
                 'words_to_count': ['trash', 'valid', 'word', 'valid']
             },
             pipeline_options=options,
