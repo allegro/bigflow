@@ -1,9 +1,9 @@
-from unittest import TestCase
+from unittest import TestCase, mock
 from unittest.mock import patch
 
 import apache_beam as beam
 from apache_beam import Pipeline
-from apache_beam.options.pipeline_options import PipelineOptions
+from apache_beam.options.pipeline_options import PipelineOptions, GoogleCloudOptions
 from apache_beam.runners.portability.fn_api_runner.fn_runner import RunnerResult
 from apache_beam.testing.test_pipeline import TestPipeline
 from collections import defaultdict
@@ -61,7 +61,6 @@ class BeamJobTestCase(TestCase):
     def test_should_run_beam_job(self, is_in_terminal_state_mock):
         # given
         is_in_terminal_state_mock.return_value = True
-        options = PipelineOptions()
         driver = CountWordsDriver(Saver(Save()))
         job = BeamJob(
             id='count_words',
@@ -70,8 +69,7 @@ class BeamJobTestCase(TestCase):
                 'words_to_filter': ['valid', 'word'],
                 'words_to_count': ['trash', 'valid', 'word', 'valid']
             },
-            pipeline_options=options,
-            pipeline=TestPipeline)
+            test_pipeline=self._test_pipeline_with_label('count_words'))
 
         count_words = Workflow(
             workflow_id='count_words',
@@ -99,7 +97,6 @@ class BeamJobTestCase(TestCase):
         # given
         wait_until_finish_mock.return_value = 'DONE'
         is_in_terminal_state_mock.return_value = False
-        options = PipelineOptions()
         driver = CountWordsDriver(Saver(Save()))
         job = BeamJob(
             id='count_words',
@@ -108,8 +105,7 @@ class BeamJobTestCase(TestCase):
                 'words_to_filter': ['valid', 'word'],
                 'words_to_count': ['trash', 'valid', 'word', 'valid']
             },
-            pipeline_options=options,
-            pipeline=TestPipeline,
+            test_pipeline=self._test_pipeline_with_label('count_words'),
             execution_timeout=3)
 
         count_words = Workflow(
@@ -130,7 +126,6 @@ class BeamJobTestCase(TestCase):
         # given
         wait_until_finish_mock.return_value = 'DONE'
         is_in_terminal_state_mock.return_value = True
-        options = PipelineOptions()
         driver = CountWordsDriver(Saver(Save()))
         job = BeamJob(
             id='count_words',
@@ -139,8 +134,7 @@ class BeamJobTestCase(TestCase):
                 'words_to_filter': ['valid', 'word'],
                 'words_to_count': ['trash', 'valid', 'word', 'valid']
             },
-            pipeline_options=options,
-            pipeline=TestPipeline)
+            test_pipeline=self._test_pipeline_with_label('count_words'))
 
         count_words = Workflow(
             workflow_id='count_words',
@@ -158,7 +152,6 @@ class BeamJobTestCase(TestCase):
     def test_should_run_beam_job_without_timeout_if_wait_until_finish_disabled(self, cancel_mock, is_in_terminal_state_mock):
         is_in_terminal_state_mock.return_value = False
         # given
-        options = PipelineOptions()
         driver = CountWordsDriver(Saver(Save()))
         job = BeamJob(
             id='count_words',
@@ -167,8 +160,7 @@ class BeamJobTestCase(TestCase):
                 'words_to_filter': ['valid', 'word'],
                 'words_to_count': ['trash', 'valid', 'word', 'valid']
             },
-            pipeline_options=options,
-            pipeline=TestPipeline,
+            test_pipeline=self._test_pipeline_with_label('count_words'),
             execution_timeout=1)
 
         count_words = Workflow(
@@ -180,3 +172,63 @@ class BeamJobTestCase(TestCase):
 
         # then executes the job with the arguments
         self.assertEqual(cancel_mock.call_count, 1)
+
+    @patch.object(RunnerResult, 'is_in_terminal_state', create=True)
+    @patch.object(BeamJob, '_create_pipeline')
+    def test_should_create_pipeline_from_pipeline_options(self, _create_pipeline_mock, is_in_terminal_state_mock):
+        # given
+        is_in_terminal_state_mock.return_value = True
+        driver = CountWordsDriver(Saver(Save()))
+        options = PipelineOptions()
+        job = BeamJob(
+            id='count_words',
+            entry_point=driver.run,
+            entry_point_arguments={
+                'words_to_filter': ['valid', 'word'],
+                'words_to_count': ['trash', 'valid', 'word', 'valid']
+            },
+            pipeline_options=options,
+            execution_timeout=1)
+
+        count_words = Workflow(
+            workflow_id='count_words',
+            definition=[job])
+
+        # when
+        count_words.run('2020-01-01')
+
+        # then
+        _create_pipeline_mock.assert_called_with(options)
+
+    def test_should_throw_if_pipeline_options_and_pipeline_both_not_provided(self):
+        with self.assertRaises(ValueError):
+            driver = CountWordsDriver(Saver(Save()))
+            BeamJob(
+                id='count_words',
+                entry_point=driver.run,
+                entry_point_arguments={
+                    'words_to_filter': ['valid', 'word'],
+                    'words_to_count': ['trash', 'valid', 'word', 'valid']
+                },
+                execution_timeout=1)
+
+    def test_should_throw_if_pipeline_options_and_pipeline_both_provided(self):
+        with self.assertRaises(ValueError):
+            driver = CountWordsDriver(Saver(Save()))
+            BeamJob(
+                id='count_words',
+                entry_point=driver.run,
+                entry_point_arguments={
+                    'words_to_filter': ['valid', 'word'],
+                    'words_to_count': ['trash', 'valid', 'word', 'valid']
+                },
+                test_pipeline=self._test_pipeline_with_label('count_words'),
+                execution_timeout=1,
+                pipeline_options=PipelineOptions())
+
+    def _test_pipeline_with_label(self, workflow_id):
+        pipeline_options = PipelineOptions()
+        google_cloud_options = pipeline_options.view_as(GoogleCloudOptions)
+        google_cloud_options.labels = []
+        google_cloud_options.labels.append(f'workflow_id={workflow_id}')
+        return TestPipeline(options=google_cloud_options)
