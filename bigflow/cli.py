@@ -20,6 +20,8 @@ from glob import glob1
 import bigflow as bf
 import bigflow.build.pip
 import bigflow.resources
+import bigflow.commons as bfc
+import bigflow.build.dist
 
 from bigflow import Config
 from bigflow.deploy import deploy_dags_folder, deploy_docker_image
@@ -165,19 +167,9 @@ def execute_workflow(root_package: Path, workflow_id: str, runtime=None):
 
 
 def read_project_name_from_setup() -> Optional[str]:
-    try: # todo this method needs to be changed because is not working in tests which uses find_root_package method
-        sys.path.insert(1, os.getcwd())
-        import project_setup
-        return project_setup.PROJECT_NAME
-    except Exception:
-        return None
-
-
-def build_project_name_description(project_name: str) -> str:
-    if project_name is None:
-        return ''
-    else:
-        return 'Project name is taken from project_setup.PROJECT_NAME: {0}.'.format(project_name)
+    logger.info("Read project name from `setup.py`")
+    params = bigflow.build.dist.read_setup_parameters()
+    return params.get('name')
 
 
 def find_root_package(project_name: Optional[str], project_dir: Optional[str]) -> Path:
@@ -365,7 +357,7 @@ def _create_run_parser(subparsers, project_name):
                             required=True,
                             type=str,
                             help='The main package of your project. '
-                                 'Should contain project_setup.py')
+                                 'Should contain `setup.py`')
 
 
 def _add_parsers_common_arguments(parser):
@@ -550,38 +542,55 @@ def find_image_file():
 
 def _cli_build_image(args):
     validate_project_setup()
-    cmd = 'python project_setup.py build_project --build-image'
-    run_process(cmd)
+    bfc.run_process([
+        "python",
+        bigflow.build.dist.ensure_setuppy(),
+        "build_project",
+        "--build-image",
+    ])
 
 
 def _cli_build_package():
     validate_project_setup()
-    cmd = 'python project_setup.py build_project --build-package'
-    run_process(cmd)
+    bfc.run_process([
+        "python",
+        bigflow.build.dist.ensure_setuppy(),
+        "build_project",
+        "--build-package",
+    ])
 
 
 def _cli_build_dags(args):
     validate_project_setup()
-    cmd = ['python', 'project_setup.py', 'build_project', '--build-dags']
+    cmd = [
+        "python",
+        bigflow.build.dist.ensure_setuppy(),
+        "build_project",
+        "--build-dags",
+    ]
     if _is_workflow_selected(args):
         cmd.append('--workflow')
         cmd.append(args.workflow)
     if _is_starttime_selected(args):
         cmd.append('--start-time')
         cmd.append(args.start_time)
-    run_process(cmd)
+    bfc.run_process(cmd)
 
 
 def _cli_build(args):
     validate_project_setup()
-    cmd = ['python', 'project_setup.py', 'build_project']
+    cmd = [
+        "python",
+        bigflow.build.dist.ensure_setuppy(),
+        "build_project",
+    ]
     if _is_workflow_selected(args):
         cmd.append('--workflow')
         cmd.append(args.workflow)
     if _is_starttime_selected(args):
         cmd.append('--start-time')
         cmd.append(args.start_time)
-    run_process(cmd)
+    bfc.run_process(cmd)
 
 
 def _create_build_requirements_parser(subparsers):
@@ -693,15 +702,20 @@ def _cli_start_project():
 
 
 def check_if_project_setup_exists():
-    bigflow.resources.find_file('project_setup.py', Path('.'), 1)
+    bigflow.resources.find_file('setup.py', Path('.'), 1)
 
 
 def validate_project_setup():
     check_if_project_setup_exists()
-    cmd = ['python', 'project_setup.py', 'build_project', '--validate-project-setup']
-    output = run_process(cmd)
+    cmd = [
+        "python",
+        bigflow.build.dist.ensure_setuppy(),
+        "build_project",
+        "--validate-project-setup",
+    ]
+    output = bfc.run_process(cmd)
     if SETUP_VALIDATION_MESSAGE not in output:
-        raise ValueError('The project_setup.py is invalid. Check the documentation how to create a valid project_setup.py: https://github.com/allegro/bigflow/blob/master/docs/build.md')
+        raise ValueError('The `setup.py` is invalid. Check the documentation how to create a valid `setup.py`: https://github.com/allegro/bigflow/blob/master/docs/build.md')
 
 
 def _cli_project_version(args):
@@ -713,7 +727,7 @@ def _cli_release(args):
 
 
 def init_console_logging(verbose):
-    if verbose:
+    if True or verbose:
         logging.basicConfig(
             level=logging.DEBUG,
             format="%(asctime)s| %(message)s",
@@ -785,7 +799,7 @@ def cli(raw_args) -> None:
         _is_log_module_installed()
         root_package = find_root_package(project_name, None)
         cli_logs(root_package)
-    elif operation == 'pip-compile':
+    elif operation == 'build-requirements':
         _cli_build_requirements(parsed_args)
     else:
         raise ValueError(f'Operation unknown - {operation}')

@@ -10,6 +10,10 @@ import xmlrunner
 import logging
 import typing
 import pickle
+import functools
+
+import distutils.cmd
+import distutils.dist
 
 from typing import Optional, Union
 from datetime import datetime
@@ -26,6 +30,7 @@ from bigflow.commons import (
     get_docker_image_id,
     build_docker_image_tag,
 )
+from bigflow.resources import find_all_resources
 from bigflow.version import get_version
 
 
@@ -306,7 +311,7 @@ def _project_setup(
         'packages': setuptools.find_packages(exclude=['test']),
         'install_requires': bigflow.resources.read_requirements(project_requirements_file),
         'data_files': [
-            ('resources', list(bigflow.resources.find_all_resources(resources_dir)))
+            ('resources', list(bigflow.resources.find_all_resources(resources_dir))),
         ],
         'cmdclass': {
             'build_project': build_command(
@@ -326,4 +331,101 @@ def _project_setup(
 
 
 def default_project_setup(project_name: str, project_dir: Path = Path('.').parent):
-    return setuptools.setup(**project_setup(**auto_configuration(project_name, project_dir=project_dir)))
+    return setup(name=project_name, project_dir=project_dir)
+
+
+def _build_setuptools_spec(
+    *,
+    name: str,
+    project_dir: str = ".",  # DEPRECATED
+    **kwargs,
+) -> dict:
+
+    # TODO: Validate input/unknown parameters.
+    project_dir = project_dir or Path(".")
+
+    internal_config = _auto_configuration(name, Path(project_dir))
+    params = {}
+    for k, v in internal_config.items():
+        params[k] = kwargs.pop(k, v)
+
+    # User can overwrite setuptool.setup() args
+    # TODO: Provide merge semantics for some keys (data_files, install_requires etc)
+    kwargs.pop('project_name', None)
+    spec = _project_setup(**{
+        **internal_config,
+        **kwargs,
+        'project_name': name,
+        'project_dir': project_dir,
+    })
+    spec.update((k, v) for k, v in kwargs.items() if k not in internal_config)
+    return spec
+
+
+def setup(**kwargs):
+    _maybe_dump_setup_params(kwargs)
+    spec = _build_setuptools_spec(**kwargs)
+    logger.debug("setuptools.setup(**%r)", spec)
+    setuptools.setup(**spec)
+
+
+def ensure_setuppy(directory: typing.Optional[Path] = None) -> Path:
+    directory = directory or Path(".")
+    prj_setup_py = directory / "project_setup.py"
+    setup_py = directory / "setup.py"
+
+    if prj_setup_py.exists() and setup_py.exists():
+        logger.error("Both files `setup.py` and `project_setup.py` exists! File `setup_project.py` renamed to `setup.py`")
+        setup_py.rename(directory / "setup.py.back")
+        prj_setup_py.rename(setup_py)
+    elif prj_setup_py.exists():
+        logger.warning("File `project_setup.py` renamed to `setup.py`")
+        prj_setup_py.rename(setup_py)
+    elif setup_py.exists():
+        logger.debug("Found file `setup.py` - do nothing")
+    else:
+        raise FileNotFoundError("Not found `setup.py` or `project_setup.py`")
+
+    return setup_py
+
+
+_DUMP_PARAMS = "__bigflow_dump_params"
+
+def read_setup_parameters(path_to_setup: Union[Path, str, None] = None) -> dict:
+    """Loads `setup.py`, returns all parameters of `bigflow.build.setup`"""
+
+    if path_to_setup is None:
+        path_to_setup = ensure_setuppy()
+    logger.info("Read project options from %s", path_to_setup)
+    with tempfile.NamedTemporaryFile("r+b") as f:
+        run_process(["python", path_to_setup, _DUMP_PARAMS, f.name])
+        params = pickle.load(f)
+
+    legacy_project_name = _read_project_name_from_setup_legacy(path_to_setup)
+    if legacy_project_name and params.get('name') != legacy_project_name:
+        logging.error(
+            "Project name mismatch: setup.PROJECT_NAME == %r, "
+            "but setup(name=%r). It is recommended to remove 'PROJECT_NAME' variable from 'project_setup.py'",
+            legacy_project_name, params.get('name'))
+
+    return params
+
+
+def _maybe_dump_setup_params(params):
+    if len(sys.argv) == 3 and sys.argv[1] == _DUMP_PARAMS:
+        with open(sys.argv[2], 'w+b') as out:
+            pickle.dump(params, out)
+        sys.exit(0)
+
+
+def _read_project_name_from_setup_legacy(path_to_setup: Path) -> Optional[str]:
+    # FIXME: Please, remove me!
+
+    import unittest.mock as mock
+    with mock.patch('bigflow.build.dist.setup', lambda **kwargs: None):
+        try:
+            sys.path.insert(1, os.getcwd())
+            import project_setup
+            return project_setup.PROJECT_NAME
+        except Exception:
+            return None
