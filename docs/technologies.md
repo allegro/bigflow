@@ -131,6 +131,11 @@ given a pipeline, job context, and additional arguments (`entry_point_arguments`
 * The `pipeline_options` parameter should be a `beam.PipelineOptions` object, based on which, the `BeamJob` class produces
 a pipeline for a driver.
 * The `entry_point_arguments` parameter should be a dictionary. It can be used in a entry point as a configuration holder.
+* The `wait_until_finish` parameter of bool type, by default set to True. It allows to timeout Beam job.
+* The `execution_timeout` parameter of int type. If `wait_until_finish` parameter is set to True it provides an interval after
+which Beam job will be considered as timed out. The default value is 3600000 ms (1 hour).
+* The `pipeline` parameter should be of `beam.Pipeline` type. The default value is `beam.Pipeline`. The main purpose of this parameter
+is to allow to provide `TestPipeline` in testing.
 
 ## BigQuery
 
