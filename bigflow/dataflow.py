@@ -6,7 +6,6 @@ from apache_beam.options.pipeline_options import PipelineOptions, GoogleCloudOpt
 
 from bigflow.workflow import Job, JobContext
 
-
 logger = logging.getLogger(__file__)
 
 
@@ -19,7 +18,8 @@ class BeamJob(Job):
             entry_point_arguments: typing.Optional[dict] = None,
             wait_until_finish: bool = True,
             execution_timeout: int = 3600000,
-            test_pipeline: Pipeline = None
+            test_pipeline: Pipeline = None,
+            job_execution_timeout: int = 3600000
     ):
         if (test_pipeline and pipeline_options) or (not test_pipeline and not pipeline_options):
             raise ValueError("One of the pipeline and pipeline_options must be provided")
@@ -31,6 +31,7 @@ class BeamJob(Job):
         self.wait_until_finish = wait_until_finish
         self.pipeline = test_pipeline
         self.execution_timeout = execution_timeout
+        self.job_execution_timeout = job_execution_timeout
 
     def execute(self, context: JobContext):
         if self.pipeline:

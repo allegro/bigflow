@@ -41,7 +41,6 @@ class _SomeObject:
         _someobject_tags.add('class_method')
 
 
-
 class PySparkJobTest(unittest.TestCase):
 
     def tearDown(self):
@@ -347,3 +346,16 @@ class PySparkJobTest(unittest.TestCase):
         # then
         self.assertIn('spark.executorEnv.bf_log_config', props)
         self.assertIn('spark.executorEnv.bf_workflow_id', props)
+
+    def test_should_initialize_job_with_default_job_execution_timeout(self):
+        # when
+        job = bigflow.dataproc.PySparkJob(
+            "some_job",
+            id,
+            bucket_id="no-bucket",
+            gcp_project_id="no-project",
+            gcp_region="no-region",
+        )
+
+        # then
+        self.assertEqual(job.job_execution_timeout, 3600000)

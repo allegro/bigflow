@@ -90,6 +90,10 @@ class BeamJobTestCase(TestCase):
             driver.pipeline._options.get_all_options()['labels'],
             ['workflow_id=count_words'])
 
+        # and sets default value for job_execution_timeout and execution_timeout
+        self.assertEqual(job.job_execution_timeout, 3600000)
+        self.assertEqual(job.execution_timeout, 3600000)
+
     @patch.object(RunnerResult, 'is_in_terminal_state', create=True)
     @patch.object(RunnerResult, 'cancel')
     @patch.object(RunnerResult, 'wait_until_finish')

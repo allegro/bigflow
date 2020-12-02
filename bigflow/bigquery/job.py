@@ -1,10 +1,12 @@
 import bigflow
 
 from inspect import getargspec
-from .dataset_manager import create_dataset_manager
+
+from bigquery.dataset_manager import create_dataset_manager
 
 DEFAULT_RETRY_COUNT = 3
 DEFAULT_RETRY_PAUSE_SEC = 60
+DEFAULT_JOB_EXECUTION_TIMEOUT = 3600000  # 1 hour
 
 
 class Job(bigflow.Job):
@@ -14,12 +16,14 @@ class Job(bigflow.Job):
                  id=None,
                  retry_count=DEFAULT_RETRY_COUNT,
                  retry_pause_sec=DEFAULT_RETRY_PAUSE_SEC,
+                 job_execution_timeout=DEFAULT_JOB_EXECUTION_TIMEOUT,
                  **dependency_configuration):
         self.id = id or component.__name__
         self.component = component
         self.dependency_configuration = dependency_configuration
         self.retry_count = retry_count
         self.retry_pause_sec = retry_pause_sec
+        self.job_execution_timeout = job_execution_timeout
 
     def execute(self, context: bigflow.JobContext):
         return self._run_component(self._build_dependencies(context.runtime_str))

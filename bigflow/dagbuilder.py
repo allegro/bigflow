@@ -75,15 +75,16 @@ dag = DAG(
     is_delete_operator_pod=True,
     retries={retries},
     retry_delay=datetime.timedelta(seconds={retry_delay}),
-    dag=dag)
+    dag=dag,
+    execution_timeout=datetime.timedelta(milliseconds={execution_timeout}))
 """.format(job_var=job_var,
           task_id=task_id,
           docker_image = docker_repository+":"+build_ver,
           bf_job= workflow.workflow_id+"."+job.id,
           root_folder=root_package_name,
           retries=job.retry_count if hasattr(job, 'retry_count') else 3,
-          retry_delay=job.retry_pause_sec if hasattr(job, 'retry_pause_sec') else 60))
-
+          retry_delay=job.retry_pause_sec if hasattr(job, 'retry_pause_sec') else 60,
+          execution_timeout=job.job_execution_timeout))
         for d in dependencies:
             up_job_var = "t" + str(get_job(d).id)
             dag_chunks.append("{job_var}.set_upstream({up_job_var})".format(job_var=job_var, up_job_var=up_job_var))

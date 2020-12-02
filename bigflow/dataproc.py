@@ -53,6 +53,8 @@ class PySparkJob(bigflow.Job):
         worker_machine_type: str = 'n1-standard-1',
         env: typing.Optional[str] = None,
         setup_file: typing.Optional[str] = None,
+        job_execution_timeout: int = 3600000
+
     ):
         self.id = id
 
@@ -85,6 +87,7 @@ class PySparkJob(bigflow.Job):
             self.setup_file = None
             self._project = _capture_caller_topmodule()
             self._any_file_inside_project = _capture_caller_path(1)
+        self.job_execution_timeout = job_execution_timeout
 
     def _ensure_has_setup_file(self):
         if self.setup_file:
