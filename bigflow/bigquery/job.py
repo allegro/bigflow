@@ -3,7 +3,7 @@ import bigflow
 from inspect import getargspec
 
 from .dataset_manager import create_dataset_manager
-from commons import DEFAULT_JOB_EXECUTION_TIMEOUT
+from ..commons import DEFAULT_JOB_EXECUTION_TIMEOUT
 
 DEFAULT_RETRY_COUNT = 3
 DEFAULT_RETRY_PAUSE_SEC = 60
