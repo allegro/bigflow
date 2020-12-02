@@ -764,6 +764,8 @@ def _is_log_module_installed():
 
 
 def cli(raw_args) -> None:
+    bigflow.migrate.check_migrate()
+
     project_name = read_project_name_from_setup()
     parsed_args = _parse_args(project_name, raw_args)
     init_console_logging(parsed_args.verbose)
