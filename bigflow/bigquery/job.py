@@ -2,7 +2,7 @@ import bigflow
 
 from inspect import getargspec
 
-from bigquery.dataset_manager import create_dataset_manager
+from .dataset_manager import create_dataset_manager
 from commons import DEFAULT_JOB_EXECUTION_TIMEOUT
 
 DEFAULT_RETRY_COUNT = 3
