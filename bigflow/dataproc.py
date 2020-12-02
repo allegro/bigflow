@@ -24,7 +24,7 @@ import bigflow
 import bigflow.configuration
 import bigflow.resources
 import bigflow.commons
-from bigquery.job import DEFAULT_JOB_EXECUTION_TIMEOUT
+from commons import DEFAULT_JOB_EXECUTION_TIMEOUT
 
 logger = logging.getLogger(__name__)
 

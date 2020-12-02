@@ -7,10 +7,12 @@ from inspect import getfullargspec
 from google.api_core.exceptions import BadRequest
 
 import bigflow
-from bigquery import Dataset, Job
-from bigquery.dataset_manager import DEFAULT_LOCATION
-from bigquery.interface import DEFAULT_RUNTIME
-from bigquery.job import DEFAULT_RETRY_COUNT, DEFAULT_RETRY_PAUSE_SEC
+
+from .job import Job
+from .job import DEFAULT_RETRY_COUNT
+from .job import DEFAULT_RETRY_PAUSE_SEC
+from .dataset_manager import DEFAULT_LOCATION
+from .interface import Dataset, DEFAULT_RUNTIME
 
 logger = logging.getLogger(__name__)
 

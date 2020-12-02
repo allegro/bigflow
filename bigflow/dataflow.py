@@ -5,7 +5,7 @@ from apache_beam import Pipeline
 from apache_beam.options.pipeline_options import PipelineOptions, GoogleCloudOptions
 
 from bigflow.workflow import Job, JobContext
-from bigquery.job import DEFAULT_JOB_EXECUTION_TIMEOUT
+from commons import DEFAULT_JOB_EXECUTION_TIMEOUT
 
 logger = logging.getLogger(__file__)
 

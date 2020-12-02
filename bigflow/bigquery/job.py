@@ -3,10 +3,10 @@ import bigflow
 from inspect import getargspec
 
 from bigquery.dataset_manager import create_dataset_manager
+from commons import DEFAULT_JOB_EXECUTION_TIMEOUT
 
 DEFAULT_RETRY_COUNT = 3
 DEFAULT_RETRY_PAUSE_SEC = 60
-DEFAULT_JOB_EXECUTION_TIMEOUT = 3600000  # 1 hour
 
 
 class Job(bigflow.Job):

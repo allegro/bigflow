@@ -16,7 +16,7 @@ import bigflow
 from bigflow import dataproc
 import bigflow.dataproc
 import bigflow.resources
-from bigquery.job import DEFAULT_JOB_EXECUTION_TIMEOUT
+from commons import DEFAULT_JOB_EXECUTION_TIMEOUT
 
 _someobject_tags = set()
 

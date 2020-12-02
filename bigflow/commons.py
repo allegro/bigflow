@@ -4,10 +4,10 @@ import hashlib
 import logging
 
 from pathlib import Path
-from datetime import datetime
-
 
 logger = logging.getLogger(__name__)
+
+DEFAULT_JOB_EXECUTION_TIMEOUT = 3600000  # 1 hour
 
 
 def resolve(path: Path):
