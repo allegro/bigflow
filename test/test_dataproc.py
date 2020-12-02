@@ -16,7 +16,7 @@ import bigflow
 from bigflow import dataproc
 import bigflow.dataproc
 import bigflow.resources
-
+from bigquery.job import DEFAULT_JOB_EXECUTION_TIMEOUT
 
 _someobject_tags = set()
 
@@ -358,4 +358,4 @@ class PySparkJobTest(unittest.TestCase):
         )
 
         # then
-        self.assertEqual(job.job_execution_timeout, 3600000)
+        self.assertEqual(job.job_execution_timeout, DEFAULT_JOB_EXECUTION_TIMEOUT)

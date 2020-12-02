@@ -10,6 +10,7 @@ from collections import defaultdict
 from bigflow import JobContext, Workflow
 
 from bigflow.dataflow import BeamJob
+from bigquery.job import DEFAULT_JOB_EXECUTION_TIMEOUT
 
 
 class CountWordsFn(beam.DoFn):
@@ -91,8 +92,8 @@ class BeamJobTestCase(TestCase):
             ['workflow_id=count_words'])
 
         # and sets default value for job_execution_timeout and execution_timeout
-        self.assertEqual(job.job_execution_timeout, 3600000)
-        self.assertEqual(job.execution_timeout, 3600000)
+        self.assertEqual(job.job_execution_timeout, DEFAULT_JOB_EXECUTION_TIMEOUT - 120000)
+        self.assertEqual(job.execution_timeout, DEFAULT_JOB_EXECUTION_TIMEOUT)
 
     @patch.object(RunnerResult, 'is_in_terminal_state', create=True)
     @patch.object(RunnerResult, 'cancel')
@@ -149,7 +150,7 @@ class BeamJobTestCase(TestCase):
 
         # then
         self.assertEqual(cancel_mock.call_count, 0)
-        wait_until_finish_mock.assert_called_with(3600000)
+        wait_until_finish_mock.assert_called_with(DEFAULT_JOB_EXECUTION_TIMEOUT)
 
     @patch.object(RunnerResult, 'is_in_terminal_state', create=True)
     @patch.object(RunnerResult, 'cancel')

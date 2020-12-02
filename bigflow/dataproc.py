@@ -24,7 +24,7 @@ import bigflow
 import bigflow.configuration
 import bigflow.resources
 import bigflow.commons
-
+from bigquery.job import DEFAULT_JOB_EXECUTION_TIMEOUT
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +53,7 @@ class PySparkJob(bigflow.Job):
         worker_machine_type: str = 'n1-standard-1',
         env: typing.Optional[str] = None,
         setup_file: typing.Optional[str] = None,
-        job_execution_timeout: int = 3600000
+        job_execution_timeout: int = DEFAULT_JOB_EXECUTION_TIMEOUT
 
     ):
         self.id = id
