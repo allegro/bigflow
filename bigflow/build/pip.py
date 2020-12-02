@@ -53,6 +53,11 @@ def pip_compile(
 
 def detect_piptools_source_files(reqs_dir: Path) -> typing.List[Path]:
     in_files = list(reqs_dir.glob("*.in"))
+
+    manifest_file = reqs_dir / "MANIFEST.in"
+    if manifest_file in in_files:
+        in_files.remove(manifest_file)
+
     logger.debug("Found %d *.in files: %s", len(in_files), in_files)
     return in_files
 
@@ -71,6 +76,8 @@ def maybe_recompile_requirements_file(req_txt: Path):
 
 
 def check_requirements_needs_recompile(req: Path) -> bool:
+    """Checks if `requirements.{in,txt}` needs to be recompiled by `pip_compile()`"""
+
     req_txt = req.with_suffix(".txt")
     req_in = req.with_suffix(".in")
     logger.debug("Check if file %s should be recompiled", req_txt)
