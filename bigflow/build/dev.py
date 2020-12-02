@@ -8,6 +8,7 @@ import logging
 import tempfile
 import pickle
 import typing
+import os
 import os.path
 
 from typing import Optional, List, Union
@@ -67,19 +68,17 @@ def find_setuppy(directory: typing.Union[None, Path, str] = None) -> Path:
     Scanning doesn't escape user home directory."""
 
     directory = Path(directory or Path.cwd())
-    setup_py = directory / "setup.py"
-
     while directory != directory.parent and directory != Path.home():
+        setup_py = directory / "setup.py"
         if setup_py.exists():
             logger.debug("Found file `setup.py` - do nothing")
             return setup_py
         else:
             directory = directory.parent
-
     raise FileNotFoundError("Not found `setup.py` not `project_setup.py`")
 
 
-def install_syspath(setuppy_path: Optional[Path] = None):
+def install_syspath(setuppy_path: Optional[Path] = None, chdir: bool = True):
     """Makes project files importable by 'bigflow' cli tool"""
     if setuppy_path is None:
         try:
@@ -87,7 +86,11 @@ def install_syspath(setuppy_path: Optional[Path] = None):
         except FileNotFoundError:
             logger.debug("Could not find `setup.py` - don't modify sys.path")
             return
+
     d = str(setuppy_path.parent)
     if d not in sys.path:
         logger.debug("Add %r to `sys.path`", d)
         sys.path.insert(0, d)
+
+    if chdir:
+        os.chdir(d)
