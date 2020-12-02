@@ -56,7 +56,7 @@ def read_requirements(requirements_path: Path, recompile_check=True) -> List[str
                 result.extend(read_requirements(subrequirements_path))
             elif line:
                 result.append(line)
-        return result
+    return result
 
 
 def find_file(file_name: str, search_start_file: Path, max_depth: int = 10) -> Path:
@@ -172,8 +172,7 @@ setuptools.setup(
         Use `bigflow.build.reflect.materialize_setuppy` instead"""
 )
 def find_or_create_setup_for_main_project_package(project_name: str = None, search_start_file: Path = None) -> Path:
-    caller_stack_frame = inspect.stack()[1][0]
-    caller_module = inspect.getmodule(caller_stack_frame)
-    search_start_file = search_start_file or Path(caller_module.__file__)
-    project_name = project_name or caller_module.__name__.split('.')[0]
-    return find_file(project_name, Path(search_start_file)).parent / "setup.py"
+    import bigflow.build.reflect as br
+    if project_name is None:
+        project_name = br.infer_project_name(stack=3)  # +1 stack for @deprecated
+    return br.materialize_setuppy(project_name)

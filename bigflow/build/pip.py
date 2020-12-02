@@ -1,9 +1,13 @@
+"""Compiles, reads, validates `requirements.txt` files.
+"""
+
 import typing
 import logging
 import tempfile
 import textwrap
 
 from pathlib import Path
+from typing import List
 
 from bigflow.commons import (
     run_process,
@@ -24,7 +28,7 @@ def pip_compile(
     req_in = req.with_suffix(".in")
     logger.info("Compile file %s ...", req_in)
 
-    with tempfile.NamedTemporaryFile('w+t', prefix=req_in.stem, suffix=".txt", delete=False) as txt_file:
+    with tempfile.NamedTemporaryFile('w+t', prefix=f"{req_in.stem}-", suffix=".txt", delete=False) as txt_file:
         run_process([
             "pip-compile",
             "--no-header",

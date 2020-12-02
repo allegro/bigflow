@@ -22,19 +22,16 @@ import bigflow.build.pip
 import bigflow.resources
 import bigflow.commons as bfc
 import bigflow.build.dist
+import bigflow.build.dev
+import bigflow.migrate
 
 from bigflow import Config
 from bigflow.deploy import deploy_dags_folder, deploy_docker_image
 from bigflow.scaffold import start_project
 from bigflow.version import get_version, release
 
-from .commons import run_process
-
 
 logger = logging.getLogger(__name__)
-
-
-SETUP_VALIDATION_MESSAGE = 'BigFlow setup is valid.'
 
 
 def walk_module_files(root_package: Path) -> Iterator[Tuple[str, str]]:
@@ -174,8 +171,12 @@ def execute_workflow(root_package: Path, workflow_id: str, runtime=None):
 
 def read_project_name_from_setup() -> Optional[str]:
     logger.info("Read project name from `setup.py`")
-    params = bigflow.build.dist.read_setup_parameters()
-    return params.get('name')
+    try:
+        params = bigflow.build.dev.read_setuppy_args()
+        return params.get('name')
+    except Exception as e:
+        logger.warning("Unable to read 'setup.py': %s", e)
+        return None
 
 
 def find_root_package(project_name: Optional[str], project_dir: Optional[str]) -> Path:
@@ -550,7 +551,7 @@ def _cli_build_image(args):
     validate_project_setup()
     bfc.run_process([
         "python",
-        bigflow.build.dist.ensure_setuppy(),
+        bigflow.build.dev.find_setuppy(),
         "build_project",
         "--build-image",
     ])
@@ -560,7 +561,7 @@ def _cli_build_package():
     validate_project_setup()
     bfc.run_process([
         "python",
-        bigflow.build.dist.ensure_setuppy(),
+        bigflow.build.dev.find_setuppy(),
         "build_project",
         "--build-package",
     ])
@@ -570,7 +571,7 @@ def _cli_build_dags(args):
     validate_project_setup()
     cmd = [
         "python",
-        bigflow.build.dist.ensure_setuppy(),
+        bigflow.build.dev.find_setuppy(),
         "build_project",
         "--build-dags",
     ]
@@ -587,7 +588,7 @@ def _cli_build(args):
     validate_project_setup()
     cmd = [
         "python",
-        bigflow.build.dist.ensure_setuppy(),
+        bigflow.build.dev.find_setuppy(),
         "build_project",
     ]
     if _is_workflow_selected(args):
@@ -715,12 +716,13 @@ def validate_project_setup():
     check_if_project_setup_exists()
     cmd = [
         "python",
-        bigflow.build.dist.ensure_setuppy(),
+        bigflow.build.dev.find_setuppy(),
         "build_project",
         "--validate-project-setup",
     ]
     output = bfc.run_process(cmd)
-    if SETUP_VALIDATION_MESSAGE not in output:
+
+    if bigflow.build.dist.SETUP_VALIDATION_MESSAGE not in output:
         raise ValueError('The `setup.py` is invalid. Check the documentation how to create a valid `setup.py`: https://github.com/allegro/bigflow/blob/master/docs/build.md')
 
 
@@ -770,6 +772,7 @@ def _is_log_module_installed():
 
 
 def cli(raw_args) -> None:
+    bigflow.build.dev.install_syspath()
     bigflow.migrate.check_migrate()
 
     project_name = read_project_name_from_setup()
