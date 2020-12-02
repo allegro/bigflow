@@ -17,6 +17,8 @@ from bigflow import dataproc
 import bigflow.dataproc
 import bigflow.resources
 
+import sys
+
 
 _someobject_tags = set()
 
@@ -41,14 +43,7 @@ class _SomeObject:
         _someobject_tags.add('class_method')
 
 
-
 class PySparkJobTest(unittest.TestCase):
-
-    def tearDown(self):
-        try:
-            (pathlib.Path(__file__).parent / "example_project/setup.py").unlink()
-        except FileNotFoundError:
-            pass
 
     def test_generates_driver_for_callable(self):
 
@@ -97,26 +92,6 @@ class PySparkJobTest(unittest.TestCase):
             content_type='application/octet-stream',
         )
 
-    def test_build_python_egg_file_for_project(self):
-
-        # given
-        setup_py = pathlib.Path(__file__).parent / "example_project/setup.py"
-        bigflow.resources.find_or_create_setup_for_main_project_package(
-            'main_package',
-            pathlib.Path(__file__).parent / "example_project/main_project/job",
-        )
-
-        # when
-        egg = bigflow.dataproc._build_project_egg(setup_py)
-
-        # then
-        egg_path = pathlib.Path(egg)
-        self.assertTrue(egg_path.exists())
-
-        # cleanup
-        egg_path.unlink()
-        setup_py.unlink()
-
     def test_should_create_new_cluster_for_job(self):
 
         # given
@@ -152,22 +127,6 @@ class PySparkJobTest(unittest.TestCase):
         self.assertIn(
             ('PIP_PACKAGES', "pkg1==1 pkg2==2"),
             cluster_data['config']['gce_cluster_config']['metadata'],
-        )
-
-    def test_should_detect_project_root(self):
-
-        # given
-        from test.example_project.main_package.job import create_pyspark_job
-        pyspark_job = create_pyspark_job()
-
-        # when
-        self.assertIsNone(pyspark_job.setup_file)
-        pyspark_job._ensure_has_setup_file()
-
-        # then
-        self.assertEqual(
-            pyspark_job.setup_file,
-            pathlib.Path(__file__).parent / "example_project/setup.py",
         )
 
     def test_should_send_correct_job_request_to_dataproc(self):
@@ -221,14 +180,11 @@ class PySparkJobTest(unittest.TestCase):
             runtime="2020-02-02",
         )
 
-        from test.example_project.main_package.job import create_pyspark_job
+        from main_package.job import create_pyspark_job
         pyspark_job = create_pyspark_job()
 
-        storage = storage_client_cls.return_value
         cluster_controller = cluster_controller_client_cls.return_value
         job_controller = job_controller_client_cls.return_value
-
-        bucket = storage.get_bucket.return_value
 
         submit_job_result = mock.Mock()
         submit_job_result.reference.job_id = "the-job"
@@ -339,6 +295,7 @@ class PySparkJobTest(unittest.TestCase):
             bucket_id="no-bucket",
             gcp_project_id="no-project",
             gcp_region="no-region",
+            project_name="test",
         )
 
         # when

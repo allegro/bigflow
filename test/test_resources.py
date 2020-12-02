@@ -162,44 +162,13 @@ setuptools.setup(
 
 
 class FindOrCreateSetupForMainProjectPackageTestCase(TestCase):
-    def setUp(self):
-        self.setup_py = Path(__file__).parent / 'example_project' / 'setup.py'
-        if self.setup_py.exists():
-              os.remove(self.setup_py)
 
-    def test_should_find_setup_if_exists_or_create_it_next_to_main_package(self):
-        # when does not exist
-        path = find_or_create_setup_for_main_project_package(
-            'main_package', Path(__file__).parent / 'example_project' / 'main_package' / 'job.py')
-
-        # then
-        self.assertTrue(self.setup_py.exists())
-        self.assertEqual(path, self.setup_py)
-
-        # when already exists
-        path = find_or_create_setup_for_main_project_package(
-            'main_package', Path(__file__).parent / 'example_project' / 'main_package' / 'job.py')
-
-        # then
-        self.assertEqual(path, self.setup_py)
-
-
-class FakeModule:
-    def __init__(self):
-        self.__file__ = __file__
-        self.__name__ = 'test.test_resources'
-
-
-class FindOrCreateSetupForDefaultProjectPackageTestCase(TestCase):
-
-    @mock.patch('bigflow.resources.inspect.getmodule')
-    def test_should_find_existing_setup_py_with_default_args(self, getmodule_mock):
-        # given
-        getmodule_mock.return_value = FakeModule()
-
+    def test_should_find_setup_if_exists(self):
         # when
-        path = find_or_create_setup_for_main_project_package()
+        from main_package import find_setup
+        path = find_setup()
 
         # then
-        self.assertEqual(path, Path(__file__).parent.parent / 'setup.py')
-        self.assertEqual(getmodule_mock.call_args[0][0].f_locals['self'], self)
+        setup_py = Path(__file__).parent / 'example_project' / 'setup.py'
+        self.assertEqual(path.resolve(), setup_py.resolve())
+

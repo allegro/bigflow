@@ -34,16 +34,16 @@ class PipToolsTestCase(TestCase):
         req_in.write_text("pandas>=1.1")
 
         # when
-        bf_pip.pip_compile(req_in, verbose=True)
+        bf_pip.pip_compile(req_in)
 
         # then
-        self.assertFalse(bigflow.build.check_requirements_needs_recompile(req_in))
+        self.assertFalse(bf_pip.check_requirements_needs_recompile(req_in))
 
         # when
         req_in.write_text("pandas>=1.1.1,<2")
 
         # then
-        self.assertTrue(bigflow.build.check_requirements_needs_recompile(req_in))
+        self.assertTrue(bf_pip.check_requirements_needs_recompile(req_in))
 
     def test_should_automatically_recompile_requirements(self):
         # given

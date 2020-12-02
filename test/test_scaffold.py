@@ -19,6 +19,9 @@ class ProjectScaffoldE2ETestCase(TestCase):
 
 
 class ProjectScaffoldE2E(ProjectScaffoldE2ETestCase):
+
+    maxDiff = 5000
+
     @mock.patch('bigflow.cli.gcloud_project_list')
     @mock.patch('bigflow.cli.gcp_bucket_input')
     @mock.patch('bigflow.cli.gcp_project_input')
@@ -70,9 +73,9 @@ class ProjectScaffoldE2E(ProjectScaffoldE2ETestCase):
         self.scaffolded_project_tests_should_work()
 
     def scaffolded_project_tests_should_work(self):
-        output = subprocess.getoutput("python -m unittest discover -s my_project_project -p '*.py'")
-        print(">>", output)
-        self.assertRegexpMatches(output, ".*OK")
+        cwd = Path('my_project_project')
+        res = subprocess.run("python -m unittest discover -s test -p '*.py'", cwd=cwd, check=True, capture_output=True, shell=True)
+        self.assertRegexpMatches(res.stderr.decode(), r"OK$")
 
     def scaffolded_basic_project_should_have_one_environment(self):
         self.check_file_content(Path('my_project_project') / 'deployment_config.py', '''from bigflow.configuration import DeploymentConfig
@@ -120,9 +123,7 @@ def dataflow_pipeline_options():
     options.view_as(StandardOptions).runner = 'DataflowRunner'
 
     setup_file_path = find_or_create_setup_for_main_project_package()
-    requirements_file_path = get_resource_absolute_path('requirements.txt')
     options.view_as(SetupOptions).setup_file = str(setup_file_path)
-    options.view_as(SetupOptions).requirements_file = str(requirements_file_path)
 
     logger.info(f"Run beam pipeline with options {str(options)}")
     return options''')
