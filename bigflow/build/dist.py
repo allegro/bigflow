@@ -1,7 +1,9 @@
+"""Integrates `bigfow` with `setuptools`
+"""
+
 import os
 import sys
 import shutil
-import tempfile
 import unittest
 import setuptools
 import typing
@@ -13,33 +15,21 @@ import pickle
 import distutils.cmd
 import distutils.dist
 
-from typing import Optional, Union
-from datetime import datetime
 from pathlib import Path
+from datetime import datetime
 
 import bigflow.cli
-import bigflow.build.pip
 import bigflow.resources
 import bigflow.dagbuilder
-
-from bigflow.commons import (
-    run_process,
-    remove_docker_image_from_local_registry,
-    get_docker_image_id,
-    build_docker_image_tag,
-)
-from bigflow.resources import find_all_resources
-from bigflow.version import get_version
-
-
-__all__ = [
-    '_project_setup',
-    '_auto_configuration',
-    'default_project_setup'
-]
+import bigflow.version
+import bigflow.build.pip
+import bigflow.build.dev
+import bigflow.commons as bfc
 
 
 logger = logging.getLogger(__name__)
+
+SETUP_VALIDATION_MESSAGE = 'BigFlow setup is valid.'
 
 
 def run_tests(build_dir: Path, test_package: Path):
@@ -53,12 +43,12 @@ def run_tests(build_dir: Path, test_package: Path):
 def export_docker_image_to_file(tag: str, target_dir: Path, version: str):
     image_target_path = target_dir / f'image-{version}.tar'
     print(f'Exporting the image to file: {image_target_path}' )
-    run_process(f"docker image save {get_docker_image_id(tag)} -o {image_target_path}")
+    bfc.run_process(f"docker image save {bfc.get_docker_image_id(tag)} -o {image_target_path}")
 
 
 def build_docker_image(project_dir: Path, tag: str):
     print('Building a Docker image. It might take a while.')
-    run_process(f'docker build {project_dir} --tag {tag}')
+    bfc.run_process(f'docker build {project_dir} --tag {tag}')
 
 
 def build_dags(
@@ -88,13 +78,13 @@ def build_image(
         image_dir: Path,
         deployment_config: Path):
     os.mkdir(image_dir)
-    tag = build_docker_image_tag(docker_repository, version)
+    tag = bfc.build_docker_image_tag(docker_repository, version)
     build_docker_image(project_dir, tag)
     try:
         export_docker_image_to_file(tag, image_dir, version)
         shutil.copyfile(deployment_config, image_dir / deployment_config.name)
     finally:
-        remove_docker_image_from_local_registry(tag)
+        bfc.remove_docker_image_from_local_registry(tag)
 
 
 def _hook_pregenerate_sdist(command_cls):
@@ -108,6 +98,8 @@ def _hook_pregenerate_sdist(command_cls):
         def run(self):
 
             sdist = self.get_finalized_command('sdist')
+            sdist.ensure_finalized()
+            sdist.formats = ["tar"]  # overwrite
             sdist.run()
             sdist_tarball = sdist.get_archive_files()
 
@@ -115,7 +107,7 @@ def _hook_pregenerate_sdist(command_cls):
                 self.warn("ingnored 'sdist' results", sdist_tarball[1:])
 
             self.mkpath("build")
-            self.copy_file(sdist_tarball[0], "build/bf-project.tar.gz")
+            self.copy_file(sdist_tarball[0], "build/bf-project.tar")
 
             return super().run()
 
@@ -175,7 +167,7 @@ def build_command(
 
         def run(self) -> None:
             if self.validate_project_setup:
-                print(bigflow.cli.SETUP_VALIDATION_MESSAGE)
+                print(SETUP_VALIDATION_MESSAGE)
                 return
 
             bigflow.cli._valid_datetime(self.start_time)   # FIXME: Don't use private functions.
@@ -183,7 +175,7 @@ def build_command(
                 print('Building the pip package')
                 clear_package_leftovers(dist_dir, eggs_dir, build_dir)
                 run_tests(build_dir, test_package)
-                self.run_command('sdist')
+                self.run_command('bdist_wheel')
 
             if self.build_dags or self.should_run_whole_build():
                 print('Building the dags')
@@ -245,18 +237,14 @@ def get_docker_repository_from_deployment_config(deployment_config_file: Path) -
 
 def secure_get_version() -> str:
     try:
-        return get_version()
+        return bigflow.version.get_version()
     except Exception as e:
         print(e)
         raise ValueError("Can't get the current package version. To use the automatic versioning, "
                          "you need to use git inside your project directory.")
 
 
-def auto_configuration(*args, **kwargs):
-    logger.error("Function `bigflow.build.auto_configuration` is deprecated, migrate to `bigflow.build.setup`")
-    return _auto_configuration(*args, **kwargs)
-
-def _auto_configuration(project_name: str, project_dir: Path = Path('.').parent) -> dict:
+def auto_configuration(project_name: str, project_dir: Path = Path('.').parent) -> dict:
     '''
     Auto configuration for the standard BigFlow project structure (that you can generate through the CLI).
     The 'project_name' parameter should be a valid python package name.
@@ -286,10 +274,11 @@ def _auto_configuration(project_name: str, project_dir: Path = Path('.').parent)
 
 
 def project_setup(*args, **kwargs):
-    logger.error("Function `bigflow.build.project_setup` is deprecated, migrate to `bigflow.build.setup`")
-    return _project_setup(*args, **kwargs)
+    _maybe_dump_setup_params(kwargs)
+    return project_setup(*args, **kwargs)
 
-def _project_setup(
+
+def project_setup(
         project_name: str,
         docker_repository: str,
         root_package: Path,
@@ -308,15 +297,19 @@ def _project_setup(
 ) -> dict:
     '''
     This function produces arguments for setuptools.setup. The produced setup provides commands that allow you to build
-    whl package, docker image and DAGs. Paired with _auto_configuration function, it provides fully automated build
+    whl package, docker image and DAGs. Paired with auto_configuration function, it provides fully automated build
     tool (accessed by CLI) for your project (that you can generate using CLI).
 
     Example:
     from setuptools import setup
-    from bigflow.build import _project_setup, _auto_configuration
+    from bigflow.build import project_setup, auto_configuration
 
-    setup(_project_setup(**_auto_configuration('my_super_project')))
+    setup(project_setup(**auto_configuration('my_super_project')))
     '''
+
+    _maybe_dump_setup_params({
+        'name': project_name,
+    })
 
     params_to_check = [
         ('project_name', project_name),
@@ -338,8 +331,6 @@ def _project_setup(
         if parameter_value is None:
             raise ValueError(f"Parameter {parameter_name} can't be None.")
 
-    bigflow.build.pip.maybe_recompile_requirements_file(project_requirements_file)
-
     return {
         'name': project_name,
         'version': version,
@@ -347,7 +338,7 @@ def _project_setup(
         'install_requires': bigflow.resources.read_requirements(project_requirements_file),
         'data_files': [
             ('resources', list(bigflow.resources.find_all_resources(resources_dir))),
-            (f"bigflow_project_tarball/{project_name}", ["build/bf-project.tar.gz"]),
+            (f"bigflow__project/{project_name}", ["build/bf-project.tar"]),
         ],
         'cmdclass': {
             'build_project': build_command(
@@ -373,15 +364,17 @@ def default_project_setup(project_name: str, project_dir: Path = Path('.').paren
 
 def _build_setuptools_spec(
     *,
-    name: str,
-    project_dir: str = ".",  # DEPRECATED
+    name: str = None,
+    project_name: str = None,  # DEPRECATE
+    project_dir: str = ".",    # DEPRECATE
     **kwargs,
 ) -> dict:
 
     # TODO: Validate input/unknown parameters.
+    name = name or project_name
     project_dir = project_dir or Path(".")
 
-    internal_config = _auto_configuration(name, Path(project_dir))
+    internal_config = auto_configuration(name, Path(project_dir))
     params = {}
     for k, v in internal_config.items():
         params[k] = kwargs.pop(k, v)
@@ -389,7 +382,7 @@ def _build_setuptools_spec(
     # User can overwrite setuptool.setup() args
     # TODO: Provide merge semantics for some keys (data_files, install_requires etc)
     kwargs.pop('project_name', None)
-    spec = _project_setup(**{
+    spec = project_setup(**{
         **internal_config,
         **kwargs,
         'project_name': name,
@@ -399,70 +392,24 @@ def _build_setuptools_spec(
     return spec
 
 
-def setup(**kwargs):
-    _maybe_dump_setup_params(kwargs)
-    spec = _build_setuptools_spec(**kwargs)
-    logger.debug("setuptools.setup(**%r)", spec)
-    setuptools.setup(**spec)
-
-
-def ensure_setuppy(directory: typing.Optional[Path] = None) -> Path:
-    directory = directory or Path(".")
-    prj_setup_py = directory / "project_setup.py"
-    setup_py = directory / "setup.py"
-
-    if prj_setup_py.exists() and setup_py.exists():
-        logger.error("Both files `setup.py` and `project_setup.py` exists! File `setup_project.py` renamed to `setup.py`")
-        setup_py.rename(directory / "setup.py.back")
-        prj_setup_py.rename(setup_py)
-    elif prj_setup_py.exists():
-        logger.warning("File `project_setup.py` renamed to `setup.py`")
-        prj_setup_py.rename(setup_py)
-    elif setup_py.exists():
-        logger.debug("Found file `setup.py` - do nothing")
-    else:
-        raise FileNotFoundError("Not found `setup.py` or `project_setup.py`")
-
-    return setup_py
-
-
-_DUMP_PARAMS = "__bigflow_dump_params"
-
-def read_setup_parameters(path_to_setup: Union[Path, str, None] = None) -> dict:
-    """Loads `setup.py`, returns all parameters of `bigflow.build.setup`"""
-
-    if path_to_setup is None:
-        path_to_setup = ensure_setuppy()
-    logger.info("Read project options from %s", path_to_setup)
-    with tempfile.NamedTemporaryFile("r+b") as f:
-        run_process(["python", path_to_setup, _DUMP_PARAMS, f.name])
-        params = pickle.load(f)
-
-    legacy_project_name = _read_project_name_from_setup_legacy(path_to_setup)
-    if legacy_project_name and params.get('name') != legacy_project_name:
-        logging.error(
-            "Project name mismatch: setup.PROJECT_NAME == %r, "
-            "but setup(name=%r). It is recommended to remove 'PROJECT_NAME' variable from 'project_setup.py'",
-            legacy_project_name, params.get('name'))
-
-    return params
-
-
 def _maybe_dump_setup_params(params):
-    if len(sys.argv) == 3 and sys.argv[1] == _DUMP_PARAMS:
+    if len(sys.argv) == 3 and sys.argv[1] == bigflow.build.dev.DUMP_PARAMS_SETUPPY_CMDARG:
         with open(sys.argv[2], 'w+b') as out:
             pickle.dump(params, out)
         sys.exit(0)
 
 
-def _read_project_name_from_setup_legacy(path_to_setup: Path) -> Optional[str]:
-    # FIXME: Please, remove me!
+def _configure_setup_logging():
+    # TODO: Capture logging settings of 'wrapping' 'bigflow' cli-command (verbosity flags).
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(message)s",
+    )
 
-    import unittest.mock as mock
-    with mock.patch('bigflow.build.dist.setup', lambda **kwargs: None):
-        try:
-            sys.path.insert(1, os.getcwd())
-            import project_setup
-            return project_setup.PROJECT_NAME
-        except Exception:
-            return None
+
+def setup(**kwargs):
+    _maybe_dump_setup_params(kwargs)
+    _configure_setup_logging()
+    spec = _build_setuptools_spec(**kwargs)
+    logger.debug("setuptools.setup(**%r)", spec)
+    return setuptools.setup(**spec)

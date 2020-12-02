@@ -5,11 +5,12 @@ import logging
 
 from typing import List, Iterable
 from pathlib import Path
+from deprecated import deprecated
 
 from bigflow.commons import (
     resolve,
 )
-import bigflow.build.pip as bf_pip
+
 
 __all__ = [
     'find_all_resources',
@@ -32,7 +33,14 @@ def find_all_resources(resources_dir: Path) -> Iterable[str]:
             yield str(path.relative_to(resources_dir.parent))
 
 
+# TODO: Move to 'bigflow.build.pip' ?
 def read_requirements(requirements_path: Path, recompile_check=True) -> List[str]:
+    """Reads and parses 'requirements.txt' file.
+
+    Returns list of requirement specs, skipping comments and empty lines
+    """
+
+    import bigflow.build.pip as bf_pip
     if recompile_check and bf_pip.check_requirements_needs_recompile(requirements_path):
         raise ValueError("Requirements needs to be recompiled with 'pip-tools'")
 
@@ -102,6 +110,11 @@ def get_resource_absolute_path(resource_file_name: str, search_start_file: Path 
     return result
 
 
+@deprecated(
+    reason="""
+        Don't use this method as it doesn't work when called from pip-installed package.
+        Use `bigflow.build.reflect.materialize_setuppy` instead"""
+)
 def find_setup(search_start_file: Path, retries_left: int = 10, sleep_time: float = 5) -> Path:
     '''
     Method used for finding the setup.py for a Apache Beam process. Because the setup.py can be created on runtime,
@@ -134,6 +147,30 @@ def create_file_if_not_exists(file_path: Path, body: str) -> Path:
     return file_path
 
 
+@deprecated(
+    reason="""
+        This method doesn't work when called from pip-installed package.
+        Use `bigflow.build.reflect.materialize_setuppy` instead"""
+)
+def create_setup_body(project_name: str) -> str:
+    return f'''
+import setuptools
+
+setuptools.setup(
+        name='{project_name}',
+        version='0.1.0',
+        packages=setuptools.find_packages(
+                exclude=tuple(
+                        p for p in setuptools.find_packages()
+                        if not p.startswith('{project_name}'))))
+'''
+
+
+@deprecated(
+    reason="""
+        This method doesn't work when called from pip-installed package.
+        Use `bigflow.build.reflect.materialize_setuppy` instead"""
+)
 def find_or_create_setup_for_main_project_package(project_name: str = None, search_start_file: Path = None) -> Path:
     caller_stack_frame = inspect.stack()[1][0]
     caller_module = inspect.getmodule(caller_stack_frame)

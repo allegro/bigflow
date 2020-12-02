@@ -46,7 +46,7 @@ def walk_module_files(root_package: Path) -> Iterator[Tuple[str, str]]:
 
     @return: (absolute_path: str, name: str)
     """
-    logger.debug("walk module files %s", root_package)
+    logger.debug("walk module files %r", root_package)
     for subdir, dirs, files in os.walk(str(root_package)):
         for file in files:
             if file.endswith('.py'):
@@ -76,9 +76,11 @@ def walk_module_paths(root_package: Path) -> Iterator[str]:
     """
     Returning all the module paths in the `root_package`
     """
+    logger.debug("walk module paths, root %r", root_package)
     for module_dir, module_file in walk_module_files(root_package):
         mpath = build_module_path(root_package, Path(module_dir), module_file)
         logger.debug("%s / %s / %s resolved to module %r", root_package, module_dir, module_file, mpath)
+        logger.debug("path %r", mpath)
         yield mpath
 
 
@@ -86,9 +88,11 @@ def walk_modules(root_package: Path) -> Iterator[ModuleType]:
     """
     Imports all the modules in the path and returns
     """
+    logger.debug("walk modules, root %r", root_package)
     for module_path in walk_module_paths(root_package):
         try:
             logger.debug("import module %r", module_path)
+            logger.debug("%r", sys.path)
             yield import_module(module_path)
         except ValueError as e:
             print(f"Skipping module {module_path}. Can't import due to exception {str(e)}.")
@@ -108,6 +112,7 @@ def walk_workflows(root_package: Path) -> Iterator[bf.Workflow]:
     """
     Imports modules in the `root_package` and returns all the elements of the type bf.Workflow
     """
+    logger.debug("walk workflows, root %s", root_package)
     for module in walk_modules(root_package):
         for name, workflow in walk_module_objects(module, bf.Workflow):
             yield workflow
@@ -117,6 +122,7 @@ def find_workflow(root_package: Path, workflow_id: str) -> bf.Workflow:
     """
     Imports modules and finds the workflow with id workflow_id
     """
+    logger.debug("find workflow, root %s, workflow_id %r", root_package, workflow_id)
     for workflow in walk_workflows(root_package):
         if workflow.workflow_id == workflow_id:
             return workflow
@@ -727,7 +733,7 @@ def _cli_release(args):
 
 
 def init_console_logging(verbose):
-    if True or verbose:
+    if verbose:
         logging.basicConfig(
             level=logging.DEBUG,
             format="%(asctime)s| %(message)s",

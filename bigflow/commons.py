@@ -7,17 +7,16 @@ import time
 
 from pathlib import Path
 from datetime import datetime
+from deprecated import deprecated
 
 
 logger = logging.getLogger(__name__)
 
 
+@deprecated(
+    reason="Use `str(x.absolute()) inliner instead",
+)
 def resolve(path: Path):
-    """
-    Convert aboslute path into string
-    DEPRECATED
-    """
-    logger.warning("Function `bigflow.resource.resolve(...)` is deprecated, please use str(x.absolute()) instead")
     return str(path.absolute())
 
 
@@ -27,7 +26,9 @@ def run_process(cmd, **kwargs):
     else:
         cmd = list(map(str, cmd))
 
-    logger.info("╒ run %s ═", cmd)
+    logger.info("run %s", " ".join(cmd))
+    logger.debug("cmd %r, kwargs %r", cmd, kwargs)
+
     start = time.time()
     process = subprocess.Popen(cmd, text=True, stdout=subprocess.PIPE, **kwargs)
 
@@ -36,16 +37,20 @@ def run_process(cmd, **kwargs):
         line = process.stdout.readline()
         done = process.poll() is not None
         if not done or line:
-            logger.info("│ %s", line.rstrip("\n"))
+            logger.info("%s", line.rstrip("\n"))
             result_output.append(line)
         if done:
             break
 
-    process.wait()
-    duration = time.time() - start
-    logger.info("╘ done in %s seconds, code %d", format(duration, ".2f"), process.returncode)
+    process.stdout.close()
+    stdout = "".join(result_output)
+    if process.wait():
+        raise subprocess.CalledProcessError(process.returncode, cmd)
 
-    return "".join(result_output)
+    duration = time.time() - start
+    logger.debug("done in %s seconds, code %d", format(duration, ".2f"), process.returncode)
+
+    return stdout
 
 
 def generate_file_hash(fname: Path, algorithm: str = 'sha256') -> str:

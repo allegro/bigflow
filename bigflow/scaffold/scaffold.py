@@ -4,10 +4,8 @@ import logging
 from pathlib import Path
 
 import bigflow
-import bigflow.build.pip as bf_pip
 
 from bigflow.scaffold.templating import render_builtin_templates
-
 from bigflow.scaffold.scaffold_templates import (
     beam_workflow_template,
     beam_processing_template,
@@ -95,6 +93,7 @@ def create_dirs_and_files(config, templates):
         },
     )
 
+    import bigflow.build.pip as bf_pip
     bf_pip.pip_compile(project_path / "resources" / "requirements.txt")
 
 
