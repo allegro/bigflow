@@ -45,7 +45,7 @@ def _iter_dist_toplevel_packages(distname) -> List[str]:
         return []
 
 
-def _module_to_directory(module: types.ModuleType) -> Path:
+def _module_to_enclosing_directory(module: types.ModuleType) -> Path:
     if getattr(module, '__path__', None):
         return Path(next(iter(module.__path__)))
     if module.__file__:
@@ -65,7 +65,7 @@ def _infer_project_name_by_distribution(module: types.ModuleType) -> Optional[st
 
 
 def _infer_project_name_by_setuppy_near_module(module: types.ModuleType) -> Optional[str]:
-    file = _module_to_directory(module).parent / "setup.py"
+    file = _module_to_enclosing_directory(module).parent / "setup.py"
     try:
         logger.debug("Found 'setup.py' - read project parameters (check if it is 'bigflow' project)")
         pp = bigflow.build.dev.read_setuppy_args(file)
@@ -99,27 +99,6 @@ def _locate_self_package(project_name) -> Optional[Path]:
         return None
 
 
-def _search_bigflow_setuppy_on_syspath() -> Path:
-    logger.debug("Locate 'setup.py' somewhere on the pythonpath")
-    for p in sys.path:
-        file = Path(p) / "setup.py"
-        if file.exists():
-            logger.debug("Found 'setup.py' at %s", file)
-            return file
-        else:
-            logger.debug("Not found %s", file)
-
-
-def _is_valid_bigflow_setuppy(setuppy: Path) -> bool:
-    try:
-        logger.debug("Found 'setup.py' - read project parameters (check if it is 'bigflow' project)")
-        pp = bigflow.build.dev.read_setuppy_args(setuppy)
-        return bool(pp['name'])
-    except Exception:
-        logger.debug("Found 'setup.py', but it is not a correct bigflow project")
-        return False
-
-
 def _locate_setuppy_plain_source(project_name):
 
     logger.debug("Locate 'setup.py' near the toplevel project module...")
@@ -127,7 +106,7 @@ def _locate_setuppy_plain_source(project_name):
     if not module:
         logger.warning("Could not find module %r", project_name)
     else:
-        file = _module_to_directory(module).parent / "setup.py"
+        file = _module_to_enclosing_directory(module).parent / "setup.py"
         if file.exists():
             logger.debug("Found 'setup.py' at %s", file)
             return file
@@ -192,7 +171,10 @@ def _build_dist_package(
     cmdname: str,
     exargs: List[str],
 ):
-    """Locate and run 'dist' command on 'setup.py'"""
+    """Locates and runs 'bdist_*' command on 'setup.py'"""
+
+    if project_name is None:
+        project_name = infer_project_name(stack=3)
 
     with tempfile.TemporaryDirectory() as workdir:
 
@@ -222,20 +204,14 @@ def _build_dist_package(
 
 def build_sdist(project_name=None) -> Path:
     """Builds project 'sdist' package"""
-    if project_name is None:
-        project_name = infer_project_name(stack=2)
     return _build_dist_package(project_name, ".tar.gz", "sdist", ["--format", "gztar"])
 
 
 def build_wheel(project_name=None) -> Path:
     """Builds project 'wheel' package"""
-    if project_name is None:
-        project_name = infer_project_name(stack=2)
     return _build_dist_package(project_name, ".whl", "bdist_wheel", ["--compression", "deflated"])
 
 
 def build_egg(project_name=None) -> Path:
     """Build project 'egg' package"""
-    if project_name is None:
-        project_name = infer_project_name(stack=2)
     return _build_dist_package(project_name, ".egg", "bdist_egg", [])
