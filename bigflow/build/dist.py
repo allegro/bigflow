@@ -310,6 +310,7 @@ def project_setup(
     _maybe_dump_setup_params({
         'name': project_name,
     })
+    bigflow.build.pip.maybe_recompile_requirements_file(project_requirements_file)
 
     params_to_check = [
         ('project_name', project_name),

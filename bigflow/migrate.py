@@ -23,7 +23,7 @@ def _yes_or_no() -> bool:
 
 
 def need_migrate_to_11(root: Path):
-    return not all([
+    return (root / "project_setup.py").exists() and not all([
         (root / "setup.py").exists(),
         (root / "pyproject.toml").exists(),
         (root / "MANIFEST.in").exists(),

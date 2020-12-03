@@ -20,7 +20,7 @@ def resolve(path: Path):
     return str(path.absolute())
 
 
-def run_process(cmd, **kwargs):
+def run_process(cmd, check=True, **kwargs):
     if isinstance(cmd, str):
         cmd = re.split(r"\s+", cmd)
     else:
@@ -44,7 +44,9 @@ def run_process(cmd, **kwargs):
 
     process.stdout.close()
     stdout = "".join(result_output)
-    if process.wait():
+    code = process.wait()
+
+    if code and check:
         raise subprocess.CalledProcessError(process.returncode, cmd)
 
     duration = time.time() - start

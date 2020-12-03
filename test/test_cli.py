@@ -886,13 +886,17 @@ another-project-id                         ANOTHER PROJECT                002242
     def _expected_default_dags_dir(self):
         return (Path(os.getcwd()) / '.dags').as_posix()
 
-    def _touch_file(self, file_name: str, content: str = '', dire  ctory: Optional[str] = None):
+    def _touch_file(self, file_name: str, content: str = '', directory: Optional[str] = None):
         if directory:
             workdir = Path(os.path.join(os.getcwd(), directory))
             workdir.mkdir(exist_ok=True)
         else:
             workdir = Path(os.getcwd())
         f = workdir / file_name
+        if f.exists():
+            # FIXME: Refactor tests - copy workdir into temp directory.
+            orig = f.read_bytes()
+            self.addCleanup(f.write_bytes, orig)
         f.touch()
         f.write_text(content)
         return f
