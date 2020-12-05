@@ -40,7 +40,7 @@ class TestMigrateFromV11(_BaseTestCase):
 
     def test_dont_migrate_when_already_v11(self):
         # when
-        cp = self.bigflow_run(["project-version"], check=True, capture_output=True)
+        cp = self.bigflow_run(["project-version"], check=False, capture_output=True)
 
         # then nothing should actually happen :)
         self.assertFalse(cp.returncode)

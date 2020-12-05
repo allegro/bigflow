@@ -12,31 +12,42 @@ import pexpect
 from pathlib import Path
 
 
-class PrototypedDirMixin(unittest.TestCase):
-    """Creates temp directory & copy files tree from `proto_dir`, chdir into temp directory before each test"""
+class TempCwdMixin(unittest.TestCase):
 
-    proto_dir: str
-    work_path: Path
+    cwd = None
 
     def setUp(self):
         super().setUp()
+        self.__cwd = os.getcwd()
+        if not self.cwd:
+            self.cwd = Path(tempfile.mkdtemp())
+        os.chdir(self.cwd)
+
+    def tearDown(self):
+        os.chdir(self.__cwd)
+        super().tearDown()
+
+
+class PrototypedDirMixin(TempCwdMixin):
+    """Creates temp directory & copy files tree from `proto_dir`, chdir into temp directory before each test"""
+
+    proto_dir: str
+
+    def setUp(self):
+        super().setUp()
+        assert self.cwd.is_absolute()
 
         proto_path = Path(__file__).parent / self.proto_dir
-        self.work_path = Path(tempfile.mkdtemp()).resolve()
+        for f in proto_path.glob("*"):
+            copyf = shutil.copytree if f.is_dir() else shutil.copyfile
+            copyf(f, self.cwd / f.name)
 
-        self.work_path.rmdir()  # 'copytree' recreates directory
-        shutil.copytree(proto_path, self.work_path)
-        self.addCleanup(shutil.rmtree, self.work_path, ignore_errors=True)
-
-        old_cwd = os.getcwd()
-        os.chdir(self.work_path)
-        self.addCleanup(os.chdir, old_cwd)
+        self.addCleanup(shutil.rmtree, self.cwd, ignore_errors=True)
 
     def _resolveFile(self, file):
-        assert self.work_path.is_absolute()
         f = Path(file)
         if not f.is_absolute():
-            f = self.work_path / f
+            f = self.cwd / f
         return f
 
     def assertFileExists(self, file):
