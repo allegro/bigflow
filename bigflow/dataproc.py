@@ -22,7 +22,6 @@ import bigflow
 import bigflow.configuration
 import bigflow.resources
 import bigflow.commons
-from .commons import DEFAULT_JOB_EXECUTION_TIMEOUT
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +50,7 @@ class PySparkJob(bigflow.Job):
         worker_machine_type: str = 'n1-standard-1',
         env: typing.Optional[str] = None,
         setup_file: typing.Optional[str] = None,
-        job_execution_timeout: int = DEFAULT_JOB_EXECUTION_TIMEOUT
+        execution_timeout: int = None
 
     ):
         self.id = id
@@ -85,7 +84,7 @@ class PySparkJob(bigflow.Job):
             self.setup_file = None
             self._project = _capture_caller_topmodule()
             self._any_file_inside_project = _capture_caller_path(1)
-        self.job_execution_timeout = job_execution_timeout
+        self.execution_timeout = execution_timeout
 
     def _ensure_has_setup_file(self):
         if self.setup_file:

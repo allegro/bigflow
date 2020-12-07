@@ -1,4 +1,4 @@
-from unittest import TestCase, mock
+from unittest import TestCase
 from unittest.mock import patch
 
 import apache_beam as beam
@@ -10,7 +10,6 @@ from collections import defaultdict
 from bigflow import JobContext, Workflow
 
 from bigflow.dataflow import BeamJob
-from bigflow.commons import DEFAULT_JOB_EXECUTION_TIMEOUT
 
 
 class CountWordsFn(beam.DoFn):
@@ -92,8 +91,7 @@ class BeamJobTestCase(TestCase):
             ['workflow_id=count_words'])
 
         # and sets default value for job_execution_timeout and execution_timeout
-        self.assertEqual(job.job_execution_timeout, DEFAULT_JOB_EXECUTION_TIMEOUT)
-        self.assertEqual(job.execution_timeout, DEFAULT_JOB_EXECUTION_TIMEOUT)
+        self.assertIsNone(job.execution_timeout, None)
 
     @patch.object(RunnerResult, 'is_in_terminal_state', create=True)
     @patch.object(RunnerResult, 'cancel')
@@ -111,7 +109,7 @@ class BeamJobTestCase(TestCase):
                 'words_to_count': ['trash', 'valid', 'word', 'valid']
             },
             test_pipeline=self._test_pipeline_with_label('count_words'),
-            execution_timeout=3)
+            execution_timeout=600000)
 
         count_words = Workflow(
             workflow_id='count_words',
@@ -122,7 +120,7 @@ class BeamJobTestCase(TestCase):
 
         # then
         self.assertEqual(cancel_mock.call_count, 1)
-        wait_until_finish_mock.assert_called_with(3)
+        wait_until_finish_mock.assert_called_with(480000)
 
     @patch.object(RunnerResult, 'is_in_terminal_state', create=True)
     @patch.object(RunnerResult, 'cancel')
@@ -139,7 +137,8 @@ class BeamJobTestCase(TestCase):
                 'words_to_filter': ['valid', 'word'],
                 'words_to_count': ['trash', 'valid', 'word', 'valid']
             },
-            test_pipeline=self._test_pipeline_with_label('count_words'))
+            test_pipeline=self._test_pipeline_with_label('count_words'),
+            execution_timeout=600000)
 
         count_words = Workflow(
             workflow_id='count_words',
@@ -150,7 +149,7 @@ class BeamJobTestCase(TestCase):
 
         # then
         self.assertEqual(cancel_mock.call_count, 0)
-        wait_until_finish_mock.assert_called_with(DEFAULT_JOB_EXECUTION_TIMEOUT)
+        wait_until_finish_mock.assert_called_with(480000)
 
     @patch.object(RunnerResult, 'is_in_terminal_state', create=True)
     @patch.object(RunnerResult, 'cancel')

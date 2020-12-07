@@ -133,7 +133,7 @@ a pipeline for a driver. One of the`pipeline_options`, `test_pipeline` must be p
 * The `entry_point_arguments` parameter should be a dictionary. It can be used in a entry point as a configuration holder.
 * The `wait_until_finish` parameter of bool type, by default set to True. It allows to timeout Beam job.
 * The `execution_timeout` parameter of int type. If `wait_until_finish` parameter is set to True it provides an interval after
-which Beam job will be considered as timed out. The default value is 1 hour minus two minutes.
+which Beam job will be considered as timed out. The default value is `None` which means the `BeamJob` will never timeout
 * The `test_pipeline` parameter should be of `beam.Pipeline` type. The default value is None. The main purpose of this parameter
 is to allow to provide `TestPipeline` in testing. One of the`pipeline_options`, `test_pipeline` must be provided.
 *The `job_execution_timeout` parameter of int type. It says how long airflow should wait for job to finish. The default value is 1 hour.

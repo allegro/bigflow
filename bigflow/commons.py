@@ -7,7 +7,6 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_JOB_EXECUTION_TIMEOUT = None
 
 
 def resolve(path: Path):
