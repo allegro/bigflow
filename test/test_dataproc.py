@@ -180,7 +180,7 @@ class PySparkJobTest(unittest.TestCase):
             runtime="2020-02-02",
         )
 
-        from main_package.job import create_pyspark_job
+        from test.example_project.main_package.job import create_pyspark_job
         pyspark_job = create_pyspark_job()
 
         cluster_controller = cluster_controller_client_cls.return_value
