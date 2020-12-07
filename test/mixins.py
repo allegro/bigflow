@@ -8,6 +8,7 @@ import os
 import inspect
 import sys
 import pexpect
+import glob
 
 from pathlib import Path
 
@@ -19,14 +20,25 @@ class TempCwdMixin(unittest.TestCase):
     def setUp(self):
         super().setUp()
         self.__cwd = os.getcwd()
-        if not self.cwd:
-            self.cwd = Path(tempfile.mkdtemp())
-        os.chdir(self.cwd)
+        self.chdir_new_temp()
 
     def tearDown(self):
         os.chdir(self.__cwd)
         super().tearDown()
 
+    def chdir_new_temp(self):
+        """Drop 'cwd' completely, chdir into new temporary directory"""
+        if self.cwd:
+            shutil.rmtree(self.cwd)
+        self.cwd = Path(tempfile.mkdtemp())
+        self.chdir(self.cwd)
+
+    def chdir(self, cwd, create=True):
+        cwd = Path(cwd)
+        self.cwd = cwd
+        if not cwd.exists():
+            cwd.mkdir(parents=True)
+        os.chdir(cwd)
 
 class PrototypedDirMixin(TempCwdMixin):
     """Creates temp directory & copy files tree from `proto_dir`, chdir into temp directory before each test"""
@@ -44,26 +56,29 @@ class PrototypedDirMixin(TempCwdMixin):
 
         self.addCleanup(shutil.rmtree, self.cwd, ignore_errors=True)
 
-    def _resolveFile(self, file):
-        f = Path(file)
-        if not f.is_absolute():
-            f = self.cwd / f
-        return f
+    def assertFileExists(self, pattern):
+        if os.path.isabs(pattern):
+            # TODO: Add absolute globs?
+            p = Path(pattern)
+            fs = [p] if p.exists() else []
+        else:
+            fs = list(Path(".").glob(pattern))
+        if not fs:
+            self.fail(f"File {pattern!r} should exist, but it doesn't")
+        if len(fs) > 1:
+            self.fail(f"Found more than one file mathing the pattern {pattern}: {fs}")
+        return fs[0]
 
-    def assertFileExists(self, file):
-        self.assertTrue(self._resolveFile(file).exists(), f"File {file!r} should exist, but it doesn't")
-
-    def assertFileNotExists(self, file):
-        self.assertFalse(self._resolveFile(file).exists(), f"The file {file!r} should not exist, but it does")
+    def assertFileNotExists(self, pattern):
+        fs = list(Path(".").glob(pattern))
+        self.assertTrue(len(fs) == 0, f"The file {pattern!r} should not exist, but found {fs}")
 
     def assertFileContentRegex(self, file, regex, msg=None):
-        f = self._resolveFile(file)
-        self.assertFileExists(f)
+        f = self.assertFileExists(file)
         self.assertRegex(f.read_text(), regex, msg=msg)
 
     def assertFileContentNotRegex(self, file, regex, msg=None):
-        f = self._resolveFile(file)
-        self.assertFileExists(f)
+        f = self.assertFileExists(file)
         self.assertNotRegex(f.read_text(), regex, msg=msg)
 
 
@@ -79,6 +94,9 @@ class SubprocessMixin(unittest.TestCase):
 
     def subprocess_run(self, cmd, **kwargs):
         """Run subprocess. Should be used for non-interactive programms"""
+        kwargs.setdefault('check', True)
+        kwargs.setdefault('capture_output', True)
+
         cmd = self.preprocess_cmdline(cmd)
         return subprocess.run(cmd, **kwargs)
 
