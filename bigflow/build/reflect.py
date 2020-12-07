@@ -67,7 +67,6 @@ def _infer_project_name_by_distribution(module: types.ModuleType) -> Optional[st
         return None
 
     dist = pkg_resources.get_distribution(dist_name)
-    print(">>>>>>" * 1000, dist, vars(dist))
     return dist.project_name
 
 
@@ -76,7 +75,7 @@ def _infer_project_name_by_setuppy_near_module(module: types.ModuleType) -> Opti
     try:
         logger.debug("Found 'setup.py' - read project parameters (check if it is 'bigflow' project)")
         pp = bigflow.build.dev.read_setuppy_args(file)
-        return pp['name']
+        return pp['name'].replace("_", "-")
     except Exception:
         logger.exception("Found %r, but it is not a correct bigflow project", file)
 
@@ -90,7 +89,7 @@ def infer_project_name(stack=1) -> str:
         None
         or _infer_project_name_by_setuppy_near_module(top_module)
         or _infer_project_name_by_distribution(top_module)
-        or top_module.__name__
+        or top_module.__name__.replace("_", "-")
     )
     logger.debug("Project name inferred to be %r", project_name)
     return project_name

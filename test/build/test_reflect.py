@@ -1,4 +1,5 @@
 import os
+import re
 import unittest
 import pickle
 
@@ -33,7 +34,7 @@ class SelfBuildProjectTestCase(
     def runpy_n_dump(self, func_name: str):
         mod, _ = func_name.rsplit(".", 1)
         pycode = f"import {mod}, pickle, os; pickle.dump({func_name}(), os.fdopen(1, 'wb'))"
-        r = self.subprocess_run(["python", "-c", pycode], check=True, capture_output=False)
+        r = self.subprocess_run(["python", "-c", pycode], check=True, capture_output=True)
         return pickle.loads(r.stdout)
 
     def test_should_build_selfpackage_from_installed_wheel(self):
@@ -50,9 +51,9 @@ class SelfBuildProjectTestCase(
         self.chdir_new_temp()
 
         # then - check projectname inferring
-        self.assertEqual("bf_selfbuild_project", self.runpy_n_dump('bf_selfbuild_project.buildme.infer_project_name'))
-        self.assertEqual("bf_selfbuild_project", self.runpy_n_dump('bf_selfbuild_other_package.buildme.infer_project_name'))
-        self.assertEqual("bf_selfbuild_project", self.runpy_n_dump('bf_selfbuild_module.infer_project_name'))
+        #self.assertEqual("bf-selfbuild-project", self.runpy_n_dump('bf_selfbuild_module.infer_project_name'))
+        self.assertEqual("bf-selfbuild-project", self.runpy_n_dump('bf_selfbuild_project.buildme.infer_project_name'))
+        self.assertEqual("bf-selfbuild-project", self.runpy_n_dump('bf_selfbuild_other_package.buildme.infer_project_name'))
 
         # then - self-build sdist/wheel/egg pacakges
         sdist_pkg = self.runpy_n_dump('bf_selfbuild_project.buildme.build_sdist')
@@ -73,5 +74,5 @@ class SelfBuildProjectTestCase(
         # then - verify materizlied setuppy
         setuppy = self.runpy_n_dump('bf_selfbuild_project.buildme.materialize_setuppy')
         self.addCleanup(os.unlink, setuppy)
-        self.assertFileContentRegex(setuppy, "import.*bigflow")
-        self.assertFileContentRegex(setuppy, "bf_simple_v11")
+        self.assertFileContentRegex(setuppy, r"import bigflow.build")
+        self.assertFileContentRegex(setuppy, re.compile(r"bigflow.build.setup(.*)", re.M))

@@ -373,6 +373,7 @@ def _build_setuptools_spec(
 
     # TODO: Validate input/unknown parameters.
     name = name or project_name
+    name = name.replace("_", "-")  # PEP8 compliant package names
     project_dir = project_dir or Path(".")
 
     internal_config = auto_configuration(name, Path(project_dir))
