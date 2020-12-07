@@ -63,7 +63,7 @@ def _infer_project_name_by_distribution(module: types.ModuleType) -> Optional[st
     }
     try:
         dist_name = top_to_dist_name[top]
-    except IndexError:
+    except KeyError:
         return None
 
     dist = pkg_resources.get_distribution(dist_name)
