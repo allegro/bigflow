@@ -61,7 +61,14 @@ def _infer_project_name_by_distribution(module: types.ModuleType) -> Optional[st
         for dname in all_dist_names
         for p in _iter_dist_toplevel_packages(dname)
     }
-    return top_to_dist_name.get(top)
+    try:
+        dist_name = top_to_dist_name[top]
+    except IndexError:
+        return None
+
+    dist = pkg_resources.get_distribution(dist_name)
+    print(">>>>>>" * 1000, dist, vars(dist))
+    return dist.project_name
 
 
 def _infer_project_name_by_setuppy_near_module(module: types.ModuleType) -> Optional[str]:

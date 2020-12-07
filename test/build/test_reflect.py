@@ -1,10 +1,6 @@
-import shutil
-import tempfile
-import time
 import os
 import unittest
-import textwrap
-import json
+import pickle
 
 from test import mixins
 
@@ -32,7 +28,13 @@ class SelfBuildProjectTestCase(
     mixins.PrototypedDirMixin,
     unittest.TestCase,
 ):
-    proto_dir = "bf-projects/bf_simple_v11"
+    proto_dir = "build/bf-projects/bf_selfbuild_project"
+
+    def runpy_n_dump(self, func_name: str):
+        mod, _ = func_name.rsplit(".", 1)
+        pycode = f"import {mod}, pickle, os; pickle.dump({func_name}(), os.fdopen(1, 'wb'))"
+        r = self.subprocess_run(["python", "-c", pycode], check=True, capture_output=False)
+        return pickle.loads(r.stdout)
 
     def test_should_build_selfpackage_from_installed_wheel(self):
 
@@ -47,26 +49,29 @@ class SelfBuildProjectTestCase(
         # remove original sdist - drop cwd & create a new one
         self.chdir_new_temp()
 
-        # self-build sdist/wheel/egg pacakges
-        (self.cwd / "bf_simple_v11.py").write_text(textwrap.dedent("""
-            import bigflow.build.reflect as r, json
-            print(json.dumps({
-                'sdist': str(r.build_sdist("bf_simple_v11")),
-                'wheel': str(r.build_wheel("bf_simple_v11")),
-                'egg': str(r.build_egg("bf_simple_v11")),
-                'setuppy': str(r.materialize_setuppy('bf_simple_v11')),
-            }))
-        """))
-        res = self.subprocess_run(["python", "bf_simple_v11.py"])
+        # then - check projectname inferring
+        self.assertEqual("bf_selfbuild_project", self.runpy_n_dump('bf_selfbuild_project.buildme.infer_project_name'))
+        self.assertEqual("bf_selfbuild_project", self.runpy_n_dump('bf_selfbuild_other_package.buildme.infer_project_name'))
+        self.assertEqual("bf_selfbuild_project", self.runpy_n_dump('bf_selfbuild_module.infer_project_name'))
 
-        # then - verify packages
-        dists = json.loads(res.stdout)
-        self.assertFileExists(dists['sdist']).unlink()
-        self.assertFileExists(dists['wheel']).unlink()
-        self.assertFileExists(dists['egg']).unlink()
+        # then - self-build sdist/wheel/egg pacakges
+        sdist_pkg = self.runpy_n_dump('bf_selfbuild_project.buildme.build_sdist')
+        self.addCleanup(os.unlink, sdist_pkg)
+        self.assertRegex(str(sdist_pkg), r".*\.tar\.gz")
+        self.assertFileExists(sdist_pkg)
+
+        wheel_pkg = self.runpy_n_dump('bf_selfbuild_project.buildme.build_wheel')
+        self.addCleanup(os.unlink, wheel_pkg)
+        self.assertRegex(str(wheel_pkg), r".*\.whl")
+        self.assertFileExists(wheel_pkg)
+
+        egg_pkg = self.runpy_n_dump('bf_selfbuild_project.buildme.build_egg')
+        self.addCleanup(os.unlink, egg_pkg)
+        self.assertRegex(str(egg_pkg), r".*\.egg")
+        self.assertFileExists(egg_pkg)
 
         # then - verify materizlied setuppy
-        setuppy = self.assertFileExists(dists['setuppy'])
-        self.addCleanup(setuppy.unlink)
+        setuppy = self.runpy_n_dump('bf_selfbuild_project.buildme.materialize_setuppy')
+        self.addCleanup(os.unlink, setuppy)
         self.assertFileContentRegex(setuppy, "import.*bigflow")
         self.assertFileContentRegex(setuppy, "bf_simple_v11")
