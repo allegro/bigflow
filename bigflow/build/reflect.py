@@ -90,7 +90,7 @@ def infer_project_name(stack=1) -> str:
 
 
 def _locate_self_package(project_name) -> Optional[Path]:
-    p = Path(sys.prefix) / "bigflow__project" / project_name / "sdist.tar"
+    p = Path(sys.prefix) / "bigflow__project" / project_name / "bf-project.tar"
     if p.exists():
         logger.debug("Found sdist distribution for project %r: %s", project_name, p)
         return p
@@ -116,8 +116,9 @@ def _locate_setuppy_plain_source(project_name):
     return None
 
 
-def _expect_single_file(directory: Path, pattern: str) -> Path:
+def _expect_single_file(directory: str, pattern: str) -> Path:
     logger.debug("Expect that directory %s contains only one file %s", directory, pattern)
+    directory = Path(directory)
     fs = list(directory.glob(pattern))
     if not fs:
         raise FileNotFoundError(f"no files matching {pattern} at {directory}")
@@ -132,7 +133,7 @@ def _expect_single_file(directory: Path, pattern: str) -> Path:
 def materialize_setuppy(
     project_name: Optional[str] = None,
     tempdir: Optional[str] = None,
-):
+) -> Path:
     """Locates project setup.py.  Unpacks embedded sdist distribution when needed.
     """
 
@@ -183,6 +184,7 @@ def _build_dist_package(
         logger.info("Run setup.py %s", cmdname)
 
         fd, result_path = tempfile.mkstemp(suffix=suffix)
+        result_path = Path(result_path)
         os.close(fd)
 
         bfc.run_process(
