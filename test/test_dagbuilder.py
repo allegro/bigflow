@@ -113,7 +113,7 @@ tjob1 = kubernetes_pod_operator.KubernetesPodOperator(
     retries=10,
     retry_delay=datetime.timedelta(seconds=20),
     dag=dag,
-    execution_timeout=datetime.timedelta(milliseconds=3600000))
+    execution_timeout=None)
 
 
 tjob2 = kubernetes_pod_operator.KubernetesPodOperator(
@@ -127,7 +127,7 @@ tjob2 = kubernetes_pod_operator.KubernetesPodOperator(
     retries=100,
     retry_delay=datetime.timedelta(seconds=200),
     dag=dag,
-    execution_timeout=datetime.timedelta(milliseconds=3600000))
+    execution_timeout=None)
 
 tjob2.set_upstream(tjob1)
 
@@ -142,7 +142,7 @@ tjob3 = kubernetes_pod_operator.KubernetesPodOperator(
     retries=100,
     retry_delay=datetime.timedelta(seconds=200),
     dag=dag,
-    execution_timeout=datetime.timedelta(milliseconds=3600000))
+    execution_timeout=None)
 
 tjob3.set_upstream(tjob2)
 tjob3.set_upstream(tjob1)
@@ -211,7 +211,7 @@ tjob1 = kubernetes_pod_operator.KubernetesPodOperator(
     retries=10,
     retry_delay=datetime.timedelta(seconds=20),
     dag=dag,
-    execution_timeout=datetime.timedelta(milliseconds=3600000))
+    execution_timeout=None)
 
 '''
         self.assert_files_are_equal(expected_dag_content, dag_file_content)

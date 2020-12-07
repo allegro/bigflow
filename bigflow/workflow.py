@@ -104,6 +104,7 @@ class Job(abc.ABC):
     id: str
     retries: int = 3
     retry_delay: float = 60
+    job_execution_timeout: int
 
     @abc.abstractmethod
     def execute(self, context: JobContext):

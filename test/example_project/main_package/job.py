@@ -5,7 +5,7 @@ class ExampleJob(bigflow.Job):
         self.id = id
         self.retry_count = 10
         self.retry_pause_sec = 10
-        self.job_execution_timeout = 3600000
+        self.job_execution_timeout = 7200000
 
     def execute(self, context: bigflow.JobContext):
         pass

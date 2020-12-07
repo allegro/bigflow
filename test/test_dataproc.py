@@ -356,3 +356,17 @@ class PySparkJobTest(unittest.TestCase):
 
         # then
         self.assertEqual(job.job_execution_timeout, DEFAULT_JOB_EXECUTION_TIMEOUT)
+
+    def test_should_initialize_job_with_job_execution_timeout(self):
+        # when
+        job = bigflow.dataproc.PySparkJob(
+            "some_job",
+            id,
+            bucket_id="no-bucket",
+            gcp_project_id="no-project",
+            gcp_region="no-region",
+            job_execution_timeout=1,
+        )
+
+        # then
+        self.assertEqual(job.job_execution_timeout, 1)

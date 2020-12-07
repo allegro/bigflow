@@ -2,7 +2,7 @@ import shutil
 import typing
 
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 def clear_dags_output_dir(workdir: str):
@@ -76,7 +76,7 @@ dag = DAG(
     retries={retries},
     retry_delay=datetime.timedelta(seconds={retry_delay}),
     dag=dag,
-    execution_timeout=datetime.timedelta(milliseconds={execution_timeout}))
+    execution_timeout={execution_timeout})
 """.format(job_var=job_var,
           task_id=task_id,
           docker_image = docker_repository+":"+build_ver,
@@ -84,7 +84,7 @@ dag = DAG(
           root_folder=root_package_name,
           retries=job.retry_count if hasattr(job, 'retry_count') else 3,
           retry_delay=job.retry_pause_sec if hasattr(job, 'retry_pause_sec') else 60,
-          execution_timeout=job.job_execution_timeout))
+          execution_timeout=timedelta(milliseconds=job.job_execution_timeout) if job.job_execution_timeout else None))
         for d in dependencies:
             up_job_var = "t" + str(get_job(d).id)
             dag_chunks.append("{job_var}.set_upstream({up_job_var})".format(job_var=job_var, up_job_var=up_job_var))
