@@ -60,7 +60,7 @@ def dataflow_pipeline_options():
     options.view_as(WorkerOptions).max_num_workers = 2
     options.view_as(WorkerOptions).autoscaling_algorithm = 'THROUGHPUT_BASED'
     options.view_as(WorkerOptions).network = workflow_config['machine_type']
-    options.view_as(WorkerOptions).use_public_ips = False
+    options.view_as(WorkerOptions).use_public_ips = workflow_config['use_public_ips']
     options.view_as(StandardOptions).runner = 'DataflowRunner'
 
     setup_file_path = find_or_create_setup_for_main_project_package()
