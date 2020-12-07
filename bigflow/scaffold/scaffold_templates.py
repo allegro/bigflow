@@ -41,7 +41,9 @@ workflow_config = Config(
         'staging_location': '%(project_name)s/beam_runner/staging',
         'temp_location': '%(project_name)s/beam_runner/temp',
         'region': 'europe-west1',
-        'machine_type': 'n1-standard-1'}).resolve()
+        'machine_type': 'n1-standard-1'}).resolve(),
+        'network': 'default',
+        'use_public_ips': False
 
 
 def dataflow_pipeline_options():
@@ -57,6 +59,8 @@ def dataflow_pipeline_options():
     options.view_as(WorkerOptions).machine_type = workflow_config['machine_type']
     options.view_as(WorkerOptions).max_num_workers = 2
     options.view_as(WorkerOptions).autoscaling_algorithm = 'THROUGHPUT_BASED'
+    options.view_as(WorkerOptions).network = workflow_config['machine_type']
+    options.view_as(WorkerOptions).use_public_ips = False
     options.view_as(StandardOptions).runner = 'DataflowRunner'
 
     setup_file_path = find_or_create_setup_for_main_project_package()
