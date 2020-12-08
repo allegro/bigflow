@@ -18,7 +18,7 @@ class CliTestCase(TestCase):
         global TEST_MODULE_PATH
         TEST_MODULE_PATH = Path(__file__).parent / 'test_module'
 
-    def doCleanups(self) -> None:
+    def tearDown(self):
         try:
             import_module("test_module.Unused1").started_jobs.clear()
         except ImportError:
@@ -266,7 +266,7 @@ class CliTestCase(TestCase):
     def test_should_call_cli_deploy_dags_command__with_defaults_and_with_implicit_deployment_config_file(self,
                                                                                                          deploy_dags_folder_mock):
         # given
-        dc_file = self._touch_file('deployment_config.py',
+        self._touch_file('deployment_config.py',
         '''
 from bigflow import Config
 
@@ -290,12 +290,10 @@ deployment_config = Config(name='dev',
                                                    vault_endpoint=None,
                                                    vault_secret='secret')
 
-        dc_file.unlink()
-
     @mock.patch('bigflow.cli.deploy_dags_folder')
     def test_should_call_cli_deploy_dags_command_for_different_environments(self, deploy_dags_folder_mock):
         # given
-        dc_file = self._touch_file('deployment_config.py',
+        self._touch_file('deployment_config.py',
         '''
 from bigflow import Config
 
@@ -350,8 +348,6 @@ deployment_config = Config(name='dev',
                                                    vault_endpoint=None,
                                                    vault_secret='secret-prod')
 
-        dc_file.unlink()
-
     @mock.patch('bigflow.cli.deploy_dags_folder')
     def test_should_call_cli_deploy_dags_command__when_parameters_are_given_by_explicit_deployment_config_file(self,
                                                                                                                deploy_dags_folder_mock):
@@ -385,8 +381,6 @@ deployment_config = Config(name='dev',
                                                    vault_endpoint='my-another-vault-endpoint',
                                                    vault_secret='secrett')
 
-        dc_file.unlink()
-
     @mock.patch('bigflow.cli.deploy_dags_folder')
     def test_should_call_cli_deploy_dags_command__when_all_parameters_are_given_by_cli_arguments(self,
                                                                                                  deploy_dags_folder_mock):
@@ -414,7 +408,7 @@ deployment_config = Config(name='dev',
     def test_should_call_cli_deploy_image_command__with_defaults_and_with_implicit_deployment_config_file(self,
                                                                                                           deploy_docker_image_mock):
         # given
-        dc_file = self._touch_file('deployment_config.py',
+        self._touch_file('deployment_config.py',
         '''
 from bigflow import Config
 
@@ -433,8 +427,6 @@ deployment_config = Config(name='dev',
                                                     image_tar_path='image-0.0.2.tar',
                                                     vault_endpoint=None,
                                                     vault_secret=None)
-
-        dc_file.unlink()
 
     @mock.patch('bigflow.cli.deploy_docker_image')
     def test_should_call_cli_deploy_image_command__with_explicit_deployment_config_file(self, deploy_docker_image_mock):
@@ -465,8 +457,6 @@ deployment_config = Config(name='dev',
                                                     vault_endpoint='my-another-vault-endpoint',
                                                     vault_secret='secrett')
 
-        dc_file.unlink()
-
     @mock.patch('bigflow.cli.deploy_docker_image')
     def test_should_call_cli_deploy_image_command__when_all_parameters_are_given_by_cli_arguments_and_image_is_loaded_from_tar(
             self, deploy_docker_image_mock):
@@ -489,7 +479,7 @@ deployment_config = Config(name='dev',
     @mock.patch('bigflow.cli.deploy_docker_image')
     def test_should_find_tar_in_image_directory(self, deploy_docker_image_mock):
         # given
-        dc_file = self._touch_file('image-123.tar', '', '.image')
+        self._touch_file('image-123.tar', '', '.image')
 
         # when
         cli(['deploy-image',
@@ -506,14 +496,12 @@ deployment_config = Config(name='dev',
                                                     vault_endpoint='my-vault-endpoint',
                                                     vault_secret='secrett')
 
-        dc_file.unlink()
-
     @mock.patch('bigflow.cli.deploy_dags_folder')
     @mock.patch('bigflow.cli.deploy_docker_image')
     def test_should_call_both_deploy_methods_with_deploy_command(self, deploy_docker_image_mock,
                                                                  deploy_dags_folder_mock):
         # given
-        dc_file = self._touch_file('deployment_config.py',
+        self._touch_file('deployment_config.py',
         '''
 from bigflow import Config
 
@@ -542,8 +530,6 @@ deployment_config = Config(name='dev',
                                                     image_tar_path='my-images/image-version',
                                                     vault_endpoint=None,
                                                     vault_secret=None)
-
-        dc_file.unlink()
 
     @mock.patch('bigflow.cli._cli_build_dags')
     def test_should_call_cli_build_dags_command(self, _cli_build_dags_mock):
@@ -893,10 +879,13 @@ another-project-id                         ANOTHER PROJECT                002242
         else:
             workdir = Path(os.getcwd())
         f = workdir / file_name
+        #self.addCleanup(f.unlink)
         if f.exists():
             # FIXME: Refactor tests - copy workdir into temp directory.
             orig = f.read_bytes()
             self.addCleanup(f.write_bytes, orig)
+        else:
+            self.addCleanup(f.unlink)
         f.touch()
         f.write_text(content)
         return f
