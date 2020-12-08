@@ -5,7 +5,7 @@ from apache_beam import Pipeline
 from apache_beam.options.pipeline_options import PipelineOptions, GoogleCloudOptions
 
 from bigflow.workflow import Job, JobContext
-
+from bigflow.commons import DEFAULT_EXECUTION_TIMEOUT, DEFAULT_PIPELINE_LEVEL_EXECUTION_TIMEOUT_SHIFT
 
 logger = logging.getLogger(__file__)
 
@@ -18,8 +18,9 @@ class BeamJob(Job):
             pipeline_options: PipelineOptions = None,
             entry_point_arguments: typing.Optional[dict] = None,
             wait_until_finish: bool = True,
-            execution_timeout: int = 3600000,
-            test_pipeline: Pipeline = None
+            execution_timeout: int = DEFAULT_EXECUTION_TIMEOUT,
+            test_pipeline: Pipeline = None,
+            pipeline_level_execution_timeout_shift: int = DEFAULT_PIPELINE_LEVEL_EXECUTION_TIMEOUT_SHIFT
     ):
         if (test_pipeline and pipeline_options) or (not test_pipeline and not pipeline_options):
             raise ValueError("One of the pipeline and pipeline_options must be provided")
@@ -31,6 +32,7 @@ class BeamJob(Job):
         self.wait_until_finish = wait_until_finish
         self.pipeline = test_pipeline
         self.execution_timeout = execution_timeout
+        self.pipeline_level_execution_timeout_shift = pipeline_level_execution_timeout_shift
 
     def execute(self, context: JobContext):
         if self.pipeline:
@@ -43,8 +45,8 @@ class BeamJob(Job):
             pipeline = self._create_pipeline(self.pipeline_options)
         self.entry_point(pipeline, context, self.entry_point_arguments)
         result = pipeline.run()
-        if self.wait_until_finish:
-            result.wait_until_finish(self.execution_timeout)
+        if self.wait_until_finish and self.execution_timeout:
+            result.wait_until_finish(self.execution_timeout - self.pipeline_level_execution_timeout_shift)
             if not result.is_in_terminal_state():
                 result.cancel()
 

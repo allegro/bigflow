@@ -2,7 +2,6 @@ import json
 import base64
 import functools
 import datetime
-import time
 import inspect
 import io
 import os
@@ -11,7 +10,6 @@ import pickle
 import random
 import re
 import string
-import subprocess
 import textwrap
 import time
 import typing
@@ -24,7 +22,7 @@ import bigflow
 import bigflow.configuration
 import bigflow.resources
 import bigflow.commons
-
+from bigflow.commons import DEFAULT_EXECUTION_TIMEOUT
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +51,8 @@ class PySparkJob(bigflow.Job):
         worker_machine_type: str = 'n1-standard-1',
         env: typing.Optional[str] = None,
         setup_file: typing.Optional[str] = None,
+        execution_timeout: int = DEFAULT_EXECUTION_TIMEOUT
+
     ):
         self.id = id
 
@@ -85,6 +85,7 @@ class PySparkJob(bigflow.Job):
             self.setup_file = None
             self._project = _capture_caller_topmodule()
             self._any_file_inside_project = _capture_caller_path(1)
+        self.execution_timeout = execution_timeout
 
     def _ensure_has_setup_file(self):
         if self.setup_file:
