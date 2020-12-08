@@ -28,7 +28,7 @@ def read_setuppy_args(path_to_setup: Union[Path, str, None] = None) -> dict:
     """Loads `setup.py`, returns all parameters of `bigflow.build.setup()` function.
 
     This function doesn't unpack 'embeeded sdist' archive when package is installed via pip.
-    You could use `bigflow.build.materialize_setuppy` for such purposes, altough it is not recommended"""
+    You could use `bigflow.build.materialize_setuppy` for such purposes, although it is not recommended"""
 
     path_to_setup = path_to_setup or find_setuppy()
     logger.info("Read project options from %s", path_to_setup)
@@ -47,7 +47,7 @@ def read_setuppy_args(path_to_setup: Union[Path, str, None] = None) -> dict:
 
 
 def _read_project_name_from_setup_legacy(direcotry: Path) -> Optional[str]:
-    # TODO: Please, remove me!
+    # TODO: Remove this function in v1.3
     import unittest.mock as mock
     with mock.patch('bigflow.build.dist.setup', lambda **kwargs: None):
         sys_path_original = list(sys.path)
@@ -58,7 +58,6 @@ def _read_project_name_from_setup_legacy(direcotry: Path) -> Optional[str]:
         except Exception:
             return None
         finally:
-            # del sys.modules['project_setup']
             sys.path.clear()
             sys.path.extend(sys_path_original)
 

@@ -24,7 +24,7 @@ import bigflow.dagbuilder
 import bigflow.version
 import bigflow.build.pip
 import bigflow.build.dev
-import bigflow.commons as bfc
+import bigflow.commons as bf_commons
 
 
 logger = logging.getLogger(__name__)
@@ -43,12 +43,12 @@ def run_tests(build_dir: Path, test_package: Path):
 def export_docker_image_to_file(tag: str, target_dir: Path, version: str):
     image_target_path = target_dir / f'image-{version}.tar'
     print(f'Exporting the image to file: {image_target_path}' )
-    bfc.run_process(f"docker image save {bfc.get_docker_image_id(tag)} -o {image_target_path}")
+    bf_commons.run_process(f"docker image save {bf_commons.get_docker_image_id(tag)} -o {image_target_path}")
 
 
 def build_docker_image(project_dir: Path, tag: str):
     print('Building a Docker image. It might take a while.')
-    bfc.run_process(f'docker build {project_dir} --tag {tag}')
+    bf_commons.run_process(f'docker build {project_dir} --tag {tag}')
 
 
 def build_dags(
@@ -78,13 +78,13 @@ def build_image(
         image_dir: Path,
         deployment_config: Path):
     os.mkdir(image_dir)
-    tag = bfc.build_docker_image_tag(docker_repository, version)
+    tag = bf_commons.build_docker_image_tag(docker_repository, version)
     build_docker_image(project_dir, tag)
     try:
         export_docker_image_to_file(tag, image_dir, version)
         shutil.copyfile(deployment_config, image_dir / deployment_config.name)
     finally:
-        bfc.remove_docker_image_from_local_registry(tag)
+        bf_commons.remove_docker_image_from_local_registry(tag)
 
 
 def _hook_pregenerate_sdist(command_cls):

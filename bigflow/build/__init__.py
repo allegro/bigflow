@@ -1,14 +1,14 @@
 __all__ = []
 
 def setup(**kwargs):
-    """Speficy parameters of Bigflow project. Must me called from `setup.py`
+    """Specify parameters of Bigflow project. Must me called from `setup.py`
     """
     # Laziliy import 'bigflow.dist' as it depends on 'setuptools'
     import bigflow.build.dist as d
     return d.setup(**kwargs)
 
 
-# TODO: Remove in v2.0. COMPAT
+# TODO: Remove functions in v2.0
 import bigflow.build.dist as _dist
 from deprecated import deprecated
 for n in [
