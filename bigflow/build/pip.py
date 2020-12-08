@@ -31,7 +31,7 @@ def pip_compile(
             "pip-compile",
             "--no-header",
             "-o", txt_file.name,
-            *(["-v"] if verbose else ()),
+            *(["-v"] if verbose else ["-q"]),
             *extra_args,
             str(req_in),
         ])
@@ -100,5 +100,5 @@ def check_requirements_needs_recompile(req: Path) -> bool:
         logger.info("Don't need to compile %s file", req_txt)
         return False
     else:
-        logger.warn("File %s needs to be recompiled with 'bigflow build-requirements' command", req_txt)
+        logger.warning("File %s needs to be recompiled with 'bigflow build-requirements' command", req_txt)
         return True
