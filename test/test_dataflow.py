@@ -48,10 +48,10 @@ class CountWordsDriver:
 
     def run(self, pipeline: Pipeline, context: JobContext, driver_arguments: dict):
         words_input = pipeline | 'LoadingWordsInput' >> beam.Create(driver_arguments['words_to_count'])
-        words_input | 'FilterWords' >> beam.Filter(lambda w: w in driver_arguments['words_to_filter']) \
-        | 'MapToCount' >> beam.Map(lambda w: (w, 1))\
-        | 'GroupWords' >> beam.GroupByKey()\
-        | 'CountWords' >> self.saver
+        words_input | 'FilterWords' >> (beam.Filter(lambda w: w in driver_arguments['words_to_filter'])
+                                        | 'MapToCount' >> beam.Map(lambda w: (w, 1))
+                                        | 'GroupWords' >> beam.GroupByKey()
+                                        | 'CountWords' >> self.saver)
         self.context = context
         self.pipeline = pipeline
 
@@ -97,7 +97,8 @@ class BeamJobTestCase(TestCase):
     @patch.object(RunnerResult, 'is_in_terminal_state', create=True)
     @patch.object(RunnerResult, 'cancel')
     @patch.object(RunnerResult, 'wait_until_finish')
-    def test_should_run_beam_job_with_timeout_with_cancel(self, wait_until_finish_mock, cancel_mock, is_in_terminal_state_mock):
+    def test_should_run_beam_job_with_timeout_with_cancel(self, wait_until_finish_mock, cancel_mock,
+                                                          is_in_terminal_state_mock):
         # given
         wait_until_finish_mock.return_value = 'DONE'
         is_in_terminal_state_mock.return_value = False
@@ -126,7 +127,8 @@ class BeamJobTestCase(TestCase):
     @patch.object(RunnerResult, 'is_in_terminal_state', create=True)
     @patch.object(RunnerResult, 'cancel')
     @patch.object(RunnerResult, 'wait_until_finish')
-    def test_should_run_beam_job_with_timeout_without_cancel(self, wait_until_finish_mock, cancel_mock, is_in_terminal_state_mock):
+    def test_should_run_beam_job_with_timeout_without_cancel(self, wait_until_finish_mock, cancel_mock,
+                                                             is_in_terminal_state_mock):
         # given
         wait_until_finish_mock.return_value = 'DONE'
         is_in_terminal_state_mock.return_value = True
