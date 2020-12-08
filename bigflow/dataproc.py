@@ -22,7 +22,7 @@ import bigflow
 import bigflow.configuration
 import bigflow.resources
 import bigflow.commons
-from commons import DEFAULT_EXECUTION_TIMEOUT
+from bigflow.commons import DEFAULT_EXECUTION_TIMEOUT
 
 logger = logging.getLogger(__name__)
 

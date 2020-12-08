@@ -8,7 +8,7 @@ import bigflow
 
 import logging
 
-from commons import DEFAULT_EXECUTION_TIMEOUT
+from bigflow.commons import DEFAULT_EXECUTION_TIMEOUT
 
 logger = logging.getLogger(__name__)
 

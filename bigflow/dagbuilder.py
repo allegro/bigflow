@@ -4,7 +4,7 @@ import typing
 from pathlib import Path
 from datetime import datetime
 
-from commons import DEFAULT_EXECUTION_TIMEOUT
+from bigflow.commons import DEFAULT_EXECUTION_TIMEOUT
 
 
 def clear_dags_output_dir(workdir: str):

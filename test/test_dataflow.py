@@ -10,7 +10,7 @@ from collections import defaultdict
 from bigflow import JobContext, Workflow
 
 from bigflow.dataflow import BeamJob
-from commons import DEFAULT_EXECUTION_TIMEOUT, DEFAULT_PIPELINE_LEVEL_EXECUTION_TIMEOUT_SHIFT
+from bigflow.commons import DEFAULT_EXECUTION_TIMEOUT, DEFAULT_PIPELINE_LEVEL_EXECUTION_TIMEOUT_SHIFT
 
 
 class CountWordsFn(beam.DoFn):

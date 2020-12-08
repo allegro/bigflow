@@ -13,7 +13,7 @@ import bigflow
 from bigflow import dataproc
 import bigflow.dataproc
 import bigflow.resources
-from commons import DEFAULT_EXECUTION_TIMEOUT
+from bigflow.commons import DEFAULT_EXECUTION_TIMEOUT
 
 _someobject_tags = set()
 
