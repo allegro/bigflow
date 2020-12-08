@@ -2,7 +2,7 @@ import bigflow
 
 from inspect import getargspec
 
-from bigflow.commons import DEFAULT_EXECUTION_TIMEOUT
+from bigflow.workflow import DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS
 from .dataset_manager import create_dataset_manager
 
 DEFAULT_RETRY_COUNT = 3
@@ -16,7 +16,7 @@ class Job(bigflow.Job):
                  id=None,
                  retry_count=DEFAULT_RETRY_COUNT,
                  retry_pause_sec=DEFAULT_RETRY_PAUSE_SEC,
-                 execution_timeout=DEFAULT_EXECUTION_TIMEOUT,
+                 execution_timeout=DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS,
                  **dependency_configuration):
         self.id = id or component.__name__
         self.component = component

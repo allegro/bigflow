@@ -4,7 +4,7 @@ import typing
 from pathlib import Path
 from datetime import datetime
 
-from bigflow.commons import DEFAULT_EXECUTION_TIMEOUT
+from bigflow.workflow import DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS
 
 
 def clear_dags_output_dir(workdir: str):
@@ -45,7 +45,7 @@ default_args = {{
             'start_date': {start_date_as_str},
             'email_on_failure': False,
             'email_on_retry': False,
-            'execution_timeout': datetime.timedelta(milliseconds={execution_timeout}),
+            'execution_timeout': datetime.timedelta(seconds={execution_timeout}),
 }}
 
 dag = DAG(
@@ -57,7 +57,7 @@ dag = DAG(
 """.format(dag_id=dag_deployment_id,
            start_date_as_str=start_date_as_str,
            schedule_interval=workflow.schedule_interval,
-           execution_timeout=DEFAULT_EXECUTION_TIMEOUT))
+           execution_timeout=DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS))
 
     def get_job(workflow_job):
         return workflow_job.job
@@ -79,7 +79,7 @@ dag = DAG(
     retries={retries},
     retry_delay=datetime.timedelta(seconds={retry_delay}),
     dag=dag,
-    execution_timeout=datetime.timedelta(milliseconds={execution_timeout}))
+    execution_timeout=datetime.timedelta(seconds={execution_timeout}))
 """.format(job_var=job_var,
           task_id=task_id,
           docker_image = docker_repository+":"+build_ver,

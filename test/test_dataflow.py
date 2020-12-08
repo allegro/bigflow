@@ -10,48 +10,48 @@ from collections import defaultdict
 from bigflow import JobContext, Workflow
 
 from bigflow.dataflow import BeamJob
-from bigflow.commons import DEFAULT_EXECUTION_TIMEOUT, DEFAULT_PIPELINE_LEVEL_EXECUTION_TIMEOUT_SHIFT
+from bigflow.workflow import DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS, DEFAULT_PIPELINE_LEVEL_EXECUTION_TIMEOUT_SHIFT_IN_SECONDS
 
 
 class CountWordsFn(beam.DoFn):
-    def __init__(self, save):
+    def __init__(self, CounterState):
         super().__init__()
-        self.save = save
+        self.CounterState = CounterState
 
     def process(self, element, *args, **kwargs):
         word, count = element
-        self.save.counter[word] += len(count)
+        self.CounterState.counter[word] += len(count)
         yield word, len(count)
 
 
-class Save(object):
+class CounterState(object):
     counter = defaultdict(int)
 
 
-class Saver(beam.PTransform):
-    def __init__(self, save):
+class CounterStater(beam.PTransform):
+    def __init__(self, CounterState):
         super().__init__()
-        self.save = save
+        self.CounterState = CounterState
 
     def expand(self, records_to_delete):
         return records_to_delete \
-               | "SaveCountedWords" >> beam.ParDo(
-            CountWordsFn(self.save))
+               | "CounterStateCountedWords" >> beam.ParDo(
+            CountWordsFn(self.CounterState))
 
 
 class CountWordsDriver:
-    def __init__(self, saver):
+    def __init__(self, CounterStater):
         self.result = None
         self.context = None
         self.pipeline = None
-        self.saver = saver
+        self.CounterStater = CounterStater
 
     def run(self, pipeline: Pipeline, context: JobContext, driver_arguments: dict):
         words_input = pipeline | 'LoadingWordsInput' >> beam.Create(driver_arguments['words_to_count'])
         words_input | 'FilterWords' >> (beam.Filter(lambda w: w in driver_arguments['words_to_filter'])
                                         | 'MapToCount' >> beam.Map(lambda w: (w, 1))
                                         | 'GroupWords' >> beam.GroupByKey()
-                                        | 'CountWords' >> self.saver)
+                                        | 'CountWords' >> self.CounterStater)
         self.context = context
         self.pipeline = pipeline
 
@@ -62,7 +62,7 @@ class BeamJobTestCase(TestCase):
     def test_should_run_beam_job(self, is_in_terminal_state_mock):
         # given
         is_in_terminal_state_mock.return_value = True
-        driver = CountWordsDriver(Saver(Save()))
+        driver = CountWordsDriver(CounterStater(CounterState()))
         job = BeamJob(
             id='count_words',
             entry_point=driver.run,
@@ -80,7 +80,7 @@ class BeamJobTestCase(TestCase):
         count_words.run('2020-01-01')
 
         # then executes the job with the arguments
-        self.assertEqual(driver.saver.save.counter, {'valid': 2, 'word': 1})
+        self.assertEqual(driver.CounterStater.CounterState.counter, {'valid': 2, 'word': 1})
 
         # and passes the context
         self.assertIsNotNone(driver.context)
@@ -92,7 +92,7 @@ class BeamJobTestCase(TestCase):
             ['workflow_id=count_words'])
 
         # and sets default value for execution_timeout
-        self.assertEqual(job.execution_timeout, DEFAULT_EXECUTION_TIMEOUT)
+        self.assertEqual(job.execution_timeout, DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS)
 
     @patch.object(RunnerResult, 'is_in_terminal_state', create=True)
     @patch.object(RunnerResult, 'cancel')
@@ -102,7 +102,7 @@ class BeamJobTestCase(TestCase):
         # given
         wait_until_finish_mock.return_value = 'DONE'
         is_in_terminal_state_mock.return_value = False
-        driver = CountWordsDriver(Saver(Save()))
+        driver = CountWordsDriver(CounterStater(CounterState()))
         job = BeamJob(
             id='count_words',
             entry_point=driver.run,
@@ -111,7 +111,7 @@ class BeamJobTestCase(TestCase):
                 'words_to_count': ['trash', 'valid', 'word', 'valid']
             },
             test_pipeline=self._test_pipeline_with_label('count_words'),
-            execution_timeout=600000)
+            execution_timeout=600)
 
         count_words = Workflow(
             workflow_id='count_words',
@@ -122,7 +122,7 @@ class BeamJobTestCase(TestCase):
 
         # then
         self.assertEqual(cancel_mock.call_count, 1)
-        wait_until_finish_mock.assert_called_with(600000 - DEFAULT_PIPELINE_LEVEL_EXECUTION_TIMEOUT_SHIFT)
+        wait_until_finish_mock.assert_called_with((600 - DEFAULT_PIPELINE_LEVEL_EXECUTION_TIMEOUT_SHIFT_IN_SECONDS) * 1000)
 
     @patch.object(RunnerResult, 'is_in_terminal_state', create=True)
     @patch.object(RunnerResult, 'cancel')
@@ -132,7 +132,7 @@ class BeamJobTestCase(TestCase):
         # given
         wait_until_finish_mock.return_value = 'DONE'
         is_in_terminal_state_mock.return_value = True
-        driver = CountWordsDriver(Saver(Save()))
+        driver = CountWordsDriver(CounterStater(CounterState()))
         job = BeamJob(
             id='count_words',
             entry_point=driver.run,
@@ -141,7 +141,7 @@ class BeamJobTestCase(TestCase):
                 'words_to_count': ['trash', 'valid', 'word', 'valid']
             },
             test_pipeline=self._test_pipeline_with_label('count_words'),
-            execution_timeout=600000)
+            execution_timeout=600)
 
         count_words = Workflow(
             workflow_id='count_words',
@@ -152,12 +152,12 @@ class BeamJobTestCase(TestCase):
 
         # then
         self.assertEqual(cancel_mock.call_count, 0)
-        wait_until_finish_mock.assert_called_with(600000 - DEFAULT_PIPELINE_LEVEL_EXECUTION_TIMEOUT_SHIFT)
+        wait_until_finish_mock.assert_called_with((600 - DEFAULT_PIPELINE_LEVEL_EXECUTION_TIMEOUT_SHIFT_IN_SECONDS) * 1000)
 
     def test_should_throw_if_wait_until_finish_set_to_false_and_execution_timeout_passed(self):
         # given
         with self.assertRaises(ValueError):
-            driver = CountWordsDriver(Saver(Save()))
+            driver = CountWordsDriver(CounterStater(CounterState()))
             job = BeamJob(
                 id='count_words',
                 entry_point=driver.run,
@@ -174,7 +174,7 @@ class BeamJobTestCase(TestCase):
     def test_should_create_pipeline_from_pipeline_options(self, _create_pipeline_mock, is_in_terminal_state_mock):
         # given
         is_in_terminal_state_mock.return_value = True
-        driver = CountWordsDriver(Saver(Save()))
+        driver = CountWordsDriver(CounterStater(CounterState()))
         options = PipelineOptions()
         job = BeamJob(
             id='count_words',
@@ -198,7 +198,7 @@ class BeamJobTestCase(TestCase):
 
     def test_should_throw_if_pipeline_options_and_pipeline_both_not_provided(self):
         with self.assertRaises(ValueError):
-            driver = CountWordsDriver(Saver(Save()))
+            driver = CountWordsDriver(CounterStater(CounterState()))
             BeamJob(
                 id='count_words',
                 entry_point=driver.run,
@@ -210,7 +210,7 @@ class BeamJobTestCase(TestCase):
 
     def test_should_throw_if_pipeline_options_and_pipeline_both_provided(self):
         with self.assertRaises(ValueError):
-            driver = CountWordsDriver(Saver(Save()))
+            driver = CountWordsDriver(CounterStater(CounterState()))
             BeamJob(
                 id='count_words',
                 entry_point=driver.run,

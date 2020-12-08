@@ -7,8 +7,6 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_EXECUTION_TIMEOUT = 10800000  # 3 hours
-DEFAULT_PIPELINE_LEVEL_EXECUTION_TIMEOUT_SHIFT = 120000  # 2 minutes
 
 def resolve(path: Path):
     """

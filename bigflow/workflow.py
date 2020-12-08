@@ -8,7 +8,6 @@ import bigflow
 
 import logging
 
-from bigflow.commons import DEFAULT_EXECUTION_TIMEOUT
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +18,9 @@ _RUNTIME_FORMATS = [
     "%Y-%m-%d %H:%M:%S",
     "%Y-%m-%d",
 ]
+
+DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS = 10800  # 3 hours
+DEFAULT_PIPELINE_LEVEL_EXECUTION_TIMEOUT_SHIFT_IN_SECONDS = 120  # 2 minutes
 
 
 def get_timezone_offset_seconds() -> int:
@@ -107,7 +109,7 @@ class Job(abc.ABC):
     id: str
     retries: int = 3
     retry_delay: float = 60
-    execution_timeout: int = DEFAULT_EXECUTION_TIMEOUT
+    execution_timeout: int = DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS
 
     @abc.abstractmethod
     def execute(self, context: JobContext):
@@ -346,4 +348,4 @@ def _parse_runtime_str(runtime: str):
             return dt.datetime.strptime(runtime, format)
         except ValueError:
             pass
-    raise ValueError("Unable to parse 'runtime' %r" % rt)
+    raise ValueError("Unable to parse 'runtime' %r" % runtime)

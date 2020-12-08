@@ -5,7 +5,7 @@ from apache_beam import Pipeline
 from apache_beam.options.pipeline_options import PipelineOptions, GoogleCloudOptions
 
 from bigflow.workflow import Job, JobContext
-from bigflow.commons import DEFAULT_EXECUTION_TIMEOUT, DEFAULT_PIPELINE_LEVEL_EXECUTION_TIMEOUT_SHIFT
+from bigflow.workflow import DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS, DEFAULT_PIPELINE_LEVEL_EXECUTION_TIMEOUT_SHIFT_IN_SECONDS
 
 logger = logging.getLogger(__file__)
 
@@ -18,11 +18,11 @@ class BeamJob(Job):
             pipeline_options: PipelineOptions = None,
             entry_point_arguments: typing.Optional[dict] = None,
             wait_until_finish: bool = True,
-            execution_timeout: int = DEFAULT_EXECUTION_TIMEOUT,
+            execution_timeout: int = DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS,
             test_pipeline: Pipeline = None,
-            pipeline_level_execution_timeout_shift: int = DEFAULT_PIPELINE_LEVEL_EXECUTION_TIMEOUT_SHIFT
+            pipeline_level_execution_timeout_shift: int = DEFAULT_PIPELINE_LEVEL_EXECUTION_TIMEOUT_SHIFT_IN_SECONDS
     ):
-        if (test_pipeline and pipeline_options) or (not test_pipeline and not pipeline_options):
+        if bool(test_pipeline) == bool(pipeline_options):
             raise ValueError("One of the pipeline and pipeline_options must be provided.")
         if not wait_until_finish and execution_timeout:
             raise ValueError("If wait_until_finish_set to False execution_timeout can not be used.")
@@ -49,7 +49,8 @@ class BeamJob(Job):
         self.entry_point(pipeline, context, self.entry_point_arguments)
         result = pipeline.run()
         if self.wait_until_finish and self.execution_timeout:
-            result.wait_until_finish(self.execution_timeout - self.pipeline_level_execution_timeout_shift)
+            timeout_in_milliseconds = 1000 * (self.execution_timeout - self.pipeline_level_execution_timeout_shift)
+            result.wait_until_finish(timeout_in_milliseconds)
             if not result.is_in_terminal_state():
                 result.cancel()
 
