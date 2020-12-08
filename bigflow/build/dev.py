@@ -19,7 +19,9 @@ import bigflow.commons as bf_commons
 
 logger = logging.getLogger(__name__)
 
-# Used by 'dist.py' to dump `bigflow.setup(...)` arguments.
+# Special "hidden" command-line argument for `setup.py`
+# When passed as first argument triggers dumping projects parameters to temp file.
+# See `bigflow.build.dist._maybe_dump_setup_params` for more details.
 DUMP_PARAMS_SETUPPY_CMDARG = "__bigflow_dump_params"
 
 
