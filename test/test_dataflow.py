@@ -92,7 +92,7 @@ class BeamJobTestCase(TestCase):
             ['workflow_id=count_words'])
 
         # and sets default value for execution_timeout
-        self.assertIsNone(job.execution_timeout, DEFAULT_EXECUTION_TIMEOUT)
+        self.assertEqual(job.execution_timeout, DEFAULT_EXECUTION_TIMEOUT)
 
     @patch.object(RunnerResult, 'is_in_terminal_state', create=True)
     @patch.object(RunnerResult, 'cancel')
