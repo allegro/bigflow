@@ -20,7 +20,7 @@ from glob import glob1
 import bigflow as bf
 import bigflow.build.pip
 import bigflow.resources
-import bigflow.commons as bfc
+import bigflow.commons as bf_commons
 import bigflow.build.dist
 import bigflow.build.dev
 import bigflow.migrate
@@ -549,7 +549,7 @@ def find_image_file():
 
 def _cli_build_image(args):
     validate_project_setup()
-    bfc.run_process([
+    bf_commons.run_process([
         "python",
         bigflow.build.dev.find_setuppy(),
         "build_project",
@@ -559,7 +559,7 @@ def _cli_build_image(args):
 
 def _cli_build_package():
     validate_project_setup()
-    bfc.run_process([
+    bf_commons.run_process([
         "python",
         bigflow.build.dev.find_setuppy(),
         "build_project",
@@ -581,7 +581,7 @@ def _cli_build_dags(args):
     if _is_starttime_selected(args):
         cmd.append('--start-time')
         cmd.append(args.start_time)
-    bfc.run_process(cmd)
+    bf_commons.run_process(cmd)
 
 
 def _cli_build(args):
@@ -597,7 +597,7 @@ def _cli_build(args):
     if _is_starttime_selected(args):
         cmd.append('--start-time')
         cmd.append(args.start_time)
-    bfc.run_process(cmd)
+    bf_commons.run_process(cmd)
 
 
 def _create_build_requirements_parser(subparsers):
@@ -720,7 +720,7 @@ def validate_project_setup():
         "build_project",
         "--validate-project-setup",
     ]
-    output = bfc.run_process(cmd)
+    output = bf_commons.run_process(cmd)
 
     if bigflow.build.dist.SETUP_VALIDATION_MESSAGE not in output:
         raise ValueError('The `setup.py` is invalid. Check the documentation how to create a valid `setup.py`: https://github.com/allegro/bigflow/blob/master/docs/build.md')

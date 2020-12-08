@@ -9,7 +9,7 @@ import textwrap
 from pathlib import Path
 from typing import List
 
-import bigflow.commons as bfc
+import bigflow.commons as bf_commons
 
 
 logger = logging.getLogger(__name__)
@@ -27,7 +27,7 @@ def pip_compile(
     logger.info("Compile file %s ...", req_in)
 
     with tempfile.NamedTemporaryFile('w+t', prefix=f"{req_in.stem}-", suffix=".txt", delete=False) as txt_file:
-        bfc.run_process([
+        bf_commons.run_process([
             "pip-compile",
             "--no-header",
             "-o", txt_file.name,
@@ -38,7 +38,7 @@ def pip_compile(
         with open(txt_file.name) as ff:
             reqs_content = ff.readlines()
 
-    source_hash = bfc.generate_file_hash(req_in)
+    source_hash = bf_commons.generate_file_hash(req_in)
 
     with open(req_txt, 'w+t') as out:
         logger.info("Write pip requirements file: %s", req_txt)
@@ -93,7 +93,7 @@ def check_requirements_needs_recompile(req: Path) -> bool:
         return True
 
     req_txt_content = req_txt.read_text()
-    hash1 = bfc.generate_file_hash(req_in)
+    hash1 = bf_commons.generate_file_hash(req_in)
     same_hash = hash1 in req_txt_content
 
     if same_hash:  # dirty but works ;)

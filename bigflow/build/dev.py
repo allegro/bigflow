@@ -14,8 +14,7 @@ import os.path
 from typing import Optional, List, Union
 from pathlib import Path
 
-import bigflow.commons as bfc
-import bigflow.build.reflect
+import bigflow.commons as bf_commons
 
 
 logger = logging.getLogger(__name__)
@@ -33,7 +32,7 @@ def read_setuppy_args(path_to_setup: Union[Path, str, None] = None) -> dict:
     path_to_setup = path_to_setup or find_setuppy()
     logger.info("Read project options from %s", path_to_setup)
     with tempfile.NamedTemporaryFile("r+b") as f:
-        bfc.run_process(["python", path_to_setup, DUMP_PARAMS_SETUPPY_CMDARG, f.name], cwd=str(path_to_setup.parent))
+        bf_commons.run_process(["python", path_to_setup, DUMP_PARAMS_SETUPPY_CMDARG, f.name], cwd=str(path_to_setup.parent))
         params = pickle.load(f)
 
     legacy_project_name = _read_project_name_from_setup_legacy(path_to_setup.parent)
