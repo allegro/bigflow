@@ -93,28 +93,26 @@ def _hook_pregenerate_sdist(command_cls):
     Runs 'sdist' and copy resutl into 'build/bf-project.tar.gz'
     """
 
-    class command(command_cls, distutils.cmd.Command):
+    def run(self):
+        sdist = self.get_finalized_command('sdist')
+        sdist.ensure_finalized()
+        sdist.formats = ["tar"]  # overwrite
+        sdist.run()
+        sdist_tarball = sdist.get_archive_files()
 
-        def run(self):
+        if len(sdist_tarball) > 1:
+            self.warn("ingnored 'sdist' results", sdist_tarball[1:])
 
-            sdist = self.get_finalized_command('sdist')
-            sdist.ensure_finalized()
-            sdist.formats = ["tar"]  # overwrite
-            sdist.run()
-            sdist_tarball = sdist.get_archive_files()
+        self.mkpath("build")
+        self.copy_file(sdist_tarball[0], "build/bf-project.tar")
 
-            if len(sdist_tarball) > 1:
-                self.warn("ingnored 'sdist' results", sdist_tarball[1:])
+        return command_cls.run(self)
 
-            self.mkpath("build")
-            self.copy_file(sdist_tarball[0], "build/bf-project.tar")
-
-            return super().run()
-
-        def get_command_name(self) -> str:
-            return super().get_command_name()
-
-    return command
+    return type(
+        command_cls.__name__,
+        (command_cls,),
+        {'run': run},
+    )
 
 
 def _hook_bdist_pregenerate_sdist():
