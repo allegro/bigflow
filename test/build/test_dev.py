@@ -24,13 +24,13 @@ class ReadProjectParametersLegacyTestCase(
 
 class ReadProjectParametersTestCase(
     mixins.PrototypedDirMixin,
+    mixins.TempCwdMixin,
     mixins.BigflowInPythonPathMixin,
     unittest.TestCase,
 ):
     proto_dir = "bf-projects/bf_simple_v11"
 
     def test_should_read_project_params(self):
-
         # when
         params = bigflow.build.dev.read_setuppy_args()
 
@@ -41,3 +41,25 @@ class ReadProjectParametersTestCase(
             description="Sample bigflow project",
             url="http://example.org",
         ), params)
+
+    def test_should_read_project_params_from_subdir(self):
+        # given
+        self.chdir(self.cwd / "sudir" / "subsubdir")
+
+        # when
+        params = bigflow.build.dev.read_setuppy_args()
+
+        # then
+        self.assertDictContainsSubset({'name': "bf_simple_v11"}, params)
+
+    def test_should_read_project_params_with_module_setup(self):
+        # given
+        self.chdir(self.cwd / "submodule")
+        (self.cwd / "setup.py").write_text("pass")
+        (self.cwd / "__init__.py").touch()
+
+        # when
+        params = bigflow.build.dev.read_setuppy_args()
+
+        # then
+        self.assertDictContainsSubset({'name': "bf_simple_v11"}, params)

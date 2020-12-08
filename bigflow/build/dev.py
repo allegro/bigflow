@@ -70,8 +70,9 @@ def find_setuppy(directory: typing.Union[None, Path, str] = None) -> Path:
     directory = Path(directory or Path.cwd())
     while directory != directory.parent and directory != Path.home():
         setup_py = directory / "setup.py"
+        pyproject = directory / "pyproject.toml"
         prj_setup_py = directory / "project_setup.py"
-        if setup_py.exists():
+        if setup_py.exists() and pyproject.exists():
             return setup_py
         if prj_setup_py.exists():
             return prj_setup_py
