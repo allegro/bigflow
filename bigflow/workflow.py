@@ -124,12 +124,14 @@ class Workflow(object):
         schedule_interval=DEFAULT_SCHEDULE_INTERVAL,
         start_time_factory: typing.Callable[[dt.datetime], dt.datetime] = daily_start_time,
         log_config: typing.Optional['bigflow.log.LogConfigDict'] = None,
+        depends_on_past: bool = True
     ):
         self.definition = self._parse_definition(definition)
         self.schedule_interval = schedule_interval
         self.workflow_id = workflow_id
         self.start_time_factory = start_time_factory
         self.log_config = log_config
+        self.depends_on_past = depends_on_past
 
     @staticmethod
     def _execute_job(job, context):

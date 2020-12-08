@@ -147,6 +147,72 @@ tjob3.set_upstream(tjob1)
 
         self.assert_files_are_equal(expected_dag_content, dag_file_content)
 
+    def test_should_pass_workflow_properties_to_airflow_dag(self):
+        # given
+        workdir = os.path.dirname(__file__)
+        docker_repository = 'eu.gcr.io/my_docker_repository_project/my-project'
+
+        # given
+        job1 = Job(
+            id='job1',
+            component=mock.Mock(),
+            retry_count=10,
+            retry_pause_sec=20
+        )
+        w_job1 = WorkflowJob(job1, 1)
+        graph = {
+            w_job1: ()
+        }
+        workflow = Workflow(
+            workflow_id='my_daily_workflow',
+            definition=Definition(graph),
+            depends_on_past=False,
+            schedule_interval='@daily')
+
+        # when
+        dag_file_path = generate_dag_file(workdir, docker_repository, workflow, '2020-07-02', '0.3.0', 'ca')
+
+        # then passes the depends_on_past parameter value
+        self.assertEqual(dag_file_path, workdir + '/.dags/my_daily_workflow__v0_3_0__2020_07_02_00_00_00_dag.py')
+
+        dag_file_content = Path(dag_file_path).read_text()
+        expected_dag_content = '''
+import datetime
+from airflow import DAG
+from airflow.contrib.operators import kubernetes_pod_operator
+
+default_args = {
+            'owner': 'airflow',
+            'depends_on_past': False,
+            'start_date': datetime.datetime(2020, 7, 1, 0, 0),
+            'email_on_failure': False,
+            'email_on_retry': False,
+            'execution_timeout': datetime.timedelta(minutes=180),
+}
+
+dag = DAG(
+    'my_daily_workflow__v0_3_0__2020_07_02_00_00_00',
+    default_args=default_args,
+    max_active_runs=1,
+    schedule_interval='@daily'
+)
+
+
+tjob1 = kubernetes_pod_operator.KubernetesPodOperator(
+    task_id='job1',
+    name='job1',
+    cmds=['bf'],
+    arguments=['run', '--job', 'my_daily_workflow.job1', '--runtime', '{{ execution_date.strftime("%Y-%m-%d %H:%M:%S") }}', '--project-package', 'ca', '--config', '{{var.value.env}}'],
+    namespace='default',
+    image='eu.gcr.io/my_docker_repository_project/my-project:0.3.0',
+    is_delete_operator_pod=True,
+    retries=10,
+    retry_delay=datetime.timedelta(seconds=20),
+    dag=dag)
+
+'''
+        self.assert_files_are_equal(expected_dag_content, dag_file_content)
+
     def test_should_generate_DAG_file_from_workflow_with_daily_scheduling(self):
         # given
         workdir = os.path.dirname(__file__)
