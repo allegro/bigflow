@@ -13,6 +13,7 @@ import bigflow
 from bigflow import dataproc
 import bigflow.dataproc
 import bigflow.resources
+from commons import DEFAULT_EXECUTION_TIMEOUT
 
 _someobject_tags = set()
 
@@ -343,7 +344,7 @@ class PySparkJobTest(unittest.TestCase):
         self.assertIn('spark.executorEnv.bf_log_config', props)
         self.assertIn('spark.executorEnv.bf_workflow_id', props)
 
-    def test_should_initialize_job_with_default_job_execution_timeout(self):
+    def test_should_initialize_job_with_default_execution_timeout(self):
         # when
         job = bigflow.dataproc.PySparkJob(
             "some_job",
@@ -354,9 +355,9 @@ class PySparkJobTest(unittest.TestCase):
         )
 
         # then
-        self.assertEqual(job.execution_timeout, None)
+        self.assertEqual(job.execution_timeout, DEFAULT_EXECUTION_TIMEOUT)
 
-    def test_should_initialize_job_with_job_execution_timeout(self):
+    def test_should_initialize_job_with_execution_timeout(self):
         # when
         job = bigflow.dataproc.PySparkJob(
             "some_job",

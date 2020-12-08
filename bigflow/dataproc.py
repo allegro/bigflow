@@ -22,6 +22,7 @@ import bigflow
 import bigflow.configuration
 import bigflow.resources
 import bigflow.commons
+from commons import DEFAULT_EXECUTION_TIMEOUT
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +51,7 @@ class PySparkJob(bigflow.Job):
         worker_machine_type: str = 'n1-standard-1',
         env: typing.Optional[str] = None,
         setup_file: typing.Optional[str] = None,
-        execution_timeout: int = None
+        execution_timeout: int = DEFAULT_EXECUTION_TIMEOUT
 
     ):
         self.id = id

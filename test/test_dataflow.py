@@ -10,6 +10,7 @@ from collections import defaultdict
 from bigflow import JobContext, Workflow
 
 from bigflow.dataflow import BeamJob
+from commons import DEFAULT_EXECUTION_TIMEOUT, DEFAULT_PIPELINE_LEVEL_EXECUTION_TIMEOUT_SHIFT
 
 
 class CountWordsFn(beam.DoFn):
@@ -90,8 +91,8 @@ class BeamJobTestCase(TestCase):
             driver.pipeline._options.get_all_options()['labels'],
             ['workflow_id=count_words'])
 
-        # and sets default value for job_execution_timeout and execution_timeout
-        self.assertIsNone(job.execution_timeout, None)
+        # and sets default value for execution_timeout
+        self.assertIsNone(job.execution_timeout, DEFAULT_EXECUTION_TIMEOUT)
 
     @patch.object(RunnerResult, 'is_in_terminal_state', create=True)
     @patch.object(RunnerResult, 'cancel')
@@ -120,7 +121,7 @@ class BeamJobTestCase(TestCase):
 
         # then
         self.assertEqual(cancel_mock.call_count, 1)
-        wait_until_finish_mock.assert_called_with(480000)
+        wait_until_finish_mock.assert_called_with(600000 - DEFAULT_PIPELINE_LEVEL_EXECUTION_TIMEOUT_SHIFT)
 
     @patch.object(RunnerResult, 'is_in_terminal_state', create=True)
     @patch.object(RunnerResult, 'cancel')
@@ -149,7 +150,7 @@ class BeamJobTestCase(TestCase):
 
         # then
         self.assertEqual(cancel_mock.call_count, 0)
-        wait_until_finish_mock.assert_called_with(480000)
+        wait_until_finish_mock.assert_called_with(600000 - DEFAULT_PIPELINE_LEVEL_EXECUTION_TIMEOUT_SHIFT)
 
     @patch.object(RunnerResult, 'is_in_terminal_state', create=True)
     @patch.object(RunnerResult, 'cancel')

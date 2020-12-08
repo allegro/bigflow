@@ -7,6 +7,9 @@ import datetime as dt
 import bigflow
 
 import logging
+
+from commons import DEFAULT_EXECUTION_TIMEOUT
+
 logger = logging.getLogger(__name__)
 
 
@@ -104,7 +107,7 @@ class Job(abc.ABC):
     id: str
     retries: int = 3
     retry_delay: float = 60
-    execution_timeout: int = None
+    execution_timeout: int = DEFAULT_EXECUTION_TIMEOUT
 
     @abc.abstractmethod
     def execute(self, context: JobContext):

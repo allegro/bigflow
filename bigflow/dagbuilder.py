@@ -2,7 +2,9 @@ import shutil
 import typing
 
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import datetime
+
+from commons import DEFAULT_EXECUTION_TIMEOUT
 
 
 def clear_dags_output_dir(workdir: str):
@@ -43,7 +45,7 @@ default_args = {{
             'start_date': {start_date_as_str},
             'email_on_failure': False,
             'email_on_retry': False,
-            'execution_timeout': datetime.timedelta(minutes=180),
+            'execution_timeout': datetime.timedelta(milliseconds={execution_timeout}),
 }}
 
 dag = DAG(
@@ -54,7 +56,8 @@ dag = DAG(
 )
 """.format(dag_id=dag_deployment_id,
            start_date_as_str=start_date_as_str,
-           schedule_interval=workflow.schedule_interval))
+           schedule_interval=workflow.schedule_interval,
+           execution_timeout=DEFAULT_EXECUTION_TIMEOUT))
 
     def get_job(workflow_job):
         return workflow_job.job
@@ -76,7 +79,7 @@ dag = DAG(
     retries={retries},
     retry_delay=datetime.timedelta(seconds={retry_delay}),
     dag=dag,
-    execution_timeout={execution_timeout})
+    execution_timeout=datetime.timedelta(milliseconds={execution_timeout}))
 """.format(job_var=job_var,
           task_id=task_id,
           docker_image = docker_repository+":"+build_ver,
@@ -84,7 +87,7 @@ dag = DAG(
           root_folder=root_package_name,
           retries=job.retry_count if hasattr(job, 'retry_count') else 3,
           retry_delay=job.retry_pause_sec if hasattr(job, 'retry_pause_sec') else 60,
-          execution_timeout=timedelta(milliseconds=job.execution_timeout) if job.execution_timeout else None))
+          execution_timeout=job.execution_timeout))
         for d in dependencies:
             up_job_var = "t" + str(get_job(d).id)
             dag_chunks.append("{job_var}.set_upstream({up_job_var})".format(job_var=job_var, up_job_var=up_job_var))

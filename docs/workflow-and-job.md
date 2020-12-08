@@ -53,9 +53,9 @@ The Job `execute` method has a single argument `context` of a type `bigflow.JobC
 It keeps execution timestamp, reference to workflow. You can find more information about `context`
 and scheduling [workflow scheduling options](#workflow-scheduling-options).
 
-There are 3 additional parameters, that a job can supply to Airflow: `retry_count`, `retry_pause_sec` and `job_execution_timeout`. The `retry_count` parameter
+There are 3 additional parameters, that a job can supply to Airflow: `retry_count`, `retry_pause_sec` and `execution_timeout`. The `retry_count` parameter
 determines how many times a job will be retried (in case of a failure). The `retry_pause_sec` parameter says how long the pause between retries should be.
-The `job_execution_timeout` says how long airflow should wait for job to finish.
+The `execution_timeout` says how long airflow should wait for job to finish.
 
 [`retriable_job.py`](examples/workflow_and_job/retriable_job.py)
 ```python
@@ -164,7 +164,7 @@ simple_workflow.run_job('1', datetime.datetime(year=1970, month=1, day=1))
 simple_workflow.run(datetime.datetime(year=1970, month=1, day=1))
 ```
 
-The `Workflow.run` method ignores job parameters like `retry_count`, `retry_pause_sec` and `job_execution_timeout`. It executes a workflow in a 
+The `Workflow.run` method ignores job parameters like `retry_count`, `retry_pause_sec` and `execution_timeout`. It executes a workflow in a 
 sequential (non-parallel) way. It's not used by Airflow.
 
 ## Workflow scheduling options
