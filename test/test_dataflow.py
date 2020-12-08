@@ -152,31 +152,20 @@ class BeamJobTestCase(TestCase):
         self.assertEqual(cancel_mock.call_count, 0)
         wait_until_finish_mock.assert_called_with(600000 - DEFAULT_PIPELINE_LEVEL_EXECUTION_TIMEOUT_SHIFT)
 
-    @patch.object(RunnerResult, 'is_in_terminal_state', create=True)
-    @patch.object(RunnerResult, 'cancel')
-    def test_should_run_beam_job_without_timeout_if_wait_until_finish_disabled(self, cancel_mock, is_in_terminal_state_mock):
-        is_in_terminal_state_mock.return_value = False
+    def test_should_throw_if_wait_until_finish_set_to_false_and_execution_timeout_passed(self):
         # given
-        driver = CountWordsDriver(Saver(Save()))
-        job = BeamJob(
-            id='count_words',
-            entry_point=driver.run,
-            entry_point_arguments={
-                'words_to_filter': ['valid', 'word'],
-                'words_to_count': ['trash', 'valid', 'word', 'valid']
-            },
-            test_pipeline=self._test_pipeline_with_label('count_words'),
-            execution_timeout=1)
-
-        count_words = Workflow(
-            workflow_id='count_words',
-            definition=[job])
-
-        # when
-        count_words.run('2020-01-01')
-
-        # then executes the job with the arguments
-        self.assertEqual(cancel_mock.call_count, 1)
+        with self.assertRaises(ValueError):
+            driver = CountWordsDriver(Saver(Save()))
+            job = BeamJob(
+                id='count_words',
+                entry_point=driver.run,
+                entry_point_arguments={
+                    'words_to_filter': ['valid', 'word'],
+                    'words_to_count': ['trash', 'valid', 'word', 'valid']
+                },
+                test_pipeline=self._test_pipeline_with_label('count_words'),
+                execution_timeout=1,
+                wait_until_finish=False)
 
     @patch.object(RunnerResult, 'is_in_terminal_state', create=True)
     @patch.object(BeamJob, '_create_pipeline')

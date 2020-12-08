@@ -23,7 +23,10 @@ class BeamJob(Job):
             pipeline_level_execution_timeout_shift: int = DEFAULT_PIPELINE_LEVEL_EXECUTION_TIMEOUT_SHIFT
     ):
         if (test_pipeline and pipeline_options) or (not test_pipeline and not pipeline_options):
-            raise ValueError("One of the pipeline and pipeline_options must be provided")
+            raise ValueError("One of the pipeline and pipeline_options must be provided.")
+        if not wait_until_finish and execution_timeout:
+            raise ValueError("If wait_until_finish_set to False execution_timeout can not be used.")
+
 
         self.id = id
         self.entry_point = entry_point
