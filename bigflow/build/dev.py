@@ -70,11 +70,12 @@ def find_setuppy(directory: typing.Union[None, Path, str] = None) -> Path:
     directory = Path(directory or Path.cwd())
     while directory != directory.parent and directory != Path.home():
         setup_py = directory / "setup.py"
+        prj_setup_py = directory / "project_setup.py"
         if setup_py.exists():
-            logger.debug("Found file `setup.py` - do nothing")
             return setup_py
-        else:
-            directory = directory.parent
+        if prj_setup_py.exists():
+            return prj_setup_py
+        directory = directory.parent
     raise FileNotFoundError("Not found `setup.py` not `project_setup.py`")
 
 

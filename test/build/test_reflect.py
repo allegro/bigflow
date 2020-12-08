@@ -9,6 +9,7 @@ from test import mixins
 class SelfBuildOldProjectTestCase(
     mixins.SubprocessMixin,
     mixins.PrototypedDirMixin,
+    mixins.BigflowInPythonPathMixin,
     unittest.TestCase,
 ):
     proto_dir = "bf-projects/bf_simple_v10"
@@ -17,7 +18,7 @@ class SelfBuildOldProjectTestCase(
 
         # given
         self.assertFileNotExists("dist/*.whl")
-        self.subprocess_run(["python", "project_setup.py", "bdist_wheel"], pythonpath=True)
+        self.subprocess_run(["python", "project_setup.py", "bdist_wheel"])
 
         # then
         self.assertFileExists("dist/*.whl")
