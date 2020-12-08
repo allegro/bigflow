@@ -4,6 +4,7 @@
 import os
 import sys
 import shutil
+import textwrap
 import unittest
 import setuptools
 import typing
@@ -308,7 +309,13 @@ def project_setup(
     _maybe_dump_setup_params({
         'name': project_name,
     })
-    bigflow.build.pip.maybe_recompile_requirements_file(project_requirements_file)
+    recompiled = bigflow.build.pip.maybe_recompile_requirements_file(project_requirements_file)
+    if recompiled:
+        logger.warning(textwrap.dedent(f"""
+            !!! Requirements file was recompiled, you need to reinstall packages.
+            !!! Run this command from your virtualenv:
+            pip install -r {project_requirements_file}
+        """))
 
     params_to_check = [
         ('project_name', project_name),

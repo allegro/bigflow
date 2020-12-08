@@ -64,7 +64,7 @@ def detect_piptools_source_files(reqs_dir: Path) -> typing.List[Path]:
     return in_files
 
 
-def maybe_recompile_requirements_file(req_txt: Path):
+def maybe_recompile_requirements_file(req_txt: Path) -> bool:
     # Some users keeps extra ".txt" files in the same directory.
     # Check if thoose files needs to be recompiled & then print a warning.
     for fin in detect_piptools_source_files(req_txt.parent):
@@ -73,8 +73,10 @@ def maybe_recompile_requirements_file(req_txt: Path):
 
     if check_requirements_needs_recompile(req_txt):
         pip_compile(req_txt)
+        return True
     else:
         logger.debug("File %s is fresh", req_txt)
+        return False
 
 
 def check_requirements_needs_recompile(req: Path) -> bool:
