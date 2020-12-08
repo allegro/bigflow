@@ -160,15 +160,3 @@ setuptools.setup(
                         if not p.startswith('example_project'))))
 ''')
 
-
-class FindOrCreateSetupForMainProjectPackageTestCase(TestCase):
-
-    def test_should_find_setup_if_exists(self):
-        # when
-        from main_package import find_setup
-        path = find_setup()
-
-        # then
-        setup_py = Path(__file__).parent / 'example_project' / 'setup.py'
-        self.assertEqual(path.resolve(), setup_py.resolve())
-
