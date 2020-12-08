@@ -17,7 +17,7 @@ class SelfBuildOldProjectTestCase(
 
         # given
         self.assertFileNotExists("dist/*.whl")
-        self.subprocess_run(["python", "project_setup.py", "bdist_wheel"])
+        self.subprocess_run(["python", "project_setup.py", "bdist_wheel"], pythonpath=True)
 
         # then
         self.assertFileExists("dist/*.whl")

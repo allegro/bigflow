@@ -92,16 +92,31 @@ class SubprocessMixin(unittest.TestCase):
         p.read()
         p.wait()
 
-    def subprocess_run(self, cmd, **kwargs):
+    def _subprocess_build_env(self, pythonpath=False, env=None, **ignored):
+        if not pythonpath:
+            return env
+
+        from bigflow import __file__ as bfpath
+        bfdir = str(Path(bfpath).parent.parent)
+
+        env = dict(env or os.environ)
+        if 'PYTHONPATH' in env:
+            env['PYTHONPATH'] = bfdir + os.pathsep + env['PYTHONPATH']
+        else:
+            env['PYTHONPATH'] = bfdir
+        return env
+
+    def subprocess_run(self, cmd, *, pythonpath=False, env=None, **kwargs):
         """Run subprocess. Should be used for non-interactive programms"""
         kwargs.setdefault('check', True)
         kwargs.setdefault('capture_output', True)
-
+        env = self._subprocess_build_env(pythonpath=pythonpath, env=env)
         cmd = self.preprocess_cmdline(cmd)
-        return subprocess.run(cmd, **kwargs)
+        return subprocess.run(cmd, env=env, **kwargs)
 
-    def subprocess_spawn(self, cmd, **kwargs):
+    def subprocess_spawn(self, cmd, *, pythonpath=None, env=None, **kwargs):
         """Run subprocess. Intended to be used with interactive programms"""
+        env = self._subprocess_build_env(pythonpath=pythonpath, env=env)
         cmd = self.preprocess_cmdline(cmd)
         p = pexpect.spawn(cmd[0], cmd[1:], **kwargs)
         self.addCleanup(self.__clean_spawned, p)
