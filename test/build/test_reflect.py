@@ -5,6 +5,8 @@ import pickle
 
 from test import mixins
 
+import bigflow.build.reflect
+
 
 class SelfBuildOldProjectTestCase(
     mixins.SubprocessMixin,
@@ -24,8 +26,7 @@ class SelfBuildOldProjectTestCase(
         self.assertFileExists("dist/*.whl")
 
 
-class SelfBuildProjectTestCase(
-    mixins.VenvMixin,
+class _BaseBuildReflectTest(
     mixins.SubprocessMixin,
     mixins.PrototypedDirMixin,
     unittest.TestCase,
@@ -38,21 +39,9 @@ class SelfBuildProjectTestCase(
         r = self.subprocess_run(["python", "-c", pycode], check=True, capture_output=True)
         return pickle.loads(r.stdout)
 
-    def test_should_build_selfpackage_from_installed_wheel(self):
-
-        # build 'whl' package
-        self.assertFileNotExists("dist/*.whl")
-        self.subprocess_run(["python", "setup.py", "bdist_wheel"])
-
-        # install .whl package
-        whl = self.assertFileExists("dist/*.whl")
-        self.venv_pip_install(whl)
-
-        # remove original sdist - drop cwd & create a new one
-        self.chdir_new_temp()
+    def check_build_reflect(self):
 
         # then - check projectname inferring
-        #self.assertEqual("bf-selfbuild-project", self.runpy_n_dump('bf_selfbuild_module.infer_project_name'))
         self.assertEqual("bf-selfbuild-project", self.runpy_n_dump('bf_selfbuild_project.buildme.infer_project_name'))
         self.assertEqual("bf-selfbuild-project", self.runpy_n_dump('bf_selfbuild_other_package.buildme.infer_project_name'))
 
@@ -77,3 +66,32 @@ class SelfBuildProjectTestCase(
         self.addCleanup(os.unlink, setuppy)
         self.assertFileContentRegex(setuppy, r"import bigflow.build")
         self.assertFileContentRegex(setuppy, re.compile(r"bigflow.build.setup(.*)", re.M))
+
+
+class SelfBuildProjectFromPackageTestCase(
+    mixins.VenvMixin,
+    _BaseBuildReflectTest,
+):
+    def test_reflected_build_from_wheel(self):
+
+        # build 'whl' package
+        self.assertFileNotExists("dist/*.whl")
+        self.subprocess_run(["python", "setup.py", "bdist_wheel"])
+
+        # install .whl package
+        whl = self.assertFileExists("dist/*.whl")
+        self.venv_pip_install(whl)
+
+        # remove original sdist - drop cwd & create a new one
+        self.chdir_new_temp()
+
+        # then
+        self.check_build_reflect()
+
+
+class SelfBuildProjectFromSourcesTestCase(
+    _BaseBuildReflectTest,
+):
+    def test_reflected_build_from_sources(self):
+        # then
+        self.check_build_reflect()

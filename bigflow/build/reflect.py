@@ -38,7 +38,7 @@ def _iter_dist_toplevel_packages(distname) -> List[str]:
         logger.debug("Distribution %r has packages %s", dist, result)
         return result
     except FileNotFoundError:
-        logger.error("Distribution %r doesn't have 'top_level.txt' metadata - skip", distname)
+        logger.debug("Distribution %r doesn't have 'top_level.txt' metadata - skip", distname)
         return []
     except pkg_resources.DistributionNotFound:
         logger.error("Unknown distribution %r", distname)
@@ -72,13 +72,17 @@ def _infer_project_name_by_distribution(module: types.ModuleType) -> Optional[st
 
 def _infer_project_name_by_setuppy_near_module(module: types.ModuleType) -> Optional[str]:
     file = _module_to_enclosing_directory(module).parent / "setup.py"
+    if not file.exists():
+        logger.debug("Not found file %s", file)
+        return None
+
     try:
         logger.debug("Found 'setup.py' - read project parameters (check if it is 'bigflow' project)")
         pp = bigflow.build.dev.read_setuppy_args(file)
         return pp['name'].replace("_", "-")
     except Exception:
         logger.exception("Found %r, but it is not a correct bigflow project", file)
-
+        return None
 
 def infer_project_name(stack=1) -> str:
     """Apply heuristics to detect current project name."""
@@ -108,9 +112,10 @@ def _locate_self_package(project_name) -> Optional[Path]:
 def _locate_setuppy_plain_source(project_name):
 
     logger.debug("Locate 'setup.py' near the toplevel project module...")
-    module = sys.modules.get(project_name)
+    modname = project_name.replace("-", "_")
+    module = sys.modules.get(modname)
     if not module:
-        logger.warning("Could not find module %r", project_name)
+        logger.warning("Could not find module %r", modname)
     else:
         file = _module_to_enclosing_directory(module).parent / "setup.py"
         if file.exists():
@@ -118,7 +123,6 @@ def _locate_setuppy_plain_source(project_name):
             return file
         else:
             logger.debug("Not found %s", file)
-
     return None
 
 
@@ -136,6 +140,16 @@ def _expect_single_file(directory: str, pattern: str) -> Path:
         return fs[0]
 
 
+def _locate_plain_setuppy_on_fs(stack):
+    calmod = _capture_caller_module(stack+1)
+    encdir = _module_to_enclosing_directory(calmod)
+    try:
+        return bigflow.build.dev.find_setuppy(encdir)
+    except FileNotFoundError:
+        logger.debug("Could not find `setup.py` in parents of %s", encdir)
+        return None
+
+
 def materialize_setuppy(
     project_name: Optional[str] = None,
     tempdir: Optional[str] = None,
@@ -150,6 +164,9 @@ def materialize_setuppy(
 
     tarpkg = _locate_self_package(project_name)
     setuppy = _locate_setuppy_plain_source(project_name)
+
+    if setuppy is None and project_name is None:
+        setuppy = _locate_plain_setuppy_on_fs(stack=2)
 
     if tarpkg and setuppy:
         logger.warn("Found installed package at %s and raw 'setup.py' at %s, prefer 'setup.py")

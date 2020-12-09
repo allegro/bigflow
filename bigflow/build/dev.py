@@ -69,8 +69,10 @@ def find_setuppy(directory: typing.Union[None, Path, str] = None) -> Path:
     Scan provided directory and its parents, searching for any `setup.py`
     Scanning doesn't escape user home directory."""
 
-    directory = Path(directory or Path.cwd())
-    while directory != directory.parent and directory != Path.home():
+    directory = Path(directory or Path.cwd()).resolve()
+
+    while True:
+
         setup_py = directory / "setup.py"
         pyproject = directory / "pyproject.toml"
         prj_setup_py = directory / "project_setup.py"
@@ -78,7 +80,11 @@ def find_setuppy(directory: typing.Union[None, Path, str] = None) -> Path:
             return setup_py
         if prj_setup_py.exists():
             return prj_setup_py
+
+        if directory == directory.parent or directory == Path.home():
+            break
         directory = directory.parent
+
     raise FileNotFoundError("Not found `setup.py` not `project_setup.py`")
 
 
