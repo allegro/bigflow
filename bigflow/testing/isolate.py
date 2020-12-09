@@ -4,6 +4,19 @@ May prevent from doing side effects with Python intepreter
 (loaded modules, global variables, caches etc).
 """
 
+# `*IsolateMixin`s overrides original `unittest.TestCase.run` method.
+# It spawns a new subprocess via `multiprocessing`.
+# With 'spawn' strategy the whole unittest is pickled and passend into subprocess.
+# With 'fork' strategy pickling is not involved.
+#
+# Then parent creates proxy to instance of `unittest.TestResult` and pass proxy to
+# child process.  Such synchronously sends information about all methods calls
+# to parent via duplex pipe.  Parent recieves information and mutate
+# original 'TestResult' appropriately.
+#
+# You can find sequence diagramm for this in "isolate_sequence.puml" file.
+
+
 import unittest
 import sys
 import time
