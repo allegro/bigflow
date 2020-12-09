@@ -1,0 +1,45 @@
+@startuml Sequence diagramm for mixins from `bigflow.testing.isolate`
+' You can render this diagramm with http://www.plantuml.com/plantuml
+
+box "parent process"
+    participant TestRunner
+    participant TestResult #LightGreen
+    participant TheTest #LightPink
+end box
+
+box "child process"
+    participant "TheTest~*" as TheTest2 #LightPink
+    participant "_TestResultProxy~*" as _TestResultProxy #LightGreen
+end box
+
+activate TestRunner
+TestRunner -> TestResult ** : <<create>>
+
+TestRunner -> TheTest ** : ~__init__()
+TestRunner -> TheTest ++ : run(testResult)
+
+TheTest -> TheTest2: spawn/fork child process
+TheTest -> TheTest2 ** : << pickle >>
+
+TheTest -> _TestResultProxy ** : << pickle >>
+TheTest --> TheTest2 ++ : run0(resultProxy)
+
+TheTest2 -> TheTest2 ++: runTest
+
+group multiple
+    TheTest2 -> _TestResultProxy ++ : report fail/success
+    _TestResultProxy --> TheTest ++ : send (method name, args)
+    TheTest -> TestResult: apply method with args
+    TheTest --> _TestResultProxy -- : ack
+    _TestResultProxy -> TheTest2 --
+end
+
+deactivate TheTest2
+TheTest2 --> TheTest --: send ("~__stop__", None)
+
+TheTest -> TestRunner --
+
+TestRunner -> TestResult: print
+deactivate TestRunner
+
+@enduml
