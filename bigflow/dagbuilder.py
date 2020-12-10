@@ -41,7 +41,7 @@ from airflow.contrib.operators import kubernetes_pod_operator
 
 default_args = {{
             'owner': 'airflow',
-            'depends_on_past': True,
+            'depends_on_past': {depends_on_past},
             'start_date': {start_date_as_str},
             'email_on_failure': False,
             'email_on_retry': False,
@@ -57,6 +57,7 @@ dag = DAG(
 """.format(dag_id=dag_deployment_id,
            start_date_as_str=start_date_as_str,
            schedule_interval=workflow.schedule_interval,
+           depends_on_past=workflow.depends_on_past,
            execution_timeout=DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS))
 
     def get_job(workflow_job):
