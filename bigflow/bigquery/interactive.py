@@ -13,7 +13,6 @@ from .job import DEFAULT_RETRY_COUNT
 from .job import DEFAULT_RETRY_PAUSE_SEC
 from .dataset_manager import DEFAULT_LOCATION
 from .interface import Dataset, DEFAULT_RUNTIME
-from ..commons import not_none_or_error
 
 logger = logging.getLogger(__name__)
 
@@ -193,9 +192,14 @@ class InteractiveComponent(object):
     def peek(self, runtime, operation_name=DEFAULT_OPERATION_NAME, limit=DEFAULT_PEEK_LIMIT):
         """Returns the result of the specified operation in the form of the pandas.DataFrame, without really running the
         operation and affecting the table."""
-        not_none_or_error(runtime, 'runtime')
-        not_none_or_error(operation_name, 'operation_name')
-        not_none_or_error(limit, 'limit')
+
+        if runtime is None:
+            raise ValueError(f"'runtime' can't be None")
+        if operation_name is None:
+            raise ValueError(f"'operation_name' can't be None")
+        if limit is None:
+            raise ValueError(f"'limit' can't be None")
+
         results_container, component_callable = decorate_component_dependencies_with_operation_level_dataset_manager(
             self._standard_component, operation_name=operation_name, peek=True, peek_limit=limit)
 

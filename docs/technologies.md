@@ -47,8 +47,8 @@ def dataflow_pipeline_options():
 
     setup_file_path = find_or_create_setup_for_main_project_package()
     requirements_file_path = get_resource_absolute_path('requirements.txt')
-    options.view_as(SetupOptions).setup_file = resolve(setup_file_path)
-    options.view_as(SetupOptions).requirements_file = resolve(requirements_file_path)
+    options.view_as(SetupOptions).setup_file = str(setup_file_path)
+    options.view_as(SetupOptions).requirements_file = str(requirements_file_path)
 
     logger.info(f"Run beam pipeline with options {str(options)}")
     return options
@@ -58,21 +58,21 @@ The `dataflow_pipeline_options` function creates a [Beam pipeline options](https
 The following line is the key:
 
 ```python
-options.view_as(SetupOptions).setup_file = resolve(setup_file_path)
+options.view_as(SetupOptions).setup_file = str(setup_file_path)
 ```
 
 If you want to provide requirements for your Beam process, you can do it through the
 `SetupOptions`. You can store requirements for your processes in the [`resources`](./project_setup.py#project-structure) directory.
 
 ```python
-options.view_as(SetupOptions).requirements_file = resolve(requirements_file_path)
+options.view_as(SetupOptions).requirements_file = str(requirements_file_path)
 ```
 
 Note that the project requirements (`resources/requirements.txt` by default) and a Beam process requirements are two
 separate things. Your Beam process might need just a subset of the project requirements.
 
 ```python
-options.view_as(SetupOptions).requirements_file = resolve(get_resource_absolute_path('my-beam-process-requirements.txt'))
+options.view_as(SetupOptions).requirements_file = str(get_resource_absolute_path('my-beam-process-requirements.txt'))
 ```
 
 The pipeline configuration contains `staging_location` and `temp_location` directories.
@@ -129,8 +129,15 @@ The `BeamJob` class is a recommended way of running Beam jobs in BigFlow. It tak
 * The `entry_point` parameter, which should be a callable (for example a function). A entry point executes a user job,
 given a pipeline, job context, and additional arguments (`entry_point_arguments`).
 * The `pipeline_options` parameter should be a `beam.PipelineOptions` object, based on which, the `BeamJob` class produces
-a pipeline for a driver.
+a pipeline for a driver. One of the`pipeline_options`, `test_pipeline` must be provided.
 * The `entry_point_arguments` parameter should be a dictionary. It can be used in a entry point as a configuration holder.
+* The `wait_until_finish` parameter of bool type, by default set to True. It allows to timeout Beam job.
+* The `execution_timeout` parameter of int type. If `wait_until_finish` parameter is set to True it provides an interval after
+which Beam job will be considered as timed out. The default value is set to 3 hours.
+* The `test_pipeline` parameter should be of `beam.Pipeline` type. The default value is None. The main purpose of this parameter
+is to allow to provide `TestPipeline` in testing. One of the`pipeline_options`, `test_pipeline` must be provided.
+*The `pipeline_level_execution_timeout_shift` parameter of int type. It says what is the difference between dataflow and DAG timeouts.
+The default value is set to 2 minutes.
 
 ## BigQuery
 
