@@ -23,6 +23,7 @@ import bigflow.commons
 import bigflow.build.reflect
 import bigflow.build.pip
 
+from bigflow.workflow import DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +52,7 @@ class PySparkJob(bigflow.Job):
         worker_machine_type: str = 'n1-standard-1',
         env: typing.Optional[str] = None,
         project_name: typing.Optional[str] = None,
+        execution_timeout: int = DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS
     ):
         self.id = id
 
@@ -78,6 +80,8 @@ class PySparkJob(bigflow.Job):
             self.pip_packages = DEFAULT_REQUIREMENTS
 
         self._project = project_name or bigflow.build.reflect.infer_project_name(stack=2)
+
+        self.execution_timeout = execution_timeout
 
     def _generate_internal_jobid(self, context):
         job_random_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=10))

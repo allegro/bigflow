@@ -4,6 +4,8 @@ import typing
 from pathlib import Path
 from datetime import datetime
 
+from bigflow.workflow import DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS
+
 
 def clear_dags_output_dir(workdir: str):
     dags_dir_path = get_dags_output_dir(workdir)
@@ -39,11 +41,11 @@ from airflow.contrib.operators import kubernetes_pod_operator
 
 default_args = {{
             'owner': 'airflow',
-            'depends_on_past': True,
+            'depends_on_past': {depends_on_past},
             'start_date': {start_date_as_str},
             'email_on_failure': False,
             'email_on_retry': False,
-            'execution_timeout': datetime.timedelta(minutes=180),
+            'execution_timeout': datetime.timedelta(seconds={execution_timeout}),
 }}
 
 dag = DAG(
@@ -54,7 +56,9 @@ dag = DAG(
 )
 """.format(dag_id=dag_deployment_id,
            start_date_as_str=start_date_as_str,
-           schedule_interval=workflow.schedule_interval))
+           schedule_interval=workflow.schedule_interval,
+           depends_on_past=workflow.depends_on_past,
+           execution_timeout=DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS))
 
     def get_job(workflow_job):
         return workflow_job.job
@@ -75,15 +79,16 @@ dag = DAG(
     is_delete_operator_pod=True,
     retries={retries},
     retry_delay=datetime.timedelta(seconds={retry_delay}),
-    dag=dag)
+    dag=dag,
+    execution_timeout=datetime.timedelta(seconds={execution_timeout}))
 """.format(job_var=job_var,
           task_id=task_id,
           docker_image = docker_repository+":"+build_ver,
           bf_job= workflow.workflow_id+"."+job.id,
           root_folder=root_package_name,
           retries=job.retry_count if hasattr(job, 'retry_count') else 3,
-          retry_delay=job.retry_pause_sec if hasattr(job, 'retry_pause_sec') else 60))
-
+          retry_delay=job.retry_pause_sec if hasattr(job, 'retry_pause_sec') else 60,
+          execution_timeout=job.execution_timeout))
         for d in dependencies:
             up_job_var = "t" + str(get_job(d).id)
             dag_chunks.append("{job_var}.set_upstream({up_job_var})".format(job_var=job_var, up_job_var=up_job_var))

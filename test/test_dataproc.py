@@ -1,24 +1,19 @@
 import datetime
 import unittest
 import pathlib
-import contextlib
-import io
 import os
 import json
 
 from unittest import mock
 
 import google.cloud.dataproc_v1
-from google.cloud.dataproc_v1.services import job_controller
 import google.cloud.storage
 
 import bigflow
-from bigflow import dataproc
 import bigflow.dataproc
 import bigflow.resources
 
-import sys
-
+from bigflow.workflow import DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS
 
 _someobject_tags = set()
 
@@ -304,3 +299,30 @@ class PySparkJobTest(unittest.TestCase):
         # then
         self.assertIn('spark.executorEnv.bf_log_config', props)
         self.assertIn('spark.executorEnv.bf_workflow_id', props)
+
+    def test_should_initialize_job_with_default_execution_timeout(self):
+        # when
+        job = bigflow.dataproc.PySparkJob(
+            "some_job",
+            id,
+            bucket_id="no-bucket",
+            gcp_project_id="no-project",
+            gcp_region="no-region",
+        )
+
+        # then
+        self.assertEqual(job.execution_timeout, DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS)
+
+    def test_should_initialize_job_with_execution_timeout(self):
+        # when
+        job = bigflow.dataproc.PySparkJob(
+            "some_job",
+            id,
+            bucket_id="no-bucket",
+            gcp_project_id="no-project",
+            gcp_region="no-region",
+            execution_timeout=1,
+        )
+
+        # then
+        self.assertEqual(job.execution_timeout, 1)
