@@ -71,7 +71,10 @@ class _TestResultProxy:
 
 class _IsolatedProcessMixin(unittest.TestCase):
 
-    test_timeout: float
+    timeout: float
+    isolate: bool
+
+    _was_executed: bool = False
     _isolated_test_spawn_method: str
 
     def _enable_tblib(self):
@@ -97,10 +100,11 @@ class _IsolatedProcessMixin(unittest.TestCase):
         except RuntimeError:
             result.addFailure(self, sys.exc_info())
 
-    def run0(self, ch, tblib):
-        tblib = tblib and self._enable_tblib()  # enable in child process
+    def run0(self, ch, tblib_enabled):
+        # executed from child process
+        tblib_enabled = tblib_enabled and self._enable_tblib()
         with ch:
-            super().run(_TestResultProxy(ch, self, tblib))
+            super().run(_TestResultProxy(ch, self, tblib_enabled))
             ch.send(('__stop__', None))
 
     def _recv_testresult_proxy(self, result, process, ch, run_until):
@@ -130,7 +134,19 @@ class _IsolatedProcessMixin(unittest.TestCase):
             self._fail_into_result(result, "Isotalted process was unexpectedly terminated")
 
     def run(self, result=None):
-        tblib = self._enable_tblib()
+
+        cls = type(self)
+        assert not cls._was_executed, "Test was already executed without isolation, either enable isolation or run single test at once"
+
+        if not self.isolate:
+            try:
+                self.setUpParent()
+                super().run(result)
+            finally:
+                self.tearDownParent()
+
+        cls._was_executed = True
+        tblib_enabled = self._enable_tblib()
 
         if result is None:
             result = self.defaultTestResult()
@@ -147,14 +163,19 @@ class _IsolatedProcessMixin(unittest.TestCase):
 
             process = mp_context.Process(
                 name=f"isolated-test--{self.id}",
-                target=self.run0, args=[client_ch, tblib],
+                target=self.run0, args=[client_ch, tblib_enabled],
             )
             process.start()
             cstack.callback(self._stop_process, process)
 
-            run_until = time.time() + self.test_timeout
+            run_until = time.time() + self.timeout
             self._recv_testresult_proxy(result, process, server_ch, run_until)
             process.join(max(1, run_until - time.time()))
+
+    @property
+    def isolate(self):
+        # isolate only when running without debugger
+        return sys.gettrace() == None
 
     def setUpParent(self):
         "Hook method for setting up the test fixture before exercising it. Runs in original python process."
@@ -179,7 +200,8 @@ class ForkIsolateMixin(_IsolatedProcessMixin):
     per-test fixtures in scope of parent process.
     """
 
-    test_timeout: float = 600
+    timeout: float = 3600
+    isolate: bool
 
     _isolated_test_spawn_method = 'fork'
 
@@ -201,7 +223,8 @@ class SpawnIsolateMixin(_IsolatedProcessMixin):
     Test instance and test class must be pickleable.
     """
 
-    test_timeout: float = 600
+    timeout: float = 3600
+    isolate: bool
 
     _isolated_test_spawn_method = 'spawn'
 
