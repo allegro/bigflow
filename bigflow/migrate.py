@@ -62,6 +62,7 @@ def migrate__v1_0__v1_1(root):
     # Write 'pyproject.toml' and 'MANIFEST.in'
     bigflow.scaffold.render_builtin_templates(root, 'migrate-11', variables={
         'project_name': project_name,
+        'bigflow_version': bigflow.__version__,
     })
 
 
