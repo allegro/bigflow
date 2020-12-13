@@ -88,7 +88,7 @@ dag = DAG(
           root_folder=root_package_name,
           retries=job.retry_count if hasattr(job, 'retry_count') else 3,
           retry_delay=job.retry_pause_sec if hasattr(job, 'retry_pause_sec') else 60,
-          execution_timeout=job.execution_timeout))
+          execution_timeout=getattr(job, 'execution_timeout', DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS)))
         for d in dependencies:
             up_job_var = "t" + str(get_job(d).id)
             dag_chunks.append("{job_var}.set_upstream({up_job_var})".format(job_var=job_var, up_job_var=up_job_var))
