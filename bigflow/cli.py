@@ -748,12 +748,24 @@ def _is_log_module_installed():
         raise Exception("bigflow.log module not found. You need install bigflow with 'log' extras.")
 
 
+def _check_if_docker_exists():
+    docker_info_output: str = subprocess.getoutput('docker info')
+    docker_works = ('Client:' in docker_info_output
+                    and 'Server:' in docker_info_output
+                    and not 'ERROR' in docker_info_output)
+    if not docker_works:
+        raise RuntimeError('Docker client or server not found. To run BigFlow CLI deploy and build commands, you need the'
+                           'running Docker server and client. Run "docker info" to check the Docker status on your machine.')
+
+
 def cli(raw_args) -> None:
     project_name = read_project_name_from_setup()
     parsed_args = _parse_args(project_name, raw_args)
     init_console_logging(parsed_args.verbose)
 
-    operation = parsed_args.operation
+    operation: str = parsed_args.operation
+    if 'deploy' in operation or 'build' in operation:
+        _check_if_docker_exists()
 
     if operation == 'run':
         set_configuration_env(parsed_args.config)

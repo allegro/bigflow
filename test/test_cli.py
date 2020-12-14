@@ -1,4 +1,5 @@
 from unittest import TestCase
+import itertools
 import mock
 
 from bigflow.cli import *
@@ -914,6 +915,20 @@ another-project-id                         ANOTHER PROJECT                002242
         self.assertEqual(len(logging.root.handlers), 1)
         self.assertIsInstance(logging.root.handlers[0], logging.StreamHandler)
         self.assertEqual(logging.root.level, logging.DEBUG)
+
+    @mock.patch('bigflow.cli.subprocess.getoutput')
+    def test_should_validate_docker_status_before_build_and_deploy(self, getoutput_mock):
+        # given
+        invalid_outputs = ['Client:Server:ERROR', 'Client:', 'Server:']
+        commands_to_check = ['build', 'deploy', 'build-image', 'deploy-image']
+
+        for output, command in itertools.product(invalid_outputs, commands_to_check):
+            getoutput_mock.return_value = output
+
+            # then
+            with self.assertRaises(RuntimeError) as e:
+                # when
+                cli([command])
 
 
 class ValidateProjectSetupTestCase(TestCase):
