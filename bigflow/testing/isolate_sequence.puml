@@ -1,45 +1,83 @@
 @startuml Sequence diagramm for mixins from `bigflow.testing.isolate`
-' You can render this diagramm with http://www.plantuml.com/plantuml
+' View diagram with http://www.plantuml.com/plantuml
 
-box "parent process"
-    participant TestRunner
+box "parent process" #lightcyan
+    participant Runner
     participant TestResult #LightGreen
-    participant TheTest #LightPink
+    participant TestCase #LightPink
+    participant "_TestResultProxy" as _TestResultProxy #LightGreen
 end box
 
-box "child process"
-    participant "TheTest~*" as TheTest2 #LightPink
-    participant "_TestResultProxy~*" as _TestResultProxy #LightGreen
+box "child process" #moccasin
+    participant "_TestResultProxy" as _TestResultProxy2 <<clone>> #LightGreen
+    participant "TestCase" as TestCase2 <<clone>> #LightPink
 end box
 
-activate TestRunner
-TestRunner -> TestResult ** : <<create>>
+activate Runner
+Runner -> TestResult ** : <<create>>
 
-TestRunner -> TheTest ** : ~__init__()
-TestRunner -> TheTest ++ : run(testResult)
+Runner -> TestCase : TestClass.setUpClass()
+activate TestCase #skyblue
+deactivate
+|||
 
-TheTest -> TheTest2: spawn/fork child process
-TheTest -> TheTest2 ** : << pickle >>
+Runner -> TestCase ** : <<create>>
+Runner -> TestCase ++ : run(testResult)
 
-TheTest -> _TestResultProxy ** : << pickle >>
-TheTest --> TheTest2 ++ : run0(resultProxy)
+TestCase -> TestCase : setUpParent()
+activate TestCase  #skyblue
+deactivate
 
-TheTest2 -> TheTest2 ++: runTest
+TestCase -> _TestResultProxy **: <<create>>
 
-group multiple
-    TheTest2 -> _TestResultProxy ++ : report fail/success
-    _TestResultProxy --> TheTest ++ : send (method name, args)
-    TheTest -> TestResult: apply method with args
-    TheTest --> _TestResultProxy -- : ack
-    _TestResultProxy -> TheTest2 --
-end
+TestCase ->> TestCase2: spawn/fork child process
+|||
 
-deactivate TheTest2
-TheTest2 --> TheTest --: send ("~__stop__", None)
+_TestResultProxy -->> _TestResultProxy2 ** : <<clone>>
+TestCase -->> TestCase2 ** : <<clone>>
 
-TheTest -> TestRunner --
+TestCase --> TestCase2 ++ : run0(resultProxy)
+TestCase -> TestCase ++ : recieve from pipe
 
-TestRunner -> TestResult: print
-deactivate TestRunner
+TestCase2 -> TestCase2 : setUp()
+activate TestCase2  #skyblue
+deactivate
+
+TestCase2 -> TestCase2: runTest()
+
+activate TestCase2 #dodgerblue
+    |||
+    TestCase2 -> _TestResultProxy2 ++ : report fail/success
+    _TestResultProxy2 --> TestCase ++ : send (method name, args) over pipe
+
+    TestCase -> TestResult ++ : apply method with args
+    return
+
+    TestCase --> _TestResultProxy2 -- : ack over pipe
+    _TestResultProxy2 -> TestCase2 --
+deactivate TestCase2
+
+TestCase2 -> TestCase2 : tearDown()
+activate TestCase2 #skyblue
+deactivate
+
+TestCase2 --> TestCase --: send ("~__stop__", None) over pipe
+TestCase -> TestCase --
+
+TestCase -> TestCase : tearDownParent()
+activate TestCase #skyblue
+deactivate
+
+TestCase -> Runner --
+
+Runner -> TestCase : TestCase.tearDownClass()
+activate TestCase #skyblue
+deactivate
+|||
+
+Runner -> TestResult ++ :  print
+return
+
+deactivate Runner
 
 @enduml
