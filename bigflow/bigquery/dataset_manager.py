@@ -1,6 +1,8 @@
 import uuid
 import logging
 import functools
+import typing
+from pathlib import Path
 
 DEFAULT_REGION = 'europe-west1'
 DEFAULT_MACHINE_TYPE = 'n1-standard-1'
@@ -79,7 +81,7 @@ class TemplatedDatasetManager(object):
         return self.dataset_manager.collect(sql.format(**self.template_variables(custom_run_datetime)))
 
     @handle_key_error
-    def collect_list(self, sql, custom_run_datetime=None):
+    def collect_list(self, sql, custom_run_datetime=None, record_as_dict=False):
         return self.dataset_manager.collect_list(sql.format(**self.template_variables(custom_run_datetime)))
 
     def dry_run(self, sql, custom_run_datetime=None):
@@ -108,6 +110,19 @@ class TemplatedDatasetManager(object):
         result.update(self.extras)
         result['dt'] = custom_run_datetime or self.run_datetime
         return result
+
+    def create_table_from_schema(
+            self,
+            table_name: str,
+            schema: typing.Union[dict, Path]):
+        pass
+
+    def insert(
+            self,
+            table_name: str,
+            records: typing.Union[typing.List[dict], Path],
+            schema: typing.Union[dict, Path]):
+        pass
 
 
 class PartitionedDatasetManager(object):
