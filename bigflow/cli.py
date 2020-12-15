@@ -6,30 +6,32 @@ import subprocess
 import sys
 import logging
 
+import importlib.util
+
 from argparse import Namespace
 from datetime import datetime
 from importlib import import_module
 from pathlib import Path
 from types import ModuleType
 from typing import Tuple, Iterator
-import importlib.util
-import bigflow as bf
 from typing import Optional
 from glob import glob1
 
+import bigflow as bf
+import bigflow.build.pip
+import bigflow.resources
+import bigflow.commons as bf_commons
+import bigflow.build.dist
+import bigflow.build.dev
+import bigflow.migrate
+
 from bigflow import Config
 from bigflow.deploy import deploy_dags_folder, deploy_docker_image
-from bigflow.resources import find_file
 from bigflow.scaffold import start_project
 from bigflow.version import get_version, release
 
-from .commons import run_process
-
 
 logger = logging.getLogger(__name__)
-
-
-SETUP_VALIDATION_MESSAGE = 'BigFlow setup is valid.'
 
 
 def walk_module_files(root_package: Path) -> Iterator[Tuple[str, str]]:
@@ -41,7 +43,7 @@ def walk_module_files(root_package: Path) -> Iterator[Tuple[str, str]]:
 
     @return: (absolute_path: str, name: str)
     """
-    logger.debug("walk module files %s", root_package)
+    logger.debug("walk module files %r", root_package)
     for subdir, dirs, files in os.walk(str(root_package)):
         for file in files:
             if file.endswith('.py'):
@@ -71,9 +73,11 @@ def walk_module_paths(root_package: Path) -> Iterator[str]:
     """
     Returning all the module paths in the `root_package`
     """
+    logger.debug("walk module paths, root %r", root_package)
     for module_dir, module_file in walk_module_files(root_package):
         mpath = build_module_path(root_package, Path(module_dir), module_file)
         logger.debug("%s / %s / %s resolved to module %r", root_package, module_dir, module_file, mpath)
+        logger.debug("path %r", mpath)
         yield mpath
 
 
@@ -81,9 +85,11 @@ def walk_modules(root_package: Path) -> Iterator[ModuleType]:
     """
     Imports all the modules in the path and returns
     """
+    logger.debug("walk modules, root %r", root_package)
     for module_path in walk_module_paths(root_package):
         try:
             logger.debug("import module %r", module_path)
+            logger.debug("%r", sys.path)
             yield import_module(module_path)
         except ValueError as e:
             print(f"Skipping module {module_path}. Can't import due to exception {str(e)}.")
@@ -103,6 +109,7 @@ def walk_workflows(root_package: Path) -> Iterator[bf.Workflow]:
     """
     Imports modules in the `root_package` and returns all the elements of the type bf.Workflow
     """
+    logger.debug("walk workflows, root %s", root_package)
     for module in walk_modules(root_package):
         for name, workflow in walk_module_objects(module, bf.Workflow):
             yield workflow
@@ -112,6 +119,7 @@ def find_workflow(root_package: Path, workflow_id: str) -> bf.Workflow:
     """
     Imports modules and finds the workflow with id workflow_id
     """
+    logger.debug("find workflow, root %s, workflow_id %r", root_package, workflow_id)
     for workflow in walk_workflows(root_package):
         if workflow.workflow_id == workflow_id:
             return workflow
@@ -162,19 +170,13 @@ def execute_workflow(root_package: Path, workflow_id: str, runtime=None):
 
 
 def read_project_name_from_setup() -> Optional[str]:
-    try: # todo this method needs to be changed because is not working in tests which uses find_root_package method
-        sys.path.insert(1, os.getcwd())
-        import project_setup
-        return project_setup.PROJECT_NAME
-    except Exception:
+    logger.info("Read project name from `setup.py`")
+    try:
+        params = bigflow.build.dev.read_setuppy_args()
+        return params.get('name')
+    except Exception as e:
+        logger.warning("Unable to read 'setup.py': %s", e)
         return None
-
-
-def build_project_name_description(project_name: str) -> str:
-    if project_name is None:
-        return ''
-    else:
-        return 'Project name is taken from project_setup.PROJECT_NAME: {0}.'.format(project_name)
 
 
 def find_root_package(project_name: Optional[str], project_dir: Optional[str]) -> Path:
@@ -230,8 +232,7 @@ def cli_run(project_package: str,
     """
 
     # TODO: Check that installed libs in sync with `requirements.txt`
-    import bigflow.build
-    bigflow.build.check_requirements_needs_recompile(Path("resources/requirements.txt"))
+    bigflow.build.pip.check_requirements_needs_recompile(Path("resources/requirements.txt"))
 
     if full_job_id is not None:
         try:
@@ -363,7 +364,7 @@ def _create_run_parser(subparsers, project_name):
                             required=True,
                             type=str,
                             help='The main package of your project. '
-                                 'Should contain project_setup.py')
+                                 'Should contain `setup.py`')
 
 
 def _add_parsers_common_arguments(parser):
@@ -548,38 +549,55 @@ def find_image_file():
 
 def _cli_build_image(args):
     validate_project_setup()
-    cmd = 'python project_setup.py build_project --build-image'
-    run_process(cmd)
+    bf_commons.run_process([
+        "python",
+        bigflow.build.dev.find_setuppy(),
+        "build_project",
+        "--build-image",
+    ])
 
 
 def _cli_build_package():
     validate_project_setup()
-    cmd = 'python project_setup.py build_project --build-package'
-    run_process(cmd)
+    bf_commons.run_process([
+        "python",
+        bigflow.build.dev.find_setuppy(),
+        "build_project",
+        "--build-package",
+    ])
 
 
 def _cli_build_dags(args):
     validate_project_setup()
-    cmd = ['python', 'project_setup.py', 'build_project', '--build-dags']
+    cmd = [
+        "python",
+        bigflow.build.dev.find_setuppy(),
+        "build_project",
+        "--build-dags",
+    ]
     if _is_workflow_selected(args):
         cmd.append('--workflow')
         cmd.append(args.workflow)
     if _is_starttime_selected(args):
         cmd.append('--start-time')
         cmd.append(args.start_time)
-    run_process(cmd)
+    bf_commons.run_process(cmd)
 
 
 def _cli_build(args):
     validate_project_setup()
-    cmd = ['python', 'project_setup.py', 'build_project']
+    cmd = [
+        "python",
+        bigflow.build.dev.find_setuppy(),
+        "build_project",
+    ]
     if _is_workflow_selected(args):
         cmd.append('--workflow')
         cmd.append(args.workflow)
     if _is_starttime_selected(args):
         cmd.append('--start-time')
         cmd.append(args.start_time)
-    run_process(cmd)
+    bf_commons.run_process(cmd)
 
 
 def _create_build_requirements_parser(subparsers):
@@ -596,9 +614,8 @@ def _create_build_requirements_parser(subparsers):
 
 
 def _cli_build_requirements(args):
-    import bigflow.build
     in_file = pathlib.Path(args.in_file)
-    bigflow.build.pip_compile(in_file)
+    bigflow.build.pip.pip_compile(in_file)
 
 
 def _is_workflow_selected(args):
@@ -692,15 +709,21 @@ def _cli_start_project():
 
 
 def check_if_project_setup_exists():
-    find_file('project_setup.py', Path('.'), 1)
+    bigflow.resources.find_file('setup.py', Path('.'), 1)
 
 
 def validate_project_setup():
     check_if_project_setup_exists()
-    cmd = ['python', 'project_setup.py', 'build_project', '--validate-project-setup']
-    output = run_process(cmd)
-    if SETUP_VALIDATION_MESSAGE not in output:
-        raise ValueError('The project_setup.py is invalid. Check the documentation how to create a valid project_setup.py: https://github.com/allegro/bigflow/blob/master/docs/build.md')
+    cmd = [
+        "python",
+        bigflow.build.dev.find_setuppy(),
+        "build_project",
+        "--validate-project-setup",
+    ]
+    output = bf_commons.run_process(cmd)
+
+    if bigflow.build.dist.SETUP_VALIDATION_MESSAGE not in output:
+        raise ValueError('The `setup.py` is invalid. Check the documentation how to create a valid `setup.py`: https://github.com/allegro/bigflow/blob/master/docs/build.md')
 
 
 def _cli_project_version(args):
@@ -759,6 +782,9 @@ def _check_if_docker_exists():
 
 
 def cli(raw_args) -> None:
+    bigflow.build.dev.install_syspath()
+    bigflow.migrate.check_migrate()
+
     project_name = read_project_name_from_setup()
     parsed_args = _parse_args(project_name, raw_args)
     init_console_logging(parsed_args.verbose)
@@ -796,7 +822,7 @@ def cli(raw_args) -> None:
         _is_log_module_installed()
         root_package = find_root_package(project_name, None)
         cli_logs(root_package)
-    elif operation == 'pip-compile':
+    elif operation == 'build-requirements':
         _cli_build_requirements(parsed_args)
     else:
         raise ValueError(f'Operation unknown - {operation}')

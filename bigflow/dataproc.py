@@ -2,13 +2,11 @@ import json
 import base64
 import functools
 import datetime
-import inspect
+import time
 import io
-import os
 import pathlib
 import pickle
 import random
-import re
 import string
 import textwrap
 import time
@@ -22,6 +20,9 @@ import bigflow
 import bigflow.configuration
 import bigflow.resources
 import bigflow.commons
+import bigflow.build.reflect
+import bigflow.build.pip
+
 from bigflow.workflow import DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS
 
 logger = logging.getLogger(__name__)
@@ -50,9 +51,8 @@ class PySparkJob(bigflow.Job):
         worker_num_instances: int = 2,
         worker_machine_type: str = 'n1-standard-1',
         env: typing.Optional[str] = None,
-        setup_file: typing.Optional[str] = None,
+        project_name: typing.Optional[str] = None,
         execution_timeout: int = DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS
-
     ):
         self.id = id
 
@@ -79,21 +79,9 @@ class PySparkJob(bigflow.Job):
         else:
             self.pip_packages = DEFAULT_REQUIREMENTS
 
-        if setup_file:
-            self.setup_file = setup_file
-        else:
-            self.setup_file = None
-            self._project = _capture_caller_topmodule()
-            self._any_file_inside_project = _capture_caller_path(1)
-        self.execution_timeout = execution_timeout
+        self._project = project_name or bigflow.build.reflect.infer_project_name(stack=2)
 
-    def _ensure_has_setup_file(self):
-        if self.setup_file:
-            return
-        logger.debug("Find or create setup file for main package")
-        self.setup_file = bigflow.resources.find_or_create_setup_for_main_project_package(
-            self._project,
-            self._any_file_inside_project)
+        self.execution_timeout = execution_timeout
 
     def _generate_internal_jobid(self, context):
         job_random_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=10))
@@ -156,7 +144,6 @@ class PySparkJob(bigflow.Job):
     def execute(self, context: bigflow.JobContext):
         logger.info("Run job %r", self.id)
 
-        self._ensure_has_setup_file()
         job_internal_id = self._generate_internal_jobid(context)
 
         client_options = {'api_endpoint': f"{self.gcp_region}-dataproc.googleapis.com:443"}
@@ -167,7 +154,8 @@ class PySparkJob(bigflow.Job):
 
         logger.info("Prapare and upload python package...")
         bucket = storage_client.get_bucket(self.bucket_id)
-        egg_local_path = _build_project_egg(self.setup_file)
+
+        egg_local_path = str(bigflow.build.reflect.build_egg(self._project))
         egg_path = _upload_egg(egg_local_path, bucket, job_internal_id)
 
         driver_path = f"{job_internal_id}/{self.driver_filename}"
@@ -343,24 +331,3 @@ def _delete_cluster(dataproc_cluster_client, project_id, region, cluster):
         cluster_name=cluster,
     )
     print("Cluster was deleted.")
-
-
-def _capture_caller_path(deep=1):
-    return os.path.abspath(inspect.stack()[deep + 1].filename)
-
-
-def _capture_caller_topmodule(deep=1):
-    f = inspect.stack()[deep + 1].frame
-    module = f.f_globals['__name__']
-    return module.split(".", 2)[0]
-
-
-def _build_project_egg(setup_file):
-    cwd = pathlib.Path(setup_file).parent.resolve()
-    output = bigflow.commons.run_process(
-        ['python', setup_file, 'bdist_egg'],
-        cwd=str(cwd),
-    )
-    egg_filename = re.search('creating \'([^\']*)\'', output).group(1)
-    logger.debug("Egg filename is %r", egg_filename)
-    return str(cwd / egg_filename)
