@@ -7,3 +7,5 @@ mock==4.0.2
 responses~=0.12.1
 
 tblib===1.7.0
+freezegun==1.0.0
+pexpect==4.8.0

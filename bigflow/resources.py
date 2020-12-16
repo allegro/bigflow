@@ -5,10 +5,10 @@ import logging
 
 from typing import List, Iterable
 from pathlib import Path
+from deprecated import deprecated
 
 from bigflow.commons import (
     resolve,
-    generate_file_hash,
 )
 
 
@@ -33,33 +33,15 @@ def find_all_resources(resources_dir: Path) -> Iterable[str]:
             yield str(path.relative_to(resources_dir.parent))
 
 
-def check_requirements_needs_recompile(req: Path) -> bool:
-    req_txt = req.with_suffix(".txt")
-    req_in = req.with_suffix(".in")
-    logger.debug("Check if file %s should be recompiled", req_txt)
-
-    if not req_in.exists():
-        logger.info("No file %s - pip-tools is not used", req_in)
-        return False
-
-    if not req_txt.exists():
-        logger.info("File %s does not exist - need to be compiled by 'pip-compile'", req_txt)
-        return True
-
-    req_txt_content = req_txt.read_text()
-    hash1 = generate_file_hash(req_in)
-    same_hash = hash1 in req_txt_content
-
-    if same_hash:  # dirty but works ;)
-        logger.info("Don't need to compile %s file", req_txt)
-        return False
-    else:
-        logger.warn("File %s needs to be recompiled with 'bigflow build-requirements' command", req_txt)
-        return True
-
-
+# TODO: Move to 'bigflow.build.pip' ?
 def read_requirements(requirements_path: Path, recompile_check=True) -> List[str]:
-    if recompile_check and check_requirements_needs_recompile(requirements_path):
+    """Reads and parses 'requirements.txt' file.
+
+    Returns list of requirement specs, skipping comments and empty lines
+    """
+
+    import bigflow.build.pip as bf_pip
+    if recompile_check and bf_pip.check_requirements_needs_recompile(requirements_path):
         raise ValueError("Requirements needs to be recompiled with 'pip-tools'")
 
     result: List[str] = []
@@ -74,7 +56,7 @@ def read_requirements(requirements_path: Path, recompile_check=True) -> List[str
                 result.extend(read_requirements(subrequirements_path))
             elif line:
                 result.append(line)
-        return result
+    return result
 
 
 def find_file(file_name: str, search_start_file: Path, max_depth: int = 10) -> Path:
@@ -128,6 +110,11 @@ def get_resource_absolute_path(resource_file_name: str, search_start_file: Path 
     return result
 
 
+@deprecated(
+    reason="""
+        Don't use this method as it doesn't work when called from pip-installed package.
+        Use `bigflow.build.reflect.materialize_setuppy` instead"""
+)
 def find_setup(search_start_file: Path, retries_left: int = 10, sleep_time: float = 5) -> Path:
     '''
     Method used for finding the setup.py for a Apache Beam process. Because the setup.py can be created on runtime,
@@ -160,6 +147,11 @@ def create_file_if_not_exists(file_path: Path, body: str) -> Path:
     return file_path
 
 
+@deprecated(
+    reason="""
+        This method doesn't work when called from pip-installed package.
+        Use `bigflow.build.reflect.materialize_setuppy` instead"""
+)
 def create_setup_body(project_name: str) -> str:
     return f'''
 import setuptools
@@ -174,9 +166,13 @@ setuptools.setup(
 '''
 
 
+@deprecated(
+    reason="""
+        This method doesn't work when called from pip-installed package.
+        Use `bigflow.build.reflect.materialize_setuppy` instead"""
+)
 def find_or_create_setup_for_main_project_package(project_name: str = None, search_start_file: Path = None) -> Path:
-    caller_stack_frame = inspect.stack()[1][0]
-    caller_module = inspect.getmodule(caller_stack_frame)
-    search_start_file = search_start_file or Path(caller_module.__file__)
-    project_name = project_name or caller_module.__name__.split('.')[0]
-    return create_file_if_not_exists(find_file(project_name, Path(search_start_file)).parent / 'setup.py', create_setup_body(project_name))
+    import bigflow.build.reflect as br
+    if project_name is None:
+        project_name = br.infer_project_name(stack=3)  # +1 stack for @deprecated
+    return br.materialize_setuppy(project_name)

@@ -58,8 +58,10 @@ project_dir/
     resources/
         requirements.txt
     Dockerfile
-    project_setup.py
     deployment_config.py
+    setup.py
+    MANIFEST.in
+    pyproject.toml
 ```
 
 Let us start with the `project_package`. It's the Python package which contains the processing logic of your workflows.
@@ -67,12 +69,8 @@ It also contains `Workflow` objects, which arranges parts of your processing log
 a [DAG](https://en.wikipedia.org/wiki/Directed_acyclic_graph) (read the [Workflow & Job chapter](./workflow-and-job.md) to learn more about workflows and jobs).
 The `project_package` is used to create a standard Python package, which can be installed using `pip`.
 
-`project_setup.py` is the build script for the project. It turns the `project_package` into a `.whl` package.
+`setup.py` is the build script for the project. It turns the `project_package` into a `.whl` package.
 It's based on the standard Python tool — [setuptool](https://packaging.python.org/key_projects/#setuptools).
-
-There is also the special variable — `PROJECT_NAME` inside `project_setup.py`. In the example project, it is
-`PROJECT_NAME = 'project_package'`. It tells BigFlow CLI which package inside the `project_dir` is the main package with
-your processing logic and workflows.
 
 You can put your tests into the `test` package. The `bigflow build-package` command runs tests automatically, before trying to build the package.
 
@@ -100,8 +98,6 @@ Result:
 ```
 Welcome inside the example resource!
 ```
-
-The two remaining files  — `Dockerfile` and `deployment_config.py` don't take a part in the Python package build process.
 
 Because every BigFlow project is a standard Python package, we suggest going through the
 [official Python packaging tutorial](https://packaging.python.org/tutorials/packaging-projects/).
@@ -146,8 +142,8 @@ BigFlow follows the standard [semver](https://en.wikipedia.org/wiki/Software_ver
 
 `<major>.<minor>.<patch>`
 
-If BigFlow finds a tag on a current commit, it uses it as a current project version. 
-If there are commits after the last tag or a working directory is dirty, it creates a snapshot version with the 
+If BigFlow finds a tag on a current commit, it uses it as a current project version.
+If there are commits after the last tag or a working directory is dirty, it creates a snapshot version with the
 following schema:
 
 `<major>.<minor>.<patch><snapshot_id>`

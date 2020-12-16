@@ -1,0 +1,3 @@
+[build-system]
+requires = ["bigflow=="]
+build-backend = "bigflow.build.meta"
