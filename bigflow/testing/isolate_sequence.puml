@@ -1,0 +1,83 @@
+@startuml Sequence diagramm for mixins from `bigflow.testing.isolate`
+' View diagram with http://www.plantuml.com/plantuml
+
+box "parent process" #lightcyan
+    participant Runner
+    participant TestResult #LightGreen
+    participant TestCase #LightPink
+    participant "_TestResultProxy" as _TestResultProxy #LightGreen
+end box
+
+box "child process" #moccasin
+    participant "_TestResultProxy" as _TestResultProxy2 <<clone>> #LightGreen
+    participant "TestCase" as TestCase2 <<clone>> #LightPink
+end box
+
+activate Runner
+Runner -> TestResult ** : <<create>>
+
+Runner -> TestCase : TestClass.setUpClass()
+activate TestCase #skyblue
+deactivate
+|||
+
+Runner -> TestCase ** : <<create>>
+Runner -> TestCase ++ : run(testResult)
+
+TestCase -> TestCase : setUpParent()
+activate TestCase  #skyblue
+deactivate
+
+TestCase -> _TestResultProxy **: <<create>>
+
+TestCase ->> TestCase2: spawn/fork child process
+|||
+
+_TestResultProxy -->> _TestResultProxy2 ** : <<clone>>
+TestCase -->> TestCase2 ** : <<clone>>
+
+TestCase --> TestCase2 ++ : run0(resultProxy)
+TestCase -> TestCase ++ : recieve from pipe
+
+TestCase2 -> TestCase2 : setUp()
+activate TestCase2  #skyblue
+deactivate
+
+TestCase2 -> TestCase2: runTest()
+
+activate TestCase2 #dodgerblue
+    |||
+    TestCase2 -> _TestResultProxy2 ++ : report fail/success
+    _TestResultProxy2 --> TestCase ++ : send (method name, args) over pipe
+
+    TestCase -> TestResult ++ : apply method with args
+    return
+
+    TestCase --> _TestResultProxy2 -- : ack over pipe
+    _TestResultProxy2 -> TestCase2 --
+deactivate TestCase2
+
+TestCase2 -> TestCase2 : tearDown()
+activate TestCase2 #skyblue
+deactivate
+
+TestCase2 --> TestCase --: send ("~__stop__", None) over pipe
+TestCase -> TestCase --
+
+TestCase -> TestCase : tearDownParent()
+activate TestCase #skyblue
+deactivate
+
+TestCase -> Runner --
+
+Runner -> TestCase : TestCase.tearDownClass()
+activate TestCase #skyblue
+deactivate
+|||
+
+Runner -> TestResult ++ :  print
+return
+
+deactivate Runner
+
+@enduml
