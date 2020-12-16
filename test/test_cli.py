@@ -916,8 +916,22 @@ another-project-id                         ANOTHER PROJECT                002242
         self.assertIsInstance(logging.root.handlers[0], logging.StreamHandler)
         self.assertEqual(logging.root.level, logging.DEBUG)
 
+    @mock.patch('bigflow.cli._cli_deploy_image')
+    @mock.patch('bigflow.cli._cli_deploy_dags')
+    @mock.patch('bigflow.cli._cli_build_image')
+    @mock.patch('bigflow.cli._cli_build')
+    @mock.patch('bigflow.cli.run_process')
+    @mock.patch('bigflow.cli.logger.warning')
     @mock.patch('bigflow.cli.subprocess.getoutput')
-    def test_should_validate_docker_status_before_build_and_deploy(self, getoutput_mock):
+    def test_should_validate_docker_status_before_build_and_deploy(
+            self,
+            getoutput_mock,
+            logger_info_mock,
+            run_process_mock,
+            _cli_build_mock,
+            _cli_build_image_mock,
+            _cli_deploy_dags_mock,
+            _cli_deploy_image_mock):
         # given
         invalid_outputs = ['Client:Server:ERROR', 'Client:', 'Server:']
         commands_to_check = ['build', 'deploy', 'build-image', 'deploy-image']
@@ -925,10 +939,14 @@ another-project-id                         ANOTHER PROJECT                002242
         for output, command in itertools.product(invalid_outputs, commands_to_check):
             getoutput_mock.return_value = output
 
+            # when
+            cli([command])
+
             # then
-            with self.assertRaises(RuntimeError) as e:
-                # when
-                cli([command])
+            logger_info_mock.assert_called_with(
+                'Docker client or server not found. To run BigFlow CLI deploy and build commands, you need the'
+                f'running Docker server and client. The "docker info" command result: {output}')
+            logger_info_mock.reset_mock()
 
 
 class ValidateProjectSetupTestCase(TestCase):

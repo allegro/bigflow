@@ -754,8 +754,8 @@ def _check_if_docker_exists():
                     and 'Server:' in docker_info_output
                     and not 'ERROR' in docker_info_output)
     if not docker_works:
-        raise RuntimeError('Docker client or server not found. To run BigFlow CLI deploy and build commands, you need the'
-                           'running Docker server and client. Run "docker info" to check the Docker status on your machine.')
+        logger.warning('Docker client or server not found. To run BigFlow CLI deploy and build commands, you need the'
+                       f'running Docker server and client. The "docker info" command result: {docker_info_output}')
 
 
 def cli(raw_args) -> None:
