@@ -20,6 +20,13 @@ def resolve(path: Path):
     return str(path.absolute())
 
 
+@deprecated(
+    reason="Use `datetime.now().strftime('%Y-%m-%d %H:00:00')` instead.",
+)
+def now(template: str = "%Y-%m-%d %H:00:00"):
+    return datetime.now().strftime(template)
+
+
 def run_process(cmd, check=True, **kwargs):
     if isinstance(cmd, str):
         cmd = re.split(r"\s+", cmd)
