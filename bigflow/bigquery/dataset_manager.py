@@ -1,3 +1,4 @@
+import json
 import uuid
 import logging
 import functools
@@ -114,8 +115,10 @@ class TemplatedDatasetManager(object):
     def create_table_from_schema(
             self,
             table_name: str,
-            schema: typing.Union[dict, Path]):
-        pass
+            schema: typing.Optional[typing.Union[typing.List[dict], Path]],
+            table=None):
+        table_id = self.create_table_id(table_name)
+        return self.dataset_manager.create_table_from_schema(table_id, schema, table)
 
     def insert(
             self,
@@ -204,6 +207,20 @@ class PartitionedDatasetManager(object):
     def load_table_from_dataframe(self, table_name, df, partitioned=True, custom_run_datetime=None):
         table_id = self._create_table_id(custom_run_datetime, table_name, partitioned)
         return self._dataset_manager.load_table_from_dataframe(table_id, df)
+
+    def create_table_from_schema(
+            self,
+            table_name: str,
+            schema: typing.Optional[typing.Union[typing.List[dict], Path]],
+            table=None):
+        return self._dataset_manager.create_table_from_schema(table_name, schema, table)
+
+    def insert(
+            self,
+            table_name: str,
+            records: typing.Union[typing.List[dict], Path],
+            schema: typing.Union[dict, Path]):
+        pass
 
     def _write(self, write_callable, table_name, sql, partitioned, custom_run_datetime=None):
         table_id = self._create_table_id(custom_run_datetime, table_name, partitioned)
@@ -307,6 +324,35 @@ class DatasetManager(object):
             .to_dataframe()['table_exists'] \
             .iloc[0] > 0
 
+    def create_table_from_schema(
+            self,
+            table_id: str,
+            schema: typing.Optional[typing.Union[typing.List[dict], Path]],
+            table=None):
+        from google.cloud.bigquery import Table, TimePartitioning
+
+        if schema and table:
+            raise ValueError("You can't provide both schema and table, because the table you provide"
+                             "should already contain the schema.")
+        if not schema and not table:
+            raise ValueError("You must provide either schema or table.")
+
+        if isinstance(schema, Path):
+            with open(schema, 'r') as f:
+                schema = json.loads(f.read())
+
+        if table is None:
+            table = Table(table_id, schema=schema)
+            table.time_partitioning = TimePartitioning()
+        self.bigquery_client.create_table(table)
+
+    def insert(
+            self,
+            table_name: str,
+            records: typing.Union[typing.List[dict], Path],
+            schema: typing.Union[dict, Path]):
+        pass
+
     def _query(self, sql, job_config=None):
         self.logger.info('COLLECTING DATA: %s', sql)
         if job_config:
@@ -360,7 +406,7 @@ def create_dataset_manager(
         extras=None,
         credentials=None,
         location=DEFAULT_LOCATION,
-        logger=None):
+        logger=None) -> typing.Tuple[str, PartitionedDatasetManager]:
     """
     Dataset manager factory.
     If dataset does not exist then it will also create dataset with given name.

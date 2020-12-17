@@ -4,6 +4,9 @@ import logging
 
 from inspect import getfullargspec
 
+import typing
+from pathlib import Path
+
 from google.api_core.exceptions import BadRequest
 
 import bigflow
@@ -135,6 +138,19 @@ class InteractiveDatasetManager(Dataset):
             partitioned=partitioned,
             operation_name=DEFAULT_OPERATION_NAME)
 
+    def create_table_from_schema(
+            self,
+            table_name: str,
+            schema: typing.Union[dict, Path],
+            table=None):
+        method = 'create_table_from_schema'
+        return self._tmp_interactive_component_factory(
+            generate_component_name(method=method, table_name=table_name, sql=''),
+            method,
+            table_name=table_name,
+            schema=schema,
+            table=table)
+
     def _tmp_interactive_component_factory(self, component_name, method, *args, **kwargs):
         @interactive_component(_inline_component_dataset=self)
         def tmp_component(_inline_component_dataset):
@@ -186,7 +202,7 @@ class InteractiveComponent(object):
         _, component_callable = decorate_component_dependencies_with_operation_level_dataset_manager(
             self._standard_component, operation_name=operation_name)
         job = Job(component_callable, **self._dependency_config)
-        job.execute(bigflow.JobContext.make(runtime=runtime))
+        return job.execute(bigflow.JobContext.make(runtime=runtime))
 
     @log_syntax_error
     def peek(self, runtime, operation_name=DEFAULT_OPERATION_NAME, limit=DEFAULT_PEEK_LIMIT):
@@ -253,7 +269,7 @@ def decorate_component_dependencies_with_operation_level_dataset_manager(
     return results_container, component_callable
 
 
-class OperationLevelDatasetManager(object):
+class OperationLevelDatasetManager(Dataset):
     """
     Let's you run specified operation or peek a result of a specified operation.
     """
@@ -325,6 +341,15 @@ class OperationLevelDatasetManager(object):
                 df=df,
                 custom_run_datetime=custom_run_datetime,
                 partitioned=partitioned)
+
+    def create_table_from_schema(
+            self,
+            table_name: str,
+            schema: typing.Union[dict, Path],
+            table=None,
+            operation_name=None):
+        if self._should_run_operation(operation_name):
+            return self._results_container, self._dataset_manager.create_table_from_schema(table_name, schema, table)
 
     @property
     def dt(self):
