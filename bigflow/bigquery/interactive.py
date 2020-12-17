@@ -141,7 +141,7 @@ class InteractiveDatasetManager(Dataset):
     def create_table_from_schema(
             self,
             table_name: str,
-            schema: typing.Union[dict, Path],
+            schema: typing.Optional[typing.Union[typing.List[dict], Path]],
             table=None):
         method = 'create_table_from_schema'
         return self._tmp_interactive_component_factory(
