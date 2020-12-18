@@ -134,14 +134,13 @@ class _IsolatedProcessMixin(unittest.TestCase):
             self._fail_into_result(result, "Isotalted process was unexpectedly terminated")
 
     def run(self, result=None):
-
         cls = type(self)
-        assert not cls._was_executed, "Test was already executed without isolation, either enable isolation or run single test at once"
 
         if not self.isolate:
+            assert not cls._was_executed, "Test was already executed without isolation, either enable isolation or run single test at once"
             try:
                 self.setUpParent()
-                super().run(result)
+                return super().run(result)
             finally:
                 self.tearDownParent()
 
