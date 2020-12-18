@@ -9,3 +9,4 @@ deprecated>=1.2.10,<2
 
 wheel>=0.35
 setuptools>=49
+toml>=0.10.2,<1
