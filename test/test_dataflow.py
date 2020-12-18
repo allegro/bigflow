@@ -1,4 +1,5 @@
 from unittest import TestCase
+from unittest import mock
 from unittest.mock import patch
 
 import apache_beam as beam
@@ -56,6 +57,7 @@ class CountWordsDriver:
         self.pipeline = pipeline
 
 
+@mock.patch('sys.argv', ["python"])  # Beam tries to parse cmdargs eagerly - it breaks external test launchers
 class BeamJobTestCase(TestCase):
 
     @patch.object(RunnerResult, 'is_in_terminal_state', create=True)

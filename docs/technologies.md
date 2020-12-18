@@ -46,9 +46,7 @@ def dataflow_pipeline_options():
     options.view_as(StandardOptions).runner = 'DataflowRunner'
 
     setup_file_path = find_or_create_setup_for_main_project_package()
-    requirements_file_path = get_resource_absolute_path('requirements.txt')
     options.view_as(SetupOptions).setup_file = str(setup_file_path)
-    options.view_as(SetupOptions).requirements_file = str(requirements_file_path)
 
     logger.info(f"Run beam pipeline with options {str(options)}")
     return options
@@ -59,20 +57,6 @@ The following line is the key:
 
 ```python
 options.view_as(SetupOptions).setup_file = str(setup_file_path)
-```
-
-If you want to provide requirements for your Beam process, you can do it through the
-`SetupOptions`. You can store requirements for your processes in the [`resources`](./project_setup.py#project-structure) directory.
-
-```python
-options.view_as(SetupOptions).requirements_file = str(requirements_file_path)
-```
-
-Note that the project requirements (`resources/requirements.txt` by default) and a Beam process requirements are two
-separate things. Your Beam process might need just a subset of the project requirements.
-
-```python
-options.view_as(SetupOptions).requirements_file = str(get_resource_absolute_path('my-beam-process-requirements.txt'))
 ```
 
 The pipeline configuration contains `staging_location` and `temp_location` directories.

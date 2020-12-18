@@ -5,6 +5,7 @@ better-setuptools-git-version>=1.0.5,<2
 unittest-xml-reporting>=3.0.2,<4
 jinja2>=2.10,<3
 pip-tools>=5.3,<6
+deprecated>=1.2.10,<2
 
 wheel>=0.35
 setuptools>=49

@@ -1,42 +1,36 @@
+"""Integrates `bigfow` with `setuptools`
+"""
+
 import os
+import sys
 import shutil
-import distutils.cmd
+import textwrap
 import unittest
 import setuptools
 import typing
 import xmlrunner
 import logging
-import tempfile
 import typing
-import textwrap
+import pickle
 
-from datetime import datetime
+import distutils.cmd
+import distutils.dist
+
 from pathlib import Path
+from datetime import datetime
 
-import bigflow.cli as cli
-
-from .dagbuilder import generate_dag_file
-from .resources import read_requirements, find_all_resources, check_requirements_needs_recompile
-from .commons import (
-    run_process,
-    remove_docker_image_from_local_registry,
-    get_docker_image_id,
-    build_docker_image_tag,
-    generate_file_hash,
-)
-from .version import get_version
-
-from bigflow.commons import run_process
-
-
-__all__ = [
-    'project_setup',
-    'auto_configuration',
-    'default_project_setup'
-]
+import bigflow.cli
+import bigflow.resources
+import bigflow.dagbuilder
+import bigflow.version
+import bigflow.build.pip
+import bigflow.build.dev
+import bigflow.commons as bf_commons
 
 
 logger = logging.getLogger(__name__)
+
+SETUP_VALIDATION_MESSAGE = 'BigFlow setup is valid.'
 
 
 def run_tests(build_dir: Path, test_package: Path):
@@ -50,12 +44,12 @@ def run_tests(build_dir: Path, test_package: Path):
 def export_docker_image_to_file(tag: str, target_dir: Path, version: str):
     image_target_path = target_dir / f'image-{version}.tar'
     print(f'Exporting the image to file: {image_target_path}' )
-    run_process(f"docker image save {get_docker_image_id(tag)} -o {image_target_path}")
+    bf_commons.run_process(f"docker image save {bf_commons.get_docker_image_id(tag)} -o {image_target_path}")
 
 
 def build_docker_image(project_dir: Path, tag: str):
     print('Building a Docker image. It might take a while.')
-    run_process(f'docker build {project_dir} --tag {tag}')
+    bf_commons.run_process(f'docker build {project_dir} --tag {tag}')
 
 
 def build_dags(
@@ -65,11 +59,11 @@ def build_dags(
         start_time: str,
         version: str,
         specific_workflow: typing.Optional[str] = None):
-    for workflow in cli.walk_workflows(root_package):
+    for workflow in bigflow.cli.walk_workflows(root_package):
         if specific_workflow is not None and specific_workflow != workflow.workflow_id:
             continue
         print(f'Generating DAG file for {workflow.workflow_id}')
-        generate_dag_file(
+        bigflow.dagbuilder.generate_dag_file(
             str(project_dir),
             docker_repository,
             workflow,
@@ -85,27 +79,65 @@ def build_image(
         image_dir: Path,
         deployment_config: Path):
     os.mkdir(image_dir)
-    tag = build_docker_image_tag(docker_repository, version)
+    tag = bf_commons.build_docker_image_tag(docker_repository, version)
     build_docker_image(project_dir, tag)
     try:
         export_docker_image_to_file(tag, image_dir, version)
         shutil.copyfile(deployment_config, image_dir / deployment_config.name)
     finally:
-        remove_docker_image_from_local_registry(tag)
+        bf_commons.remove_docker_image_from_local_registry(tag)
+
+
+def _hook_pregenerate_sdist(command_cls):
+    """
+    Wraps existing distutils.Command class.
+    Runs 'sdist' and copy resutl into 'build/bf-project.tar.gz'
+    """
+
+    def run(self):
+        sdist = self.get_finalized_command('sdist')
+        sdist.ensure_finalized()
+        sdist.formats = ["tar"]  # overwrite
+        sdist.run()
+        sdist_tarball = sdist.get_archive_files()
+
+        if len(sdist_tarball) > 1:
+            self.warn("ingnored 'sdist' results", sdist_tarball[1:])
+
+        self.mkpath("build")
+        self.copy_file(sdist_tarball[0], "build/bf-project.tar")
+
+        return command_cls.run(self)
+
+    return type(
+        command_cls.__name__,
+        (command_cls,),
+        {'run': run},
+    )
+
+
+def _hook_bdist_pregenerate_sdist():
+    d = distutils.dist.Distribution({'name': "fake"})
+    return {
+        cmd: _hook_pregenerate_sdist(d.get_command_class(cmd))
+        for cmd, _ in d.get_command_list()
+        if cmd.startswith("bdist")
+    }
 
 
 def build_command(
-        root_package: Path,
-        project_dir: Path,
-        build_dir: Path,
-        test_package: Path,
-        dags_dir: Path,
-        dist_dir: Path,
-        image_dir: Path,
-        eggs_dir: Path,
-        deployment_config: Path,
-        docker_repository: str,
-        version: str):
+    root_package: Path,
+    project_dir: Path,
+    build_dir: Path,
+    test_package: Path,
+    dags_dir: Path,
+    dist_dir: Path,
+    image_dir: Path,
+    eggs_dir: Path,
+    deployment_config: Path,
+    docker_repository: str,
+    version: str,
+):
 
     class BuildCommand(distutils.cmd.Command):
         description = 'BigFlow project build.'
@@ -127,17 +159,17 @@ def build_command(
             self.validate_project_setup = False
 
         def should_run_whole_build(self):
-            return not self.build_dags and not self.build_package and not self.build_image
+            return not (self.build_dags or self.build_package or self.build_image)
 
         def finalize_options(self) -> None:
             pass
 
         def run(self) -> None:
             if self.validate_project_setup:
-                print(cli.SETUP_VALIDATION_MESSAGE)
+                print(SETUP_VALIDATION_MESSAGE)
                 return
 
-            cli._valid_datetime(self.start_time)  # FIXME: Don't use private functions.
+            bigflow.cli._valid_datetime(self.start_time)   # FIXME: Don't use private functions.
             if self.build_package or self.should_run_whole_build():
                 print('Building the pip package')
                 clear_package_leftovers(dist_dir, eggs_dir, build_dir)
@@ -190,7 +222,7 @@ def _validate_deployment_config(config: dict):
 
 def get_docker_repository_from_deployment_config(deployment_config_file: Path) -> str:
     try:
-        config = cli.import_deployment_config(str(deployment_config_file), 'docker_repository')
+        config = bigflow.cli.import_deployment_config(str(deployment_config_file), 'docker_repository')
     except ValueError:
         raise ValueError(f"Can't find the specified deployment configuration: {deployment_config_file}")
 
@@ -204,7 +236,7 @@ def get_docker_repository_from_deployment_config(deployment_config_file: Path) -
 
 def secure_get_version() -> str:
     try:
-        return get_version()
+        return bigflow.version.get_version()
     except Exception as e:
         print(e)
         raise ValueError("Can't get the current package version. To use the automatic versioning, "
@@ -219,6 +251,7 @@ def auto_configuration(project_name: str, project_dir: Path = Path('.').parent) 
     Example:
     project_setup(**auto_configuration('my_super_project'))
     '''
+
     deployment_config_file = project_dir / 'deployment_config.py'
 
     return {
@@ -239,6 +272,11 @@ def auto_configuration(project_name: str, project_dir: Path = Path('.').parent) 
     }
 
 
+def project_setup(*args, **kwargs):
+    _maybe_dump_setup_params(kwargs)
+    return project_setup(*args, **kwargs)
+
+
 def project_setup(
         project_name: str,
         docker_repository: str,
@@ -254,6 +292,7 @@ def project_setup(
         version: str,
         resources_dir: Path,
         project_requirements_file: Path,
+        **ignore_unknown,
 ) -> dict:
     '''
     This function produces arguments for setuptools.setup. The produced setup provides commands that allow you to build
@@ -266,6 +305,17 @@ def project_setup(
 
     setup(project_setup(**auto_configuration('my_super_project')))
     '''
+
+    _maybe_dump_setup_params({
+        'name': project_name,
+    })
+    recompiled = bigflow.build.pip.maybe_recompile_requirements_file(project_requirements_file)
+    if recompiled:
+        logger.warning(textwrap.dedent(f"""
+            !!! Requirements file was recompiled, you need to reinstall packages.
+            !!! Run this command from your virtualenv:
+            pip install -r {project_requirements_file}
+        """))
 
     params_to_check = [
         ('project_name', project_name),
@@ -287,15 +337,14 @@ def project_setup(
         if parameter_value is None:
             raise ValueError(f"Parameter {parameter_name} can't be None.")
 
-    maybe_recompile_requirements_file(project_requirements_file)
-
     return {
         'name': project_name,
         'version': version,
         'packages': setuptools.find_packages(exclude=['test']),
-        'install_requires': read_requirements(project_requirements_file),
+        'install_requires': bigflow.resources.read_requirements(project_requirements_file),
         'data_files': [
-            ('resources', list(find_all_resources(resources_dir)))
+            ('resources', list(bigflow.resources.find_all_resources(resources_dir))),
+            (f"bigflow__project/{project_name}", ["build/bf-project.tar"]),
         ],
         'cmdclass': {
             'build_project': build_command(
@@ -309,67 +358,65 @@ def project_setup(
                 eggs_dir,
                 deployment_config_file,
                 docker_repository,
-                version)
+                version),
+            **_hook_bdist_pregenerate_sdist(),
         }
     }
 
 
 def default_project_setup(project_name: str, project_dir: Path = Path('.').parent):
-    return setuptools.setup(**project_setup(**auto_configuration(project_name, project_dir=project_dir)))
+    return setup(name=project_name, project_dir=project_dir)
 
 
-def detect_piptools_source_files(reqs_dir: Path) -> typing.List[Path]:
-    in_files = list(reqs_dir.glob("*.in"))
-    logger.debug("Found %d *.in files: %s", len(in_files), in_files)
-    return in_files
+def _build_setuptools_spec(
+    *,
+    name: str = None,
+    project_name: str = None,  # DEPRECATE
+    project_dir: str = ".",    # DEPRECATE
+    **kwargs,
+) -> dict:
+
+    # TODO: Validate input/unknown parameters.
+    name = name or project_name
+    name = name.replace("_", "-")  # PEP8 compliant package names
+    project_dir = project_dir or Path(".")
+
+    internal_config = auto_configuration(name, Path(project_dir))
+    params = {}
+    for k, v in internal_config.items():
+        params[k] = kwargs.pop(k, v)
+
+    # User can overwrite setuptool.setup() args
+    # TODO: Provide merge semantics for some keys (data_files, install_requires etc)
+    kwargs.pop('project_name', None)
+    spec = project_setup(**{
+        **internal_config,
+        **kwargs,
+        'project_name': name,
+        'project_dir': project_dir,
+    })
+    spec.update((k, v) for k, v in kwargs.items() if k not in internal_config)
+    return spec
 
 
-def pip_compile(
-    req: Path,
-    verbose=False,
-    extra_args=(),
-):
-    """Wraps 'pip-tools' command. Include hash of source file into the generated one."""
-
-    req_txt = req.with_suffix(".txt")
-    req_in = req.with_suffix(".in")
-    logger.info("Compile file %s ...", req_in)
-
-    with tempfile.NamedTemporaryFile('w+t', prefix=req_in.stem, suffix=".txt", delete=False) as txt_file:
-        run_process([
-            "pip-compile",
-            "--no-header",
-            "-o", txt_file.name,
-            *(["-v"] if verbose else ()),
-            *extra_args,
-            str(req_in),
-        ])
-        with open(txt_file.name) as ff:
-            reqs_content = ff.readlines()
-
-    source_hash = generate_file_hash(req_in)
-
-    with open(req_txt, 'w+t') as out:
-        logger.info("Write pip requirements file: %s", req_txt)
-        out.write(textwrap.dedent(f"""\
-            # *** AUTO GENERATED: DON'T EDIT ***
-            # $source-hash: {source_hash}
-            # $source-file: {req_in}
-            #
-            # run 'bigflow build-requirements {req_in}' to update this file
-
-        """))
-        out.writelines(reqs_content)
+def _maybe_dump_setup_params(params):
+    if len(sys.argv) == 3 and sys.argv[1] == bigflow.build.dev.DUMP_PARAMS_SETUPPY_CMDARG:
+        with open(sys.argv[2], 'w+b') as out:
+            pickle.dump(params, out)
+        sys.exit(0)
 
 
-def maybe_recompile_requirements_file(req_txt: Path):
-    # Some users keeps extra ".txt" files in the same directory.
-    # Check if thoose files needs to be recompiled & then print a warning.
-    for fin in detect_piptools_source_files(req_txt.parent):
-        if fin.stem != req_txt.stem:
-            check_requirements_needs_recompile(fin.with_suffix(".txt"))
+def _configure_setup_logging():
+    # TODO: Capture logging settings of 'wrapping' 'bigflow' cli-command (verbosity flags).
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(message)s",
+    )
 
-    if check_requirements_needs_recompile(req_txt):
-        pip_compile(req_txt)
-    else:
-        logger.debug("File %s is fresh", req_txt)
+
+def setup(**kwargs):
+    _maybe_dump_setup_params(kwargs)
+    _configure_setup_logging()
+    spec = _build_setuptools_spec(**kwargs)
+    logger.debug("setuptools.setup(**%r)", spec)
+    return setuptools.setup(**spec)
