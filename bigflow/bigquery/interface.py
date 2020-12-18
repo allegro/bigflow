@@ -1,3 +1,5 @@
+import typing
+from pathlib import Path
 from abc import ABCMeta, abstractmethod
 from .job import DEFAULT_RETRY_COUNT
 from .job import DEFAULT_RETRY_PAUSE_SEC
@@ -11,6 +13,7 @@ class BigQueryOperation(object, metaclass=ABCMeta):
     def to_job(self, id: str, retry_count: int = DEFAULT_RETRY_COUNT, retry_pause_sec: int = DEFAULT_RETRY_PAUSE_SEC):
         pass
 
+    @abstractmethod
     def run(self, runtime=DEFAULT_RUNTIME):
         pass
 
@@ -39,4 +42,12 @@ class Dataset(object, metaclass=ABCMeta):
 
     @abstractmethod
     def create_table(self, create_query: str) -> BigQueryOperation:
+        pass
+
+    @abstractmethod
+    def create_table_from_schema(
+            self,
+            table_name: str,
+            schema: typing.Union[dict, Path],
+            table=None):
         pass

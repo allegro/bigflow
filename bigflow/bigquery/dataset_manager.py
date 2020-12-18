@@ -1,6 +1,9 @@
+import json
 import uuid
 import logging
 import functools
+import typing
+from pathlib import Path
 
 DEFAULT_REGION = 'europe-west1'
 DEFAULT_MACHINE_TYPE = 'n1-standard-1'
@@ -79,7 +82,7 @@ class TemplatedDatasetManager(object):
         return self.dataset_manager.collect(sql.format(**self.template_variables(custom_run_datetime)))
 
     @handle_key_error
-    def collect_list(self, sql, custom_run_datetime=None):
+    def collect_list(self, sql, custom_run_datetime=None, record_as_dict=False):
         return self.dataset_manager.collect_list(sql.format(**self.template_variables(custom_run_datetime)))
 
     def dry_run(self, sql, custom_run_datetime=None):
@@ -109,6 +112,21 @@ class TemplatedDatasetManager(object):
         result['dt'] = custom_run_datetime or self.run_datetime
         return result
 
+    def create_table_from_schema(
+            self,
+            table_name: str,
+            schema: typing.Optional[typing.Union[typing.List[dict], Path]] = None,
+            table=None):
+        table_id = self.create_table_id(table_name)
+        return self.dataset_manager.create_table_from_schema(table_id, schema, table)
+
+    def insert(
+            self,
+            table_name: str,
+            records: typing.Union[typing.List[dict], Path]):
+        table_id = self.create_table_id(table_name)
+        return self.dataset_manager.insert(table_id, records)
+
 
 class PartitionedDatasetManager(object):
     """
@@ -116,7 +134,7 @@ class PartitionedDatasetManager(object):
     Delegate rest of the tasks to TemplatedDatasetManager and DatasetManager.
     """
     def __init__(self, templated_dataset_manager, partition):
-        self._dataset_manager = templated_dataset_manager
+        self._dataset_manager: TemplatedDatasetManager = templated_dataset_manager
         self.partition = partition
 
     def write_truncate(self, table_name, sql, partitioned=True, custom_run_datetime=None):
@@ -190,6 +208,22 @@ class PartitionedDatasetManager(object):
         table_id = self._create_table_id(custom_run_datetime, table_name, partitioned)
         return self._dataset_manager.load_table_from_dataframe(table_id, df)
 
+    def create_table_from_schema(
+            self,
+            table_name: str,
+            schema: typing.Optional[typing.Union[typing.List[dict], Path]] = None,
+            table=None):
+        return self._dataset_manager.create_table_from_schema(table_name, schema, table)
+
+    def insert(
+            self,
+            table_name: str,
+            records: typing.Union[typing.List[dict], Path],
+            partitioned: bool = True,
+            custom_run_datetime: typing.Optional[str] = None):
+        table_id = self._create_table_id(custom_run_datetime, table_name, partitioned)
+        return self._dataset_manager.insert(table_id, records)
+
     def _write(self, write_callable, table_name, sql, partitioned, custom_run_datetime=None):
         table_id = self._create_table_id(custom_run_datetime, table_name, partitioned)
         return write_callable(table_id, sql, custom_run_datetime)
@@ -212,7 +246,8 @@ class DatasetManager(object):
                  bigquery_client,
                  dataset,
                  logger):
-        self.bigquery_client = bigquery_client
+        from google.cloud import bigquery
+        self.bigquery_client: bigquery.Client  = bigquery_client
         self.dataset = dataset
         self.dataset_id = dataset.full_dataset_id.replace(':', '.')
         self.logger = logger
@@ -292,6 +327,44 @@ class DatasetManager(object):
             .to_dataframe()['table_exists'] \
             .iloc[0] > 0
 
+    def create_table_from_schema(
+            self,
+            table_id: str,
+            schema: typing.Optional[typing.Union[typing.List[dict], Path]] = None,
+            table=None):
+        from google.cloud.bigquery import Table, TimePartitioning
+
+        if schema and table:
+            raise ValueError("You can't provide both schema and table, because the table you provide"
+                             "should already contain the schema.")
+        if not schema and not table:
+            raise ValueError("You must provide either schema or table.")
+
+        if isinstance(schema, Path):
+            with open(schema, 'r') as f:
+                schema = json.loads(f.read())
+
+        if table is None:
+            table = Table(table_id, schema=schema)
+            table.time_partitioning = TimePartitioning()
+
+        self.logger.info(f'CREATING TABLE FROM SCHEMA: {table.schema}')
+
+        self.bigquery_client.create_table(table)
+
+    def insert(
+            self,
+            table_id: str,
+            records: typing.Union[typing.List[dict], Path]):
+        self.logger.info(f'INSERTING RECORDS TO TABLE: {table_id}')
+        table = self.bigquery_client.get_table(table_id)
+        if isinstance(records, Path):
+            with open(records, 'r') as f:
+                records = json.loads(f.read())
+        errors = self.bigquery_client.insert_rows(table, records)
+        if errors:
+            raise ValueError(errors)
+
     def _query(self, sql, job_config=None):
         self.logger.info('COLLECTING DATA: %s', sql)
         if job_config:
@@ -345,7 +418,7 @@ def create_dataset_manager(
         extras=None,
         credentials=None,
         location=DEFAULT_LOCATION,
-        logger=None):
+        logger=None) -> typing.Tuple[str, PartitionedDatasetManager]:
     """
     Dataset manager factory.
     If dataset does not exist then it will also create dataset with given name.
