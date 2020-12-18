@@ -460,6 +460,7 @@ class InteractiveDatasetManagerTestCase(TestCase):
         dry_run_component = dataset.dry_run('some sql')
         load_table_from_dataframe_component = dataset.load_table_from_dataframe('table', 'df')
         create_table_from_schema_component = dataset.create_table_from_schema('table', [{}])
+        insert_component = dataset.insert('table', [{}])
 
         # when
         write_truncate_component.run()
@@ -469,6 +470,7 @@ class InteractiveDatasetManagerTestCase(TestCase):
         dry_run_component.run()
         load_table_from_dataframe_component.run()
         create_table_from_schema_component.run()
+        insert_component.run()
 
         # then
         dataset_manager_mock.assert_has_calls([
@@ -498,9 +500,13 @@ class InteractiveDatasetManagerTestCase(TestCase):
                 custom_run_datetime=None,
                 partitioned=True),
             mock.call.create_table_from_schema(
-                'table',
-                [{}],
-                None),
+                table_name='table',
+                schema=[{}],
+                table=None),
+            mock.call.insert(
+                table_name='table',
+                records=[{}],
+                partitioned=True),
         ])
 
 

@@ -2,6 +2,7 @@ import uuid
 import tempfile
 import json
 import pandas as pd
+from datetime import datetime, timedelta
 
 from unittest import TestCase
 from unittest import main
@@ -18,8 +19,8 @@ def df_to_collections(df):
 
 
 class DatasetManagerTestCase(TestCase):
-    TEST_PARTITION = '2019-01-01'
-    TEST_PARTITION_PLUS_ONE = '2019-01-02'
+    TEST_PARTITION = (datetime.now() - timedelta(days=-1)).isoformat()[:10]
+    TEST_PARTITION_PLUS_ONE = datetime.now().isoformat()[:10]
 
     def setUp(self):
         self.dataset_uuid = str(uuid.uuid4()).replace('-', '')
@@ -708,6 +709,80 @@ class CreateTableFromSchemaTestCase(DatasetManagerTestCase):
         self.dataset_manager.write_truncate('example_test_table', '''
         SELECT 'John' AS example_field
         ''')
+        self.assertTrue(self.dataset_manager.collect_list('''
+        SELECT *
+        FROM `{example_test_table}`
+        WHERE _PARTITIONTIME = TIMESTAMP('{dt}')
+        '''))
+
+
+class InsertTestCase(DatasetManagerTestCase):
+
+    def test_should_insert_records_to_partitioned_table(self):
+        with tempfile.NamedTemporaryFile() as f:
+            # given
+            f.write(json.dumps([
+                {
+                    "example_field": "example_field_value"
+                }
+            ]).encode('utf-8'))
+            f.seek(0)
+
+            # and
+            self.dataset_manager.create_table_from_schema('example_test_table', [
+                {
+                    "mode": "NULLABLE",
+                    "name": "example_field",
+                    "type": "STRING"
+                },
+            ])
+
+            # when adding record from file
+            self.dataset_manager.insert('example_test_table', Path(f.name))
+
+            # and from memory
+            self.dataset_manager.insert('example_test_table', [{
+                "example_field": "example_field_value"
+            }])
+
+            # then
+            expected_result = [
+                {"example_field": "example_field_value"},
+                {"example_field": "example_field_value"},
+            ]
+            actual_result = self.dataset_manager.collect('''
+            SELECT * 
+            FROM `{example_test_table}`
+            WHERE _PARTITIONTIME = TIMESTAMP('{dt}')
+            ''').to_dict(orient='records')
+            self.assertEqual(expected_result, actual_result)
+
+    def test_should_insert_records_to_non_partitioned_table(self):
+        # given
+        table_id = f'{self.dataset_manager.project_id}.{self.dataset_manager.dataset_name}.example_test_table'
+        table = Table(table_id, schema=[
+            {
+                "mode": "NULLABLE",
+                "name": "example_field",
+                "type": "STRING"
+            },
+        ])
+        self.dataset_manager.create_table_from_schema('example_test_table', table=table)
+
+        self.dataset_manager.insert('example_test_table', [{
+            "example_field": "example_field_value"
+        }], partitioned=False)
+
+        # then
+        expected_result = [
+            {"example_field": "example_field_value"}
+        ]
+        actual_result = self.dataset_manager.collect('''
+        SELECT * 
+        FROM `{example_test_table}`
+        ''').to_dict(orient='records')
+        self.assertEqual(expected_result, actual_result)
+
 
 
 if __name__ == '__main__':

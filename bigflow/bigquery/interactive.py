@@ -141,7 +141,7 @@ class InteractiveDatasetManager(Dataset):
     def create_table_from_schema(
             self,
             table_name: str,
-            schema: typing.Optional[typing.Union[typing.List[dict], Path]],
+            schema: typing.Optional[typing.Union[typing.List[dict], Path]] = None,
             table=None):
         method = 'create_table_from_schema'
         return self._tmp_interactive_component_factory(
@@ -150,6 +150,20 @@ class InteractiveDatasetManager(Dataset):
             table_name=table_name,
             schema=schema,
             table=table)
+
+    def insert(
+            self,
+            table_name: str,
+            records: typing.Union[typing.List[dict], Path],
+            partitioned: bool = True):
+        method = 'insert'
+        return self._tmp_interactive_component_factory(
+            generate_component_name(method=method, table_name=table_name, sql=''),
+            method,
+            table_name=table_name,
+            records=records,
+            partitioned=partitioned,
+            operation_name=DEFAULT_OPERATION_NAME)
 
     def _tmp_interactive_component_factory(self, component_name, method, *args, **kwargs):
         @interactive_component(_inline_component_dataset=self)
@@ -345,11 +359,28 @@ class OperationLevelDatasetManager(Dataset):
     def create_table_from_schema(
             self,
             table_name: str,
-            schema: typing.Union[dict, Path],
+            schema: typing.Optional[typing.Union[typing.List[dict], Path]] = None,
             table=None,
             operation_name=None):
         if self._should_run_operation(operation_name):
-            return self._results_container, self._dataset_manager.create_table_from_schema(table_name, schema, table)
+            return self._results_container, self._dataset_manager.create_table_from_schema(
+                table_name=table_name,
+                schema=schema,
+                table=table)
+
+    def insert(
+            self,
+            table_name: str,
+            records: typing.Union[typing.List[dict], Path],
+            partitioned: bool = True,
+            operation_name=None):
+        if self._should_peek_operation_results(operation_name):
+            return records
+        elif self._should_run_operation(operation_name):
+            return self._results_container, self._dataset_manager.insert(
+                table_name=table_name,
+                records=records,
+                partitioned=partitioned)
 
     @property
     def dt(self):
