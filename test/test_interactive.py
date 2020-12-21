@@ -462,6 +462,7 @@ class InteractiveDatasetManagerTestCase(TestCase):
         load_table_from_dataframe_component = dataset.load_table_from_dataframe('table', 'df')
         create_table_from_schema_component = dataset.create_table_from_schema('table', [{}])
         insert_component = dataset.insert('table', [{}])
+        delete_dataset_component = dataset.delete_dataset()
 
         # when
         write_truncate_component.run()
@@ -473,6 +474,7 @@ class InteractiveDatasetManagerTestCase(TestCase):
         load_table_from_dataframe_component.run()
         create_table_from_schema_component.run()
         insert_component.run()
+        delete_dataset_component.run()
 
         # then
         dataset_manager_mock.assert_has_calls([
@@ -513,6 +515,7 @@ class InteractiveDatasetManagerTestCase(TestCase):
                 table_name='table',
                 records=[{}],
                 partitioned=True),
+            mock.call.delete_dataset(),
         ])
 
 

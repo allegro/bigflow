@@ -166,6 +166,13 @@ class InteractiveDatasetManager(Dataset):
             partitioned=partitioned,
             operation_name=DEFAULT_OPERATION_NAME)
 
+    def delete_dataset(self):
+        method = 'delete_dataset'
+        return self._tmp_interactive_component_factory(
+            generate_component_name(method=method, table_name=self.config.dataset_name, sql=''),
+            method,
+            operation_name=DEFAULT_OPERATION_NAME)
+
     def _tmp_interactive_component_factory(self, component_name, method, *args, **kwargs):
         @interactive_component(_inline_component_dataset=self)
         def tmp_component(_inline_component_dataset):
@@ -388,6 +395,10 @@ class OperationLevelDatasetManager(Dataset):
                 table_name=table_name,
                 records=records,
                 partitioned=partitioned)
+
+    def delete_dataset(self, operation_name=None):
+        if self._should_run_operation(operation_name):
+            return self._results_container, self._dataset_manager.remove_dataset()
 
     @property
     def dt(self):

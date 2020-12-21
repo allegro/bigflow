@@ -37,7 +37,7 @@ class Dataset(object, metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def collect_list(self, sql: str) -> BigQueryOperation:
+    def collect_list(self, sql: str, record_as_dict: bool = False) -> BigQueryOperation:
         pass
 
     @abstractmethod
@@ -50,4 +50,15 @@ class Dataset(object, metaclass=ABCMeta):
             table_name: str,
             schema: typing.Union[dict, Path],
             table=None):
+        pass
+
+    @abstractmethod
+    def insert(
+            self,
+            table_name: str,
+            records: typing.Union[typing.List[dict], Path]):
+        pass
+
+    @abstractmethod
+    def delete_dataset(self):
         pass
