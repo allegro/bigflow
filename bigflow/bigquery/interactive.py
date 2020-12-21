@@ -104,12 +104,13 @@ class InteractiveDatasetManager(Dataset):
             sql,
             operation_name=DEFAULT_OPERATION_NAME)
 
-    def collect_list(self, sql):
+    def collect_list(self, sql: str, record_as_dict: bool = False):
         method = 'collect_list'
         return self._tmp_interactive_component_factory(
             generate_component_name(method=method, table_name='', sql=sql),
             method,
             sql,
+            record_as_dict=record_as_dict,
             operation_name=DEFAULT_OPERATION_NAME)
 
     def dry_run(self, sql):
@@ -328,12 +329,18 @@ class OperationLevelDatasetManager(Dataset):
             sql=sql,
             custom_run_datetime=custom_run_datetime)
 
-    def collect_list(self, sql, custom_run_datetime=None, operation_name=None):
+    def collect_list(
+            self,
+            sql: str,
+            custom_run_datetime: typing.Optional[str] = None,
+            record_as_dict: bool = False,
+            operation_name=None):
         return self._run_operation(
             operation_name=operation_name,
             method=self._dataset_manager.collect_list,
             sql=sql,
-            custom_run_datetime=custom_run_datetime)
+            custom_run_datetime=custom_run_datetime,
+            record_as_dict=record_as_dict)
 
     def dry_run(self, sql, custom_run_datetime=None, operation_name=None):
         return self._run_operation(

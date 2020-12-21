@@ -2,6 +2,7 @@ import uuid
 import tempfile
 import json
 import pandas as pd
+from pytz import UTC
 from datetime import datetime, timedelta
 
 from unittest import TestCase
@@ -19,7 +20,8 @@ def df_to_collections(df):
 
 
 class DatasetManagerTestCase(TestCase):
-    TEST_PARTITION = (datetime.now() - timedelta(days=-1)).isoformat()[:10]
+    TEST_PARTITION_DT = (datetime.utcnow() - timedelta(days=-1)).replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=UTC)
+    TEST_PARTITION = TEST_PARTITION_DT.isoformat()[:10]
     TEST_PARTITION_PLUS_ONE = datetime.now().isoformat()[:10]
 
     def setUp(self):
@@ -501,6 +503,20 @@ class CollectTestCase(DatasetManagerTestCase):
         self.assertEqual(len(records), 1)
         self.assertEqual(records[0]['first_name'], 'John')
         self.assertEqual(records[0]['last_name'], 'Smith')
+
+        # when
+        records = self.dataset_manager.collect_list('''
+        SELECT *
+        FROM `{tmp_table}`
+        WHERE DATE(batch_date) = '{dt}'
+        ''', record_as_dict=True)
+
+        # then
+        self.assertEqual(records, [{
+            'first_name': 'John',
+            'last_name': 'Smith',
+            'batch_date': self.TEST_PARTITION_DT
+        }])
 
     def test_should_collect_records_from_custom_partition(self):
 
