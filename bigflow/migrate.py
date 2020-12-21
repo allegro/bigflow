@@ -37,7 +37,7 @@ def maybe_upgrade_pyproject_bigflow_version(root: Path):
         return
 
     from bigflow.resources import read_requirements
-    reqs_version =_find_bigflow_req(read_requirements(reqsf))
+    reqs_version =_find_bigflow_req(read_requirements(reqsf, False))
 
     ppt = toml.load(pptf)
     ppt_requires = ppt.get('build-system', {}).get('requires', [])
