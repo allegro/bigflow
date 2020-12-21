@@ -82,8 +82,9 @@ class TemplatedDatasetManager(object):
         return self.dataset_manager.collect(sql.format(**self.template_variables(custom_run_datetime)))
 
     @handle_key_error
-    def collect_list(self, sql, custom_run_datetime=None, record_as_dict=False):
-        return self.dataset_manager.collect_list(sql.format(**self.template_variables(custom_run_datetime)))
+    def collect_list(self, sql: str, custom_run_datetime: typing.Optional[str] = None, record_as_dict: bool = False):
+        return self.dataset_manager.collect_list(
+            sql.format(**self.template_variables(custom_run_datetime)), record_as_dict)
 
     def dry_run(self, sql, custom_run_datetime=None):
         return self.dataset_manager.dry_run(sql.format(**self.template_variables(custom_run_datetime)))
@@ -164,8 +165,8 @@ class PartitionedDatasetManager(object):
     def collect(self, sql, custom_run_datetime=None):
         return self._dataset_manager.collect(sql, custom_run_datetime)
 
-    def collect_list(self, sql, custom_run_datetime=None):
-        return self._dataset_manager.collect_list(sql, custom_run_datetime)
+    def collect_list(self, sql: str, custom_run_datetime: typing.Optional[str] = None, record_as_dict: bool = False):
+        return self._dataset_manager.collect_list(sql, custom_run_datetime, record_as_dict)
 
     def dry_run(self, sql, custom_run_datetime=None):
         return self._dataset_manager.dry_run(sql, custom_run_datetime)
@@ -296,8 +297,11 @@ class DatasetManager(object):
     def collect(self, sql):
         return self._query(sql).to_dataframe()
 
-    def collect_list(self, sql):
-        return list(self._query(sql).result())
+    def collect_list(self, sql: str, record_as_dict: bool = False):
+        result = list(self._query(sql).result())
+        if record_as_dict:
+            result = [dict(e) for e in result]
+        return result
 
     def dry_run(self, sql):
         from google.cloud import bigquery
