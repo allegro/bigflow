@@ -48,7 +48,7 @@ class Dataset(object, metaclass=ABCMeta):
     def create_table_from_schema(
             self,
             table_name: str,
-            schema: typing.Union[dict, Path],
+            schema: typing.Union[typing.List[dict], Path, None] = None,
             table=None):
         pass
 

@@ -142,7 +142,7 @@ class InteractiveDatasetManager(Dataset):
     def create_table_from_schema(
             self,
             table_name: str,
-            schema: typing.Optional[typing.Union[typing.List[dict], Path]] = None,
+            schema: typing.Union[typing.List[dict], Path, None] = None,
             table=None):
         method = 'create_table_from_schema'
         return self._tmp_interactive_component_factory(
@@ -373,7 +373,7 @@ class OperationLevelDatasetManager(Dataset):
     def create_table_from_schema(
             self,
             table_name: str,
-            schema: typing.Optional[typing.Union[typing.List[dict], Path]] = None,
+            schema: typing.Union[typing.List[dict], Path, None] = None,
             table=None,
             operation_name=None):
         if self._should_run_operation(operation_name):

@@ -116,7 +116,7 @@ class TemplatedDatasetManager(object):
     def create_table_from_schema(
             self,
             table_name: str,
-            schema: typing.Optional[typing.Union[typing.List[dict], Path]] = None,
+            schema: typing.Union[None, typing.List[dict], Path] = None,
             table=None):
         table_id = self.create_table_id(table_name)
         return self.dataset_manager.create_table_from_schema(table_id, schema, table)
@@ -134,8 +134,8 @@ class PartitionedDatasetManager(object):
     Interface available for user. Manages partitioning.
     Delegate rest of the tasks to TemplatedDatasetManager and DatasetManager.
     """
-    def __init__(self, templated_dataset_manager, partition):
-        self._dataset_manager: TemplatedDatasetManager = templated_dataset_manager
+    def __init__(self, templated_dataset_manager: TemplatedDatasetManager, partition):
+        self._dataset_manager = templated_dataset_manager
         self.partition = partition
 
     def write_truncate(self, table_name, sql, partitioned=True, custom_run_datetime=None):
@@ -334,7 +334,7 @@ class DatasetManager(object):
     def create_table_from_schema(
             self,
             table_id: str,
-            schema: typing.Optional[typing.Union[typing.List[dict], Path]] = None,
+            schema: typing.Union[typing.List[dict], Path, None] = None,
             table=None):
         from google.cloud.bigquery import Table, TimePartitioning
 
@@ -345,8 +345,7 @@ class DatasetManager(object):
             raise ValueError("You must provide either schema or table.")
 
         if isinstance(schema, Path):
-            with open(schema, 'r') as f:
-                schema = json.loads(f.read())
+            schema = json.loads(schema.read_text())
 
         if table is None:
             table = Table(table_id, schema=schema)
@@ -360,7 +359,7 @@ class DatasetManager(object):
             self,
             table_id: str,
             records: typing.Union[typing.List[dict], Path]):
-        self.logger.info(f'INSERTING RECORDS TO TABLE: {table_id}')
+        self.logger.info('INSERTING RECORDS TO TABLE: %s', table_id)
         table = self.bigquery_client.get_table(table_id)
         if isinstance(records, Path):
             with open(records, 'r') as f:
