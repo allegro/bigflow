@@ -1,8 +1,15 @@
+import uuid
+import tempfile
+import json
+import pandas as pd
+from pytz import UTC
+from datetime import datetime, timedelta
+
 from unittest import TestCase
 from unittest import main
-import uuid
+from pathlib import Path
 
-import pandas as pd
+from google.cloud.bigquery import Table, TimePartitioning
 
 from bigflow.bigquery.dataset_manager import create_dataset_manager
 from . import config
@@ -13,12 +20,18 @@ def df_to_collections(df):
 
 
 class DatasetManagerTestCase(TestCase):
-    TEST_PARTITION = '2019-01-01'
-    TEST_PARTITION_PLUS_ONE = '2019-01-02'
+    TEST_PARTITION_DT = (datetime.utcnow() - timedelta(days=-1)).replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=UTC)
+    TEST_PARTITION = TEST_PARTITION_DT.isoformat()[:10]
+    TEST_PARTITION_PLUS_ONE = datetime.now().isoformat()[:10]
 
     def setUp(self):
         self.dataset_uuid = str(uuid.uuid4()).replace('-', '')
-        self.internal_tables = ['fake_target_table', 'partitioned_fake_target_table', 'loaded_table']
+        self.internal_tables = [
+            'fake_target_table',
+            'partitioned_fake_target_table',
+            'loaded_table',
+            'example_test_table'
+        ]
         self.external_tables = {'some_external': 'table'}
 
         self.test_dataset_id, self.dataset_manager = create_dataset_manager(
@@ -491,6 +504,20 @@ class CollectTestCase(DatasetManagerTestCase):
         self.assertEqual(records[0]['first_name'], 'John')
         self.assertEqual(records[0]['last_name'], 'Smith')
 
+        # when
+        records = self.dataset_manager.collect_list('''
+        SELECT *
+        FROM `{tmp_table}`
+        WHERE DATE(batch_date) = '{dt}'
+        ''', record_as_dict=True)
+
+        # then
+        self.assertEqual(records, [{
+            'first_name': 'John',
+            'last_name': 'Smith',
+            'batch_date': self.TEST_PARTITION_DT
+        }])
+
     def test_should_collect_records_from_custom_partition(self):
 
         # given
@@ -622,6 +649,156 @@ class LoadTableFromDataFrameTestCase(DatasetManagerTestCase):
         SELECT * FROM `{partitioned_fake_target_table}`
         WHERE DATE(batch_date) = '{dt}'
         ''', custom_run_datetime=self.TEST_PARTITION_PLUS_ONE)))
+
+
+class CreateTableFromSchemaTestCase(DatasetManagerTestCase):
+
+    def test_should_create_table_from_dict_schema(self):
+        # when
+        self.dataset_manager.create_table_from_schema('example_test_table', [
+            {
+                "mode": "NULLABLE",
+                "name": "example_field",
+                "type": "STRING"
+            },
+        ])
+
+        # then
+        self.table_should_exists()
+
+    def test_should_create_table_json_file_schema(self):
+        with tempfile.NamedTemporaryFile() as f:
+            # given
+            f.write(json.dumps([
+                {
+                    "mode": "NULLABLE",
+                    "name": "example_field",
+                    "type": "STRING"
+                }
+            ]).encode('utf-8'))
+            f.seek(0)
+
+            # when
+            self.dataset_manager.create_table_from_schema('example_test_table', Path(f.name))
+
+    def test_should_create_table_from_table_object(self):
+        # given
+        table_id = f'{self.dataset_manager.project_id}.{self.dataset_manager.dataset_name}.example_test_table'
+        table = Table(table_id, schema=[
+            {
+                "mode": "NULLABLE",
+                "name": "example_field",
+                "type": "STRING"
+            },
+        ])
+        table.time_partitioning = TimePartitioning()
+
+        # when
+        self.dataset_manager.create_table_from_schema('example_test_table', schema=None, table=table)
+
+        # then
+        self.table_should_exists()
+
+    def test_should_throw_an_exception_when_invalid_argument_combination_provided(self):
+        # given
+        schema = [
+            {
+                "mode": "NULLABLE",
+                "name": "example_field",
+                "type": "STRING"
+            },
+        ]
+        table = Table('bla.bla.example_test_table', schema=schema)
+
+        # then
+        with self.assertRaises(ValueError) as e:
+            # when both arguments provided in the same time
+            self.dataset_manager.create_table_from_schema('example_test_table', schema, table)
+
+        # then
+        with self.assertRaises(ValueError) as e:
+            # when non of the required arguments provided
+            self.dataset_manager.create_table_from_schema('example_test_table', None, None)
+
+    def table_should_exists(self):
+        self.assertTrue(self.dataset_manager._table_exists('example_test_table'))
+        self.dataset_manager.write_truncate('example_test_table', '''
+        SELECT 'John' AS example_field
+        ''')
+        self.assertTrue(self.dataset_manager.collect_list('''
+        SELECT *
+        FROM `{example_test_table}`
+        WHERE _PARTITIONTIME = TIMESTAMP('{dt}')
+        '''))
+
+
+class InsertTestCase(DatasetManagerTestCase):
+
+    def test_should_insert_records_to_partitioned_table(self):
+        with tempfile.NamedTemporaryFile() as f:
+            # given
+            f.write(json.dumps([
+                {
+                    "example_field": "example_field_value"
+                }
+            ]).encode('utf-8'))
+            f.seek(0)
+
+            # and
+            self.dataset_manager.create_table_from_schema('example_test_table', [
+                {
+                    "mode": "NULLABLE",
+                    "name": "example_field",
+                    "type": "STRING"
+                },
+            ])
+
+            # when adding record from file
+            self.dataset_manager.insert('example_test_table', Path(f.name))
+
+            # and from memory
+            self.dataset_manager.insert('example_test_table', [{
+                "example_field": "example_field_value"
+            }])
+
+            # then
+            expected_result = [
+                {"example_field": "example_field_value"},
+                {"example_field": "example_field_value"},
+            ]
+            actual_result = self.dataset_manager.collect('''
+            SELECT * 
+            FROM `{example_test_table}`
+            WHERE _PARTITIONTIME = TIMESTAMP('{dt}')
+            ''').to_dict(orient='records')
+            self.assertEqual(expected_result, actual_result)
+
+    def test_should_insert_records_to_non_partitioned_table(self):
+        # given
+        table_id = f'{self.dataset_manager.project_id}.{self.dataset_manager.dataset_name}.example_test_table'
+        table = Table(table_id, schema=[
+            {
+                "mode": "NULLABLE",
+                "name": "example_field",
+                "type": "STRING"
+            },
+        ])
+        self.dataset_manager.create_table_from_schema('example_test_table', table=table)
+
+        self.dataset_manager.insert('example_test_table', [{
+            "example_field": "example_field_value"
+        }], partitioned=False)
+
+        # then
+        expected_result = [
+            {"example_field": "example_field_value"}
+        ]
+        actual_result = self.dataset_manager.collect('''
+        SELECT * 
+        FROM `{example_test_table}`
+        ''').to_dict(orient='records')
+        self.assertEqual(expected_result, actual_result)
+
 
 
 if __name__ == '__main__':

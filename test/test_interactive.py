@@ -457,16 +457,24 @@ class InteractiveDatasetManagerTestCase(TestCase):
         write_append_component = dataset.write_append('table', 'some sql')
         write_tmp_component = dataset.write_tmp('table', 'some sql')
         collect_component = dataset.collect('some sql')
+        collect_list_component = dataset.collect_list('some sql', True)
         dry_run_component = dataset.dry_run('some sql')
         load_table_from_dataframe_component = dataset.load_table_from_dataframe('table', 'df')
+        create_table_from_schema_component = dataset.create_table_from_schema('table', [{}])
+        insert_component = dataset.insert('table', [{}])
+        delete_dataset_component = dataset.delete_dataset()
 
         # when
         write_truncate_component.run()
         write_append_component.run()
         write_tmp_component.run()
         collect_component.run()
+        collect_list_component.run()
         dry_run_component.run()
         load_table_from_dataframe_component.run()
+        create_table_from_schema_component.run()
+        insert_component.run()
+        delete_dataset_component.run()
 
         # then
         dataset_manager_mock.assert_has_calls([
@@ -487,6 +495,10 @@ class InteractiveDatasetManagerTestCase(TestCase):
             mock.call.collect(
                 sql='some sql',
                 custom_run_datetime=None),
+            mock.call.collect_list(
+                sql='some sql',
+                custom_run_datetime=None,
+                record_as_dict=True),
             mock.call.dry_run(
                 sql='some sql',
                 custom_run_datetime=None),
@@ -495,6 +507,15 @@ class InteractiveDatasetManagerTestCase(TestCase):
                 df='df',
                 custom_run_datetime=None,
                 partitioned=True),
+            mock.call.create_table_from_schema(
+                table_name='table',
+                schema=[{}],
+                table=None),
+            mock.call.insert(
+                table_name='table',
+                records=[{}],
+                partitioned=True),
+            mock.call.delete_dataset(),
         ])
 
 
