@@ -4,6 +4,7 @@ import typing
 from pathlib import Path
 from datetime import datetime
 
+from bigflow import commons
 from bigflow.workflow import DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS
 
 
@@ -68,6 +69,10 @@ dag = DAG(
         job_var = "t" + str(job.id)
         task_id = job.id.replace("_","-")
 
+        execution_timeout = commons.as_timedelta(
+            getattr(job, 'execution_timeout', None)
+            or DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS)
+
         dag_chunks.append("""
 {job_var} = kubernetes_pod_operator.KubernetesPodOperator(
     task_id='{task_id}',
@@ -80,7 +85,7 @@ dag = DAG(
     retries={retries},
     retry_delay=datetime.timedelta(seconds={retry_delay}),
     dag=dag,
-    execution_timeout=datetime.timedelta(seconds={execution_timeout}))
+    execution_timeout={execution_timeout!r})
 """.format(job_var=job_var,
           task_id=task_id,
           docker_image = docker_repository+":"+build_ver,
@@ -88,7 +93,9 @@ dag = DAG(
           root_folder=root_package_name,
           retries=job.retry_count if hasattr(job, 'retry_count') else 3,
           retry_delay=job.retry_pause_sec if hasattr(job, 'retry_pause_sec') else 60,
-          execution_timeout=getattr(job, 'execution_timeout', DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS)))
+          execution_timeout=execution_timeout,
+          ))
+
         for d in dependencies:
             up_job_var = "t" + str(get_job(d).id)
             dag_chunks.append("{job_var}.set_upstream({up_job_var})".format(job_var=job_var, up_job_var=up_job_var))
