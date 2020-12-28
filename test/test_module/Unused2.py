@@ -1,5 +1,5 @@
 import bigflow as bf
-from test.test_module.Unused1 import ExampleJob
+from .Unused1 import ExampleJob
 
 int_1 = 123
 

@@ -4,15 +4,26 @@ import mock
 
 from bigflow.cli import *
 
+TESTS_DIR = Path(__file__).parent
+EXAMPLE_PROJECT_PATH = TESTS_DIR / "example_project"
+EXAMPLE_PROJECT_SETUPPY = EXAMPLE_PROJECT_PATH / "setup.py"
+
 
 class CliTestCase(TestCase):
 
     def setUp(self) -> None:
+        cwd = os.getcwd()
+        self.addCleanup(os.chdir, cwd)
+        os.chdir(EXAMPLE_PROJECT_PATH)
+
         global TEST_MODULE_PATH
         TEST_MODULE_PATH = Path(__file__).parent / 'test_module'
 
-    def doCleanups(self) -> None:
-        import_module("test_module.Unused1").started_jobs.clear()
+    def tearDown(self):
+        try:
+            import_module("test_module.Unused1").started_jobs.clear()
+        except ImportError:
+            pass
 
     def test_should_walk_through_all_files_inside_package_tree(self):
         # when
@@ -120,7 +131,7 @@ class CliTestCase(TestCase):
 
     def test_should_raise_exception_when_no_jobid_and_no_workflow(self):
         # given
-        root_package = find_root_package(None, "test.test_module")
+        root_package = TESTS_DIR / "test_module"
 
         with self.assertRaises(ValueError):
             # when
@@ -128,7 +139,7 @@ class CliTestCase(TestCase):
 
     def test_should_raise_exception_when_job_id_incorrect(self):
         # given
-        root_package = find_root_package(None, "test.test_module")
+        root_package = TESTS_DIR / "test_module"
 
         with self.assertRaises(ValueError):
             # when just job id
@@ -152,13 +163,6 @@ class CliTestCase(TestCase):
         # then
         self.assertEqual(to_set, os.environ.get('bf_env', None))
 
-    def test_should_find_root_package_when_root_package_used(self):
-        # when
-        res = find_root_package(None, "test.test_module")
-
-        # then
-        self.assertEqual(TEST_MODULE_PATH, res)
-
     def test_should_find_root_package_when_root_used_project_name_used(self):
         # given
         test_module_src = str(TEST_MODULE_PATH)
@@ -171,7 +175,7 @@ class CliTestCase(TestCase):
 
     def test_should_run_workflow(self):
         # given
-        root_package = find_root_package(None, "test.test_module")
+        root_package = TESTS_DIR / "test_module"
 
         # when
         cli_run(root_package, workflow_id="ID_3")
@@ -187,7 +191,7 @@ class CliTestCase(TestCase):
 
     def test_should_run_workflow_multiple_times(self):
         # given
-        root_package = find_root_package(None, "test.test_module")
+        root_package = TESTS_DIR / "test_module"
 
         # when
         cli_run(root_package, workflow_id="ID_3")
@@ -198,7 +202,7 @@ class CliTestCase(TestCase):
 
     def test_should_run_job(self):
         # given
-        root_package = find_root_package(None, "test.test_module")
+        root_package = TESTS_DIR / "test_module"
 
         # when
         cli_run(root_package, full_job_id="ID_3.J_ID_3")
@@ -220,7 +224,7 @@ class CliTestCase(TestCase):
 
     def test_should_run_job_multiple_times(self):
         # given
-        root_package = find_root_package(None, "test.test_module")
+        root_package = TESTS_DIR / "test_module"
 
         # when
         cli_run(root_package, full_job_id="ID_3.J_ID_3")
@@ -263,7 +267,7 @@ class CliTestCase(TestCase):
     def test_should_call_cli_deploy_dags_command__with_defaults_and_with_implicit_deployment_config_file(self,
                                                                                                          deploy_dags_folder_mock):
         # given
-        dc_file = self._touch_file('deployment_config.py',
+        self._touch_file('deployment_config.py',
         '''
 from bigflow import Config
 
@@ -287,12 +291,10 @@ deployment_config = Config(name='dev',
                                                    vault_endpoint=None,
                                                    vault_secret='secret')
 
-        dc_file.unlink()
-
     @mock.patch('bigflow.cli.deploy_dags_folder')
     def test_should_call_cli_deploy_dags_command_for_different_environments(self, deploy_dags_folder_mock):
         # given
-        dc_file = self._touch_file('deployment_config.py',
+        self._touch_file('deployment_config.py',
         '''
 from bigflow import Config
 
@@ -347,8 +349,6 @@ deployment_config = Config(name='dev',
                                                    vault_endpoint=None,
                                                    vault_secret='secret-prod')
 
-        dc_file.unlink()
-
     @mock.patch('bigflow.cli.deploy_dags_folder')
     def test_should_call_cli_deploy_dags_command__when_parameters_are_given_by_explicit_deployment_config_file(self,
                                                                                                                deploy_dags_folder_mock):
@@ -382,8 +382,6 @@ deployment_config = Config(name='dev',
                                                    vault_endpoint='my-another-vault-endpoint',
                                                    vault_secret='secrett')
 
-        dc_file.unlink()
-
     @mock.patch('bigflow.cli.deploy_dags_folder')
     def test_should_call_cli_deploy_dags_command__when_all_parameters_are_given_by_cli_arguments(self,
                                                                                                  deploy_dags_folder_mock):
@@ -411,7 +409,7 @@ deployment_config = Config(name='dev',
     def test_should_call_cli_deploy_image_command__with_defaults_and_with_implicit_deployment_config_file(self,
                                                                                                           deploy_docker_image_mock):
         # given
-        dc_file = self._touch_file('deployment_config.py',
+        self._touch_file('deployment_config.py',
         '''
 from bigflow import Config
 
@@ -430,8 +428,6 @@ deployment_config = Config(name='dev',
                                                     image_tar_path='image-0.0.2.tar',
                                                     vault_endpoint=None,
                                                     vault_secret=None)
-
-        dc_file.unlink()
 
     @mock.patch('bigflow.cli.deploy_docker_image')
     def test_should_call_cli_deploy_image_command__with_explicit_deployment_config_file(self, deploy_docker_image_mock):
@@ -462,8 +458,6 @@ deployment_config = Config(name='dev',
                                                     vault_endpoint='my-another-vault-endpoint',
                                                     vault_secret='secrett')
 
-        dc_file.unlink()
-
     @mock.patch('bigflow.cli.deploy_docker_image')
     def test_should_call_cli_deploy_image_command__when_all_parameters_are_given_by_cli_arguments_and_image_is_loaded_from_tar(
             self, deploy_docker_image_mock):
@@ -486,7 +480,7 @@ deployment_config = Config(name='dev',
     @mock.patch('bigflow.cli.deploy_docker_image')
     def test_should_find_tar_in_image_directory(self, deploy_docker_image_mock):
         # given
-        dc_file = self._touch_file('image-123.tar', '', '.image')
+        self._touch_file('image-123.tar', '', '.image')
 
         # when
         cli(['deploy-image',
@@ -503,14 +497,12 @@ deployment_config = Config(name='dev',
                                                     vault_endpoint='my-vault-endpoint',
                                                     vault_secret='secrett')
 
-        dc_file.unlink()
-
     @mock.patch('bigflow.cli.deploy_dags_folder')
     @mock.patch('bigflow.cli.deploy_docker_image')
     def test_should_call_both_deploy_methods_with_deploy_command(self, deploy_docker_image_mock,
                                                                  deploy_dags_folder_mock):
         # given
-        dc_file = self._touch_file('deployment_config.py',
+        self._touch_file('deployment_config.py',
         '''
 from bigflow import Config
 
@@ -539,8 +531,6 @@ deployment_config = Config(name='dev',
                                                     image_tar_path='my-images/image-version',
                                                     vault_endpoint=None,
                                                     vault_secret=None)
-
-        dc_file.unlink()
 
     @mock.patch('bigflow.cli._cli_build_dags')
     def test_should_call_cli_build_dags_command(self, _cli_build_dags_mock):
@@ -578,7 +568,7 @@ deployment_config = Config(name='dev',
         with self.assertRaises(SystemExit):
             cli(['build-dags', '-w', 'some_workflow', '-t', '20200101'])
 
-    @mock.patch('bigflow.cli.run_process')
+    @mock.patch('bigflow.commons.run_process')
     @mock.patch('bigflow.cli.validate_project_setup')
     def test_should_call_cli_build_dags_commands_with_NOW_and_ALL(
             self, validate_project_setup_mock, run_process_mock):
@@ -589,10 +579,10 @@ deployment_config = Config(name='dev',
         cli(['build-dags','--workflow', 'ALL', '--start-time', 'NOW'])
 
         # then
-        self.assertEqual(run_process_mock.call_count, 1)
-        run_process_mock.assert_any_call('python project_setup.py build_project --build-dags'.split(' '))
+        run_process_mock.assert_any_call([
+            "python", EXAMPLE_PROJECT_SETUPPY, "build_project", "--build-dags"])
 
-    @mock.patch('bigflow.cli.run_process')
+    @mock.patch('bigflow.commons.run_process')
     @mock.patch('bigflow.cli.validate_project_setup')
     def test_should_call_cli_build_commands_with_NOW_and_ALL(
             self, validate_project_setup_mock, run_process_mock):
@@ -603,8 +593,8 @@ deployment_config = Config(name='dev',
         cli(['build','--workflow', 'ALL', '--start-time', 'NOW'])
 
         # then
-        self.assertEqual(run_process_mock.call_count, 1)
-        run_process_mock.assert_any_call('python project_setup.py build_project'.split(' '))
+        run_process_mock.assert_any_call([
+            "python", EXAMPLE_PROJECT_SETUPPY, "build_project"])
 
     @mock.patch('bigflow.cli._cli_build_image')
     def test_should_call_cli_build_image_command(self, _cli_build_image_mock):
@@ -614,7 +604,7 @@ deployment_config = Config(name='dev',
         # then
         _cli_build_image_mock.assert_called_with(Namespace(operation='build-image', verbose=False))
 
-    @mock.patch('bigflow.cli.run_process')
+    @mock.patch('bigflow.commons.run_process')
     @mock.patch('bigflow.cli.validate_project_setup')
     def test_should_call_build_command_through_CLI(
             self, validate_project_setup_mock, run_process_mock):
@@ -625,8 +615,8 @@ deployment_config = Config(name='dev',
         cli(['build'])
 
         # then
-        self.assertEqual(run_process_mock.call_count, 1)
-        run_process_mock.assert_any_call('python project_setup.py build_project'.split(' '))
+        run_process_mock.assert_any_call([
+            "python", EXAMPLE_PROJECT_SETUPPY, "build_project"])
 
     @mock.patch('bigflow.cli._cli_build_package')
     def test_should_call_cli_build_package_command(self, _cli_build_package_mock):
@@ -657,18 +647,18 @@ deployment_config = Config(name='dev',
         # then
         _cli_build_mock.assert_called_with(Namespace(operation='build', start_time='2020-01-01 00:00:00', workflow='some_workflow', verbose=False))
 
-    @mock.patch('bigflow.cli.run_process')
+    @mock.patch('bigflow.commons.run_process')
     @mock.patch('bigflow.cli.validate_project_setup')
     def test_should_call_build_package_command_through_CLI(self, validate_project_setup_mock, run_process_mock):
         # when
         cli(['build-package'])
 
         # then
-        self.assertEqual(run_process_mock.call_count, 1)
-        run_process_mock.assert_any_call('python project_setup.py build_project --build-package')
+        run_process_mock.assert_any_call([
+            "python", EXAMPLE_PROJECT_SETUPPY, "build_project", "--build-package"])
 
-    @mock.patch('bigflow.cli.run_process')
-    @mock.patch('bigflow.cli.find_file')
+    @mock.patch('bigflow.commons.run_process')
+    @mock.patch('bigflow.resources.find_file')
     @mock.patch('bigflow.cli.validate_project_setup')
     def test_should_call_build_image_command_through_CLI(self, validate_project_setup_mock, find_file_mock,
                                                          run_process_mock):
@@ -676,20 +666,20 @@ deployment_config = Config(name='dev',
         cli(['build-image'])
 
         # then
-        self.assertEqual(run_process_mock.call_count, 1)
-        run_process_mock.assert_any_call('python project_setup.py build_project --build-image')
+        run_process_mock.assert_any_call([
+            "python", EXAMPLE_PROJECT_SETUPPY, "build_project", "--build-image"])
 
-    @mock.patch('bigflow.cli.run_process')
+    @mock.patch('bigflow.commons.run_process')
     @mock.patch('bigflow.cli.validate_project_setup')
     def test_should_call_build_dags_command_through_CLI(self, validate_project_setup_mock, run_process_mock):
         # when
         cli(['build-dags'])
 
         # then
-        self.assertEqual(run_process_mock.call_count, 1)
-        run_process_mock.assert_any_call('python project_setup.py build_project --build-dags'.split(' '))
+        run_process_mock.assert_any_call([
+            "python", EXAMPLE_PROJECT_SETUPPY, "build_project", "--build-dags"])
 
-    @mock.patch('bigflow.cli.run_process')
+    @mock.patch('bigflow.commons.run_process')
     @mock.patch('bigflow.cli.validate_project_setup')
     def test_should_validate_project_setup_before_build(
             self, validate_project_setup_mock, run_process_mock):
@@ -802,7 +792,7 @@ another-project-id                         ANOTHER PROJECT                002242
     @mock.patch('builtins.print')
     def test_should_call_cli_logs_command(self, print_mock):
         # when
-        root_package = find_root_package(None, "test.cli_logs_regular_workflows")
+        root_package = TESTS_DIR / "cli_logs_regular_workflows"
         cli_logs(root_package)
 
         # then
@@ -830,7 +820,7 @@ another-project-id                         ANOTHER PROJECT                002242
     @mock.patch('builtins.print')
     def test_should_call_cli_logs_and_use_log_name_if_provided(self, print_mock):
         # when
-        root_package = find_root_package(None, "test.cli_logs_log_name_workflow")
+        root_package = TESTS_DIR / "cli_logs_log_name_workflow"
         cli_logs(root_package)
 
         # then
@@ -849,7 +839,7 @@ another-project-id                         ANOTHER PROJECT                002242
     @mock.patch('builtins.print')
     def test_should_deduplicate_projects_id(self, print_mock):
         # when
-        root_package = find_root_package(None, "test.cli_logs_duplicated_workflows")
+        root_package = TESTS_DIR / "cli_logs_duplicated_workflows"
         cli_logs(root_package)
 
         # then
@@ -868,7 +858,7 @@ another-project-id                         ANOTHER PROJECT                002242
             '\n***********************************************************')
 
     def test_should_raise_exception_if_no_workflow_with_log_config_found(self):
-        root_package = find_root_package("fake_project_name", None)
+        root_package = TESTS_DIR / "i_do_not_exist_at_all"
         with self.assertRaises(Exception) as e:
             cli_logs(root_package)
             self.assertEqual(str(e.exception), 'Found no workflows with configured logging.')
@@ -890,6 +880,13 @@ another-project-id                         ANOTHER PROJECT                002242
         else:
             workdir = Path(os.getcwd())
         f = workdir / file_name
+        #self.addCleanup(f.unlink)
+        if f.exists():
+            # FIXME: Refactor tests - copy workdir into temp directory.
+            orig = f.read_bytes()
+            self.addCleanup(f.write_bytes, orig)
+        else:
+            self.addCleanup(f.unlink)
         f.touch()
         f.write_text(content)
         return f
@@ -915,18 +912,3 @@ another-project-id                         ANOTHER PROJECT                002242
         self.assertEqual(len(logging.root.handlers), 1)
         self.assertIsInstance(logging.root.handlers[0], logging.StreamHandler)
         self.assertEqual(logging.root.level, logging.DEBUG)
-
-
-class ValidateProjectSetupTestCase(TestCase):
-
-    @mock.patch('bigflow.cli.check_if_project_setup_exists')
-    @mock.patch('bigflow.cli.run_process')
-    def test_should_raise_error_if_no_expected_message_found_in_setup_output(
-            self, run_process_mock, check_if_project_setup_exists_mock):
-        # given
-        run_process_mock.return_value = 'Unexpected message'
-
-        # then
-        with self.assertRaises(ValueError) as e:
-            # when
-            validate_project_setup()

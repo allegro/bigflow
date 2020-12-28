@@ -16,14 +16,6 @@ advanced_deployment_config_template = '''.add_configuration(
                             }})
 '''
 
-project_setup_template = '''from bigflow.build import default_project_setup
-
-PROJECT_NAME = '{project_name}'
-
-if __name__ == '__main__':
-    default_project_setup(PROJECT_NAME)
-'''
-
 beam_pipeline_template = '''import uuid
 import logging
 
@@ -61,9 +53,7 @@ def dataflow_pipeline_options():
     options.view_as(StandardOptions).runner = 'DataflowRunner'
 
     setup_file_path = find_or_create_setup_for_main_project_package()
-    requirements_file_path = get_resource_absolute_path('requirements.txt')
     options.view_as(SetupOptions).setup_file = str(setup_file_path)
-    options.view_as(SetupOptions).requirements_file = str(requirements_file_path)
 
     logger.info(f"Run beam pipeline with options {str(options)}")
     return options'''

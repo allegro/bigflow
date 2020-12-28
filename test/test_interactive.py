@@ -515,7 +515,7 @@ class InteractiveDatasetManagerTestCase(TestCase):
                 table_name='table',
                 records=[{}],
                 partitioned=True),
-            mock.call.delete_dataset(),
+            mock.call.remove_dataset(),
         ])
 
 
