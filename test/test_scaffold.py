@@ -27,8 +27,16 @@ class ProjectScaffoldE2E(ProjectScaffoldE2ETestCase):
     @mock.patch('bigflow.cli.gcp_project_input')
     @mock.patch('bigflow.cli.project_type_input')
     @mock.patch('bigflow.cli.project_name_input')
-    def test_should_create_basic_project(self, project_name_input_mock, project_type_input_mock, gcp_project_input_mock,
-                                         gcp_bucket_input_mock, gcloud_project_list_mock):
+    @mock.patch('bigflow.build.pip.pip_compile')
+    def test_should_create_basic_project(
+        self,
+        pip_compile_mock,
+        project_name_input_mock,
+        project_type_input_mock,
+        gcp_project_input_mock,
+        gcp_bucket_input_mock,
+        gcloud_project_list_mock,
+    ):
         # given
         gcloud_project_list_mock.return_value = ''
         project_name_input_mock.return_value = 'my_project'
