@@ -107,8 +107,8 @@ class Job(abc.ABC):
     """Base abstract class for bigflow.Jobs.  It is recommended to inherit all your jobs from this class."""
 
     id: str
-    retries: int = 3
-    retry_delay: float = 60
+    retry_count: int = 3
+    retry_pause_sec: int = 60
     execution_timeout: int = DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS
 
     @abc.abstractmethod
@@ -197,12 +197,12 @@ class WorkflowJob(Job):
         return self.job.id
 
     @property
-    def retries(self):
-        return self.job.retries
-
-    @property
     def retry_count(self):
         return self.job.retry_count
+
+    @property
+    def retry_pause_sec(self):
+        return self.job.retry_pause_sec
 
     def execute(self, context: JobContext):
         Workflow._execute_job(self.job, context)

@@ -1,4 +1,5 @@
 from unittest import TestCase
+import itertools
 import mock
 
 from bigflow.cli import *
@@ -911,18 +912,3 @@ another-project-id                         ANOTHER PROJECT                002242
         self.assertEqual(len(logging.root.handlers), 1)
         self.assertIsInstance(logging.root.handlers[0], logging.StreamHandler)
         self.assertEqual(logging.root.level, logging.DEBUG)
-
-
-class ValidateProjectSetupTestCase(TestCase):
-
-    @mock.patch('bigflow.cli.check_if_project_setup_exists')
-    @mock.patch('bigflow.commons.run_process')
-    def test_should_raise_error_if_no_expected_message_found_in_setup_output(
-            self, run_process_mock, check_if_project_setup_exists_mock):
-        # given
-        run_process_mock.return_value = 'Unexpected message'
-
-        # then
-        with self.assertRaises(ValueError) as e:
-            # when
-            validate_project_setup()

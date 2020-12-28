@@ -1,13 +1,13 @@
-import subprocess
-import sys
 import hashlib
 import logging
 import re
+import subprocess
 import time
+import typing
 
 from pathlib import Path
-from datetime import datetime
 from deprecated import deprecated
+from datetime import datetime, timedelta
 
 
 logger = logging.getLogger(__name__)
@@ -93,3 +93,16 @@ def build_docker_image_tag(docker_repository: str, package_version: str):
 def remove_docker_image_from_local_registry(tag):
     print('Removing the image from the local registry')
     run_process(f"docker rmi {get_docker_image_id(tag)}")
+
+
+def as_timedelta(v: typing.Union[None, str, int, float, timedelta]) -> typing.Optional[timedelta]:
+    if v is None:
+        return None
+    elif isinstance(v, timedelta):
+        return v
+    elif isinstance(v, (int, float)):
+        return timedelta(seconds=v)
+    elif v == "":
+        return None
+    else:
+        return timedelta(seconds=float(v))

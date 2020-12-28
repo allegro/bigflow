@@ -116,6 +116,7 @@ def dataflow_pipeline_options():
     google_cloud_options.staging_location = f"gs://{workflow_config['staging_location']}"
     google_cloud_options.temp_location = f"gs://{workflow_config['temp_location']}"
     google_cloud_options.region = workflow_config['region']
+    # google_cloud_options.service_account_email = 'your-service-account'
 
     options.view_as(WorkerOptions).machine_type = workflow_config['machine_type']
     options.view_as(WorkerOptions).max_num_workers = 2

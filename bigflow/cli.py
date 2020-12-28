@@ -779,7 +779,7 @@ def cli(raw_args) -> None:
     parsed_args = _parse_args(project_name, raw_args)
     init_console_logging(parsed_args.verbose)
 
-    operation = parsed_args.operation
+    operation: str = parsed_args.operation
 
     if operation == 'run':
         set_configuration_env(parsed_args.config)
