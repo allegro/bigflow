@@ -139,6 +139,12 @@ def find_setup(search_start_file: Path, retries_left: int = 10, sleep_time: floa
         return find_setup(search_start_file, retries_left - 1)
 
 
+@deprecated(
+    reason="""
+        Call to this method can be replaced with
+        inliner `(file_path.exists() or file_path.write_text(body)) and file_path` instead.
+    """
+)
 def create_file_if_not_exists(file_path: Path, body: str) -> Path:
     if os.path.exists(file_path):
         return file_path
