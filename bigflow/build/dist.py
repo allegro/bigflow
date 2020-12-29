@@ -2,6 +2,7 @@
 """
 
 import os
+import subprocess
 import sys
 import shutil
 import textwrap
@@ -33,12 +34,17 @@ logger = logging.getLogger(__name__)
 SETUP_VALIDATION_MESSAGE = 'BigFlow setup is valid.'
 
 
-def run_tests(build_dir: Path, test_package: Path):
-    runner = xmlrunner.XMLTestRunner(output=str(build_dir / 'junit-reports'))
-    suite = unittest.TestLoader().discover(start_dir=str(test_package))
-    result = runner.run(suite)
-    if result.errors:
-        raise ValueError('Test suite failed.')
+def run_tests(project_dir: Path, build_dir: Path, test_package: Path):
+    output_dir = build_dir / 'junit-reports'
+    try:
+        return bf_commons.run_process([
+            "python", "-m", "xmlrunner", "discover",
+            "-s", test_package,
+            "-t", project_dir,
+            "-o", output_dir,
+        ])
+    except subprocess.CalledProcessError:
+        raise ValueError("Test suite failed.")
 
 
 def export_docker_image_to_file(tag: str, target_dir: Path, version: str):
@@ -173,7 +179,7 @@ def build_command(
             if self.build_package or self.should_run_whole_build():
                 print('Building the pip package')
                 clear_package_leftovers(dist_dir, eggs_dir, build_dir)
-                run_tests(build_dir, test_package)
+                run_tests(project_dir, build_dir, test_package)
                 self.run_command('bdist_wheel')
 
             if self.build_dags or self.should_run_whole_build():
