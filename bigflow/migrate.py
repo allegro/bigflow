@@ -38,6 +38,7 @@ def maybe_upgrade_pyproject_bigflow_version(root: Path):
 
     from bigflow.resources import read_requirements
     reqs_version =_find_bigflow_req(read_requirements(reqsf, False))
+    reqs_version = re.sub(r"\[.*\]", "", reqs_version)  # strip extras
 
     ppt = toml.load(pptf)
     ppt_requires = ppt.get('build-system', {}).get('requires', [])
@@ -72,14 +73,6 @@ def need_migrate_to_11(root: Path):
         (root / "pyproject.toml").exists(),
         (root / "MANIFEST.in").exists(),
     ])
-
-
-def _read_bf_version_from_requirements(root: Path):
-    import bigflow.resources as r
-    rf = root / "resources" / "requirements.txt"
-    if rf.exists():
-        reqs = r.read_requirements(rf)
-        return _find_bigflow_req(reqs)
 
 
 def _rename_projectsetup_to_setup(root: Path):
@@ -140,4 +133,4 @@ def check_migrate(root: Optional[Path] = None):
         logging.debug("Migrate project to 1.1")
         migrate__v1_0__v1_1(root)
 
-    maybe_upgrade_pyproject_bigflow_version(root)
+     (root)
