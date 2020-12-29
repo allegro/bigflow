@@ -10,4 +10,4 @@ toml~=0.10
 tblib>=1.7,<2
 
 wheel>=0.35
-setuptools>=49
+setuptools>=45
