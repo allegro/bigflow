@@ -132,5 +132,3 @@ def check_migrate(root: Optional[Path] = None):
     if need_migrate_to_11(root):
         logging.debug("Migrate project to 1.1")
         migrate__v1_0__v1_1(root)
-
-     (root)
