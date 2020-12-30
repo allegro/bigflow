@@ -3,13 +3,19 @@ import uuid
 import logging
 import functools
 import typing
+import logging
 from pathlib import Path
+
+from google.cloud.bigquery import dataset
+# hidden BQ and pandas imports due to https://github.com/allegro/bigflow/issues/149
+
+
+logger = logging.getLogger(__name__)
+
 
 DEFAULT_REGION = 'europe-west1'
 DEFAULT_MACHINE_TYPE = 'n1-standard-1'
 DEFAULT_LOCATION = 'EU'
-
-# hidden BQ and pandas imports due to https://github.com/allegro/bigflow/issues/149
 
 
 class AliasNotFoundError(ValueError):
@@ -17,6 +23,7 @@ class AliasNotFoundError(ValueError):
 
 
 def handle_key_error(method):
+    logger.debug("Wrap %s with @handle_key_error", method)
 
     @functools.wraps(method)
     def decorated(*args, **kwargs):
@@ -55,6 +62,16 @@ class TemplatedDatasetManager(object):
         self.external_tables = external_tables
         self.extras = extras
         self.run_datetime = run_datetime
+
+        logger.debug(
+            "Wrap %s with TemplatedDatasetManager, internal_tables %s,"
+            " external_tables %s, extras %s, run_datetime %s",
+            dataset_manager,
+            self.internal_tables,
+            self.external_tables,
+            self.extras,
+            self.run_datetime,
+        )
 
     def write_truncate(self, table_name, sql, custom_run_datetime=None):
         return self.write(self.dataset_manager.write_truncate, table_name, sql, custom_run_datetime)

@@ -26,6 +26,7 @@ INLINE_COMPONENT_DATASET_ALIAS = '_inline_component_dataset'
 
 
 def log_syntax_error(method):
+    logger.debug("Wrap %s with @log_syntax_error", method)
 
     @functools.wraps(method)
     def decorated(*args, **kwargs):
@@ -42,6 +43,7 @@ def log_syntax_error(method):
 
 def interactive_component(**dependencies):
     def decorator(standard_component):
+        logger.debug("Wrap %s with @interactive_component, deps %s", standard_component, dependencies)
         return InteractiveComponent(standard_component,
                                     {dep_name: dep.config for dep_name, dep in dependencies.items()})
     return decorator
@@ -66,6 +68,7 @@ class InteractiveDatasetManager(Dataset):
             credentials=credentials,
             extras=extras,
             location=location)
+        logger.debug("Create InteractiveDatasetManager, config %s", self.config._as_dict())
 
     def write_truncate(self, table_name, sql, partitioned=True):
         method = 'write_truncate'
@@ -174,6 +177,10 @@ class InteractiveDatasetManager(Dataset):
             operation_name=DEFAULT_OPERATION_NAME)
 
     def _tmp_interactive_component_factory(self, component_name, method, *args, **kwargs):
+        logger.info(
+            "Build tmp interactive component, name=%s, method=%s, arguments (*%r, **%r)",
+            component_name, method, args, kwargs)
+
         @interactive_component(_inline_component_dataset=self)
         def tmp_component(_inline_component_dataset):
             return getattr(_inline_component_dataset, method)(*args, **kwargs)
@@ -190,7 +197,9 @@ def generate_component_name(method, table_name, sql):
     component_id = hashlib.sha256()
     component_id.update(sql.encode('utf-8'))
     component_id = component_id.hexdigest()
-    return '{}_{}_{}'.format(method, table_name, component_id)
+    res = '{}_{}_{}'.format(method, table_name, component_id)
+    logger.debug("Generated component name is %s", res)
+    return res
 
 
 class InteractiveComponent(object):
@@ -212,6 +221,7 @@ class InteractiveComponent(object):
         dependency_config = self._dependency_config.copy()
         dependency_config.update({dataset_alias: dataset.config for dataset_alias, dataset in dependencies_override.items()})
 
+        logger.info("Convert interactive component to job, id=%s, component %s, dependencies %s", id, component_callable, dependency_config)
         return Job(
             component=component_callable,
             id=id,
@@ -224,6 +234,7 @@ class InteractiveComponent(object):
         _, component_callable = decorate_component_dependencies_with_operation_level_dataset_manager(
             self._standard_component, operation_name=operation_name)
         job = Job(component_callable, **self._dependency_config)
+        logger.info("Run interactive component, id=%s, component %s", job.id, job.component)
         return job.execute(bigflow.JobContext.make(runtime=runtime))
 
     @log_syntax_error
@@ -262,6 +273,12 @@ def decorate_component_dependencies_with_operation_level_dataset_manager(
         operation_name=None,
         peek=None,
         peek_limit=None):
+
+    logger.debug(
+        "Decorate component dependencies with operation level dataset manager: component %s, operation %s, peek %s/%s",
+        standard_component, operation_name, peek, peek_limit,
+    )
+
     operation_settings = {'operation_name': operation_name, 'peek': peek, 'peek_limit': peek_limit}
     results_container = []
 
@@ -280,6 +297,8 @@ def decorate_component_dependencies_with_operation_level_dataset_manager(
     component_callable_with_proper_signature = "def reworked_function({signature}):\n    return original_func({kwargs})\n".format(
         signature=','.join([arg for arg in getfullargspec(standard_component).args]),
         kwargs=','.join(['{arg}={arg}'.format(arg=arg) for arg in getfullargspec(standard_component).args]))
+
+    logger.debug("Compile dynamic python code\n%s", component_callable_with_proper_signature)
     component_callable_with_proper_signature_code = compile(component_callable_with_proper_signature, "fakesource",
                                                             "exec")
     fake_locals = {}
