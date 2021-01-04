@@ -311,7 +311,7 @@ class PySparkJobTest(unittest.TestCase):
         )
 
         # then
-        self.assertEqual(job.execution_timeout, DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS)
+        self.assertEqual(job.execution_timeout_sec, DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS)
 
     def test_should_initialize_job_with_execution_timeout(self):
         # when
@@ -321,8 +321,8 @@ class PySparkJobTest(unittest.TestCase):
             bucket_id="no-bucket",
             gcp_project_id="no-project",
             gcp_region="no-region",
-            execution_timeout=1,
+            execution_timeout_sec=1,
         )
 
         # then
-        self.assertEqual(job.execution_timeout, 1)
+        self.assertEqual(job.execution_timeout_sec, 1)

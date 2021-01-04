@@ -16,14 +16,14 @@ class Job(bigflow.Job):
                  id=None,
                  retry_count=DEFAULT_RETRY_COUNT,
                  retry_pause_sec=DEFAULT_RETRY_PAUSE_SEC,
-                 execution_timeout=DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS,
+                 execution_timeout_sec=DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS,
                  **dependency_configuration):
         self.id = id or component.__name__
         self.component = component
         self.dependency_configuration = dependency_configuration
         self.retry_count = retry_count
         self.retry_pause_sec = retry_pause_sec
-        self.execution_timeout = execution_timeout
+        self.execution_timeout_sec = execution_timeout_sec
 
     def execute(self, context: bigflow.JobContext):
         return self._run_component(self._build_dependencies(context.runtime_str))

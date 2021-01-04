@@ -46,7 +46,7 @@ default_args = {{
             'start_date': {start_date_as_str},
             'email_on_failure': False,
             'email_on_retry': False,
-            'execution_timeout': datetime.timedelta(seconds={execution_timeout}),
+            'execution_timeout': datetime.timedelta(seconds={execution_timeout_sec}),
 }}
 
 dag = DAG(
@@ -59,7 +59,7 @@ dag = DAG(
            start_date_as_str=start_date_as_str,
            schedule_interval=workflow.schedule_interval,
            depends_on_past=workflow.depends_on_past,
-           execution_timeout=DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS))
+           execution_timeout_sec=DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS))
 
     def get_job(workflow_job):
         return workflow_job.job
@@ -69,8 +69,8 @@ dag = DAG(
         job_var = "t" + str(job.id)
         task_id = job.id.replace("_","-")
 
-        execution_timeout = commons.as_timedelta(
-            getattr(job, 'execution_timeout', None)
+        execution_timeout_sec = commons.as_timedelta(
+            getattr(job, 'execution_timeout_sec', None)
             or DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS)
 
         dag_chunks.append("""
@@ -85,7 +85,7 @@ dag = DAG(
     retries={retries},
     retry_delay=datetime.timedelta(seconds={retry_delay}),
     dag=dag,
-    execution_timeout={execution_timeout!r})
+    execution_timeout={execution_timeout_sec!r})
 """.format(job_var=job_var,
           task_id=task_id,
           docker_image = docker_repository+":"+build_ver,
@@ -93,7 +93,7 @@ dag = DAG(
           root_folder=root_package_name,
           retries=job.retry_count if hasattr(job, 'retry_count') else 3,
           retry_delay=job.retry_pause_sec if hasattr(job, 'retry_pause_sec') else 60,
-          execution_timeout=execution_timeout,
+          execution_timeout_sec=execution_timeout_sec,
           ))
 
         for d in dependencies:

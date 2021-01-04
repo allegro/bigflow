@@ -52,7 +52,7 @@ class PySparkJob(bigflow.Job):
         worker_machine_type: str = 'n1-standard-1',
         env: typing.Optional[str] = None,
         project_name: typing.Optional[str] = None,
-        execution_timeout: int = DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS
+        execution_timeout_sec: int = DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS
     ):
         self.id = id
 
@@ -81,7 +81,7 @@ class PySparkJob(bigflow.Job):
 
         self._project = project_name or bigflow.build.reflect.infer_project_name(stack=2)
 
-        self.execution_timeout = execution_timeout
+        self.execution_timeout_sec = execution_timeout_sec
 
     def _generate_internal_jobid(self, context):
         job_random_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=10))

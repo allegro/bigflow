@@ -93,8 +93,8 @@ class BeamJobTestCase(TestCase):
             driver.pipeline._options.get_all_options()['labels'],
             ['workflow_id=count_words'])
 
-        # and sets default value for execution_timeout
-        self.assertEqual(job.execution_timeout, DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS)
+        # and sets default value for execution_timeout_sec
+        self.assertEqual(job.execution_timeout_sec, DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS)
 
     @patch.object(RunnerResult, 'is_in_terminal_state', create=True)
     @patch.object(RunnerResult, 'cancel')
@@ -113,7 +113,7 @@ class BeamJobTestCase(TestCase):
                 'words_to_count': ['trash', 'valid', 'word', 'valid']
             },
             test_pipeline=self._test_pipeline_with_label('count_words'),
-            execution_timeout=600)
+            execution_timeout_sec=600)
 
         count_words = Workflow(
             workflow_id='count_words',
@@ -143,7 +143,7 @@ class BeamJobTestCase(TestCase):
                 'words_to_count': ['trash', 'valid', 'word', 'valid']
             },
             test_pipeline=self._test_pipeline_with_label('count_words'),
-            execution_timeout=600)
+            execution_timeout_sec=600)
 
         count_words = Workflow(
             workflow_id='count_words',
@@ -168,7 +168,7 @@ class BeamJobTestCase(TestCase):
                     'words_to_count': ['trash', 'valid', 'word', 'valid']
                 },
                 test_pipeline=self._test_pipeline_with_label('count_words'),
-                execution_timeout=1,
+                execution_timeout_sec=1,
                 wait_until_finish=False)
 
     @patch.object(RunnerResult, 'is_in_terminal_state', create=True)
@@ -186,7 +186,7 @@ class BeamJobTestCase(TestCase):
                 'words_to_count': ['trash', 'valid', 'word', 'valid']
             },
             pipeline_options=options,
-            execution_timeout=1)
+            execution_timeout_sec=1)
 
         count_words = Workflow(
             workflow_id='count_words',
@@ -208,7 +208,7 @@ class BeamJobTestCase(TestCase):
                     'words_to_filter': ['valid', 'word'],
                     'words_to_count': ['trash', 'valid', 'word', 'valid']
                 },
-                execution_timeout=1)
+                execution_timeout_sec=1)
 
     def test_should_throw_if_pipeline_options_and_pipeline_both_provided(self):
         with self.assertRaises(ValueError):
@@ -221,7 +221,7 @@ class BeamJobTestCase(TestCase):
                     'words_to_count': ['trash', 'valid', 'word', 'valid']
                 },
                 test_pipeline=self._test_pipeline_with_label('count_words'),
-                execution_timeout=1,
+                execution_timeout_sec=1,
                 pipeline_options=PipelineOptions())
 
     def _test_pipeline_with_label(self, workflow_id):

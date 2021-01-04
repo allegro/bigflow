@@ -18,15 +18,13 @@ class BeamJob(Job):
             pipeline_options: PipelineOptions = None,
             entry_point_arguments: typing.Optional[dict] = None,
             wait_until_finish: bool = True,
-            execution_timeout: int = DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS,
+            execution_timeout_sec: int = DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS,
             test_pipeline: Pipeline = None,
-            pipeline_level_execution_timeout_shift: int = DEFAULT_PIPELINE_LEVEL_EXECUTION_TIMEOUT_SHIFT_IN_SECONDS
     ):
         if bool(test_pipeline) == bool(pipeline_options):
             raise ValueError("One of the pipeline and pipeline_options must be provided.")
-        if not wait_until_finish and execution_timeout:
+        if not wait_until_finish and execution_timeout_sec:
             raise ValueError("If wait_until_finish_set to False execution_timeout can not be used.")
-
 
         self.id = id
         self.entry_point = entry_point
@@ -34,8 +32,8 @@ class BeamJob(Job):
         self.pipeline_options = pipeline_options
         self.wait_until_finish = wait_until_finish
         self.pipeline = test_pipeline
-        self.execution_timeout = execution_timeout
-        self.pipeline_level_execution_timeout_shift = pipeline_level_execution_timeout_shift
+        self.execution_timeout_sec = execution_timeout_sec
+        self.pipeline_level_execution_timeout_shift = DEFAULT_PIPELINE_LEVEL_EXECUTION_TIMEOUT_SHIFT_IN_SECONDS
 
     def execute(self, context: JobContext):
         if self.pipeline:
@@ -48,8 +46,8 @@ class BeamJob(Job):
             pipeline = self._create_pipeline(self.pipeline_options)
         self.entry_point(pipeline, context, self.entry_point_arguments)
         result = pipeline.run()
-        if self.wait_until_finish and self.execution_timeout:
-            timeout_in_milliseconds = 1000 * (self.execution_timeout - self.pipeline_level_execution_timeout_shift)
+        if self.wait_until_finish and self.execution_timeout_sec:
+            timeout_in_milliseconds = 1000 * (self.execution_timeout_sec - self.pipeline_level_execution_timeout_shift)
             result.wait_until_finish(timeout_in_milliseconds)
             if not result.is_in_terminal_state():
                 result.cancel()

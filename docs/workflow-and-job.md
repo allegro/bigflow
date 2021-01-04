@@ -55,7 +55,9 @@ and scheduling [workflow scheduling options](#workflow-scheduling-options).
 
 There are 3 additional parameters, that a job can supply to Airflow: `retry_count`, `retry_pause_sec` and `execution_timeout`. The `retry_count` parameter
 determines how many times a job will be retried (in case of a failure). The `retry_pause_sec` parameter says how long the pause between retries should be.
-The `execution_timeout` says how long airflow should wait for job to finish.
+
+The `execution_timeout` says how long Airflow should wait for job to finish. The default value for the `execution_timeout` parameter
+is 3 hours.
 
 [`retriable_job.py`](examples/workflow_and_job/retriable_job.py)
 ```python
