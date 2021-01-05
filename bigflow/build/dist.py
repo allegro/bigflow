@@ -139,14 +139,15 @@ class sdist(distutils.command.sdist.sdist):
         self._add_defaults_bigflow()
 
     def _add_defaults_bigflow(self):
-        self.filelist.extend([
-            "deployment_config.py",
-            "requirements.in",
-            "requirements.txt",
-            "Dockerfile",
-            "resources/requirements.txt",
-            "resources/requirements.in",
-        ])
+        self.filelist.extend(
+            filter(os.path.exists, [
+                "deployment_config.py",
+                "requirements.in",
+                "requirements.txt",
+                "Dockerfile",
+                "resources/requirements.txt",
+                "resources/requirements.in",
+            ]))
 
 
 def build_command(
