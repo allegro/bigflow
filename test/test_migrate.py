@@ -29,8 +29,6 @@ class TestMigrateFromV10(_BaseTestCase):
         self.assertFalse(p.wait())
 
         self.assertFileNotExists("project_setup.py")
-
-        self.assertFileExists("MANIFEST.in")
         self.assertFileExists("pyproject.toml")
         self.assertFileExists("setup.py")
 

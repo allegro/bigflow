@@ -15,6 +15,7 @@ import typing
 import pickle
 
 import distutils.cmd
+import distutils.command.sdist
 import distutils.dist
 
 from pathlib import Path
@@ -129,6 +130,24 @@ def _hook_bdist_pregenerate_sdist():
         for cmd, _ in d.get_command_list()
         if cmd.startswith("bdist")
     }
+
+
+class sdist(distutils.command.sdist.sdist):
+
+    def add_defaults(self):
+        super().add_defaults()
+        self._add_defaults_bigflow()
+
+    def _add_defaults_bigflow(self):
+        self.filelist.extend(
+            filter(os.path.exists, [
+                "deployment_config.py",
+                "requirements.in",
+                "requirements.txt",
+                "Dockerfile",
+                "resources/requirements.txt",
+                "resources/requirements.in",
+            ]))
 
 
 def build_command(
@@ -353,6 +372,7 @@ def project_setup(
             (f"bigflow__project/{project_name}", ["build/bf-project.tar"]),
         ],
         'cmdclass': {
+            'sdist': sdist,
             'build_project': build_command(
                 root_package,
                 project_dir,
