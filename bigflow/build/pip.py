@@ -24,7 +24,7 @@ def pip_compile(
 
     req_txt = req.with_suffix(".txt")
     req_in = req.with_suffix(".in")
-    logger.info("Compile file %s ...", req_in)
+    logger.info("Compile requirements file %s ...", req_in)
 
     with tempfile.NamedTemporaryFile('w+t', prefix=f"{req_in.stem}-", suffix=".txt", delete=False) as txt_file:
         bf_commons.run_process([
@@ -87,11 +87,11 @@ def check_requirements_needs_recompile(req: Path) -> bool:
     logger.debug("Check if file %s should be recompiled", req_txt)
 
     if not req_in.exists():
-        logger.info("No file %s - pip-tools is not used", req_in)
+        logger.debug("No file %s - pip-tools is not used", req_in)
         return False
 
     if not req_txt.exists():
-        logger.info("File %s does not exist - need to be compiled by 'pip-compile'", req_txt)
+        logger.debug("File %s does not exist - need to be compiled by 'pip-compile'", req_txt)
         return True
 
     req_txt_content = req_txt.read_text()
@@ -99,7 +99,7 @@ def check_requirements_needs_recompile(req: Path) -> bool:
     same_hash = hash1 in req_txt_content
 
     if same_hash:  # dirty but works ;)
-        logger.info("Don't need to compile %s file", req_txt)
+        logger.debug("Don't need to compile %s file", req_txt)
         return False
     else:
         logger.warning("File %s needs to be recompiled with 'bigflow build-requirements' command", req_txt)
