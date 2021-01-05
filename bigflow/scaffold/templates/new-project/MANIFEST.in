@@ -1,5 +1,0 @@
-include deployment_config.py
-include requirements.txt
-include requirements.in
-include Dockerfile
-graft resources
