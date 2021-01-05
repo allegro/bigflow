@@ -20,13 +20,12 @@ bigflow -h
 You should see the welcome message and the list of all `bigflow` commands:
 
 ```text
-Welcome to BiggerQuery CLI. Type: bigflow {command} -h to print detailed
-help for a selected command.
+...
+Welcome to BigFlow CLI. Type: bigflow {command} -h to print detailed help for
+a selected command.
 
 positional arguments:
-  {run,deploy-dags,deploy-image,deploy,build-dags,build-image,build-package,build,start-project,project-version,logs}
-                        BigFlow command to execute
-
+  {run,deploy-dags,deploy-image,deploy,build-dags,build-image,build-package,build,project-version,pv,release,start-project,logs}
 ...
 ```
 
@@ -94,7 +93,7 @@ bigflow run --workflow hello_world_workflow --runtime '2020-08-01 10:00:00'
 
 If you don't set the `config` parameter,
 the workflow configuration (environment)
-is taken from the the [defaul](configuration.md#default-configuration)
+is taken from the [default](configuration.md#default-configuration)
 config (`dev` in this case):
 
 ```shell
@@ -110,12 +109,13 @@ bigflow run --workflow hello_config_workflow --config prod
 
 ### Building Airflow DAGs
 
-There are four commands to build your [deployment artifacts](project_structure_and_build.md#deployment-artifacts):
+There are five commands to build your [deployment artifacts](project_structure_and_build.md#deployment-artifacts):
 
 1. `build-dags` generates Airflow DAG files from your workflows.  DAG files are saved to a local `.dags` dir.
 1. `build-package` generates a PIP package from your project based on `setup.py`.
 1. `build-image` generates a Docker image with this package and all requirements.
-1. `build` simply runs `build-dags`, `build-package`, and `build-image`.
+1. `build-requirements` compiles `resources/requirements.in` into `resources/requirements.txt` (it's an optional step).
+1. `build` simply runs `build-dags`, `build-package`, `build-image` and `build-requirements`.
 
 Before using the build commands make sure that you have
 a valid [`deployment_config.py`](deployment.md#managing-configuration-in-deployment_configpy) file.
@@ -127,6 +127,7 @@ It should define the `docker_repository` parameter.
 bigflow build-dags -h
 bigflow build-package -h
 bigflow build-image -h
+bigflow build-requirements -h
 bigflow build -h
 ```
 
@@ -172,6 +173,8 @@ all requirements. Next, the image is exported to a `tar` file in the `./.image` 
 ```shell
 bigflow build-image
 ```
+
+**Build requirements.txt**
 
 **Build a whole project with a single command**
 
@@ -311,8 +314,6 @@ Workflow link contains logs from user code, Dataflow jobs, Dataproc jobs, and ex
 The links will be created for every workflow found by Bigflow in the project directory.
 The infrastructure link contains logs from Kubernetes pods/containers and Dataflow workers. The links will be created
 for every unique project id found in workflows.
-
-
 
 ## Project scaffold
 Use the `bigflow start-project` command to create a [sample project](scaffold.md) and try all of the above commands yourself.

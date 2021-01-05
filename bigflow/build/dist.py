@@ -97,7 +97,7 @@ def build_image(
 def _hook_pregenerate_sdist(command_cls):
     """
     Wraps existing distutils.Command class.
-    Runs 'sdist' and copy resutl into 'build/bf-project.tar.gz'
+    Runs 'sdist' and copy result into 'build/bf-project.tar.gz'
     """
 
     def run(self):

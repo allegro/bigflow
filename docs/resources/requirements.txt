@@ -1,1 +1,99 @@
-bigflow[log]
+# *** AUTO GENERATED: DON'T EDIT ***
+# $source-hash: sha256:e0041b6f2ecd2403901bd1bb7592c28f63072a215b43806b29e19c84ca6777b1
+# $source-file: resources/requirements.in
+#
+# run 'bigflow build-requirements resources/requirements.in' to update this file
+
+better-setuptools-git-version==1.0.5
+    # via bigflow
+bigflow[log]==1.1.0a3
+    # via -r resources/requirements.in
+cachetools==4.2.0
+    # via google-auth
+certifi==2020.12.5
+    # via requests
+cffi==1.14.4
+    # via google-crc32c
+chardet==4.0.0
+    # via requests
+click==7.1.2
+    # via pip-tools
+deprecated==1.2.10
+    # via bigflow
+google-api-core[grpc]==1.24.1
+    # via
+    #   google-cloud-core
+    #   google-cloud-logging
+google-auth==1.24.0
+    # via
+    #   bigflow
+    #   google-api-core
+    #   google-cloud-storage
+google-cloud-core==1.5.0
+    # via
+    #   google-cloud-logging
+    #   google-cloud-storage
+google-cloud-logging==1.15.1
+    # via bigflow
+google-cloud-storage==1.35.0
+    # via bigflow
+google-crc32c==1.1.0
+    # via google-resumable-media
+google-resumable-media==1.2.0
+    # via google-cloud-storage
+googleapis-common-protos==1.52.0
+    # via google-api-core
+grpcio==1.34.0
+    # via google-api-core
+idna==2.10
+    # via requests
+jinja2==2.11.2
+    # via bigflow
+markupsafe==1.1.1
+    # via jinja2
+pip-tools==5.5.0
+    # via bigflow
+protobuf==3.14.0
+    # via
+    #   google-api-core
+    #   googleapis-common-protos
+pyasn1-modules==0.2.8
+    # via google-auth
+pyasn1==0.4.8
+    # via
+    #   pyasn1-modules
+    #   rsa
+pycparser==2.20
+    # via cffi
+pytz==2020.5
+    # via google-api-core
+requests==2.25.1
+    # via
+    #   google-api-core
+    #   google-cloud-storage
+rsa==4.6
+    # via google-auth
+six==1.15.0
+    # via
+    #   google-api-core
+    #   google-auth
+    #   google-cloud-core
+    #   google-resumable-media
+    #   grpcio
+    #   protobuf
+tblib==1.7.0
+    # via bigflow
+toml==0.10.2
+    # via bigflow
+unittest-xml-reporting==3.0.4
+    # via bigflow
+urllib3==1.26.2
+    # via requests
+wheel==0.36.2
+    # via bigflow
+wrapt==1.12.1
+    # via deprecated
+
+# The following packages are considered to be unsafe in a requirements file:
+# pip
+# setuptools
