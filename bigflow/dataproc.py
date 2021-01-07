@@ -31,10 +31,6 @@ __all__ = [
     'PySparkJob',
 ]
 
-DEFAULT_REQUIREMENTS = [
-    f"bigflow[dataproc,log,bigquery]=={bigflow.__version__}",
-]
-
 
 class PySparkJob(bigflow.Job):
 
@@ -74,10 +70,8 @@ class PySparkJob(bigflow.Job):
 
         if isinstance(pip_packages, pathlib.Path):
             self.pip_packages = bigflow.resources.read_requirements(pip_packages)
-        elif pip_packages:
-            self.pip_packages = pip_packages
         else:
-            self.pip_packages = DEFAULT_REQUIREMENTS
+            self.pip_packages = pip_packages
 
         self._project = project_name or bigflow.build.reflect.infer_project_name(stack=2)
 
