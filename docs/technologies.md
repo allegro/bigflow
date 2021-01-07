@@ -45,8 +45,7 @@ def dataflow_pipeline_options():
     options.view_as(WorkerOptions).autoscaling_algorithm = 'THROUGHPUT_BASED'
     options.view_as(StandardOptions).runner = 'DataflowRunner'
 
-    setup_file_path = find_or_create_setup_for_main_project_package()
-    options.view_as(SetupOptions).setup_file = str(setup_file_path)
+    options.view_as(SetupOptions).setup_file = str(materialize_setuppy().absolute())
 
     logger.info(f"Run beam pipeline with options {str(options)}")
     return options
@@ -56,7 +55,7 @@ The `dataflow_pipeline_options` function creates a [Beam pipeline options](https
 The following line is the key:
 
 ```python
-options.view_as(SetupOptions).setup_file = str(setup_file_path)
+options.view_as(SetupOptions).setup_file = str(materialize_setuppy().absolute())
 ```
 
 The pipeline configuration contains `staging_location` and `temp_location` directories.
