@@ -25,7 +25,7 @@ Welcome to BigFlow CLI. Type: bigflow {command} -h to print detailed help for
 a selected command.
 
 positional arguments:
-  {run,deploy-dags,deploy-image,deploy,build-dags,build-image,build-package,build,project-version,pv,release,start-project,logs}
+  {run,deploy-dags,deploy-image,deploy,build-dags,build-image,build-package,build,project-version,pv,release,start-project,logs,build-requirements}
 ...
 ```
 
@@ -176,6 +176,13 @@ bigflow build-image
 
 **Build requirements.txt**
 
+The `build-requirements` command tries to resolve and freeze dependencies based on the `resources/requirements.in` file.
+You can learn more about that concept in the [Project structure and build](project_structure_and_build.md#requirementsin) chapter.
+
+```shell
+bigflow build-requirements
+```
+
 **Build a whole project with a single command**
 
 The `build` command builds both artifacts (DAG files and a Docker image).
@@ -307,6 +314,7 @@ bigflow deploy --deployment-config-path '/tmp/my_deployment_config.py'
 ```
 
 ### Accessing logs
+
 The `bigflow logs` command lets you generate a link leading to your project/workflow logs in GCP Logging. It will generate
 link for every workflow that has [logging configuration](logging.md).
 The output of `bigflow logs` command consists of two parts, an infrastructure link, and a workflow link.
@@ -316,4 +324,5 @@ The infrastructure link contains logs from Kubernetes pods/containers and Datafl
 for every unique project id found in workflows.
 
 ## Project scaffold
+
 Use the `bigflow start-project` command to create a [sample project](scaffold.md) and try all of the above commands yourself.
