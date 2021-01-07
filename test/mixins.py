@@ -166,20 +166,6 @@ class VenvMixin(SubprocessMixin):
         return [str(self.venv_directory / "bin" / "run-in-venv"), *cmd]
 
 
-class BfCliInteractionMixin(SubprocessMixin):
-    """Provides helper methods to run 'bigflow' cli tool. Respect presence of `VenvMixin`"""
-
-    def bigflow_run(self, cmd, **kwargs):
-        kwargs.setdefault('check', True)
-        kwargs.setdefault('capture_output', True)
-        cmd = ["python", "-m", "bigflow", *cmd]
-        return self.subprocess_run(cmd, **kwargs)
-
-    def bigflow_spawn(self, cmd, **kwargs):
-        cmd = ["python", "-m", "bigflow", *cmd]
-        return self.subprocess_spawn(cmd, **kwargs)
-
-
 class BigflowInPythonPathMixin(unittest.TestCase):
 
     def setUp(self):
@@ -200,3 +186,17 @@ class BigflowInPythonPathMixin(unittest.TestCase):
         else:
             del os.environ['PYTHONPATH']
         super().tearDown()
+
+
+class BfCliInteractionMixin(SubprocessMixin, BigflowInPythonPathMixin):
+    """Provides helper methods to run 'bigflow' cli tool. Respect presence of `VenvMixin`"""
+
+    def bigflow_run(self, cmd, **kwargs):
+        kwargs.setdefault('check', True)
+        kwargs.setdefault('capture_output', True)
+        cmd = ["python", "-m", "bigflow", *cmd]
+        return self.subprocess_run(cmd, **kwargs)
+
+    def bigflow_spawn(self, cmd, **kwargs):
+        cmd = ["python", "-m", "bigflow", *cmd]
+        return self.subprocess_spawn(cmd, **kwargs)
