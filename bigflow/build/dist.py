@@ -279,6 +279,12 @@ def auto_configuration(project_name: str, project_dir: Path = Path('.').parent) 
 
     deployment_config_file = project_dir / 'deployment_config.py'
 
+    # Use 'requirements.{in,txt} when it exists, otherwise use 'resources/requirements.{txt,in}'
+    if (not (project_dir / "requirements.txt").exists() and not (project_dir / "requirements.in").exists()
+        and ((project_dir / "resources" / "requirements.txt").exists() or (project_dir / "resources" / "requirements.in").exists()
+    )):
+        req_txt = project_dir / "resources" / "requirements.txt"
+
     return {
         'project_name': project_name,
         'docker_repository': get_docker_repository_from_deployment_config(deployment_config_file),
@@ -293,7 +299,7 @@ def auto_configuration(project_name: str, project_dir: Path = Path('.').parent) 
         'deployment_config_file': deployment_config_file,
         'version': secure_get_version(),
         'resources_dir': project_dir / 'resources',
-        'project_requirements_file': project_dir / 'resources' / 'requirements.txt'
+        'project_requirements_file': req_txt,
     }
 
 

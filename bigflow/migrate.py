@@ -31,7 +31,7 @@ def _find_bigflow_req(reqs):
 
 def maybe_upgrade_pyproject_bigflow_version(root: Path):
     pptf = root / "pyproject.toml"
-    reqsf = root / "resources" / "requirements.txt"
+    reqsf = root / "requirements.txt"
 
     if not pptf.exists() or not reqsf.exists():
         return

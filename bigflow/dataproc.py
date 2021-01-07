@@ -240,7 +240,7 @@ def _print_job_output_log(storage_client, dataproc_cluster_client, project_id, r
 
 
 def _create_cluster(dataproc_cluster_client, project_id, region, cluster_name, requirements, worker_num_instances, worker_machine_type):
-    packages = " ".join(filter(None, requirements))
+    packages = " ".join(filter(None, requirements or []))
     cluster_data = {
         # "project_id": project_id,
         "cluster_name": cluster_name,

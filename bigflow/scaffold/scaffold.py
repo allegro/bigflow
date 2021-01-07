@@ -94,7 +94,7 @@ def create_dirs_and_files(config, templates):
     )
 
     import bigflow.build.pip as bf_pip
-    bf_pip.pip_compile(project_path / "resources" / "requirements.txt")
+    bf_pip.pip_compile(project_path / "requirements.in")
 
 
 def create_module_files(templates, path):

@@ -232,6 +232,7 @@ def cli_run(project_package: str,
     """
 
     # TODO: Check that installed libs in sync with `requirements.txt`
+    bigflow.build.pip.check_requirements_needs_recompile(Path("requirements.txt"))
     bigflow.build.pip.check_requirements_needs_recompile(Path("resources/requirements.txt"))
 
     if full_job_id is not None:
@@ -615,7 +616,7 @@ def _create_build_requirements_parser(subparsers):
 
 def _cli_build_requirements(args):
     in_file = pathlib.Path(args.in_file)
-    bigflow.build.pip.pip_compile(in_file)
+    bigflow.build.pip.pip_compile(in_file, verbose=True)
 
 
 def _is_workflow_selected(args):

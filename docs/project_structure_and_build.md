@@ -39,7 +39,7 @@ The `bigflow build` command should produce:
 
 The `bigflow build` command uses three subcommands to generate all the
 artifacts: [`bigflow build-package`](./cli.md#building-airflow-dags), [`bigflow build-image`](./cli.md#building-airflow-dags), [`bigflow build-dags`](./cli.md#building-airflow-dags).
-There is also an optional [`bigflow build-requirements`](./cli.md#building-airflow-dags) command that allows you 
+There is also an optional [`bigflow build-requirements`](./cli.md#building-airflow-dags) command that allows you
 to [resolve and freeze](https://github.com/jazzband/pip-tools) the project dependencies.
 
 Now, let us go through each building element in detail, starting from the Python package.
@@ -58,8 +58,9 @@ project_dir/
     test/
         __init__.py
     resources/
-        requirements.in
-        requirements.txt
+        ...
+    requirements.in
+    requirements.txt
     Dockerfile
     deployment_config.py
     setup.py
@@ -262,7 +263,7 @@ using the `bigflow build-requirements` command.
 
 Under the hood, the `build-requirements` command uses the [`pip-tools`](https://github.com/jazzband/pip-tools).
 
-The `build-requirements` command is part of the `build` command, but it's not mandatory to use `requirements.in`. That 
+The `build-requirements` command is part of the `build` command, but it's not mandatory to use `requirements.in`. That
 mechanism is optional, so you can just use `requirements.txt` alone. BigFlow automatically detects if you have `requirements.in`
 in the `resources` directory and generates or updates the `requirements.txt`. If `requirements.in` is not there, then BigFlow
 just skips the `build-requirements` phase.
