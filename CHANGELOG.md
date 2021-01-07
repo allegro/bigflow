@@ -9,7 +9,7 @@
 * Configurable timeout for jobs `Job.execution_timeout`
 * Flag `Job.depends_on_past` to ignore errors from previous job
 * Tools/base classes to simplify writing e2e tests for BigQuery
-* `pyproject.toml` and `MANIFEST.in` to new projects
+* `pyproject.toml` to new projects
 
 ### Changed
 
