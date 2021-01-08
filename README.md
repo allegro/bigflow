@@ -15,7 +15,11 @@
 1. [Starter](./docs/scaffold.md)
 1. [Technologies](./docs/technologies.md)
 1. [Logging](./docs/logging.md)
-1. [Monitoring](./docs/monitoring.md)
+
+## Cookbook
+
+* [Monitoring](./docs/monitoring.md)
+* [Automated end-to-end testing](./docs/e2e_testing.md)
 
 ## What is BigFlow?
 
