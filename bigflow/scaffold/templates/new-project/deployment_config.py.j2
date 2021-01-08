@@ -1,0 +1,16 @@
+from bigflow.configuration import DeploymentConfig
+
+deployment_config = DeploymentConfig(
+    name='dev',
+    properties={
+       'docker_repository': 'test_repository',
+       'gcp_project_id': {{ project_id | repr }},
+       'dags_bucket': {{ dags_bucket | repr }}})
+{% if not is_basic %}
+{% for i in range(1, projects_id | length) %}
+.add_configuration(name={{ envs[i] | repr }},
+                           properties={
+                               'gcp_project_id': {{ projects_id[i] | repr }},
+                               'dags_bucket': {{ composer_bucket[i] | repr }}})
+{% endfor -%}
+{% endif -%}

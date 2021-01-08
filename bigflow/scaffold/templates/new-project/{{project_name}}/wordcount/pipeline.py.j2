@@ -1,0 +1,39 @@
+import uuid
+import logging
+
+from bigflow.configuration import Config
+from bigflow.build.reflect import materialize_setuppy
+from apache_beam.options.pipeline_options import SetupOptions, StandardOptions, WorkerOptions, GoogleCloudOptions,     PipelineOptions
+
+logger = logging.getLogger(__name__)
+
+workflow_config = Config(
+    name='dev',
+    properties={
+        'gcp_project_id': {{ project_id | repr}},
+        'staging_location': {{ (project_name + "/beam_runner/staging") | repr }},
+        'temp_location': {{ (project_name + "/beam_runner/temp") | repr }},
+        'region': 'europe-west1',
+        'machine_type': 'n1-standard-1'}).resolve()
+
+
+def dataflow_pipeline_options():
+    options = PipelineOptions()
+
+    google_cloud_options = options.view_as(GoogleCloudOptions)
+    google_cloud_options.project = workflow_config['gcp_project_id']
+    google_cloud_options.job_name = f'beam-wordcount-{uuid.uuid4()}'
+    google_cloud_options.staging_location = f"gs://{workflow_config['staging_location']}"
+    google_cloud_options.temp_location = f"gs://{workflow_config['temp_location']}"
+    google_cloud_options.region = workflow_config['region']
+    # google_cloud_options.service_account_email = 'your-service-account'
+
+    options.view_as(WorkerOptions).machine_type = workflow_config['machine_type']
+    options.view_as(WorkerOptions).max_num_workers = 2
+    options.view_as(WorkerOptions).autoscaling_algorithm = 'THROUGHPUT_BASED'
+    options.view_as(StandardOptions).runner = 'DataflowRunner'
+
+    options.view_as(SetupOptions).setup_file = str(materialize_setuppy().absolute())
+
+    logger.info(f"Run beam pipeline with options {str(options)}")
+    return options

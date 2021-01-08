@@ -1,0 +1,54 @@
+
+from bigflow import Workflow
+from bigflow.bigquery import DatasetConfig
+
+dataset_config = DatasetConfig(
+    env='dev',
+    project_id={{ project_id | repr }},
+    dataset_name='internationalports',
+    internal_tables=['ports', 'polish_ports'],
+    external_tables={})
+
+dataset = dataset_config.create_dataset_manager()
+
+create_polish_ports_table = dataset.create_table('''
+    CREATE TABLE IF NOT EXISTS polish_ports (
+      port_name STRING,
+      port_latitude FLOAT64,
+      port_longitude FLOAT64)
+''')
+
+create_ports_table = dataset.create_table('''
+    CREATE TABLE IF NOT EXISTS ports (
+      port_name STRING,
+      port_latitude FLOAT64,
+      port_longitude FLOAT64,
+      country STRING,
+      index_number STRING)
+''')
+
+select_polish_ports = dataset.write_truncate('ports', '''
+        SELECT port_name, port_latitude, port_longitude
+        FROM `{ports}`
+        WHERE country = 'POL'
+        ''', partitioned=False)
+
+populate_ports_table = dataset.collect('''
+        INSERT INTO `{ports}` (port_name, port_latitude, port_longitude, country, index_number)
+        VALUES
+        ('GDYNIA', 54.533333, 18.55, 'POL', '28740'),
+        ('GDANSK', 54.35, 18.666667, 'POL', '28710'),
+        ('SANKT-PETERBURG', 59.933333, 30.3, 'RUS', '28370'),
+        ('TEXAS', 34.8, 31.3, 'USA', '28870');
+        ''')
+
+
+internationalports_workflow = Workflow(
+        workflow_id='internationalports',
+        definition=[
+                create_ports_table.to_job(id='create_ports_table'),
+                create_polish_ports_table.to_job(id='create_polish_ports_table'),
+                populate_ports_table.to_job(id='populate_ports_table'),
+                select_polish_ports.to_job(id='select_polish_ports'),
+        ],
+        schedule_interval='@once')
