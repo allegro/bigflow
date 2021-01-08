@@ -4,15 +4,12 @@ import logging
 from pathlib import Path
 
 import bigflow
-import bigflow.build
 
 from bigflow.scaffold.templating import render_builtin_templates
-
 from bigflow.scaffold.scaffold_templates import (
     beam_workflow_template,
     beam_processing_template,
     beam_pipeline_template,
-    project_setup_template,
     basic_deployment_config_template,
     advanced_deployment_config_template,
     test_wordcount_workflow_template,
@@ -44,7 +41,6 @@ def format_templates(config):
             deployment_config_template += advanced_deployment_config_template.format(env=config['envs'][i], project_id=config['projects_id'][i], dags_bucket=config['composers_bucket'][i])
 
     main_templates = {
-        'project_setup.py': project_setup_template.format(project_name=config['project_name']),
         'deployment_config.py': deployment_config_template,
     }
     beam_templates = {
@@ -97,7 +93,8 @@ def create_dirs_and_files(config, templates):
         },
     )
 
-    bigflow.build.pip_compile(project_path / "resources" / "requirements.txt")
+    import bigflow.build.pip as bf_pip
+    bf_pip.pip_compile(project_path / "resources" / "requirements.txt")
 
 
 def create_module_files(templates, path):

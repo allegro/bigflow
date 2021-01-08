@@ -1,34 +1,65 @@
-import subprocess
-import sys
 import hashlib
 import logging
+import re
+import subprocess
+import time
+import typing
 
 from pathlib import Path
+from deprecated import deprecated
+from datetime import datetime, timedelta
+
 
 logger = logging.getLogger(__name__)
 
 
+@deprecated(
+    reason="Use `str(x.absolute()) inliner instead",
+)
 def resolve(path: Path):
-    """
-    Convert aboslute path into string
-    DEPRECATED
-    """
-    logger.warning("Function `bigflow.resource.resolve(...)` is deprecated, please use str(x.absolute()) instead")
     return str(path.absolute())
 
 
-def run_process(cmd, **kwargs):
+@deprecated(
+    reason="Use `datetime.now().strftime('%Y-%m-%d %H:00:00')` instead.",
+)
+def now(template: str = "%Y-%m-%d %H:00:00"):
+    return datetime.now().strftime(template)
+
+
+def run_process(cmd, check=True, **kwargs):
     if isinstance(cmd, str):
-        cmd = cmd.split(' ')
-    logger.debug("RUN: %s", cmd)
-    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, **kwargs)
-    result_output = ''
-    for c in iter(lambda: process.stdout.read(1), b''):
-        l = c.decode('utf-8')
-        sys.stdout.write(c.decode('utf-8'))
-        result_output += l
-    process.wait()
-    return result_output
+        cmd = re.split(r"\s+", cmd)
+    else:
+        cmd = list(map(str, cmd))
+
+    logger.info("run %s", " ".join(cmd))
+    logger.debug("cmd %r, kwargs %r", cmd, kwargs)
+
+    start = time.time()
+    process = subprocess.Popen(cmd, text=True, stdout=subprocess.PIPE, **kwargs)
+
+    result_output = []
+    while True:
+        line = process.stdout.readline()
+        done = process.poll() is not None
+        if not done or line:
+            logger.info("%s", line.rstrip("\n"))
+            result_output.append(line)
+        if done:
+            break
+
+    process.stdout.close()
+    stdout = "".join(result_output)
+    code = process.wait()
+
+    if code and check:
+        raise subprocess.CalledProcessError(process.returncode, cmd)
+
+    duration = time.time() - start
+    logger.debug("done in %s seconds, code %d", format(duration, ".2f"), process.returncode)
+
+    return stdout
 
 
 def generate_file_hash(fname: Path, algorithm: str = 'sha256') -> str:
@@ -62,3 +93,16 @@ def build_docker_image_tag(docker_repository: str, package_version: str):
 def remove_docker_image_from_local_registry(tag):
     print('Removing the image from the local registry')
     run_process(f"docker rmi {get_docker_image_id(tag)}")
+
+
+def as_timedelta(v: typing.Union[None, str, int, float, timedelta]) -> typing.Optional[timedelta]:
+    if v is None:
+        return None
+    elif isinstance(v, timedelta):
+        return v
+    elif isinstance(v, (int, float)):
+        return timedelta(seconds=v)
+    elif v == "":
+        return None
+    else:
+        return timedelta(seconds=float(v))

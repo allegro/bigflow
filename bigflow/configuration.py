@@ -26,7 +26,7 @@ class Config:
         self.add_configuration(name, properties, is_default)
 
     def __str__(self):
-        return "".join(map(self.pretty_print, self.config.keys())).rstrip("\n")
+        return "".join(map(self.pretty_print, self.configs.keys())).rstrip("\n")
 
     def resolve_property(self, property_name: str, env_name: str = None):
         try:

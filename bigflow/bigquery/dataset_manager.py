@@ -1,12 +1,21 @@
+import json
 import uuid
 import logging
 import functools
+import typing
+import logging
+from pathlib import Path
+
+from google.cloud.bigquery import dataset
+# hidden BQ and pandas imports due to https://github.com/allegro/bigflow/issues/149
+
+
+logger = logging.getLogger(__name__)
+
 
 DEFAULT_REGION = 'europe-west1'
 DEFAULT_MACHINE_TYPE = 'n1-standard-1'
 DEFAULT_LOCATION = 'EU'
-
-# hidden BQ and pandas imports due to https://github.com/allegro/bigflow/issues/149
 
 
 class AliasNotFoundError(ValueError):
@@ -14,6 +23,7 @@ class AliasNotFoundError(ValueError):
 
 
 def handle_key_error(method):
+    logger.debug("Wrap %s with @handle_key_error", method)
 
     @functools.wraps(method)
     def decorated(*args, **kwargs):
@@ -53,6 +63,16 @@ class TemplatedDatasetManager(object):
         self.extras = extras
         self.run_datetime = run_datetime
 
+        logger.debug(
+            "Wrap %s with TemplatedDatasetManager, internal_tables %s,"
+            " external_tables %s, extras %s, run_datetime %s",
+            dataset_manager,
+            self.internal_tables,
+            self.external_tables,
+            self.extras,
+            self.run_datetime,
+        )
+
     def write_truncate(self, table_name, sql, custom_run_datetime=None):
         return self.write(self.dataset_manager.write_truncate, table_name, sql, custom_run_datetime)
 
@@ -79,8 +99,9 @@ class TemplatedDatasetManager(object):
         return self.dataset_manager.collect(sql.format(**self.template_variables(custom_run_datetime)))
 
     @handle_key_error
-    def collect_list(self, sql, custom_run_datetime=None):
-        return self.dataset_manager.collect_list(sql.format(**self.template_variables(custom_run_datetime)))
+    def collect_list(self, sql: str, custom_run_datetime: typing.Optional[str] = None, record_as_dict: bool = False):
+        return self.dataset_manager.collect_list(
+            sql.format(**self.template_variables(custom_run_datetime)), record_as_dict)
 
     def dry_run(self, sql, custom_run_datetime=None):
         return self.dataset_manager.dry_run(sql.format(**self.template_variables(custom_run_datetime)))
@@ -109,13 +130,28 @@ class TemplatedDatasetManager(object):
         result['dt'] = custom_run_datetime or self.run_datetime
         return result
 
+    def create_table_from_schema(
+            self,
+            table_name: str,
+            schema: typing.Union[None, typing.List[dict], Path] = None,
+            table=None):
+        table_id = self.create_table_id(table_name)
+        return self.dataset_manager.create_table_from_schema(table_id, schema, table)
+
+    def insert(
+            self,
+            table_name: str,
+            records: typing.Union[typing.List[dict], Path]):
+        table_id = self.create_table_id(table_name)
+        return self.dataset_manager.insert(table_id, records)
+
 
 class PartitionedDatasetManager(object):
     """
     Interface available for user. Manages partitioning.
     Delegate rest of the tasks to TemplatedDatasetManager and DatasetManager.
     """
-    def __init__(self, templated_dataset_manager, partition):
+    def __init__(self, templated_dataset_manager: TemplatedDatasetManager, partition):
         self._dataset_manager = templated_dataset_manager
         self.partition = partition
 
@@ -146,8 +182,8 @@ class PartitionedDatasetManager(object):
     def collect(self, sql, custom_run_datetime=None):
         return self._dataset_manager.collect(sql, custom_run_datetime)
 
-    def collect_list(self, sql, custom_run_datetime=None):
-        return self._dataset_manager.collect_list(sql, custom_run_datetime)
+    def collect_list(self, sql: str, custom_run_datetime: typing.Optional[str] = None, record_as_dict: bool = False):
+        return self._dataset_manager.collect_list(sql, custom_run_datetime, record_as_dict)
 
     def dry_run(self, sql, custom_run_datetime=None):
         return self._dataset_manager.dry_run(sql, custom_run_datetime)
@@ -190,6 +226,22 @@ class PartitionedDatasetManager(object):
         table_id = self._create_table_id(custom_run_datetime, table_name, partitioned)
         return self._dataset_manager.load_table_from_dataframe(table_id, df)
 
+    def create_table_from_schema(
+            self,
+            table_name: str,
+            schema: typing.Optional[typing.Union[typing.List[dict], Path]] = None,
+            table=None):
+        return self._dataset_manager.create_table_from_schema(table_name, schema, table)
+
+    def insert(
+            self,
+            table_name: str,
+            records: typing.Union[typing.List[dict], Path],
+            partitioned: bool = True,
+            custom_run_datetime: typing.Optional[str] = None):
+        table_id = self._create_table_id(custom_run_datetime, table_name, partitioned)
+        return self._dataset_manager.insert(table_id, records)
+
     def _write(self, write_callable, table_name, sql, partitioned, custom_run_datetime=None):
         table_id = self._create_table_id(custom_run_datetime, table_name, partitioned)
         return write_callable(table_id, sql, custom_run_datetime)
@@ -212,7 +264,8 @@ class DatasetManager(object):
                  bigquery_client,
                  dataset,
                  logger):
-        self.bigquery_client = bigquery_client
+        from google.cloud import bigquery
+        self.bigquery_client: bigquery.Client  = bigquery_client
         self.dataset = dataset
         self.dataset_id = dataset.full_dataset_id.replace(':', '.')
         self.logger = logger
@@ -261,8 +314,11 @@ class DatasetManager(object):
     def collect(self, sql):
         return self._query(sql).to_dataframe()
 
-    def collect_list(self, sql):
-        return list(self._query(sql).result())
+    def collect_list(self, sql: str, record_as_dict: bool = False):
+        result = list(self._query(sql).result())
+        if record_as_dict:
+            result = [dict(e) for e in result]
+        return result
 
     def dry_run(self, sql):
         from google.cloud import bigquery
@@ -291,6 +347,43 @@ class DatasetManager(object):
             .result() \
             .to_dataframe()['table_exists'] \
             .iloc[0] > 0
+
+    def create_table_from_schema(
+            self,
+            table_id: str,
+            schema: typing.Union[typing.List[dict], Path, None] = None,
+            table=None):
+        from google.cloud.bigquery import Table, TimePartitioning
+
+        if schema and table:
+            raise ValueError("You can't provide both schema and table, because the table you provide"
+                             "should already contain the schema.")
+        if not schema and not table:
+            raise ValueError("You must provide either schema or table.")
+
+        if isinstance(schema, Path):
+            schema = json.loads(schema.read_text())
+
+        if table is None:
+            table = Table(table_id, schema=schema)
+            table.time_partitioning = TimePartitioning()
+
+        self.logger.info(f'CREATING TABLE FROM SCHEMA: {table.schema}')
+
+        self.bigquery_client.create_table(table)
+
+    def insert(
+            self,
+            table_id: str,
+            records: typing.Union[typing.List[dict], Path]):
+        self.logger.info('INSERTING RECORDS TO TABLE: %s', table_id)
+        table = self.bigquery_client.get_table(table_id)
+        if isinstance(records, Path):
+            with open(records, 'r') as f:
+                records = json.loads(f.read())
+        errors = self.bigquery_client.insert_rows(table, records)
+        if errors:
+            raise ValueError(errors)
 
     def _query(self, sql, job_config=None):
         self.logger.info('COLLECTING DATA: %s', sql)
@@ -345,7 +438,7 @@ def create_dataset_manager(
         extras=None,
         credentials=None,
         location=DEFAULT_LOCATION,
-        logger=None):
+        logger=None) -> typing.Tuple[str, PartitionedDatasetManager]:
     """
     Dataset manager factory.
     If dataset does not exist then it will also create dataset with given name.

@@ -3,7 +3,7 @@ import unittest
 
 import tblib  # ensure installed
 
-import bigflow.testing
+import bigflow.testing.isolate
 
 from . import nonpure
 
@@ -88,9 +88,10 @@ class ForkReloadModulesTest(
     unittest.TestCase,
 ):
     def setUpParent(self):
+        super().setUpParent()
         self.const = nonpure.CONST
 
-    def runTest(self):
+    def test_test(self):
         from . import nonpure
         self.assertEqual(self.const, nonpure.CONST, "Module should not be reloaded")
 
@@ -100,8 +101,69 @@ class SpawnReloadModulesTest(
     unittest.TestCase,
 ):
     def setUpParent(self):
+        super().setUpParent()
         self.const = nonpure.CONST
 
-    def runTest(self):
+    def test_test(self):
         from . import nonpure
         self.assertNotEqual(self.const, nonpure.CONST, "Module should be reloaded")
+
+
+class _IsolateDisabledBase(
+    bigflow.testing.isolate._IsolatedProcessMixin,
+    unittest.TestCase,
+):
+    isolate = False
+    _state = None
+
+    @classmethod
+    def _change_state(cls, from_, to_):
+        if cls._state != from_:
+            raise AssertionError(f"invalid state, expected {from_} but got {cls._state}")
+        cls._state = to_
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls._change_state(None, 'setupClass')
+
+    def setUpParent(self):
+        super().setUpParent()
+        self._change_state('setupClass', 'setupParent')
+
+    def setUp(self):
+        super().setUp()
+        self._change_state('setupParent', 'setup')
+
+    def test_test(self):
+        #self.assertEqual(self.thepid, os.getpid())
+        self._change_state('setup', 'run')
+
+    def tearDown(self):
+        self._change_state('run', 'teardown')
+        super().tearDown()
+
+    def tearDownParent(self):
+        self._change_state('teardown', 'teardownParent')
+        super().tearDownParent()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls._change_state('teardownParent', None)
+        super().tearDownClass()
+
+
+class ForkDisabledTest(
+    _IsolateDisabledBase,
+    bigflow.testing.ForkIsolateMixin,
+    unittest.TestCase,
+):
+    pass
+
+
+class SpawnDisabledTest(
+    _IsolateDisabledBase,
+    bigflow.testing.SpawnIsolateMixin,
+    unittest.TestCase,
+):
+    pass

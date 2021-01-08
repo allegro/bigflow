@@ -4,6 +4,9 @@ import logging
 
 from inspect import getfullargspec
 
+import typing
+from pathlib import Path
+
 from google.api_core.exceptions import BadRequest
 
 import bigflow
@@ -23,6 +26,7 @@ INLINE_COMPONENT_DATASET_ALIAS = '_inline_component_dataset'
 
 
 def log_syntax_error(method):
+    logger.debug("Wrap %s with @log_syntax_error", method)
 
     @functools.wraps(method)
     def decorated(*args, **kwargs):
@@ -39,6 +43,7 @@ def log_syntax_error(method):
 
 def interactive_component(**dependencies):
     def decorator(standard_component):
+        logger.debug("Wrap %s with @interactive_component, deps %s", standard_component, dependencies)
         return InteractiveComponent(standard_component,
                                     {dep_name: dep.config for dep_name, dep in dependencies.items()})
     return decorator
@@ -63,6 +68,7 @@ class InteractiveDatasetManager(Dataset):
             credentials=credentials,
             extras=extras,
             location=location)
+        logger.debug("Create InteractiveDatasetManager, config %s", self.config._as_dict())
 
     def write_truncate(self, table_name, sql, partitioned=True):
         method = 'write_truncate'
@@ -101,12 +107,13 @@ class InteractiveDatasetManager(Dataset):
             sql,
             operation_name=DEFAULT_OPERATION_NAME)
 
-    def collect_list(self, sql):
+    def collect_list(self, sql: str, record_as_dict: bool = False):
         method = 'collect_list'
         return self._tmp_interactive_component_factory(
             generate_component_name(method=method, table_name='', sql=sql),
             method,
             sql,
+            record_as_dict=record_as_dict,
             operation_name=DEFAULT_OPERATION_NAME)
 
     def dry_run(self, sql):
@@ -135,7 +142,45 @@ class InteractiveDatasetManager(Dataset):
             partitioned=partitioned,
             operation_name=DEFAULT_OPERATION_NAME)
 
+    def create_table_from_schema(
+            self,
+            table_name: str,
+            schema: typing.Union[typing.List[dict], Path, None] = None,
+            table=None):
+        method = 'create_table_from_schema'
+        return self._tmp_interactive_component_factory(
+            generate_component_name(method=method, table_name=table_name, sql=''),
+            method,
+            table_name=table_name,
+            schema=schema,
+            table=table)
+
+    def insert(
+            self,
+            table_name: str,
+            records: typing.Union[typing.List[dict], Path],
+            partitioned: bool = True):
+        method = 'insert'
+        return self._tmp_interactive_component_factory(
+            generate_component_name(method=method, table_name=table_name, sql=''),
+            method,
+            table_name=table_name,
+            records=records,
+            partitioned=partitioned,
+            operation_name=DEFAULT_OPERATION_NAME)
+
+    def delete_dataset(self):
+        method = 'delete_dataset'
+        return self._tmp_interactive_component_factory(
+            generate_component_name(method=method, table_name=self.config.dataset_name, sql=''),
+            method,
+            operation_name=DEFAULT_OPERATION_NAME)
+
     def _tmp_interactive_component_factory(self, component_name, method, *args, **kwargs):
+        logger.info(
+            "Build tmp interactive component, name=%s, method=%s, arguments (*%r, **%r)",
+            component_name, method, args, kwargs)
+
         @interactive_component(_inline_component_dataset=self)
         def tmp_component(_inline_component_dataset):
             return getattr(_inline_component_dataset, method)(*args, **kwargs)
@@ -152,7 +197,9 @@ def generate_component_name(method, table_name, sql):
     component_id = hashlib.sha256()
     component_id.update(sql.encode('utf-8'))
     component_id = component_id.hexdigest()
-    return '{}_{}_{}'.format(method, table_name, component_id)
+    res = '{}_{}_{}'.format(method, table_name, component_id)
+    logger.debug("Generated component name is %s", res)
+    return res
 
 
 class InteractiveComponent(object):
@@ -174,6 +221,7 @@ class InteractiveComponent(object):
         dependency_config = self._dependency_config.copy()
         dependency_config.update({dataset_alias: dataset.config for dataset_alias, dataset in dependencies_override.items()})
 
+        logger.info("Convert interactive component to job, id=%s, component %s, dependencies %s", id, component_callable, dependency_config)
         return Job(
             component=component_callable,
             id=id,
@@ -186,7 +234,8 @@ class InteractiveComponent(object):
         _, component_callable = decorate_component_dependencies_with_operation_level_dataset_manager(
             self._standard_component, operation_name=operation_name)
         job = Job(component_callable, **self._dependency_config)
-        job.execute(bigflow.JobContext.make(runtime=runtime))
+        logger.info("Run interactive component, id=%s, component %s", job.id, job.component)
+        return job.execute(bigflow.JobContext.make(runtime=runtime))
 
     @log_syntax_error
     def peek(self, runtime, operation_name=DEFAULT_OPERATION_NAME, limit=DEFAULT_PEEK_LIMIT):
@@ -224,6 +273,12 @@ def decorate_component_dependencies_with_operation_level_dataset_manager(
         operation_name=None,
         peek=None,
         peek_limit=None):
+
+    logger.debug(
+        "Decorate component dependencies with operation level dataset manager: component %s, operation %s, peek %s/%s",
+        standard_component, operation_name, peek, peek_limit,
+    )
+
     operation_settings = {'operation_name': operation_name, 'peek': peek, 'peek_limit': peek_limit}
     results_container = []
 
@@ -242,6 +297,8 @@ def decorate_component_dependencies_with_operation_level_dataset_manager(
     component_callable_with_proper_signature = "def reworked_function({signature}):\n    return original_func({kwargs})\n".format(
         signature=','.join([arg for arg in getfullargspec(standard_component).args]),
         kwargs=','.join(['{arg}={arg}'.format(arg=arg) for arg in getfullargspec(standard_component).args]))
+
+    logger.debug("Compile dynamic python code\n%s", component_callable_with_proper_signature)
     component_callable_with_proper_signature_code = compile(component_callable_with_proper_signature, "fakesource",
                                                             "exec")
     fake_locals = {}
@@ -253,7 +310,7 @@ def decorate_component_dependencies_with_operation_level_dataset_manager(
     return results_container, component_callable
 
 
-class OperationLevelDatasetManager(object):
+class OperationLevelDatasetManager(Dataset):
     """
     Let's you run specified operation or peek a result of a specified operation.
     """
@@ -298,12 +355,18 @@ class OperationLevelDatasetManager(object):
             sql=sql,
             custom_run_datetime=custom_run_datetime)
 
-    def collect_list(self, sql, custom_run_datetime=None, operation_name=None):
+    def collect_list(
+            self,
+            sql: str,
+            custom_run_datetime: typing.Optional[str] = None,
+            record_as_dict: bool = False,
+            operation_name=None):
         return self._run_operation(
             operation_name=operation_name,
             method=self._dataset_manager.collect_list,
             sql=sql,
-            custom_run_datetime=custom_run_datetime)
+            custom_run_datetime=custom_run_datetime,
+            record_as_dict=record_as_dict)
 
     def dry_run(self, sql, custom_run_datetime=None, operation_name=None):
         return self._run_operation(
@@ -325,6 +388,36 @@ class OperationLevelDatasetManager(object):
                 df=df,
                 custom_run_datetime=custom_run_datetime,
                 partitioned=partitioned)
+
+    def create_table_from_schema(
+            self,
+            table_name: str,
+            schema: typing.Union[typing.List[dict], Path, None] = None,
+            table=None,
+            operation_name=None):
+        if self._should_run_operation(operation_name):
+            return self._results_container, self._dataset_manager.create_table_from_schema(
+                table_name=table_name,
+                schema=schema,
+                table=table)
+
+    def insert(
+            self,
+            table_name: str,
+            records: typing.Union[typing.List[dict], Path],
+            partitioned: bool = True,
+            operation_name=None):
+        if self._should_peek_operation_results(operation_name):
+            return records
+        elif self._should_run_operation(operation_name):
+            return self._results_container, self._dataset_manager.insert(
+                table_name=table_name,
+                records=records,
+                partitioned=partitioned)
+
+    def delete_dataset(self, operation_name=None):
+        if self._should_run_operation(operation_name):
+            return self._results_container, self._dataset_manager.remove_dataset()
 
     @property
     def dt(self):

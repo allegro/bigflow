@@ -19,13 +19,24 @@ class ProjectScaffoldE2ETestCase(TestCase):
 
 
 class ProjectScaffoldE2E(ProjectScaffoldE2ETestCase):
+
+    maxDiff = 5000
+
     @mock.patch('bigflow.cli.gcloud_project_list')
     @mock.patch('bigflow.cli.gcp_bucket_input')
     @mock.patch('bigflow.cli.gcp_project_input')
     @mock.patch('bigflow.cli.project_type_input')
     @mock.patch('bigflow.cli.project_name_input')
-    def test_should_create_basic_project(self, project_name_input_mock, project_type_input_mock, gcp_project_input_mock,
-                                         gcp_bucket_input_mock, gcloud_project_list_mock):
+    @mock.patch('bigflow.build.pip.pip_compile')
+    def test_should_create_basic_project(
+        self,
+        pip_compile_mock,
+        project_name_input_mock,
+        project_type_input_mock,
+        gcp_project_input_mock,
+        gcp_bucket_input_mock,
+        gcloud_project_list_mock,
+    ):
         # given
         gcloud_project_list_mock.return_value = ''
         project_name_input_mock.return_value = 'my_project'
@@ -70,8 +81,9 @@ class ProjectScaffoldE2E(ProjectScaffoldE2ETestCase):
         self.scaffolded_project_tests_should_work()
 
     def scaffolded_project_tests_should_work(self):
-        output = subprocess.getoutput("python -m unittest discover -s my_project_project -p '*.py'")
-        self.assertRegexpMatches(output, ".*OK")
+        cwd = Path('my_project_project')
+        res = subprocess.run("python -m unittest discover -s test -p '*.py'", cwd=cwd, check=True, capture_output=True, shell=True)
+        self.assertRegexpMatches(res.stderr.decode(), r"OK$")
 
     def scaffolded_basic_project_should_have_one_environment(self):
         self.check_file_content(Path('my_project_project') / 'deployment_config.py', '''from bigflow.configuration import DeploymentConfig
@@ -87,7 +99,7 @@ deployment_config = DeploymentConfig(
 import logging
 
 from bigflow.configuration import Config
-from bigflow.resources import find_or_create_setup_for_main_project_package, get_resource_absolute_path
+from bigflow.build.reflect import materialize_setuppy
 from apache_beam.options.pipeline_options import SetupOptions, StandardOptions, WorkerOptions, GoogleCloudOptions, \
     PipelineOptions
 
@@ -119,10 +131,7 @@ def dataflow_pipeline_options():
     options.view_as(WorkerOptions).autoscaling_algorithm = 'THROUGHPUT_BASED'
     options.view_as(StandardOptions).runner = 'DataflowRunner'
 
-    setup_file_path = find_or_create_setup_for_main_project_package()
-    requirements_file_path = get_resource_absolute_path('requirements.txt')
-    options.view_as(SetupOptions).setup_file = str(setup_file_path)
-    options.view_as(SetupOptions).requirements_file = str(requirements_file_path)
+    options.view_as(SetupOptions).setup_file = str(materialize_setuppy().absolute())
 
     logger.info(f"Run beam pipeline with options {str(options)}")
     return options''')

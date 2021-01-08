@@ -109,7 +109,7 @@ class Job(abc.ABC):
     id: str
     retry_count: int = 3
     retry_pause_sec: int = 60
-    execution_timeout: int = DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS
+    execution_timeout_sec: int = DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS
 
     @abc.abstractmethod
     def execute(self, context: JobContext):
