@@ -10,7 +10,7 @@ import bigflow
 import bigflow.build.dev
 import bigflow.build.pip
 import bigflow.build.reflect
-import bigflow.scaffold
+
 
 logger = logging.getLogger(__name__)
 
@@ -104,10 +104,8 @@ def migrate__v1_0__v1_1(root: Path):
     project_name = project_opts['name']
 
     # Write 'pyproject.toml'
-    bigflow.scaffold.render_builtin_templates(root, 'migrate-11', variables={
-        'project_name': project_name,
-        'bigflow_version': bigflow.__version__,
-    })
+    from bigflow.scaffold import scaffold
+    scaffold.migrate_project_from_10(root, project_name)
 
     # Check 'setup.py' is not ignored
     gitignore = (root / ".gitignore")
