@@ -1,4 +1,4 @@
-# Automated end-to-end testing for Dataflow and BigQuery
+# Automated end-to-end testing
 
 ## Introduction
 
