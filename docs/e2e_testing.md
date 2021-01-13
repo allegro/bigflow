@@ -60,9 +60,8 @@ rm -rf btc_aggregates/wordcount
 
 ## Testing Dataflow + BigQuery implementation
 
-Take a look at the workflow implementation. The important part (in the context of e2e testing) of that workflow is 
-the configuration. Also, save the following code as a module inside the generated project: `btc_aggregates/btc_aggregates_df_bf.py`.
-
+Take a look at the workflow implementation below. The important part (in the context of e2e testing) of that workflow is 
+the configuration. Also, save the following code as a module inside the generated project: `btc_aggregates/btc_aggregates_df_bq.py`.
 
 ```python
 from uuid import uuid1
@@ -225,20 +224,20 @@ btc_aggregates_workflow = bf.Workflow(
 
 There are two facts that you should pay a special attention to:
 
-* The `e2e` environment is the default one. So for example, if you import the workflow, it is configured 
-using the default `e2e` environment.
+* The `e2e` environment is the default one. If you import the workflow without explicitly setting the environment, it 
+is configured using the default `e2e` environment.
 * The `e2e` configuration ensures that each execution of the workflow uses a fresh, unique BigQuery dataset (of course,
 only if you execute the workflow in a separate processes).
 
-Now, take a look at the e2e for that workflow, where we use these facts:
+Now, take a look at the e2e test for that workflow, where we use these facts:
 
 ```python
-from unittest import TestCase
+import unittest
 from datetime import datetime, timedelta
 
 from bigflow.testing import SpawnIsolateMixin
 
-from btc_aggregates.btc_aggregates_df_bf import (
+from btc_aggregates.btc_aggregates_df_bq import (
     btc_aggregates_workflow,
     dataset as btc_aggregates_dataset,
     BTC_TRANSACTIONS_TABLE_NAME)
@@ -250,7 +249,7 @@ NOW_MINUS_ONE_MONTH = (NOW_DT - timedelta(weeks=4)).isoformat()[DATE]
 NOW_PLUS_ONE_MONTH = (NOW_DT + timedelta(weeks=4)).isoformat()[DATE]
 
 
-class BitcoinAggregatesWorkflowTestCase(SpawnIsolateMixin, TestCase):
+class BitcoinAggregatesWorkflowTestCase(SpawnIsolateMixin, unittest.TestCase):
     def setUp(self) -> None:
         btc_aggregates_dataset.create_table(f'''
         CREATE TABLE IF NOT EXISTS {BTC_TRANSACTIONS_TABLE_NAME} (
@@ -292,6 +291,10 @@ class BitcoinAggregatesWorkflowTestCase(SpawnIsolateMixin, TestCase):
         WHERE _PARTITIONTIME = '{dt}'
         ''', record_as_dict=True).run(NOW)
         self.assertEqual(result, [{'fee_sum': 0.0, 'count': 0}])
+
+
+if __name__ == '__main__':
+    unittest.main()
 ```
 
 Each of two tests have the following schema:
@@ -300,17 +303,100 @@ Each of two tests have the following schema:
 1. Executing the workflow.
 1. Checking the workflow results and bitcoin aggregates table.
 
-Also, the whole `BitcoinAggregatesWorkflowTestCase` uses the imported dataset manager (using the `e2e` configuration).
+The whole `BitcoinAggregatesWorkflowTestCase` uses the imported dataset manager (using the `e2e` configuration) to interact
+with the BigQuery dataset used by the workflow.
 
-Linking these informations with the two facts mentioned earlier tells you, that each test is executed in a separate BigQuery
+Linking that information with the two facts mentioned earlier tells you, that each test is executed in a separate BigQuery
 dataset. They can be run securely in parallel.
 
 Finally, to run each of the two tests in a separate processes, the example test case uses the `bigflow.testing.SpawnIsolateMixin` mixin.
 No matter how you run the test case, the mixin ensures that each test runs in a fresh process. The only exception to that
 rule is PyCharm debugging mode (PyCharm debugger doesn't handle spawned processes).
 
+To run the test, put it into the generated project: `test/btc_aggregates_df_bq.py`. Next, run the test: `python -m test.btc_aggregates_df_bq`.
+
 ## Testing BigQuery implementation
 
+The workflow implemented using only BigQuery looks like this:
+
+```python
+from uuid import uuid1
+
+import bigflow as bf
+from bigflow.bigquery import DatasetConfig
+
+PROJECT_ID = 'put-your-project-id-here'
+E2E_DATASET_NAME = 'btc_aggregates_' + str(uuid1()).replace('-', '')[:8]
+BTC_AGGREGATES_TABLE_NAME = 'btc_aggregates'
+BTC_TRANSACTIONS_TABLE_NAME = 'transactions'
+
+dataset_config = (
+    DatasetConfig(
+        'e2e',
+        project_id=PROJECT_ID,
+        dataset_name=E2E_DATASET_NAME,
+        internal_tables=[BTC_AGGREGATES_TABLE_NAME],
+        external_tables={
+            'btc_transactions': f'{PROJECT_ID}.{E2E_DATASET_NAME}.{BTC_TRANSACTIONS_TABLE_NAME}'
+        })
+    .add_configuration(
+        'prod',
+        project_id=PROJECT_ID,
+        dataset_name='btc_aggregates',
+        internal_tables=[BTC_AGGREGATES_TABLE_NAME],
+        external_tables={
+            'btc_transactions': 'bigquery-public-data.crypto_bitcoin.transactions'
+        }))
+dataset = dataset_config.create_dataset_manager()
+
+create_btc_aggregates_table = dataset.create_table(f'''
+CREATE TABLE IF NOT EXISTS {BTC_AGGREGATES_TABLE_NAME} (
+    fee_sum FLOAT64,
+    count INT64)
+PARTITION BY DATE(_PARTITIONTIME)
+''')
+
+calculate_btc_aggregates = dataset.write_truncate(BTC_AGGREGATES_TABLE_NAME, '''
+SELECT
+  COALESCE(SUM(fee), 0) AS fee_sum,
+  COUNT(*) AS count
+FROM
+  `{btc_transactions}`
+WHERE
+  block_timestamp_month = DATE('{dt}')
+''')
+
+btc_aggregates_workflow = bf.Workflow(
+    workflow_id='btc_aggregates_bq',
+    schedule_interval='@monthly',
+    definition=[
+        create_btc_aggregates_table.to_job('create_btc_aggregates_table'),
+        calculate_btc_aggregates.to_job('calculate_btc_aggregates')
+    ])
+```
+
+So what's the difference between the two implementations, when it comes to e2e testing? None! And that's the great part.
+
+Both implementations can be tested by exactly the same e2e test.
+
+Try it out on your own. Save the BigQuery implementation to `btc_aggregates/btc_aggregates_bq.py` module. Next, modify the import
+statement in the `test/btc_aggregates_df_bq.py` test module, to use the BigQuery implementation.
+
+From:
+
+```python
+from btc_aggregates.btc_aggregates_df_bq
+```
+
+To:
+
+```python
+from btc_aggregates.btc_aggregates_bq
+```
 
 ## Summary
+
+The concept showed in this tutorial can be applied in various context. It is not limited to testing BigQuery or Dataflow.
+You can test pretty much anything, for example: PySpark jobs, untestable sources and sinks like Datastore, 
+pub/sub messaging, etc.
 
