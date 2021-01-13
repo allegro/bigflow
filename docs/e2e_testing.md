@@ -2,11 +2,10 @@
 
 ## Introduction
 
-From this tutorial you will get to know how to create an e2e test for a workflow.
+From this tutorial, you will get to know how to create an e2e test for a workflow.
 Automated e2e testing can help you develop workflows faster and avoid errors.
 
-As an example, you will create an e2e test for the workflow that calculates aggregates on 
-the `bigquery-public-data:crypto_bitcoin.transactions` BigQuery table. 
+As an example, you will create an e2e test for the workflow that calculates aggregates on the `bigquery-public-data:crypto_bitcoin.transactions` BigQuery table. 
 The workflow calculates:
 
 * Daily transaction count
@@ -19,7 +18,7 @@ utilizes BigQuery (as the input and the output) and Dataflow (for processing).
 
 The second implementation utilizes only BigQuery, for both io and processing.
 
-Workflows using BigQuery are interesting to test, because there is no way emulate 
+Workflows using BigQuery are interesting to test because there is no way emulate 
 BigQuery on a local machine.
 
 ## Preparation
@@ -33,8 +32,7 @@ mkdir ~/bigflow_cookbook
 cd ~/bigflow_cookbook
 ```
 
-Now, prepare a virtual environment for the project. To do so, follow the BigFlow 
-installation guide. The virtual environment should be placed inside 
+Now, prepare a virtual environment for the project. To do so, follow the BigFlow installation guide. The virtual environment should be placed inside 
 the `~/bigflow_cookbook` directory.
 
 Next, [create a new BigFlow project](scaffold.md) called "btc_aggregates":
@@ -60,8 +58,7 @@ rm -rf btc_aggregates/wordcount
 
 ## Testing Dataflow + BigQuery implementation
 
-Take a look at the workflow implementation below. The important part (in the context of e2e testing) of that workflow is 
-the configuration. Also, save the following code as a module inside the generated project: `btc_aggregates/btc_aggregates_df_bq.py`.
+Take a look at the workflow implementation below. The important part (in the context of e2e testing) of that workflow is the configuration. Also, save the following code as a module inside the generated project: `btc_aggregates/btc_aggregates_df_bq.py`.
 
 ```python
 from uuid import uuid1
@@ -222,12 +219,11 @@ btc_aggregates_workflow = bf.Workflow(
     ])
 ```
 
-There are two facts that you should pay a special attention to:
+There are two facts that you should pay special attention to:
 
-* The `e2e` environment is the default one. If you import the workflow without explicitly setting the environment, it 
-is configured using the default `e2e` environment.
+* The `e2e` environment is the default one. If you import the workflow without explicitly setting the environment, it is configured using the default `e2e` environment.
 * The `e2e` configuration ensures that each execution of the workflow uses a fresh, unique BigQuery dataset (of course,
-only if you execute the workflow in a separate processes).
+only if you execute the workflow in a separate process).
 
 Now, take a look at the e2e test for that workflow, where we use these facts:
 
@@ -297,7 +293,7 @@ if __name__ == '__main__':
     unittest.main()
 ```
 
-Each of two tests have the following schema:
+Each of the two tests has the following schema:
 
 1. Preparing fake bitcoin transactions table and inserting test records.
 1. Executing the workflow.
@@ -309,9 +305,9 @@ with the BigQuery dataset used by the workflow.
 Linking that information with the two facts mentioned earlier tells you, that each test is executed in a separate BigQuery
 dataset. They can be run securely in parallel.
 
-Finally, to run each of the two tests in a separate processes, the example test case uses the `bigflow.testing.SpawnIsolateMixin` mixin.
+Finally, to run each of the two tests in separate processes, the example test case uses the `bigflow.testing.SpawnIsolateMixin` mixin.
 No matter how you run the test case, the mixin ensures that each test runs in a fresh process. The only exception to that
-rule is PyCharm debugging mode (PyCharm debugger doesn't handle spawned processes).
+rule is the PyCharm debugging mode (PyCharm debugger doesn't handle spawned processes).
 
 To run the test, put it into the generated project: `test/btc_aggregates_df_bq.py`. Next, run the test: `python -m test.btc_aggregates_df_bq`.
 
@@ -377,7 +373,7 @@ btc_aggregates_workflow = bf.Workflow(
 
 So what's the difference between the two implementations, when it comes to e2e testing? None! And that's the great part.
 
-Both implementations can be tested by exactly the same e2e test.
+Both implementations can be tested by the same e2e test.
 
 Try it out on your own. Save the BigQuery implementation to `btc_aggregates/btc_aggregates_bq.py` module. Next, modify the import
 statement in the `test/btc_aggregates_df_bq.py` test module, to use the BigQuery implementation.
@@ -396,7 +392,7 @@ from btc_aggregates.btc_aggregates_bq
 
 ## Summary
 
-The concept showed in this tutorial can be applied in various context. It is not limited to testing BigQuery or Dataflow.
-You can test pretty much anything, for example: PySpark jobs, untestable sources and sinks like Datastore, 
+The concept showed in this tutorial can be applied in various contexts. It is not limited to testing BigQuery or Dataflow.
+You can test pretty much anything, for example, PySpark jobs, untestable sources and sinks like Datastore, 
 pub/sub messaging, etc.
 
