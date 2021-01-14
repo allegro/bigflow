@@ -1,0 +1,37 @@
+from unittest import TestCase
+
+from apache_beam.testing.test_pipeline import TestPipeline
+import apache_beam as beam
+from {{project_name}}.wordcount.processing import count_words
+
+
+class WordCountWorkflowTestCase(TestCase):
+
+    def test_should_return_result(self):
+        fake_file = FakeFile()
+        with TestPipeline() as p:
+            count_words(p, FakeFileSaver(fake_file))
+        self.assertEqual(fake_file.data, {'a': 2, 'b': 2, 'c': 2, 'd': 2})
+
+
+class FakeFileSaver(beam.PTransform):
+    def __init__(self, file):
+        super().__init__()
+        self.file = file
+
+    def expand(self, records_to_delete):
+        return records_to_delete \
+               | "save to file" >> beam.ParDo(
+            SaveFn(self.file))
+
+
+class SaveFn(beam.DoFn):
+    def __init__(self, file):
+        super().__init__()
+        self.file = file
+
+    def process(self, row, *args, **kwargs):
+        self.file.data[row[0]] = row[1]
+
+class FakeFile(object):
+    data = {}

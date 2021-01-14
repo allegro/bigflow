@@ -704,7 +704,7 @@ def _cli_start_project():
 
         config['pyspark_job'] = True
 
-    start_project(config)
+    start_project(**config)
     print('Bigflow project created successfully.')
 
 
