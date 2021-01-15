@@ -58,11 +58,12 @@ rm -rf btc_aggregates/wordcount
 
 ## Testing Dataflow + BigQuery implementation
 
-Take a look at the workflow implementation below. The important part (in the context of e2e testing) of that workflow is the configuration. Also, save the following code as a module inside the generated project: `btc_aggregates/btc_aggregates_df_bq.py`.
+Take a look at the workflow implementation below. The important part (in the context of e2e testing) of that workflow is
+the configuration. Also, save the following code as a module inside the generated project: `btc_aggregates/btc_aggregates_df_bq.py`.
 
 ```python
 from uuid import uuid1
-from typing import NamedTuple
+from dataclasses import dataclass
 
 import bigflow as bf
 from apache_beam.io import BigQueryDisposition
@@ -71,14 +72,14 @@ from bigflow.build.reflect import materialize_setuppy
 import apache_beam as beam
 from apache_beam.options import pipeline_options
 
-PROJECT_ID = 'put-your-project-here'
+PROJECT_ID = 'put-your-project-id-here'
 E2E_DATASET_NAME = 'btc_aggregates_' + str(uuid1()).replace('-', '')[:8]
 BTC_AGGREGATES_TABLE_NAME = 'btc_aggregates'
 BTC_TRANSACTIONS_TABLE_NAME = 'transactions'
 
 pipeline_config = bf.Config('e2e', {
     'project_id': PROJECT_ID,
-    'dataflow_bucket': 'put-your-bucket-name-here',
+    'dataflow_bucket': 'put-your-google-cloud-storage-bucket-here',
     'dataflow_staging': 'gs://{dataflow_bucket}/dataflow_runner/staging',
     'dataflow_temp': 'gs://{dataflow_bucket}/dataflow_runner/temp',
     'runner': 'DirectRunner'
@@ -125,11 +126,13 @@ def get_dataflow_pipeline(conf: dict) -> beam.Pipeline:
     return beam.Pipeline(options=options)
 
 
-class Transaction(NamedTuple):
+@dataclass
+class Transaction:
     fee: float
 
 
-class TransactionsAggregate(NamedTuple):
+@dataclass
+class TransactionsAggregate:
     fee_sum: float
     count: int
 
@@ -141,6 +144,10 @@ class TransactionsAggregate(NamedTuple):
 
 
 def month(runtime: str) -> str:
+    """
+    :param runtime: date and time as a string 'YYYY-MM-DD hh:mm:ss'
+    :return: date as a string which represents a month, for example, '2020-02-23 01:11:11' -> '2020-02-01'
+    """
     return runtime[:7] + '-01'
 
 
@@ -309,7 +316,14 @@ Finally, to run each of the two tests in separate processes, the example test ca
 No matter how you run the test case, the mixin ensures that each test runs in a fresh process. The only exception to that
 rule is the PyCharm debugging mode (PyCharm debugger doesn't handle spawned processes).
 
-To run the test, put it into the generated project: `test/btc_aggregates_df_bq.py`. Next, run the test: `python -m test.btc_aggregates_df_bq`.
+To run the test, put it into the generated project: `test/btc_aggregates_df_bq.py`.
+The workflow utilizes a real GCP resources, so you need to provide your project id and a Google Cloud Storage bucket id.
+To do that, fill the following placeholders which you can find in the workflow code:
+
+* `'put-your-project-id-here'`
+* `'put-your-google-cloud-storage-bucket-here'`
+
+Next, run the test: `python -m test.btc_aggregates_df_bq`.
 
 ## Testing BigQuery implementation
 
