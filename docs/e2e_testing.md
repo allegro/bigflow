@@ -33,7 +33,7 @@ cd ~/bigflow_cookbook
 ```
 
 Now, prepare a virtual environment for the project. To do so, follow the BigFlow installation guide. The virtual environment should be placed inside 
-the `~/bigflow_cookbook` directory.
+the `~/bigflow_cookbook` directory. This tutorial uses `bigflow==1.1.3`.
 
 Next, [create a new BigFlow project](scaffold.md) called "btc_aggregates":
 
