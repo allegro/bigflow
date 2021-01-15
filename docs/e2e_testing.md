@@ -16,7 +16,7 @@ The workflow saves the result in a BigQuery table.
 You will write tests for two implementations of that workflow. The first implementation 
 utilizes BigQuery (as the input and the output) and Dataflow (for processing).
 
-The second implementation utilizes only BigQuery, for both io and processing.
+The second implementation utilizes only BigQuery, for both IO and processing.
 
 Workflows using BigQuery are interesting to test because there is no way emulate 
 BigQuery on a local machine.
