@@ -21,16 +21,10 @@ The second implementation utilizes only BigQuery, for both IO and processing.
 Workflows using BigQuery are interesting to test because there is no way emulate 
 BigQuery on a local machine.
 
-## Preparation
-
-For this tutorial, you need [a fresh BigFlow project](scaffold.md) in version `bigflow==1.1.3`.
-
-We assume that your project is called `btc_aggregates`.
-
 ## Testing Dataflow + BigQuery implementation
 
 Take a look at the workflow implementation below. The important part (in the context of e2e testing) of that workflow is
-the configuration. Also, save the following code as a module inside the generated project: `btc_aggregates/btc_aggregates_df_bq.py`.
+the configuration.
 
 ```python
 from uuid import uuid1
@@ -272,14 +266,11 @@ Finally, to run each of the two tests in separate processes, the example test ca
 No matter how you run the test case, the mixin ensures that each test runs in a fresh process. The only exception to that
 rule is the PyCharm debugging mode (PyCharm debugger doesn't handle spawned processes).
 
-To run the test, put it into the generated project: `test/btc_aggregates_df_bq.py`.
-The workflow utilizes a real GCP resources, so you need to provide your project id and a Google Cloud Storage bucket id.
+The workflow utilizes a real GCP resources, so if you want to run it, you need to provide your project id and a Google Cloud Storage bucket id.
 To do that, fill the following placeholders which you can find in the workflow code:
 
 * `'put-your-project-id-here'`
 * `'put-your-google-cloud-storage-bucket-here'`
-
-Next, run the test: `python -m test.btc_aggregates_df_bq`.
 
 ## Testing BigQuery implementation
 
@@ -344,21 +335,6 @@ btc_aggregates_workflow = bf.Workflow(
 So what's the difference between the two implementations, when it comes to e2e testing? None! And that's the great part.
 
 Both implementations can be tested by the same e2e test.
-
-Try it out on your own. Save the BigQuery implementation to `btc_aggregates/btc_aggregates_bq.py` module. Next, modify the import
-statement in the `test/btc_aggregates_df_bq.py` test module, to use the BigQuery implementation.
-
-From:
-
-```python
-from btc_aggregates.btc_aggregates_df_bq
-```
-
-To:
-
-```python
-from btc_aggregates.btc_aggregates_bq
-```
 
 ## Summary
 
