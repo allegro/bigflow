@@ -23,38 +23,9 @@ BigQuery on a local machine.
 
 ## Preparation
 
-For this tutorial, you need a fresh BigFlow project.
+For this tutorial, you need [a fresh BigFlow project](scaffold.md) in version `bigflow==1.1.3`.
 
-First, create a directory where you want to store the example project:
-
-```shell script
-mkdir ~/bigflow_cookbook
-cd ~/bigflow_cookbook
-```
-
-Now, prepare a virtual environment for the project. To do so, follow the BigFlow installation guide. The virtual environment should be placed inside 
-the `~/bigflow_cookbook` directory. This tutorial uses `bigflow==1.1.3`.
-
-Next, [create a new BigFlow project](scaffold.md) called "btc_aggregates":
-
-```shell script
-bf start-project
-```
-
-Install the project requirements:
-
-```shell script
-cd ~/bigflow_cookbook/btc_aggregates_project
-pip install -r resources/requirements.txt
-```
-
-Finally, remove examples from the generated project:
-
-```shell script
-cd ~/bigflow_cookbook/btc_aggregates_project
-rm -rf btc_aggregates/internationalports
-rm -rf btc_aggregates/wordcount
-```
+We assume that your project is called `btc_aggregates`.
 
 ## Testing Dataflow + BigQuery implementation
 
