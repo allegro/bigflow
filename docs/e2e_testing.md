@@ -143,14 +143,6 @@ class TransactionsAggregate:
         }
 
 
-def month(runtime: str) -> str:
-    """
-    :param runtime: date and time as a string 'YYYY-MM-DD hh:mm:ss'
-    :return: date as a string which represents a month, for example, '2020-02-23 01:11:11' -> '2020-02-01'
-    """
-    return runtime[:7] + '-01'
-
-
 class ReadBitcoinTransactions(beam.PTransform):
     def __init__(self, runtime: str, table_id: str):
         super().__init__()
@@ -208,7 +200,7 @@ class CalculateBitcoinAggregatesJob(bf.Job):
     def execute(self, context: bf.JobContext):
         p = get_dataflow_pipeline(pipeline_config)
         aggregates_table_id = f'{dataset_config["project_id"]}:{dataset_config["dataset_name"]}.{BTC_AGGREGATES_TABLE_NAME}'
-        runtime_month = month(context.runtime_str)
+        runtime_month = context.runtime.date().isoformat()
         (p
          | 'ReadBitcoinTransactions' >> ReadBitcoinTransactions(runtime_month, external_tables_config['btc_transactions'])
          | 'CalculateBitcoinAggregatesPTransform' >> beam.CombineGlobally(TransactionsAggregateFn())
@@ -245,11 +237,10 @@ from btc_aggregates.btc_aggregates_df_bq import (
     dataset as btc_aggregates_dataset,
     BTC_TRANSACTIONS_TABLE_NAME)
 
-DATE = slice(0, 10)
 NOW = "2020-12-01 00:00:00"
 NOW_DT = datetime.fromisoformat(NOW + "+00:00")
-NOW_MINUS_ONE_MONTH = (NOW_DT - timedelta(weeks=4)).isoformat()[DATE]
-NOW_PLUS_ONE_MONTH = (NOW_DT + timedelta(weeks=4)).isoformat()[DATE]
+NOW_MINUS_ONE_MONTH = (NOW_DT - timedelta(weeks=4)).date().isoformat()
+NOW_PLUS_ONE_MONTH = (NOW_DT + timedelta(weeks=4)).date().isoformat()
 
 
 class BitcoinAggregatesWorkflowTestCase(SpawnIsolateMixin, unittest.TestCase):
@@ -264,11 +255,11 @@ class BitcoinAggregatesWorkflowTestCase(SpawnIsolateMixin, unittest.TestCase):
         btc_aggregates_dataset.delete_dataset()
 
     def test_should_calculate_aggregates(self):
-        # given
+        # given fake bitcoin transactions table with test records
         btc_aggregates_dataset.insert(BTC_TRANSACTIONS_TABLE_NAME, [
             {'fee': 0.5, 'block_timestamp_month': NOW_MINUS_ONE_MONTH},
-            {'fee': 1.0, 'block_timestamp_month': NOW[DATE]},
-            {'fee': 2.0, 'block_timestamp_month': NOW[DATE]},
+            {'fee': 1.0, 'block_timestamp_month': NOW_DT.date().isoformat()},
+            {'fee': 2.0, 'block_timestamp_month': NOW_DT.date().isoformat()},
             {'fee': 4.0, 'block_timestamp_month': NOW_PLUS_ONE_MONTH},
         ], partitioned=False).run(NOW)
 
@@ -299,12 +290,6 @@ class BitcoinAggregatesWorkflowTestCase(SpawnIsolateMixin, unittest.TestCase):
 if __name__ == '__main__':
     unittest.main()
 ```
-
-Each of the two tests has the following schema:
-
-1. Preparing fake bitcoin transactions table and inserting test records.
-1. Executing the workflow.
-1. Checking the workflow results and bitcoin aggregates table.
 
 The whole `BitcoinAggregatesWorkflowTestCase` uses the imported dataset manager (using the `e2e` configuration) to interact
 with the BigQuery dataset used by the workflow.
