@@ -38,7 +38,9 @@ The `bigflow build` command should produce:
 * The `.dags` directory with Airflow **DAGs**, generated from workflows (deployment artifact)
 
 The `bigflow build` command uses three subcommands to generate all the
-artifacts: [`bigflow build-package`](./cli.md#building-pip-package), [`bigflow build-image`](./cli.md#building-docker-image), [`bigflow build-dags`](./cli.md#building-dag-files).
+artifacts: [`bigflow build-package`](./cli.md#building-airflow-dags), [`bigflow build-image`](./cli.md#building-airflow-dags), [`bigflow build-dags`](./cli.md#building-airflow-dags).
+There is also an optional [`bigflow build-requirements`](./cli.md#building-airflow-dags) command that allows you 
+to [resolve and freeze](https://github.com/jazzband/pip-tools) the project dependencies.
 
 Now, let us go through each building element in detail, starting from the Python package.
 
@@ -56,11 +58,11 @@ project_dir/
     test/
         __init__.py
     resources/
+        requirements.in
         requirements.txt
     Dockerfile
     deployment_config.py
     setup.py
-    MANIFEST.in
     pyproject.toml
 ```
 
@@ -251,3 +253,29 @@ Every [job](./workflow-and-job.md#job) in a [workflow](./workflow-and-job.md#wor
 BigFlow sets a reasonable default value for the required operator arguments. You can modify
 [some of them](./workflow-and-job.md#job), by setting properties on a job.
 Similarly, you can modify a DAG property, by setting [properties on a workflow](./workflow-and-job.md#workflow-scheduling-options).
+
+## requirements.in
+
+In the `resources` directory you can find `requirements.txt` and `requirements.in` files. You should keep your project
+dependencies in the `requirements.in` file. Then, you can resolve and freeze your project requirements into the `requirements.txt`,
+using the `bigflow build-requirements` command.
+
+Under the hood, the `build-requirements` command uses the [`pip-tools`](https://github.com/jazzband/pip-tools).
+
+The `build-requirements` command is part of the `build` command, but it's not mandatory to use `requirements.in`. That 
+mechanism is optional, so you can just use `requirements.txt` alone. BigFlow automatically detects if you have `requirements.in`
+in the `resources` directory and generates or updates the `requirements.txt`. If `requirements.in` is not there, then BigFlow
+just skips the `build-requirements` phase.
+
+Using `requirements.in` is the recommended way of managing dependencies. It is because it makes your artifacts deterministic (at least
+when it comes to resolving dependencies). If you don't use frozen requirements, then each time you install requirements, you
+can get a different result. In theory it shouldn't be a problem, because you should get compatible dependencies, but in practice
+you might get a incompatible dependency which breaks your processing.
+
+## pyproject.toml
+
+The `pyproject.toml` file is [part of the standard Python packaging toolset](https://snarky.ca/what-the-heck-is-pyproject-toml/).
+BigFlow uses that file to describe requirements needed to build the project. That description is especially useful in 2 situations:
+
+* Building the project using systems like Bamboo, Jenkins, Travis, etc.
+* Running Apache Beam jobs (go to the [chapter about Beam inside BigFlow](technologies.md#dataflow-apache-beam) to understand why).

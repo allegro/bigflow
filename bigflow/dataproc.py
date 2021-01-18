@@ -24,15 +24,12 @@ import bigflow.build.reflect
 import bigflow.build.pip
 
 from bigflow.workflow import DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS
+from bigflow._version import __version__ as bf_version
 
 logger = logging.getLogger(__name__)
 
 __all__ = [
     'PySparkJob',
-]
-
-DEFAULT_REQUIREMENTS = [
-    f"bigflow[dataproc,log,bigquery]=={bigflow.__version__}",
 ]
 
 
@@ -46,7 +43,7 @@ class PySparkJob(bigflow.Job):
         gcp_project_id: str,
         gcp_region: str,
         driver_arguments: typing.Optional[dict] = None,
-        pip_packages: typing.Union[typing.Iterable[str], pathlib.Path] = (),
+        pip_packages: typing.Union[typing.Iterable[str], pathlib.Path] = (f'bigflow[dataproc]=={bf_version}', ),
         jar_file_uris: typing.Iterable[str] = ('gs://spark-lib/bigquery/spark-bigquery-latest_2.12.jar',),
         worker_num_instances: int = 2,
         worker_machine_type: str = 'n1-standard-1',
@@ -74,10 +71,8 @@ class PySparkJob(bigflow.Job):
 
         if isinstance(pip_packages, pathlib.Path):
             self.pip_packages = bigflow.resources.read_requirements(pip_packages)
-        elif pip_packages:
-            self.pip_packages = pip_packages
         else:
-            self.pip_packages = DEFAULT_REQUIREMENTS
+            self.pip_packages = pip_packages
 
         self._project = project_name or bigflow.build.reflect.infer_project_name(stack=2)
 

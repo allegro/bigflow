@@ -1,6 +1,3 @@
-from bigflow.build import default_project_setup
+import bigflow.build
 
-PROJECT_NAME = 'examples'
-
-if __name__ == '__main__':
-    default_project_setup(PROJECT_NAME)
+bigflow.build.setup(name='examples')

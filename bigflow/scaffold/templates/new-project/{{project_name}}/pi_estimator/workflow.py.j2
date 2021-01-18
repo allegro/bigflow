@@ -15,7 +15,7 @@ pi_estimator_job = bigflow.dataproc.PySparkJob(
     id='pi_estimator_job',
 
     # Job entry point. First arguments of this function is 'bigflow.JobContext'
-    # Other arguments may be added by user via 'functools.partial' 
+    # Other arguments may be added by user via 'functools.partial'
     driver=functools.partial(
         do_pi_estimation,
         points=int(workflow_config.resolve_property('points')),
@@ -26,9 +26,6 @@ pi_estimator_job = bigflow.dataproc.PySparkJob(
     bucket_id=workflow_config.resolve_property('staging_bucket'),
     gcp_project_id=workflow_config.resolve_property('gcp_project_id'),
     gcp_region=workflow_config.resolve_property('gcp_region'),
-    
-    # Use the same set of dependencies as '{{project_name}}'
-    pip_packages=bigflow.resources.get_resource_absolute_path('requirements.txt'),
 )
 
 

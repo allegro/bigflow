@@ -10,7 +10,7 @@ import bigflow
 import bigflow.build.dev
 import bigflow.build.pip
 import bigflow.build.reflect
-import bigflow.scaffold
+
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +71,6 @@ def need_migrate_to_11(root: Path):
     return (root / "project_setup.py").exists() and not all([
         (root / "setup.py").exists(),
         (root / "pyproject.toml").exists(),
-        (root / "MANIFEST.in").exists(),
     ])
 
 
@@ -93,7 +92,7 @@ def migrate__v1_0__v1_1(root: Path):
 
     print("Project uses old structure - it needs to be migrated in order to use bigflow >= 1.1")
     print("Project config 'project_setup.py' will be renamed into 'setup.py'")
-    print("A few additional files will be created: MANIFEST.in, pyproject.toml")
+    print("A few additional files will be created: pyproject.toml")
     print("Do you wan to run migration now?")
 
     if not _yes_or_no():
@@ -104,11 +103,9 @@ def migrate__v1_0__v1_1(root: Path):
     project_opts = bigflow.build.dev.read_setuppy_args(root / "setup.py")
     project_name = project_opts['name']
 
-    # Write 'pyproject.toml' and 'MANIFEST.in'
-    bigflow.scaffold.render_builtin_templates(root, 'migrate-11', variables={
-        'project_name': project_name,
-        'bigflow_version': bigflow.__version__,
-    })
+    # Write 'pyproject.toml'
+    from bigflow.scaffold import scaffold
+    scaffold.migrate_project_from_10(root, project_name)
 
     # Check 'setup.py' is not ignored
     gitignore = (root / ".gitignore")

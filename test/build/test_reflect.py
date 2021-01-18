@@ -91,6 +91,7 @@ class SelfBuildProjectFromPackageTestCase(
 
 class SelfBuildProjectFromSourcesTestCase(
     _BaseBuildReflectTest,
+    mixins.BigflowInPythonPathMixin,
 ):
     def test_reflected_build_from_sources(self):
         # then

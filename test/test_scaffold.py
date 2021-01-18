@@ -99,7 +99,7 @@ deployment_config = DeploymentConfig(
 import logging
 
 from bigflow.configuration import Config
-from bigflow.resources import find_or_create_setup_for_main_project_package, get_resource_absolute_path
+from bigflow.build.reflect import materialize_setuppy
 from apache_beam.options.pipeline_options import SetupOptions, StandardOptions, WorkerOptions, GoogleCloudOptions, \
     PipelineOptions
 
@@ -131,8 +131,7 @@ def dataflow_pipeline_options():
     options.view_as(WorkerOptions).autoscaling_algorithm = 'THROUGHPUT_BASED'
     options.view_as(StandardOptions).runner = 'DataflowRunner'
 
-    setup_file_path = find_or_create_setup_for_main_project_package()
-    options.view_as(SetupOptions).setup_file = str(setup_file_path)
+    options.view_as(SetupOptions).setup_file = str(materialize_setuppy().absolute())
 
     logger.info(f"Run beam pipeline with options {str(options)}")
     return options''')

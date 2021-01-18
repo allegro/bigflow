@@ -98,7 +98,7 @@ def build_image(
 def _hook_pregenerate_sdist(command_cls):
     """
     Wraps existing distutils.Command class.
-    Runs 'sdist' and copy resutl into 'build/bf-project.tar.gz'
+    Runs 'sdist' and copy result into 'build/bf-project.tar.gz'
     """
 
     def run(self):
@@ -141,6 +141,7 @@ class sdist(distutils.command.sdist.sdist):
     def _add_defaults_bigflow(self):
         self.filelist.extend(
             filter(os.path.exists, [
+                "pyproject.toml",
                 "deployment_config.py",
                 "requirements.in",
                 "requirements.txt",
@@ -282,7 +283,7 @@ def auto_configuration(project_name: str, project_dir: Path = Path('.').parent) 
     return {
         'project_name': project_name,
         'docker_repository': get_docker_repository_from_deployment_config(deployment_config_file),
-        'root_package': project_dir / project_name,
+        'root_package': project_dir / project_name.replace("-", "_"),
         'project_dir': project_dir,
         'build_dir': project_dir / 'build',
         'test_package': project_dir / 'test',
