@@ -16,6 +16,7 @@
 1. [Technologies](./docs/technologies.md)
 1. [Logging](./docs/logging.md)
 1. [Monitoring](./docs/monitoring.md)
+1. [Development](./docs/development.md)
 
 ## What is BigFlow?
 
