@@ -27,16 +27,21 @@ def pip_compile(
     logger.info("Compile requirements file %s ...", req_in)
 
     with tempfile.NamedTemporaryFile('w+t', prefix=f"{req_in.stem}-", suffix=".txt", delete=False) as txt_file:
+        txt_path = Path(txt_file.name)
+
+        if req_txt.exists():
+            txt_path.write_bytes(req_txt.read_bytes())
+
         bf_commons.run_process([
             "pip-compile",
             "--no-header",
-            "-o", txt_file.name,
+            "-o", txt_path,
             *(["-v"] if verbose else ["-q"]),
             *extra_args,
             str(req_in),
         ])
-        with open(txt_file.name) as ff:
-            reqs_content = ff.readlines()
+
+        reqs_content = txt_path.read_text()
 
     source_hash = bf_commons.generate_file_hash(req_in)
 
@@ -50,7 +55,7 @@ def pip_compile(
             # run 'bigflow build-requirements {req_in}' to update this file
 
         """))
-        out.writelines(reqs_content)
+        out.write(reqs_content)
 
 
 def detect_piptools_source_files(reqs_dir: Path) -> typing.List[Path]:
