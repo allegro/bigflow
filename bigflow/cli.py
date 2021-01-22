@@ -279,6 +279,8 @@ def _parse_args(project_name: Optional[str], args) -> Namespace:
 
     _create_build_requirements_parser(subparsers)
 
+    _create_codegen_parser(subparsers)
+
     return parser.parse_args(args)
 
 
@@ -613,9 +615,26 @@ def _create_build_requirements_parser(subparsers):
     )
 
 
+def _create_codegen_parser(subparsers: argparse._SubParsersAction):
+    parser = subparsers.add_parser('codegen', description="Various codegeneration tools")
+    ss = parser.add_subparsers()
+
+    p = ss.add_parser('pin-dataflow-requirements')
+    p.set_defaults(func=_cli_codegen_pin_dataflow_requirements)
+
+
 def _cli_build_requirements(args):
     in_file = pathlib.Path(args.in_file)
     bigflow.build.pip.pip_compile(in_file)
+
+
+def _cli_codegen(args):
+    args.func(args)
+
+
+def _cli_codegen_pin_dataflow_requirements(args):
+    import bigflow.build.dataflow.depscheck as dc
+    dc.generate_dataflow_pins_file()
 
 
 def _is_workflow_selected(args):
@@ -812,5 +831,7 @@ def cli(raw_args) -> None:
         cli_logs(root_package)
     elif operation == 'build-requirements':
         _cli_build_requirements(parsed_args)
+    elif operation == 'codegen':
+        _cli_codegen(parsed_args)
     else:
         raise ValueError(f'Operation unknown - {operation}')

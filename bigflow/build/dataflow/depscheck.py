@@ -92,6 +92,9 @@ def check_beam_worker_dependencies_conflict(req_path: Path):
                 More information https://cloud.google.com/dataflow/docs/concepts/sdk-worker-dependencies
                 Conflicted libraries:
                 %s
+
+                It is recommended to resolve conflicts by running:
+                > bigflow codegen pin-dataflow-requirements
                 ========================================
             """),
             "\n".join(
@@ -100,3 +103,14 @@ def check_beam_worker_dependencies_conflict(req_path: Path):
             ),
         )
 
+
+def generate_dataflow_pins_file(req_path=None):
+    if req_path is None:
+        params = bigflow.build.dev.read_setuppy_args()
+        req_path = Path(params.get('project_requirements_file', "resources/requirements.txt"))
+    pins_in = req_path.parent / "dataflow_pins.in"
+    return bigflow.build.pip.generate_pinfile(
+        req_path=req_path,
+        pins_path=pins_in,
+        get_pins=lambda: [f"{a}=={c}" for a, (b, c) in detect_dataflow_conflicts(req_path).items()],
+    )
