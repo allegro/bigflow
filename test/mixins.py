@@ -13,6 +13,34 @@ import glob
 from pathlib import Path
 
 
+class FileUtilsMixin(unittest.TestCase):
+
+    def assertFileExists(self, pattern):
+        if os.path.isabs(pattern):
+            # TODO: Add absolute globs?
+            p = Path(pattern)
+            fs = [p] if p.exists() else []
+        else:
+            fs = list(Path(".").glob(pattern))
+        if not fs:
+            self.fail(f"File {pattern!r} should exist, but it doesn't")
+        if len(fs) > 1:
+            self.fail(f"Found more than one file mathing the pattern {pattern}: {fs}")
+        return fs[0]
+
+    def assertFileNotExists(self, pattern):
+        fs = list(Path(".").glob(pattern))
+        self.assertTrue(len(fs) == 0, f"The file {pattern!r} should not exist, but found {fs}")
+
+    def assertFileContentRegex(self, file, regex, msg=None):
+        f = self.assertFileExists(file)
+        self.assertRegex(f.read_text(), regex, msg=msg)
+
+    def assertFileContentNotRegex(self, file, regex, msg=None):
+        f = self.assertFileExists(file)
+        self.assertNotRegex(f.read_text(), regex, msg=msg)
+
+
 class TempCwdMixin(unittest.TestCase):
 
     cwd = None
@@ -40,7 +68,7 @@ class TempCwdMixin(unittest.TestCase):
             cwd.mkdir(parents=True)
         os.chdir(cwd)
 
-class PrototypedDirMixin(TempCwdMixin):
+class PrototypedDirMixin(TempCwdMixin, FileUtilsMixin):
     """Creates temp directory & copy files tree from `proto_dir`, chdir into temp directory before each test"""
 
     proto_dir: str
@@ -55,31 +83,6 @@ class PrototypedDirMixin(TempCwdMixin):
             copyf(f, self.cwd / f.name)
 
         self.addCleanup(shutil.rmtree, self.cwd, ignore_errors=True)
-
-    def assertFileExists(self, pattern):
-        if os.path.isabs(pattern):
-            # TODO: Add absolute globs?
-            p = Path(pattern)
-            fs = [p] if p.exists() else []
-        else:
-            fs = list(Path(".").glob(pattern))
-        if not fs:
-            self.fail(f"File {pattern!r} should exist, but it doesn't")
-        if len(fs) > 1:
-            self.fail(f"Found more than one file mathing the pattern {pattern}: {fs}")
-        return fs[0]
-
-    def assertFileNotExists(self, pattern):
-        fs = list(Path(".").glob(pattern))
-        self.assertTrue(len(fs) == 0, f"The file {pattern!r} should not exist, but found {fs}")
-
-    def assertFileContentRegex(self, file, regex, msg=None):
-        f = self.assertFileExists(file)
-        self.assertRegex(f.read_text(), regex, msg=msg)
-
-    def assertFileContentNotRegex(self, file, regex, msg=None):
-        f = self.assertFileExists(file)
-        self.assertNotRegex(f.read_text(), regex, msg=msg)
 
 
 class SubprocessMixin(unittest.TestCase):
