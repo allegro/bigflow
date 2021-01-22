@@ -13,7 +13,11 @@ import glob
 from pathlib import Path
 
 
-class FileUtilsMixin(unittest.TestCase):
+class Mixin(unittest.TestCase):
+    pass
+
+
+class FileUtilsMixin(Mixin):
 
     def assertFileExists(self, pattern):
         if os.path.isabs(pattern):
@@ -41,7 +45,7 @@ class FileUtilsMixin(unittest.TestCase):
         self.assertNotRegex(f.read_text(), regex, msg=msg)
 
 
-class TempCwdMixin(unittest.TestCase):
+class TempCwdMixin(Mixin):
 
     cwd = None
 
@@ -85,7 +89,7 @@ class PrototypedDirMixin(TempCwdMixin, FileUtilsMixin):
         self.addCleanup(shutil.rmtree, self.cwd, ignore_errors=True)
 
 
-class SubprocessMixin(unittest.TestCase):
+class SubprocessMixin(Mixin):
     """Provides methods to run/interact with subprocesses"""
 
     def preprocess_cmdline(self, cmd):
@@ -113,7 +117,7 @@ class SubprocessMixin(unittest.TestCase):
 class VenvMixin(SubprocessMixin):
     """Creates temp venv, spawn subprocesses inside 'venv' context
 
-    New venv is created for each 'TestCase' class.
+    New venv is created for Mixin class.
     Creation of venv is an expensive operation, so tests need to be grouped into small amount of classes.
     """
 
@@ -169,7 +173,7 @@ class VenvMixin(SubprocessMixin):
         return [str(self.venv_directory / "bin" / "run-in-venv"), *cmd]
 
 
-class BigflowInPythonPathMixin(unittest.TestCase):
+class BigflowInPythonPathMixin(Mixin):
 
     def setUp(self):
         super().setUp()
