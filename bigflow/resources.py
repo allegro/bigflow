@@ -33,30 +33,10 @@ def find_all_resources(resources_dir: Path) -> Iterable[str]:
             yield str(path.relative_to(resources_dir.parent))
 
 
-# TODO: Move to 'bigflow.build.pip' ?
+@deprecated(reason="Use 'bigflow.build.pip.read_requirements instead")
 def read_requirements(requirements_path: Path, recompile_check=True) -> List[str]:
-    """Reads and parses 'requirements.txt' file.
-
-    Returns list of requirement specs, skipping comments and empty lines
-    """
-
-    import bigflow.build.pip as bf_pip
-    if recompile_check and bf_pip.check_requirements_needs_recompile(requirements_path):
-        raise ValueError("Requirements needs to be recompiled with 'pip-tools'")
-
-    result: List[str] = []
-    with open(requirements_path) as base_requirements:
-        for line in base_requirements:
-            if "#" in line:
-                line, _ = line.split("#", 1)
-            line = line.strip()
-            if line.startswith("-r "):
-                subrequirements_file_name = line.replace("-r ", "")
-                subrequirements_path = requirements_path.parent / subrequirements_file_name
-                result.extend(read_requirements(subrequirements_path))
-            elif line:
-                result.append(line)
-    return result
+    from bigflow.build.pip import read_requirements
+    return read_requirements(requirements_path, recompile_check)
 
 
 def find_file(file_name: str, search_start_file: Path, max_depth: int = 10) -> Path:

@@ -36,8 +36,7 @@ def maybe_upgrade_pyproject_bigflow_version(root: Path):
     if not pptf.exists() or not reqsf.exists():
         return
 
-    from bigflow.resources import read_requirements
-    reqs_version =_find_bigflow_req(read_requirements(reqsf, False))
+    reqs_version =_find_bigflow_req(bigflow.build.pip.read_requirements(reqsf, False))
     reqs_version = re.sub(r"\[.*\]", "", reqs_version)  # strip extras
 
     ppt = toml.load(pptf)

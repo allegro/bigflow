@@ -33,34 +33,6 @@ class FindAllResourcesTestCase(TestCase):
             ]))
 
 
-class ReadRequirementsTestCase(TestCase):
-    def test_should_return_all_requirements_from_the_hierarchy(self):
-
-        with tempfile.TemporaryDirectory() as d:
-            dp = Path(d)
-            (dp / "requirements.txt").write_text("""
-                # comments are allowed
-                -r requirements_base.txt  # comment
-
-                # a few empty lines
-                datetime_truncate==1.1.0  # another # comment with ### inside
-            """)
-            (dp / "requirements_base.txt").write_text("""
-                freezegun==0.3.14
-                schedule
-            """)
-
-            # when
-            requirements = read_requirements(dp / "requirements.txt")
-
-            # then
-            self.assertEqual(requirements, [
-                'freezegun==0.3.14',
-                'schedule',
-                'datetime_truncate==1.1.0',
-            ])
-
-
 class FindFileTestCase(TestCase):
     def test_should_find_file_going_up_through_hierarchy(self):
         # when

@@ -18,7 +18,6 @@ from google.cloud import dataproc_v1, storage
 
 import bigflow
 import bigflow.configuration
-import bigflow.resources
 import bigflow.commons
 import bigflow.build.reflect
 import bigflow.build.pip
@@ -70,7 +69,7 @@ class PySparkJob(bigflow.Job):
         self.worker_num_instances = worker_num_instances
 
         if isinstance(pip_packages, pathlib.Path):
-            self.pip_packages = bigflow.resources.read_requirements(pip_packages)
+            self.pip_packages = bigflow.build.pip.read_requirements(pip_packages)
         else:
             self.pip_packages = pip_packages
 

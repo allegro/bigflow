@@ -106,7 +106,7 @@ def _collect_all_input_files_content(req_in: Path):
     yield c
     for include in re.findall(r"\s*-r\s+(.*)", c):
         include: str
-        fn = include.split("#", 2)[0].strip()
+        fn = include.split("#", 1)[0].strip()
         yield from _collect_all_input_files_content(req_in.parent / fn)
 
 
@@ -144,3 +144,28 @@ def check_requirements_needs_recompile(req: Path) -> bool:
     else:
         logger.warning("File %s needs to be recompiled with 'bigflow build-requirements' command", req_txt)
         return True
+
+
+def read_requirements(requirements_path: Path, recompile_check=True) -> List[str]:
+    """Reads and parses 'requirements.txt' file.
+
+    Returns list of requirement specs, skipping comments and empty lines
+    """
+
+    if recompile_check and check_requirements_needs_recompile(requirements_path):
+        raise ValueError("Requirements needs to be recompiled with 'pip-tools'")
+
+    result: List[str] = []
+    with open(requirements_path) as base_requirements:
+        for line in base_requirements:
+            line = line.split("#", 1)[0].strip()
+            if line.startswith("-r "):
+                subrequirements_file_name = line.replace("-r ", "")
+                subrequirements_path = requirements_path.parent / subrequirements_file_name
+                result.extend(read_requirements(subrequirements_path, recompile_check=False))
+            elif line:
+                result.append(line)
+
+    return result
+
+

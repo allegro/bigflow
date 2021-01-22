@@ -79,3 +79,28 @@ class PipToolsTestCase(
 
         # then
         self.assertTrue(req_txt.exists())
+
+    def test_read_all_requirements_from_the_hierarchy(self):
+        # given
+        (self.cwd / "requirements.txt").write_text("""
+            # comments are allowed
+            -r requirements_base.txt  # comment
+            # a few empty lines
+            datetime_truncate==1.1.0  # another # comment with ### inside
+        """)
+
+        (self.cwd / "requirements_base.txt").write_text("""
+            freezegun==0.3.14
+            schedule
+        """)
+
+        # when
+        requirements = bf_pip.read_requirements(self.cwd / "requirements.txt")
+
+        # then
+        self.assertEqual(requirements, [
+            'freezegun==0.3.14',
+            'schedule',
+            'datetime_truncate==1.1.0',
+        ])
+
