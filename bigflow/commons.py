@@ -4,6 +4,7 @@ import re
 import subprocess
 import time
 import typing
+import threading
 
 from pathlib import Path
 from deprecated import deprecated
@@ -27,34 +28,78 @@ def now(template: str = "%Y-%m-%d %H:00:00"):
     return datetime.now().strftime(template)
 
 
+class _OutDumper(threading.Thread):
+    "Dump stream to logger and collect results as a string."
+
+    def __init__(
+        self,
+        process: subprocess.Popen,
+        stream: typing.IO[str],
+        callback: typing.Callable[[str], None],
+    ):
+        threading.Thread.__init__(self)
+        self.process = process
+        self.stream = stream
+        self.callback = callback
+        self._result_list = []
+        self.start()
+
+    def result(self):
+        self.join()
+        return "".join(self._result_list)
+
+    def run(self):
+        space_buffer = []
+
+        while not self.stream.closed:
+            try:
+                line = self.stream.readline()
+            except (ValueError, EOFError):
+                return  # closed
+
+            linee = line
+            if linee.endswith("\n"):
+                linee = linee[:-1]
+
+            if linee.strip():
+                # log line and prepend all buffered whitespaces
+                space_buffer.append(linee)
+                self.callback("".join(space_buffer))
+                space_buffer.clear()
+            else:
+                # line contains only whitespaces
+                space_buffer.append(line)
+            self._result_list.append(line)
+
+
 def run_process(cmd, check=True, **kwargs):
     if isinstance(cmd, str):
         cmd = re.split(r"\s+", cmd)
     else:
         cmd = list(map(str, cmd))
 
-    logger.info("run %s", " ".join(cmd))
     logger.debug("cmd %r, kwargs %r", cmd, kwargs)
 
     start = time.time()
-    process = subprocess.Popen(cmd, text=True, stdout=subprocess.PIPE, **kwargs)
+    process = subprocess.Popen(
+        cmd, text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        **kwargs,
+    )
 
-    result_output = []
-    while True:
-        line = process.stdout.readline()
-        done = process.poll() is not None
-        if not done or line:
-            logger.info("%s", line.rstrip("\n"))
-            result_output.append(line)
-        if done:
-            break
+    stdout_dumper = _OutDumper(process, process.stdout, logger.info)
+    stderr_dumper = _OutDumper(process, process.stderr, logger.error)
 
-    process.stdout.close()
-    stdout = "".join(result_output)
     code = process.wait()
+    process.stdout.close()
+    process.stderr.close()
+    stdout = stdout_dumper.result()
+    stderr = stderr_dumper.result()
 
     if code and check:
-        raise subprocess.CalledProcessError(process.returncode, cmd)
+        raise subprocess.CalledProcessError(
+            process.returncode, cmd, output=stdout, stderr=stderr)
 
     duration = time.time() - start
     logger.debug("done in %s seconds, code %d", format(duration, ".2f"), process.returncode)
