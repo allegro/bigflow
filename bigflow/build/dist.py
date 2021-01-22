@@ -27,6 +27,7 @@ import bigflow.dagbuilder
 import bigflow.version
 import bigflow.build.pip
 import bigflow.build.dev
+import bigflow.build.dataflow.depscheck
 import bigflow.commons as bf_commons
 
 
@@ -343,6 +344,8 @@ def project_setup(
             pip install -r {project_requirements_file}
         """))
 
+    bigflow.build.dataflow.depscheck.check_beam_worker_dependencies_conflict(project_requirements_file)
+
     params_to_check = [
         ('project_name', project_name),
         ('docker_repository', docker_repository),
@@ -367,7 +370,7 @@ def project_setup(
         'name': project_name,
         'version': version,
         'packages': setuptools.find_packages(exclude=['test']),
-        'install_requires': bigflow.resources.read_requirements(project_requirements_file),
+        'install_requires': bigflow.build.pip.read_requirements(project_requirements_file),
         'data_files': [
             ('resources', list(bigflow.resources.find_all_resources(resources_dir))),
             (f"bigflow__project/{project_name}", ["build/bf-project.tar"]),
