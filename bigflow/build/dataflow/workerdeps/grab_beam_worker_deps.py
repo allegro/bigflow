@@ -61,6 +61,9 @@ def main():
             continue
 
         python_version = p['python_version']
+        if python_version.startswith("2"):
+            continue
+
         pkgs = p['packages']
 
         fn = f"beam{beam_version}_py{python_version}.txt"
