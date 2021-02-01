@@ -6,7 +6,7 @@ from unittest import mock
 from test import mixins
 
 import bigflow.build.pip as bf_pip
-import bigflow.build.dataflow.depscheck as dc
+import bigflow.build.dataflow.dependency_checker as dc
 
 
 class DataflowDepsCheckTestCase(
@@ -20,7 +20,7 @@ class DataflowDepsCheckTestCase(
         self.req_txt = self.cwd / "req.txt"
         self.pins_in = self.cwd / "dataflow_pins.in"
 
-    @mock.patch('bigflow.build.dataflow.depscheck.detect_py_version')
+    @mock.patch('bigflow.build.dataflow.dependency_checker.detect_py_version')
     def test_detect_dataflow_conflicts(self, detect_py_version):
         # given
         detect_py_version.return_value = "3.7"
@@ -52,7 +52,7 @@ class DataflowDepsCheckTestCase(
         with self.assertLogs(dc.logger, level=logging.ERROR):
             dc.check_beam_worker_dependencies_conflict(self.req_in)
 
-    @mock.patch('bigflow.build.dataflow.depscheck.detect_py_version')
+    @mock.patch('bigflow.build.dataflow.dependency_checker.detect_py_version')
     @mock.patch('bigflow.build.dev.read_setuppy_args')
     def test_generate_dataflow_pinfile(self, read_setuppy_args, detect_py_version):
         # given

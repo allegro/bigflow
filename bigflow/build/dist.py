@@ -27,7 +27,7 @@ import bigflow.dagbuilder
 import bigflow.version
 import bigflow.build.pip
 import bigflow.build.dev
-import bigflow.build.dataflow.depscheck
+import bigflow.build.dataflow.dependency_checker
 import bigflow.commons as bf_commons
 
 
@@ -344,7 +344,7 @@ def project_setup(
             pip install -r {project_requirements_file}
         """))
 
-    bigflow.build.dataflow.depscheck.check_beam_worker_dependencies_conflict(project_requirements_file)
+    bigflow.build.dataflow.dependency_checker.check_beam_worker_dependencies_conflict(project_requirements_file)
 
     params_to_check = [
         ('project_name', project_name),
