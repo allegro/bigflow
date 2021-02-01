@@ -110,7 +110,7 @@ def generate_dataflow_pins_file(req_path=None):
         req_path = Path(params.get('project_requirements_file', "resources/requirements.txt"))
     pins_in = req_path.parent / "dataflow_pins.in"
     return bigflow.build.pip.generate_pinfile(
-        req_path=req_path,
-        pins_path=pins_in,
-        get_pins=lambda: [f"{a}=={c}" for a, (b, c) in detect_dataflow_conflicts(req_path).items()],
+        req_path,
+        pins_in,
+        lambda: [f"{a}=={c}" for a, (b, c) in detect_dataflow_conflicts(req_path).items()],
     )
