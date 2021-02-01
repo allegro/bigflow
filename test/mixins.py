@@ -13,48 +13,11 @@ import glob
 from pathlib import Path
 
 
-class TempCwdMixin(unittest.TestCase):
+class Mixin(unittest.TestCase):
+    pass
 
-    cwd = None
 
-    def setUp(self):
-        super().setUp()
-        self.__cwd = os.getcwd()
-        self.chdir_new_temp()
-
-    def tearDown(self):
-        os.chdir(self.__cwd)
-        super().tearDown()
-
-    def chdir_new_temp(self):
-        """Drop 'cwd' completely, chdir into new temporary directory"""
-        if self.cwd:
-            shutil.rmtree(self.cwd)
-        self.cwd = Path(tempfile.mkdtemp())
-        self.chdir(self.cwd)
-
-    def chdir(self, cwd, create=True):
-        cwd = Path(cwd)
-        self.cwd = cwd
-        if not cwd.exists():
-            cwd.mkdir(parents=True)
-        os.chdir(cwd)
-
-class PrototypedDirMixin(TempCwdMixin):
-    """Creates temp directory & copy files tree from `proto_dir`, chdir into temp directory before each test"""
-
-    proto_dir: str
-
-    def setUp(self):
-        super().setUp()
-        assert self.cwd.is_absolute()
-
-        proto_path = Path(__file__).parent / self.proto_dir
-        for f in proto_path.glob("*"):
-            copyf = shutil.copytree if f.is_dir() else shutil.copyfile
-            copyf(f, self.cwd / f.name)
-
-        self.addCleanup(shutil.rmtree, self.cwd, ignore_errors=True)
+class FileUtilsMixin(Mixin):
 
     def assertFileExists(self, pattern):
         if os.path.isabs(pattern):
@@ -82,7 +45,51 @@ class PrototypedDirMixin(TempCwdMixin):
         self.assertNotRegex(f.read_text(), regex, msg=msg)
 
 
-class SubprocessMixin(unittest.TestCase):
+class TempCwdMixin(Mixin):
+
+    cwd = None
+
+    def setUp(self):
+        super().setUp()
+        self.__cwd = os.getcwd()
+        self.chdir_new_temp()
+
+    def tearDown(self):
+        os.chdir(self.__cwd)
+        super().tearDown()
+
+    def chdir_new_temp(self):
+        """Drop 'cwd' completely, chdir into new temporary directory"""
+        if self.cwd:
+            shutil.rmtree(self.cwd)
+        self.cwd = Path(tempfile.mkdtemp())
+        self.chdir(self.cwd)
+
+    def chdir(self, cwd, create=True):
+        cwd = Path(cwd)
+        self.cwd = cwd
+        if not cwd.exists():
+            cwd.mkdir(parents=True)
+        os.chdir(cwd)
+
+class PrototypedDirMixin(TempCwdMixin, FileUtilsMixin):
+    """Creates temp directory & copy files tree from `proto_dir`, chdir into temp directory before each test"""
+
+    proto_dir: str
+
+    def setUp(self):
+        super().setUp()
+        assert self.cwd.is_absolute()
+
+        proto_path = Path(__file__).parent / self.proto_dir
+        for f in proto_path.glob("*"):
+            copyf = shutil.copytree if f.is_dir() else shutil.copyfile
+            copyf(f, self.cwd / f.name)
+
+        self.addCleanup(shutil.rmtree, self.cwd, ignore_errors=True)
+
+
+class SubprocessMixin(Mixin):
     """Provides methods to run/interact with subprocesses"""
 
     def preprocess_cmdline(self, cmd):
@@ -110,7 +117,7 @@ class SubprocessMixin(unittest.TestCase):
 class VenvMixin(SubprocessMixin):
     """Creates temp venv, spawn subprocesses inside 'venv' context
 
-    New venv is created for each 'TestCase' class.
+    New venv is created for Mixin class.
     Creation of venv is an expensive operation, so tests need to be grouped into small amount of classes.
     """
 
@@ -166,7 +173,7 @@ class VenvMixin(SubprocessMixin):
         return [str(self.venv_directory / "bin" / "run-in-venv"), *cmd]
 
 
-class BigflowInPythonPathMixin(unittest.TestCase):
+class BigflowInPythonPathMixin(Mixin):
 
     def setUp(self):
         super().setUp()
