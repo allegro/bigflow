@@ -28,7 +28,7 @@ def now(template: str = "%Y-%m-%d %H:00:00"):
     return datetime.now().strftime(template)
 
 
-class _OutDumper(threading.Thread):
+class _StreamOutputDumper(threading.Thread):
     "Dump stream to logger and collect results as a string."
 
     def __init__(
@@ -88,8 +88,8 @@ def run_process(cmd, check=True, **kwargs):
         **kwargs,
     )
 
-    stdout_dumper = _OutDumper(process, process.stdout, logger.info)
-    stderr_dumper = _OutDumper(process, process.stderr, logger.error)
+    stdout_dumper = _StreamOutputDumper(process, process.stdout, logger.info)
+    stderr_dumper = _StreamOutputDumper(process, process.stderr, logger.error)
 
     code = process.wait()
     process.stdout.close()

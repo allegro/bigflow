@@ -2,12 +2,12 @@
 """
 
 import re
-import subprocess
 import typing
 import logging
 import tempfile
 import textwrap
 import hashlib
+import subprocess
 
 from pathlib import Path
 from typing import Dict, List
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 def pip_compile(
-    req: Path,
+    requiremenets: Path,
     *,
     dry_run=False,
     verbose=False,
@@ -31,8 +31,8 @@ def pip_compile(
 ):
     """Wraps 'pip-tools' command. Include hash of source file into the generated one."""
 
-    requirements_txt = req.with_suffix(".txt")
-    requirements_in = req.with_suffix(".in")
+    requirements_txt = requiremenets.with_suffix(".txt")
+    requirements_in = requiremenets.with_suffix(".in")
     logger.info("Compile requirements file %s ...", requirements_in)
 
     with tempfile.NamedTemporaryFile('w+t', prefix=f"{requirements_in.stem}-", suffix=".txt", delete=False) as txt_file:
@@ -60,7 +60,7 @@ def pip_compile(
     if dry_run:
         return
 
-    source_hash = reqin_file_hash(requirements_in)
+    source_hash = compute_requirements_in_hash(requirements_in)
     with open(requirements_txt, 'w+t') as out:
         logger.info("Write pip requirements file: %s", requirements_txt)
         out.write(textwrap.dedent(f"""\
@@ -74,10 +74,10 @@ def pip_compile(
         out.write(reqs_content)
 
 
-def detect_piptools_source_files(reqs_dir: Path) -> typing.List[Path]:
-    in_files = list(reqs_dir.glob("*.in"))
+def detect_piptools_source_files(requirements_dir: Path) -> typing.List[Path]:
+    in_files = list(requirements_dir.glob("*.in"))
 
-    manifest_file = reqs_dir / "MANIFEST.in"
+    manifest_file = requirements_dir / "MANIFEST.in"
     if manifest_file in in_files:
         in_files.remove(manifest_file)
 
@@ -101,7 +101,7 @@ def maybe_recompile_requirements_file(requirements_txt: Path) -> bool:
 
 
 def _collect_all_input_files_content(requirements_in: Path):
-    logger.debug("Scan all req.in-like files: %s", requirements_in)
+    logger.debug("Scan all requiremenets.in-like files: %s", requirements_in)
     c = requirements_in.read_text()
     yield c
     for include in re.findall(r"\s*-r\s+(.*)", c):
@@ -110,7 +110,7 @@ def _collect_all_input_files_content(requirements_in: Path):
         yield from _collect_all_input_files_content(requirements_in.parent / fn)
 
 
-def reqin_file_hash(requirements_in: Path):
+def compute_requirements_in_hash(requirements_in: Path):
     logger.debug("Calculate hash of %s", requirements_in)
     algorithm = 'sha256'
     h = hashlib.new(algorithm)
@@ -119,11 +119,11 @@ def reqin_file_hash(requirements_in: Path):
     return algorithm + ":" + h.hexdigest()
 
 
-def check_requirements_needs_recompile(req: Path) -> bool:
+def check_requirements_needs_recompile(requiremenets: Path) -> bool:
     """Checks if `requirements.{in,txt}` needs to be recompiled by `pip_compile()`"""
 
-    requirements_txt = req.with_suffix(".txt")
-    requirements_in = req.with_suffix(".in")
+    requirements_txt = requiremenets.with_suffix(".txt")
+    requirements_in = requiremenets.with_suffix(".in")
     logger.debug("Check if file %s should be recompiled", requirements_txt)
 
     if not requirements_in.exists():
@@ -134,9 +134,9 @@ def check_requirements_needs_recompile(req: Path) -> bool:
         logger.debug("File %s does not exist - need to be compiled by 'pip-compile'", requirements_txt)
         return True
 
-    req_txt_content = requirements_txt.read_text()
-    hash1 = reqin_file_hash(requirements_in)
-    same_hash = hash1 in req_txt_content
+    requirements_txt_content = requirements_txt.read_text()
+    hash1 = compute_requirements_in_hash(requirements_in)
+    same_hash = hash1 in requirements_txt_content
 
     if same_hash:  # dirty but works ;)
         logger.debug("Don't need to compile %s file", requirements_txt)
