@@ -104,7 +104,7 @@ def check_beam_worker_dependencies_conflict(req_path: Path):
         )
 
 
-def generate_dataflow_pins_file(req_path=None):
+def sync_requirements_with_dataflow_workers(req_path=None):
     if req_path is None:
         params = bigflow.build.dev.read_setuppy_args()
         req_path = Path(params.get('project_requirements_file', "resources/requirements.txt"))

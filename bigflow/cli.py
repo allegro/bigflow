@@ -634,7 +634,7 @@ def _cli_codegen(args):
 
 def _cli_codegen_pin_dataflow_requirements(args):
     import bigflow.build.dataflow.dependency_checker as dc
-    dc.generate_dataflow_pins_file()
+    dc.sync_requirements_with_dataflow_workers()
 
 
 def _is_workflow_selected(args):

@@ -85,7 +85,7 @@ class DataflowDepsCheckTestCase(
         bf_pip.pip_compile(self.req_in)
 
         with self.assertLogs(level=logging.WARNING) as logs:
-            dc.generate_dataflow_pins_file()
+            dc.sync_requirements_with_dataflow_workers()
 
         # then
         self.assertFileExists(self.pins_in)
