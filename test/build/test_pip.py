@@ -122,12 +122,12 @@ class PipToolsTestCase(
             bf_pip.generate_pinfile(
                 req_in,
                 pin_in,
-                lambda: ["idna==2.0", "chardet==4", "urllib3~=1.26"],
+                lambda: ["idna==2.0", "chardet==4", "urllib3~=1.26,<1.26.3"],
             )
 
         # then
         self.assertFileContentRegex(pin_in, r"(?m)^## idna==2.0 +")
-        self.assertFileContentRegex(pin_in, r"(?m)^urllib3~=1.26$")
+        self.assertFileContentRegex(pin_in, r"(?m)^urllib3~=1.26,<1.26.3$")
         self.assertFileContentRegex(pin_in, r"(?m)^chardet==4$")
 
         self.assertFileContentRegex(req_txt, r"(?m)^requests==2.25.1$")
