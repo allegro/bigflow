@@ -122,7 +122,7 @@ class PipToolsTestCase(
             bf_pip.generate_pinfile(
                 req_in,
                 pin_in,
-                get_pins=lambda: ["idna==2.0", "chardet==4", "urllib3~=1.26"],
+                lambda: ["idna==2.0", "chardet==4", "urllib3~=1.26"],
             )
 
         # then
