@@ -142,6 +142,7 @@ class sdist(distutils.command.sdist.sdist):
     def _add_defaults_bigflow(self):
         self.filelist.extend(
             filter(os.path.exists, [
+                "setup.py",
                 "pyproject.toml",
                 "deployment_config.py",
                 "requirements.in",
