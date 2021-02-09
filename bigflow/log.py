@@ -2,10 +2,10 @@ import logging
 import typing
 import sys
 import uuid
+import os
+import json
 
 from textwrap import dedent
-
-import bigflow
 
 import google.cloud.logging
 import google.cloud.logging.handlers
@@ -22,8 +22,8 @@ logger = logging.getLogger(__name__)
 
 
 def create_gcp_log_handler(
-    project_id, 
-    log_name, 
+    project_id,
+    log_name,
     labels,
 ):
     client = google.cloud.logging.Client(project=project_id)
@@ -79,9 +79,9 @@ def print_log_links_message(workflows_links, infra_links):
     infra_links = '\n'.join(f'{workflow}: {link}' for workflow, link in infra_links.items())
     print(dedent(f"""
 *************************LOGS LINK*************************
-Infrastructure logs: 
+Infrastructure logs:
 {infra_links}
-Workflow logs: 
+Workflow logs:
 {workflows_links}
 ***********************************************************"""))
 
@@ -161,3 +161,22 @@ def init_logging(config: LogConfigDict, workflow_id: str, banner=True):
     root.addHandler(gcp_logger_handler)
 
     sys.excepthook = _uncaught_exception_handler(logging.getLogger('uncaught_exception'))
+
+
+def maybe_init_logging_from_env():
+    if 'bf_log_config' not in os.environ:
+        return
+
+    log_config = os.environ.get('bf_log_config', "{}")
+    try:
+        log_config = json.loads(log_config)
+    except ValueError as e:
+        print("invalid 'log_config' json:", e, file=sys.stderr)
+        return
+
+    if 'workflow_id' in log_config:
+        workflow_id = log_config['workflow_id']
+    else:
+        workflow_id = os.environ.get('bf_workflow_id')
+
+    init_logging(log_config, workflow_id or 'none', banner=False)
