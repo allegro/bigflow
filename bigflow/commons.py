@@ -137,7 +137,7 @@ def build_docker_image_tag(docker_repository: str, package_version: str):
 
 def remove_docker_image_from_local_registry(tag):
     print('Removing the image from the local registry')
-    run_process(f"docker rmi {get_docker_image_id(tag)}")
+    run_process(f"docker rmi {get_docker_image_id(tag)} --no-prune")
 
 
 def as_timedelta(v: typing.Union[None, str, int, float, timedelta]) -> typing.Optional[timedelta]:
