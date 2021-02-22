@@ -14,6 +14,66 @@ from datetime import datetime, timedelta
 logger = logging.getLogger(__name__)
 
 
+T = typing.TypeVar('T')
+
+
+def public(
+    *,
+    alias_for: typing.Union[T, None] = None,
+    class_alias: bool = False,
+    deprecate_reason: typing.Optional[str] = None,
+    deprecate_dropat: typing.Optional[str] = None,
+):
+    """Documentation decorator, used to mark function/class which should be considered as a public API.
+
+    Only elements marked with this decorator may be treated as `stable API`.
+    Any other elements may be deleted/changed without any warning or notice.
+
+    When the decorator is applied to class all attributes/methods without `_` prefix are considered to be public.
+
+    Optional argument `alias_for` indicates that marked element should be discarded and
+    value of `alias_for` should be used instead.  Wrapped (discared) object still
+    may provide type/signature hints for IDE/autocompletion.
+
+    >> def _some_function(x, y, private_arg=None): return x, y, private_arg
+    >> @public(alias_for=some_function)
+    >> def some_function(x, y): ...
+
+    >> sume_function is _some_function
+    True
+
+    Optional argument `class_alias` indicates that wrapped object is a class definition with
+    a single base class.  This base class is used as a value for `alias_for`.
+    It enables such pattern for defining class aliases:
+
+    >> class _Origin: pass
+    >> @public(class_alias=True)
+    >> class Alias(_Origin):
+    >>     pass
+    >> _Origin is Alias
+    True
+    >> Alias.__name__
+    "_Origin"
+
+    """
+
+    assert alias_for is None or not class_alias
+    assert deprecate_reason or not deprecate_dropat
+
+    def wrapper(f: T) -> T:
+        if class_alias:
+            assert isinstance(f, type)
+            assert len(f.__bases__) == 1
+            f = f.__base__
+        elif alias_for:
+            f = alias_for
+
+        if deprecate_reason or deprecate_dropat:
+            f = deprecated(reason=deprecate_reason)(f)
+        return f
+
+    return wrapper
+
 @deprecated(
     reason="Use `str(x.absolute()) inliner instead",
 )
