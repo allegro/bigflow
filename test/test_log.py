@@ -37,7 +37,7 @@ class LoggerTestCase(TestCase):
         for h in logging.getLogger().handlers[:]:
             logging.getLogger().removeHandler(h)
             h.close()
- 
+
     def tearDown(self):
         self._clear_all_root_loggers()
         bigflow.log._LOGGING_CONFIGURED = False
@@ -134,13 +134,17 @@ class LoggerTestCase(TestCase):
     @mock.patch.dict('sys.modules')
     @mock.patch('bigflow.log.init_logging')
     def test_logging_should_autoinitialize_via_env_variables(
-        self, 
+        self,
         init_logging_mock,
     ):
         # given
+        for m in list(sys.modules):
+            if m.startswith("bigflow."):
+                del sys.modules[m]
         del sys.modules['bigflow']
+
         self._clear_all_root_loggers()
-        os.environ['bf_log_config'] = json.dumps({'log_level': "INFO"})
+        os.environ['bf_log_config'] = json.dumps({'log_level': "INFO", "gcp_project_id": "proj"})
 
         # when
         import bigflow

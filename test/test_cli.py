@@ -798,7 +798,7 @@ another-project-id                         ANOTHER PROJECT                002242
         # then
         print_mock.assert_called_with(
             '\n*************************LOGS LINK*************************\nInfrastructure logs:'
-            ' \nsome-project-id: https://console.cloud.google.com/logs/query;query=%28'
+            '\nsome-project-id: https://console.cloud.google.com/logs/query;query=%28'
             'severity%3E%3D%22INFO%22%0A'
             'resource.type%3D%22k8s_pod%22%0A%22'
             'Error%3A%22%29%0AOR%0A%28'
@@ -811,7 +811,7 @@ another-project-id                         ANOTHER PROJECT                002242
             'Error%3A%22%29%0AOR%0A%28'
             'resource.type%3D%22dataflow_step%22%0A'
             'log_name%3D%22projects%2Fanother-project-id%2Flogs%2Fdataflow.googleapis.com%252Fjob-message%22%0A'
-            'severity%3E%3D%22INFO%22%0A%29\nWorkflow logs: \nID_1: https://console.cloud.google.com/logs/query;query='
+            'severity%3E%3D%22INFO%22%0A%29\nWorkflow logs:\nID_1: https://console.cloud.google.com/logs/query;query='
             'logName%3D%22projects%2Fsome-project-id%2Flogs%2FID_1%22%0Alabels.workflow_id%3D%22ID_1%22%0A'
             '\nID_2: https://console.cloud.google.com/logs/query;query='
             'logName%3D%22projects%2Fanother-project-id%2Flogs%2FID_2%22%0Alabels.workflow_id%3D%22ID_2%22%0A'
@@ -825,14 +825,14 @@ another-project-id                         ANOTHER PROJECT                002242
 
         # then
         print_mock.assert_called_with(
-            '\n*************************LOGS LINK*************************\nInfrastructure logs: \nsome-project-id: '
+            '\n*************************LOGS LINK*************************\nInfrastructure logs:\nsome-project-id: '
             'https://console.cloud.google.com/logs/query;query=%28'
             'severity%3E%3D%22INFO%22%0A'
             'resource.type%3D%22k8s_pod%22%0A%22'
             'Error%3A%22%29%0AOR%0A%28'
             'resource.type%3D%22dataflow_step%22%0A'
             'log_name%3D%22projects%2Fsome-project-id%2Flogs%2Fdataflow.googleapis.com%252Fjob-message%22%0A'
-            'severity%3E%3D%22INFO%22%0A%29\nWorkflow logs: \nID_1: https://console.cloud.google.com/logs/query;query='
+            'severity%3E%3D%22INFO%22%0A%29\nWorkflow logs:\nID_1: https://console.cloud.google.com/logs/query;query='
             'logName%3D%22projects%2Fsome-project-id%2Flogs%2Fname-log%22%0A'
             'labels.workflow_id%3D%22ID_1%22%0A\n***********************************************************')
 
@@ -844,14 +844,14 @@ another-project-id                         ANOTHER PROJECT                002242
 
         # then
         print_mock.assert_called_with(
-            '\n*************************LOGS LINK*************************\nInfrastructure logs: '
+            '\n*************************LOGS LINK*************************\nInfrastructure logs:'
             '\nsome-project-id: https://console.cloud.google.com/logs/query;query=%28'
             'severity%3E%3D%22INFO%22%0A'
             'resource.type%3D%22k8s_pod%22%0A%22'
             'Error%3A%22%29%0AOR%0A%28'
             'resource.type%3D%22dataflow_step%22%0A'
             'log_name%3D%22projects%2Fsome-project-id%2Flogs%2Fdataflow.googleapis.com%252Fjob-message%22%0A'
-            'severity%3E%3D%22INFO%22%0A%29\nWorkflow logs: \nID_1: https://console.cloud.google.com/logs/query;query='
+            'severity%3E%3D%22INFO%22%0A%29\nWorkflow logs:\nID_1: https://console.cloud.google.com/logs/query;query='
             'logName%3D%22projects%2Fsome-project-id%2Flogs%2FID_1%22%0A'
             'labels.workflow_id%3D%22ID_1%22%0A\nID_2: https://console.cloud.google.com/logs/query;query='
             'logName%3D%22projects%2Fsome-project-id%2Flogs%2FID_2%22%0Alabels.workflow_id%3D%22ID_2%22%0A'
