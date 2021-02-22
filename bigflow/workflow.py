@@ -3,10 +3,10 @@ import collections
 import typing
 import warnings
 import datetime as dt
+import logging
 
 import bigflow
-
-import logging
+from bigflow.commons import public
 
 
 logger = logging.getLogger(__name__)
@@ -27,16 +27,19 @@ def get_timezone_offset_seconds() -> int:
     return dt.datetime.now().astimezone().tzinfo.utcoffset(None).seconds
 
 
+@public()
 def hourly_start_time(start_time: dt.datetime) -> dt.datetime:
     td = dt.timedelta(seconds=get_timezone_offset_seconds())
     return start_time.replace(microsecond=0) - td
 
 
+@public()
 def daily_start_time(start_time: dt.datetime) -> dt.datetime:
     td = dt.timedelta(hours=24)
     return start_time.replace(hour=0, minute=0, second=0, microsecond=0) - td
 
 
+@public()
 class JobContext(typing.NamedTuple):
 
     runtime: typing.Optional[dt.datetime]
@@ -103,6 +106,7 @@ class JobContext(typing.NamedTuple):
         return jc
 
 
+@public()
 class Job(abc.ABC):
     """Base abstract class for bigflow.Jobs.  It is recommended to inherit all your jobs from this class."""
 
@@ -121,6 +125,7 @@ class Job(abc.ABC):
         return self.execute(context)
 
 
+@public()
 class Workflow(object):
 
     def __init__(

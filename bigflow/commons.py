@@ -74,15 +74,17 @@ def public(
 
     return wrapper
 
-@deprecated(
-    reason="Use `str(x.absolute()) inliner instead",
+@public(
+    deprecate_reason="Use `str(x.absolute()) inliner instead",
+    deprecate_dropat="2.0",
 )
 def resolve(path: Path):
     return str(path.absolute())
 
 
-@deprecated(
-    reason="Use `datetime.now().strftime('%Y-%m-%d %H:00:00')` instead.",
+@public(
+    deprecate_reason="Use `datetime.now().strftime('%Y-%m-%d %H:00:00')` instead.",
+    deprecate_dropat="2.0",
 )
 def now(template: str = "%Y-%m-%d %H:00:00"):
     return datetime.now().strftime(template)

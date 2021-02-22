@@ -21,6 +21,7 @@ import bigflow.configuration
 import bigflow.commons
 import bigflow.build.reflect
 import bigflow.build.pip
+from bigflow.commons import public
 
 from bigflow.workflow import DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS
 from bigflow._version import __version__ as bf_version
@@ -32,6 +33,7 @@ __all__ = [
 ]
 
 
+@public()
 class PySparkJob(bigflow.Job):
 
     def __init__(

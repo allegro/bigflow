@@ -20,6 +20,7 @@ from pathlib import Path
 
 import bigflow.commons as bfc
 import bigflow.build.dev
+from bigflow.commons import public
 
 
 logger = logging.getLogger(__name__)
@@ -83,6 +84,7 @@ def _infer_project_name_by_setuppy_near_module(module: types.ModuleType) -> Opti
     except Exception:
         logger.exception("Found %r, but it is not a correct bigflow project", file)
         return None
+
 
 def infer_project_name(stack=1) -> str:
     """Apply heuristics to detect current project name."""
@@ -150,6 +152,7 @@ def _locate_plain_setuppy_on_fs(stack):
         return None
 
 
+@public()
 def materialize_setuppy(
     project_name: Optional[str] = None,
     tempdir: Optional[str] = None,
@@ -227,16 +230,19 @@ def _build_dist_package(
         return result_path
 
 
+@public()
 def build_sdist(project_name=None) -> Path:
     """Builds project 'sdist' package"""
     return _build_dist_package(project_name, ".tar.gz", "sdist", ["--format", "gztar"])
 
 
+@public()
 def build_wheel(project_name=None) -> Path:
     """Builds project 'wheel' package"""
     return _build_dist_package(project_name, ".whl", "bdist_wheel", ["--compression", "deflated"])
 
 
+@public()
 def build_egg(project_name=None) -> Path:
     """Build project 'egg' package"""
     return _build_dist_package(project_name, ".egg", "bdist_egg", [])

@@ -1,13 +1,16 @@
 import typing
 from pathlib import Path
-from abc import ABCMeta, abstractmethod
+from abc import ABC, abstractmethod
 from .job import DEFAULT_RETRY_COUNT
 from .job import DEFAULT_RETRY_PAUSE_SEC
+
+from bigflow.commons import public
 
 DEFAULT_RUNTIME = '1970-01-01'
 
 
-class BigQueryOperation(object, metaclass=ABCMeta):
+@public()
+class BigQueryOperation(ABC):
 
     @abstractmethod
     def to_job(self, id: str, retry_count: int = DEFAULT_RETRY_COUNT, retry_pause_sec: int = DEFAULT_RETRY_PAUSE_SEC):
@@ -18,7 +21,8 @@ class BigQueryOperation(object, metaclass=ABCMeta):
         pass
 
 
-class Dataset(object, metaclass=ABCMeta):
+@public()
+class Dataset(ABC):
 
     @abstractmethod
     def write_truncate(self, table_name: str, sql: str, partitioned: bool = True) -> BigQueryOperation:

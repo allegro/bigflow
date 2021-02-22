@@ -15,6 +15,7 @@ from typing import Optional, List, Union
 from pathlib import Path
 
 import bigflow.commons as bf_commons
+from bigflow.commons import public
 
 
 logger = logging.getLogger(__name__)
@@ -25,6 +26,7 @@ logger = logging.getLogger(__name__)
 DUMP_PARAMS_SETUPPY_CMDARG = "__bigflow_dump_params"
 
 
+@public()
 def read_setuppy_args(path_to_setup: Union[Path, str, None] = None) -> dict:
     """Loads `setup.py`, returns all parameters of `bigflow.build.setup()` function.
 
@@ -63,6 +65,7 @@ def _read_project_name_from_setup_legacy(direcotry: Path) -> Optional[str]:
             sys.path.extend(sys_path_original)
 
 
+@public()
 def find_setuppy(directory: typing.Union[None, Path, str] = None) -> Path:
     """Find location of project setup.py.
 

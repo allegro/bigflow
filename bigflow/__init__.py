@@ -2,20 +2,40 @@ import os
 import sys
 import json
 
-from .workflow import Workflow, Definition, Job, JobContext
-from .configuration import Config
-
 from bigflow._version import __version__
+from bigflow.commons import public
+
+import bigflow.workflow
+import bigflow.configuration
 
 
 __all__ = [
-    # core
     'Workflow',
     'Job',
     'JobContext',
     'Definition',
     'Config',
 ]
+
+
+@public(alias_for=bigflow.workflow.Definition)
+class Definition(bigflow.workflow.Definition): ...
+
+
+@public(alias_for=bigflow.workflow.Job)
+class Job(bigflow.workflow.Job): ...
+
+
+@public(alias_for=bigflow.workflow.JobContext)
+class JobContext(bigflow.workflow.JobContext): ...
+
+
+@public(alias_for=bigflow.workflow.Workflow)
+class Workflow(bigflow.workflow.Workflow): ...
+
+
+@public(alias_for=bigflow.configuration.Config)
+class Config(bigflow.configuration.Config): ...
 
 
 # proactively try to initialize bigflow-specific logging
