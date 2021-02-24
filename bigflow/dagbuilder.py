@@ -100,7 +100,7 @@ dag = DAG(
             up_job_var = "t" + str(get_job(d).id)
             dag_chunks.append("{job_var}.set_upstream({up_job_var})".format(job_var=job_var, up_job_var=up_job_var))
 
-    workflow.call_on_graph_nodes(build_dag_operator)
+    workflow._call_on_graph_nodes(build_dag_operator)
 
     dag_file_content = '\n'.join(dag_chunks) + '\n'
     dag_file_path.write_text(dag_file_content)

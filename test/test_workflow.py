@@ -247,7 +247,7 @@ class WorkflowTestCase(TestCase):
         workflow = Workflow(workflow_id='test_workflow', definition=definition, schedule_interval='@hourly')
 
         # expected
-        self.assertEqual(list(workflow.build_sequential_order()), [job1, job5, job9, job2, job3, job6, job4, job7, job8])
+        self.assertEqual(list(workflow._build_sequential_order()), [job1, job5, job9, job2, job3, job6, job4, job7, job8])
 
         # given
         job_graph = OrderedDict([
@@ -278,4 +278,4 @@ class WorkflowTestCase(TestCase):
         workflow = Workflow(workflow_id='test_workflow', definition=definition, schedule_interval='@hourly')
 
         # expected
-        self.assertEqual(workflow.build_sequential_order(), [job1, job5, job2, job3, job6, job9, job4, job7, job8])
+        self.assertEqual(workflow._build_sequential_order(), [job1, job5, job2, job3, job6, job9, job4, job7, job8])

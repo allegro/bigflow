@@ -1,7 +1,3 @@
-import os
-import sys
-import json
-
 from bigflow._version import __version__
 from bigflow.commons import public
 
@@ -43,8 +39,7 @@ class Config(bigflow.configuration.Config): ...
 try:
     from bigflow.log import maybe_init_logging_from_env
 except ImportError:
-    # logging is not installed?
-    pass
+    pass  # logging is not installed?
 else:
     maybe_init_logging_from_env()
     del maybe_init_logging_from_env
