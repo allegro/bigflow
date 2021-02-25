@@ -1,69 +1,104 @@
 import re
-from typing import Optional
-from uuid import uuid1
+import logging
 import subprocess
+import typing
+import contextlib
 
-from better_setuptools_git_version import get_tag
-from better_setuptools_git_version import get_version as base_get_version
+from bigflow.commons import run_process
 
-VERSION_PATTERN = re.compile(r'^(\d+\.)?(\d+\.)?(\w+)$')
-
-__all__ = [
-    'get_version',
-    'release'
-]
-
-STARTING_VERSION = '0.1.0'
+logger = logging.getLogger(__name__)
 
 
-def get_version() -> str:
-    """
-    case 1: no .git / no commits / error
-        0.1.0 + uuid
-    case 2: no tags:
-        0.1.0 + {uuid if dirty}
-    case 2: tag on head
-        tag + {uuid if dirty}
-    case 4: tag not on head
-        last tag + sha + {uuid if dirty}
-    """
-    result = base_get_version(
-        template="{tag}SHA{sha}",
-        starting_version=STARTING_VERSION).replace('+dirty', f'SNAPSHOT{short_uuid()}')
-    if not VERSION_PATTERN.match(result):
-        return f'{STARTING_VERSION}SNAPSHOT{short_uuid()}'
-    if result == STARTING_VERSION:
-        return f"{STARTING_VERSION}SNAPSHOT{short_uuid()}"
-    return result
+def get_version():
+
+    try:
+        # try direct tag match
+        return run_process(["git", "describe", "--exact-match", "--tags"], verbose=False)
+    except subprocess.SubprocessError as e:
+        logger.debug("No direct git tag match: %s", e)
+
+    try:
+        # try generic 'git describe'
+        version = run_process(["git", "describe", "--abbrev=10", "--dirty=.SNAPSHOT", "--long", "--tags"], verbose=False)
+    except subprocess.SubprocessError as e:
+        logger.debug("No long git describtion: %s", e)
+    else:
+        # replace last '-' with '+' to be PEP440 compliant, add 'dev' to distance
+        logger.debug("Parse git describe output %r", version)
+        m = re.fullmatch(r"""(?x)
+            \s*\D*                    # strip any prefix
+            (?P<tag>\d.*?)            # version, begins with a number
+            -
+            (?P<dev>\d+)              # distance to the nearest tag
+            -
+            (?P<ghash>g[a-f\d]{10,})  # commit git-hash
+            (?P<dirty>(\.SNAPSHOT|))  # 'dirty' suffix
+            \s*
+        """, version)
+        return "{tag}.dev{dev}+{ghash}{dirty}".format(**m.groupdict())
+
+    try:
+        # ok, maybe just githash
+        ghash = run_process(["git", "rev-parse", "HEAD"], verbose=False)[:12]
+        dirty = ".SNAPSHOT" if run_process(["git", "diff", "--shortstat"], verbose=True).strip() else ""
+    except subprocess.SubprocessError as e:
+        logger.debug("No githash available: %s", e)
+    else:
+        return f"0+g{ghash}{dirty}"
+
+    logger.error("Can't detect project version based on git")
+    return "0+BROKEN"
 
 
-def short_uuid():
-    return str(uuid1()).replace("-", "")[:8]
+def get_tag():
+    """Return the last tag for the git repository reachable from HEAD."""
+    tags = run_process(["git", "tag", "--sort=version:refname", "--merged"]).splitlines()
+    if not tags:
+        logger.warning("No existing git tags found, use '0.0'")
+        return None
+    logger.debug("Found %d git tags, latest is %s", len(tags), tags[-1])
+    return tags[-1]
 
 
-def release(identity_file: Optional[str] = None) -> None:
+def release(identity_file: typing.Optional[str] = None) -> None:
     latest_tag = get_tag()
-    if latest_tag:
-        tag = bump_minor(latest_tag)
-    else:
-        tag = '0.1.0'
-    push_tag(tag, identity_file)
+    if not latest_tag:
+        logger.warning("No existing git tags found, use '0.0'")
+        latest_tag = "0.0"
+    new_tag = bump_minor(latest_tag)
+    push_tag(new_tag, identity_file)
 
 
-def push_tag(tag, identity_file: Optional[str] = None) -> None:
-    print(f'Setting and pushing tag: {tag}')
-    print(subprocess.getoutput(f'git tag {tag}'))
+def push_tag(tag, identity_file: typing.Optional[str] = None) -> None:
+    logger.info("Create git tag %s", tag)
+    run_process(["git", "tag", tag])
+
     if identity_file is not None:
-        print(f'Pushing using the specified identity_file: {identity_file}')
-        print(subprocess.getoutput(
-            f"GIT_SSH_COMMAND='ssh -i {identity_file} -o IdentitiesOnly=yes' git push origin {tag}"))
+        logger.info("Pushing using the specified identity_file: %s", identity_file)
+        env_add = {"GIT_SSH_COMMAND": f"ssh -i {identity_file} -o IdentitiesOnly=yes"}
     else:
-        print(subprocess.getoutput('git push origin --tags'))
+        env_add = None
+
+    logger.info("Push tag %s to origin", tag)
+    run_process(["git", "push", "origin", tag], env_add=env_add)
 
 
 def bump_minor(version: str) -> str:
-    if not VERSION_PATTERN.match(version):
-        raise ValueError('Expected version pattern is <major: int>.<minor: int>.<patch: int>.')
-    major, minor, patch = version.split('.')
-    minor = str(int(minor) + 1)
-    return f'{major}.{minor}.0'
+    """Increment minor version part, leaves rest of the version string unchanged"""
+
+    m = re.fullmatch(r"""(?x)
+        (?P<prefix>v)?      # optional `v` prefix
+        (?P<major>\d+)        # major part
+        (\.(?P<minor>\d+))?   # minor part
+        (?P<suffix>.*)        # unsed rest
+    """, version)
+
+    if not m:
+        raise ValueError("Invalid version string", version)
+
+    prefix = m.group('prefix') or ""
+    major = m.group('major')
+    minor = m.group('minor') or "0"
+    minor2 = str(int(minor) + 1)
+
+    return f"{prefix}{major}.{minor2}"

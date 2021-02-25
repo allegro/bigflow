@@ -1,109 +1,76 @@
-import re
-import os
-from shutil import rmtree
-import uuid
-import subprocess
-from pathlib import Path
-import tempfile
-from unittest import TestCase, mock
+import textwrap
+import unittest
+from unittest import mock
 
-from bigflow.version import VERSION_PATTERN, bump_minor, release, STARTING_VERSION
+from bigflow.version import bump_minor, release
 
-NO_REPOSITORY_VERSION_PATTERN = re.compile(r'^0.1.0SNAPSHOT\w+$')
-NO_COMMITS_VERSION_PATTERN = NO_REPOSITORY_VERSION_PATTERN
-
-NO_TAG_VERSION_PATTERN = re.compile(r'^0.1.0SNAPSHOT\w+$')
-NO_TAG_DIRTY_VERSION_PATTERN = re.compile(r'^0.1.0SNAPSHOT\w+$')
-
-TAG_ON_HEAD_VERSION_PATTERN = re.compile(r'^\d+\.\d+\.\d+$')
-TAG_ON_HEAD_DIRTY_VERSION_PATTERN = re.compile(r'^\d+\.\d+\.\d+SNAPSHOT\w+$')
-
-TAG_NOT_ON_HEAD_VERSION_PATTERN = re.compile(r'^\d+\.\d+\.\d+SHA\w+$')
-TAG_NOT_ON_HEAD_DIRTY_VERSION_PATTERN = re.compile(r'^\d+\.\d+\.\d+SHA\w+SNAPSHOT\w+$')
-
-here = str(Path(__file__).absolute()).split(os.sep)
-bf_path_index = here.index('bigflow')
-bf_path_parts = here[:bf_path_index + 1]
-BIGFLOW_PATH = os.path.join(os.sep, *bf_path_parts)
+from test import mixins
 
 
-class Project:
-    def __init__(self):
-        self.tmp_dir = Path(tempfile.gettempdir())
-        self.project_dir = str(self.tmp_dir / f'bigflow_test_version_{uuid.uuid4().hex}')
-        os.mkdir(self.project_dir)
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        rmtree(self.project_dir)
-
-    def __del__(self):
-        rmtree(self.project_dir, ignore_errors=True)
-
-    def run_cmd(self, cmd):
-        result = subprocess.getoutput(f'cd {self.project_dir};{cmd}')
-        print(result)
-        return result
+class GetVersionE2E(
+    mixins.TempCwdMixin,
+    mixins.SubprocessMixin,
+    mixins.BigflowInPythonPathMixin,
+    unittest.TestCase,
+):
 
     def get_version(self):
-        get_version_cmd = f"""python -c 'import sys;sys.path.insert(0, "{BIGFLOW_PATH}");from bigflow.version import get_version;print(get_version())'"""
-        result = subprocess.getoutput(f'cd {self.project_dir};{get_version_cmd}')
-        print(result)
-        return result
+        return self.subprocess_run([
+            "python", "-c", textwrap.dedent("""
+                import bigflow.version
+                print(bigflow.version.get_version())
+            """)
+            ],
+            text=True,
+        ).stdout.strip()
 
-
-class GetVersionE2E(TestCase):
     def test_should_version_based_on_git_tags(self):
-        with Project() as project:
-            # expect
-            self.assertTrue(NO_REPOSITORY_VERSION_PATTERN.match(project.get_version()))
+        # then
+        self.assertRegex(self.get_version(), r"^0\+BROKEN$", "No git repo")
 
-            # when
-            project.run_cmd('git init')
+        # when
+        self.subprocess_run("git init")
+        # then
+        self.assertRegex(self.get_version(), r"^0\+BROKEN$", "Empty git repo")
 
-            # then
-            self.assertTrue(NO_COMMITS_VERSION_PATTERN.match(project.get_version()))
+        # when
+        (self.cwd / "file1").touch()
+        self.subprocess_run("git add file1")
+        self.subprocess_run("git commit -m message")
+        # then
+        self.assertRegex(self.get_version(), r"^0\+g.+$", "Single commit, no tags")
 
-            # when
-            project.run_cmd("touch file1;git add file1;git commit -m 'file1'")
+        # when
+        (self.cwd / "file1").write_text("changed")
+        # then
+        self.assertRegex(self.get_version(), r"^0\+g.+\.SNAPSHOT$", "Single commit, no tags, dirty")
 
-            # then
-            self.assertTrue(NO_TAG_VERSION_PATTERN.match(project.get_version()))
+        # when
+        self.subprocess_run("git add file1")
+        self.subprocess_run("git commit -m message")
+        self.subprocess_run("git tag 0.2.0")
+        # then
+        self.assertRegex(self.get_version(), r"^0.2.0$", "Single tag, exact match")
 
-            # when
-            project.run_cmd('touch file2')
+        # when
+        (self.cwd / "file1").write_text("changed2")
+        # then
+        self.assertRegex(self.get_version(), r"^0.2.0$", "Single tag, dirty")
 
-            # then
-            self.assertTrue(NO_TAG_DIRTY_VERSION_PATTERN.match(project.get_version()))
+        # when
+        self.subprocess_run("git add file1")
+        self.subprocess_run("git commit -m message")
+        # then
+        self.assertRegex(self.get_version(), r"^0.2.0.dev1\+g.{8,}", "No exact tag matched")
 
-            # when
-            project.run_cmd("git add file2;git commit -m 'file2';git tag 0.2.0")
-
-            # then
-            self.assertTrue(TAG_ON_HEAD_VERSION_PATTERN.match(project.get_version()))
-
-            # when
-            project.run_cmd('touch file3')
-
-            # then
-            self.assertTrue(TAG_ON_HEAD_DIRTY_VERSION_PATTERN.match(project.get_version()))
-
-            # when
-            project.run_cmd("git add file3;git commit -m 'file3'")
-
-            # then
-            self.assertTrue(TAG_NOT_ON_HEAD_VERSION_PATTERN.match(project.get_version()))
-
-            # when
-            project.run_cmd('touch file4')
-
-            # then
-            self.assertTrue(TAG_NOT_ON_HEAD_DIRTY_VERSION_PATTERN.match(project.get_version()))
+        # when
+        (self.cwd / "file1").write_text("change4")
+        # then
+        self.assertRegex(self.get_version(), r"^0.2.0.dev1\+g.{8,}\.SNAPSHOT", "No exact tag matched, dirty")
 
 
-class ReleaseTestCase(TestCase):
+class ReleaseTestCase(unittest.TestCase):
+
     @mock.patch('bigflow.version.push_tag')
     @mock.patch('bigflow.version.get_tag')
     def test_should_push_bumped_tag(self, get_tag_mock, push_tag_mock):
@@ -114,38 +81,37 @@ class ReleaseTestCase(TestCase):
         release('fake_pem_path')
 
         # then
-        push_tag_mock.assert_called_with(STARTING_VERSION, 'fake_pem_path')
+        push_tag_mock.assert_called_with("0.1", 'fake_pem_path')
 
         # given
-        get_tag_mock.return_value = '0.2.0'
+        get_tag_mock.return_value = '0.2'
 
         # when
         release('fake_pem_path')
 
         # then
-        push_tag_mock.assert_called_with('0.3.0', 'fake_pem_path')
+        push_tag_mock.assert_called_with('0.3', 'fake_pem_path')
 
 
-class VersionPatternTestCase(TestCase):
-    def test_version_patter(self):
-        self.assertTrue(VERSION_PATTERN.match('1.0.0'))
-        self.assertTrue(VERSION_PATTERN.match('1.0.1'))
-        self.assertTrue(VERSION_PATTERN.match('1.11.1'))
-        self.assertTrue(VERSION_PATTERN.match('0.0.1123123'))
-        self.assertTrue(VERSION_PATTERN.match('0.0.112dev'))
-        self.assertTrue(VERSION_PATTERN.match('0.0.dev'))
-        self.assertFalse(VERSION_PATTERN.match('x.0.1123123'))
-        self.assertFalse(VERSION_PATTERN.match('x.x.1123123'))
-        self.assertFalse(VERSION_PATTERN.match('0.x.1123123'))
+class BumpMinorTestCase(unittest.TestCase):
 
-
-class BumpMinorTestCase(TestCase):
     def test_should_bump_minor_(self):
-        self.assertEqual(bump_minor('1.0.0'), '1.1.0')
-        self.assertEqual(bump_minor('0.1.0'), '0.2.0')
-        self.assertEqual(bump_minor('0.1.1'), '0.2.0')
-        self.assertEqual(bump_minor('0.0.1'), '0.1.0')
-        self.assertEqual(bump_minor('0.1.dev1'), '0.2.0')
+        for fr, to in [
+            # full version
+            ("1.0.0", "1.1"),
+            ("0.1.0", "0.2"),
+            ("0.1.1", "0.2"),
+            ("0.0.1", "0.1"),
+            ("0.1.dev1", "0.2"),
+
+            # only major
+            ("0", "0.1"),
+            ("12", "12.1"),
+
+            # preserve prefix
+            ("v10.1", "v10.2"),
+        ]:
+            self.assertEqual(bump_minor(fr), to)
 
     def test_should_raise_value_error_for_invalid_version_schema(self):
         # given
