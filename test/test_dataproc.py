@@ -244,7 +244,7 @@ class PySparkJobTest(unittest.TestCase):
         self.assertEqual(jc2.runtime, runtime)
 
     @mock.patch('os.environ')
-    @mock.patch('bigflow._maybe_init_logging_from_env')
+    @mock.patch('bigflow.log.maybe_init_logging_from_env')
     def test_should_initialize_logging_on_driver(self, maybe_init_logging, os_environ):
 
         # given

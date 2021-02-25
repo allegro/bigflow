@@ -189,8 +189,12 @@ def generate_driver_script(callable, env):
         os.environ.update({env!r})
 
         # triggers configuration of logging
-        import bigflow
-        bigflow._maybe_init_logging_from_env()
+        try:
+            from bigflow.log import maybe_init_logging_from_env
+        except ImportError:
+            pass
+        else:
+            maybe_init_logging_from_env()
 
         # unpickle'n'call {callable!r}
         data = {base64.b85encode(pickled)!r}
