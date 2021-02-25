@@ -1,69 +1,94 @@
 import re
-from typing import Optional
-from uuid import uuid1
-import subprocess
+import logging
+import typing
 
-from better_setuptools_git_version import get_tag
-from better_setuptools_git_version import get_version as base_get_version
+from bigflow.commons import run_process
 
-VERSION_PATTERN = re.compile(r'^(\d+\.)?(\d+\.)?(\w+)$')
-
-__all__ = [
-    'get_version',
-    'release'
-]
-
-STARTING_VERSION = '0.1.0'
+logger = logging.getLogger(__name__)
 
 
-def get_version() -> str:
-    """
-    case 1: no .git / no commits / error
-        0.1.0 + uuid
-    case 2: no tags:
-        0.1.0 + {uuid if dirty}
-    case 2: tag on head
-        tag + {uuid if dirty}
-    case 4: tag not on head
-        last tag + sha + {uuid if dirty}
-    """
-    result = base_get_version(
-        template="{tag}SHA{sha}",
-        starting_version=STARTING_VERSION).replace('+dirty', f'SNAPSHOT{short_uuid()}')
-    if not VERSION_PATTERN.match(result):
-        return f'{STARTING_VERSION}SNAPSHOT{short_uuid()}'
-    if result == STARTING_VERSION:
-        return f"{STARTING_VERSION}SNAPSHOT{short_uuid()}"
-    return result
+def get_version():
+    s = run_process([
+        "git",
+        "describe",
+        "--abbrev=8",
+        "--always",
+        "--dirty=.SNAPSHOT",
+        "--tag",
+    ], verbose=False)
 
+    # Simple tag or "{tag}-123-g42f30ddcdba8+dirty"
+    logger.debug("Parse git describe output %r", s)
+    m = re.fullmatch(r"""(?x)
+        (?P<tag>.+?)
+        (-(?P<distance>\d+)-(?P<ghash>g[a-f\d]{8,}))?
+        (?P<dirty>\.dirty)?
+    """, s.strip())
 
-def short_uuid():
-    return str(uuid1()).replace("-", "")[:8]
+    logger.debug("Parse version info: %s", m.groupdict())
+    tag = m.group('tag')
+    distance = m.group('distance') or ""
+    ghash = m.group('ghash') or ""
+    dirty = m.group('dirty') or ""
 
-
-def release(identity_file: Optional[str] = None) -> None:
-    latest_tag = get_tag()
-    if latest_tag:
-        tag = bump_minor(latest_tag)
+    if not distance and not dirty and not ghash:
+        logger.debug("Return git tag %s", tag)
+        dirty = dirty.replace(".", "+")
+        return f"{tag}{dirty}"
     else:
-        tag = '0.1.0'
-    push_tag(tag, identity_file)
+        logger.debug("Return development version")
+        return f"{tag}.dev{distance}+{ghash}{dirty}"
 
 
-def push_tag(tag, identity_file: Optional[str] = None) -> None:
-    print(f'Setting and pushing tag: {tag}')
-    print(subprocess.getoutput(f'git tag {tag}'))
+def _get_latest_git_tag():
+    """Return the last tag for the git repository reachable from HEAD."""
+    tags = run_process(["git", "tag", "--sort=version:refname", "--merged"]).splitlines()
+    if not tags:
+        logger.warning("No existing git tags found, use '0.0'")
+        return "0.0"
+    logger.debug("Found %d git tags, latest is %s", len(tags), tags[-1])
+    return tags[-1]
+
+
+def release(identity_file: typing.Optional[str] = None) -> None:
+    latest_tag = _get_latest_git_tag()
+    new_tag = bump_minor(latest_tag)
+    _create_tag(new_tag)
+    _push_tag(new_tag, identity_file)
+
+
+def _create_tag(tag):
+    logger.info("Create git tag %s", tag)
+    run_process(["git", "tag", tag])
+
+
+def _push_tag(tag, identity_file: typing.Optional[str] = None) -> None:
     if identity_file is not None:
-        print(f'Pushing using the specified identity_file: {identity_file}')
-        print(subprocess.getoutput(
-            f"GIT_SSH_COMMAND='ssh -i {identity_file} -o IdentitiesOnly=yes' git push origin {tag}"))
+        logger.info("Pushing using the specified identity_file: %s", identity_file)
+        env_add = {"GIT_SSH_COMMAND": f"ssh -i {identity_file} -o IdentitiesOnly=yes"}
     else:
-        print(subprocess.getoutput('git push origin --tags'))
+        env_add = None
+
+    logger.info("Push tag %s to origin", tag)
+    run_process(["git", "push", "origin", tag], env_add=env_add)
 
 
 def bump_minor(version: str) -> str:
-    if not VERSION_PATTERN.match(version):
-        raise ValueError('Expected version pattern is <major: int>.<minor: int>.<patch: int>.')
-    major, minor, patch = version.split('.')
-    minor = str(int(minor) + 1)
-    return f'{major}.{minor}.0'
+    """Increment minor version part, leaves rest of the version string unchanged"""
+
+    m = re.fullmatch(r"""(?x)
+        (?P<prefix>[\d]*)
+        (?P<major>\d+)
+        (\.(?P<minor>\d+))?
+        (?P<suffix>.*)
+    """, version)
+
+    if not m:
+        raise ValueError("Invalid version string", version)
+
+    prefix = m.group('prefix')
+    major = m.group('major')
+    minor = m.group('minor') or "0"
+
+    minor2 = str(int(minor) + 1)
+    return f"{prefix}{major}.{minor2}"

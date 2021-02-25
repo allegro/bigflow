@@ -7,7 +7,7 @@ from pathlib import Path
 import tempfile
 from unittest import TestCase, mock
 
-from bigflow.version import VERSION_PATTERN, bump_minor, release, STARTING_VERSION
+from bigflow.version import bump_minor, release
 
 NO_REPOSITORY_VERSION_PATTERN = re.compile(r'^0.1.0SNAPSHOT\w+$')
 NO_COMMITS_VERSION_PATTERN = NO_REPOSITORY_VERSION_PATTERN
@@ -28,6 +28,7 @@ BIGFLOW_PATH = os.path.join(os.sep, *bf_path_parts)
 
 
 class Project:
+
     def __init__(self):
         self.tmp_dir = Path(tempfile.gettempdir())
         self.project_dir = str(self.tmp_dir / f'bigflow_test_version_{uuid.uuid4().hex}')
@@ -114,7 +115,7 @@ class ReleaseTestCase(TestCase):
         release('fake_pem_path')
 
         # then
-        push_tag_mock.assert_called_with(STARTING_VERSION, 'fake_pem_path')
+        push_tag_mock.assert_called_with("0.1", 'fake_pem_path')
 
         # given
         get_tag_mock.return_value = '0.2.0'
@@ -141,11 +142,23 @@ class VersionPatternTestCase(TestCase):
 
 class BumpMinorTestCase(TestCase):
     def test_should_bump_minor_(self):
-        self.assertEqual(bump_minor('1.0.0'), '1.1.0')
-        self.assertEqual(bump_minor('0.1.0'), '0.2.0')
-        self.assertEqual(bump_minor('0.1.1'), '0.2.0')
-        self.assertEqual(bump_minor('0.0.1'), '0.1.0')
-        self.assertEqual(bump_minor('0.1.dev1'), '0.2.0')
+        for from, to in [
+            # full version
+            ("1.0.0", "1.1.0"),
+            ("0.1.0", "0.2.0"),
+            ("0.1.1", "0.2.0"),
+            ("0.0.1", "0.1.0"),
+            ("0.1.dev1", "0.2.0"),
+
+            # only major
+            ("0", "0.1"),
+            ("12", "12.1"),
+
+            # preserve prefix
+            ("v10.1", "v10.2"),
+        ]:
+            self.assertEqual(bump_minor(from), to)
+
 
     def test_should_raise_value_error_for_invalid_version_schema(self):
         # given
