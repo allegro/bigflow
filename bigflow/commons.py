@@ -64,13 +64,20 @@ def public(
         if class_alias:
             assert isinstance(f, type)
             assert len(f.__bases__) == 1
-            f = f.__base__
+            ff = f.__base__
         elif alias_for:
-            f = alias_for
+            ff = alias_for
+        else:
+            ff = f
+
+        if f.__doc__ and not ff.__doc__:
+            ff.__doc__ = f.__doc__  # alias is used - pick the docstring
+        elif f is not ff and f.__doc__ and ff.__doc__:
+            logging.warning("Both %r and %r have their docstrings", f, ff)
 
         if deprecate_reason or deprecate_dropat:
-            f = deprecated(reason=deprecate_reason)(f)
-        return f
+            return deprecated(reason=deprecate_reason)(ff)
+        return ff
 
     return wrapper
 
