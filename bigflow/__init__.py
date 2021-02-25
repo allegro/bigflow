@@ -14,23 +14,23 @@ __all__ = [
 ]
 
 
-@public(alias_for=bigflow.workflow.Definition)
+@public(class_alias=True)
 class Definition(bigflow.workflow.Definition): ...
 
 
-@public(alias_for=bigflow.workflow.Job)
+@public(class_alias=True)
 class Job(bigflow.workflow.Job): ...
 
 
-@public(alias_for=bigflow.workflow.JobContext)
+@public(class_alias=True)
 class JobContext(bigflow.workflow.JobContext): ...
 
 
-@public(alias_for=bigflow.workflow.Workflow)
+@public(class_alias=True)
 class Workflow(bigflow.workflow.Workflow): ...
 
 
-@public(alias_for=bigflow.configuration.Config)
+@public(class_alias=True)
 class Config(bigflow.configuration.Config): ...
 
 
