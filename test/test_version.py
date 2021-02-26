@@ -43,7 +43,7 @@ class GetVersionE2E(
         # when
         (self.cwd / "file1").write_text("changed")
         # then
-        self.assertRegex(self.get_version(), r"^0\+g.+\.SNAPSHOT$", "Single commit, no tags, dirty")
+        self.assertRegex(self.get_version(), r"^0\+g.+\.dirty$", "Single commit, no tags, dirty")
 
         # when
         self.subprocess_run("git add file1")
@@ -55,7 +55,7 @@ class GetVersionE2E(
         # when
         (self.cwd / "file1").write_text("changed2")
         # then
-        self.assertRegex(self.get_version(), r"^0.2.0$", "Single tag, dirty")
+        self.assertRegex(self.get_version(), r"^0.2.0\+dirty$", "Single tag, dirty")
 
         # when
         self.subprocess_run("git add file1")
@@ -66,7 +66,7 @@ class GetVersionE2E(
         # when
         (self.cwd / "file1").write_text("change4")
         # then
-        self.assertRegex(self.get_version(), r"^0.2.0.dev1\+g.{8,}\.SNAPSHOT", "No exact tag matched, dirty")
+        self.assertRegex(self.get_version(), r"^0.2.0.dev1\+g.{8,}\.dirty", "No exact tag matched, dirty")
 
 
 class ReleaseTestCase(unittest.TestCase):
@@ -115,7 +115,7 @@ class BumpMinorTestCase(unittest.TestCase):
 
     def test_should_raise_value_error_for_invalid_version_schema(self):
         # given
-        invalid_version = 'dev.0.1'
+        invalid_version = 'some-garbage'
 
         # then
         with self.assertRaises(ValueError):

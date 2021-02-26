@@ -11,15 +11,24 @@ logger = logging.getLogger(__name__)
 
 def get_version():
 
+    # try direct tag match
     try:
-        # try direct tag match
-        return run_process(["git", "describe", "--exact-match", "--tags"], verbose=False)
+        tag = run_process(["git", "describe", "--exact-match", "--dirty=+dirty", "--tags"], verbose=False)
     except subprocess.SubprocessError as e:
         logger.debug("No direct git tag match: %s", e)
+    else:
+        m = re.fullmatch(r"""(?x)
+            \s*\D*           # strip any prefix
+            (?P<tag>\d.*)    # version, begins with a number
+            \s*
+        """, tag)
+        if not m:
+            raise ValueError("Invalid tag", tag)
+        return m.group('tag')
 
+    # try generic 'git describe' (fail when there are no tags)
     try:
-        # try generic 'git describe'
-        version = run_process(["git", "describe", "--abbrev=10", "--dirty=.SNAPSHOT", "--long", "--tags"], verbose=False)
+        version = run_process(["git", "describe", "--abbrev=10", "--dirty=.dirty", "--long", "--tags"], verbose=False)
     except subprocess.SubprocessError as e:
         logger.debug("No long git describtion: %s", e)
     else:
@@ -32,15 +41,15 @@ def get_version():
             (?P<dev>\d+)              # distance to the nearest tag
             -
             (?P<ghash>g[a-f\d]{10,})  # commit git-hash
-            (?P<dirty>(\.SNAPSHOT|))  # 'dirty' suffix
+            (?P<dirty>(\.dirty|))      # 'dirty' suffix
             \s*
         """, version)
         return "{tag}.dev{dev}+{ghash}{dirty}".format(**m.groupdict())
 
+    # no tags? mayb just githash will work
     try:
-        # ok, maybe just githash
         ghash = run_process(["git", "rev-parse", "HEAD"], verbose=False)[:12]
-        dirty = ".SNAPSHOT" if run_process(["git", "diff", "--shortstat"], verbose=True).strip() else ""
+        dirty = ".dirty" if run_process(["git", "diff", "--shortstat"], verbose=True).strip() else ""
     except subprocess.SubprocessError as e:
         logger.debug("No githash available: %s", e)
     else:
@@ -85,14 +94,12 @@ def push_tag(tag, identity_file: typing.Optional[str] = None) -> None:
 
 def bump_minor(version: str) -> str:
     """Increment minor version part, leaves rest of the version string unchanged"""
-
     m = re.fullmatch(r"""(?x)
-        (?P<prefix>v)?      # optional `v` prefix
-        (?P<major>\d+)        # major part
-        (\.(?P<minor>\d+))?   # minor part
-        (?P<suffix>.*)        # unsed rest
+        (?P<prefix>\D*)?     # optional prefix
+        (?P<major>\d+)       # major part
+        (\.(?P<minor>\d+))?  # minor part
+        (?P<suffix>.*)       # unsed rest
     """, version)
-
     if not m:
         raise ValueError("Invalid version string", version)
 
