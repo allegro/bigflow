@@ -55,7 +55,7 @@ class GetVersionE2E(
         # when
         (self.cwd / "file1").write_text("changed2")
         # then
-        self.assertRegex(self.get_version(), r"^0.2.0\+dirty$", "Single tag, dirty")
+        self.assertRegex(self.get_version(), r"^0.2.0.dev0\+g.{8,}\.dirty$", "Single tag, dirty")
 
         # when
         self.subprocess_run("git add file1")

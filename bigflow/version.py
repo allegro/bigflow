@@ -10,21 +10,27 @@ logger = logging.getLogger(__name__)
 
 
 def get_version():
-
-    # try direct tag match
     try:
-        tag = run_process(["git", "describe", "--exact-match", "--dirty=+dirty", "--tags"], verbose=False)
+        dirty = bool(run_process(["git", "diff", "--shortstat"], verbose=True).strip())
     except subprocess.SubprocessError as e:
-        logger.debug("No direct git tag match: %s", e)
-    else:
-        m = re.fullmatch(r"""(?x)
-            \s*\D*           # strip any prefix
-            (?P<tag>\d.*)    # version, begins with a number
-            \s*
-        """, tag)
-        if not m:
-            raise ValueError("Invalid tag", tag)
-        return m.group('tag')
+        logger.error("Unable to run git diff: %s", e)
+        return "0+BROKEN"
+
+    if not dirty:
+        # try direct tag match
+        try:
+            tag = run_process(["git", "describe", "--exact-match", "--dirty=+dirty", "--tags"], verbose=False)
+        except subprocess.SubprocessError as e:
+            logger.debug("No direct git tag match: %s", e)
+        else:
+            m = re.fullmatch(r"""(?x)
+                \s*\D*           # strip any prefix
+                (?P<tag>\d.*)    # version, begins with a number
+                \s*
+            """, tag)
+            if not m:
+                raise ValueError("Invalid tag", tag)
+            return m.group('tag')
 
     # try generic 'git describe' (fail when there are no tags)
     try:
@@ -49,11 +55,11 @@ def get_version():
     # no tags? mayb just githash will work
     try:
         ghash = run_process(["git", "rev-parse", "HEAD"], verbose=False)[:12]
-        dirty = ".dirty" if run_process(["git", "diff", "--shortstat"], verbose=True).strip() else ""
     except subprocess.SubprocessError as e:
         logger.debug("No githash available: %s", e)
     else:
-        return f"0+g{ghash}{dirty}"
+        dirty_str = ".dirty" if dirty else ""
+        return f"0+g{ghash}{dirty_str}"
 
     logger.error("Can't detect project version based on git")
     return "0+BROKEN"
