@@ -99,38 +99,27 @@ def dir_not_empty(dir_path: Path):
     return len(os.listdir(dir_path)) != 0
 
 
-def file_exists(file_path: Path):
-    return os.path.exists(str(file_path.absolute()))
-
-
-def file_exists_with_json_body(file_path: Path, body: dict):
-    if not file_exists(file_path):
-        return False
-    with open(file_path, 'r') as f:
-        return body == json.loads(f.read())
-
-
 def deployment_config_copied(test_project_dir_path: Path = TEST_PROJECT_PATH):
-    return file_exists(test_project_dir_path / 'image' / 'deployment_config.py')
+    return (test_project_dir_path / 'image' / 'deployment_config.py').exists()
 
 
 def python_package_built(test_project_dir_path: Path = TEST_PROJECT_PATH):
-    return file_exists(test_project_dir_path / 'dist' / 'main_package-0.1.0-py3-none-any.whl')
+    return (test_project_dir_path / 'dist' / 'main_package-0.1.0-py3-none-any.whl').exists()
 
 
 def test_run(test_project_dir_path: Path = TEST_PROJECT_PATH):
-    return file_exists(test_project_dir_path / 'build' / 'junit-reports')
+    return (test_project_dir_path / 'build' / 'junit-reports').exists()
 
 
 def dags_built(test_project_dir_path: Path, expected_workflow_count: int):
-    if not file_exists(test_project_dir_path / '.dags'):
+    if not (test_project_dir_path / '.dags').exists():
         return False
     return sum(1 for workflow_dir, workflow_name in walk_module_files(test_project_dir_path / '.dags')
                  if 'workflow' in workflow_name) == expected_workflow_count
 
 
 def docker_image_as_file_built(test_project_dir_path: Path = TEST_PROJECT_PATH):
-    return file_exists(test_project_dir_path / 'image' / 'image-0.1.0.tar')
+    return (test_project_dir_path / 'image' / 'image-0.1.0.tar.gz').exists()
 
 
 def docker_image_built_in_registry(docker_repository: str, version: str):

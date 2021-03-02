@@ -187,7 +187,7 @@ def generate_driver_script(callable, env):
         # overwrite env variables
         os.environ.update({env!r})
 
-        # trigger autoconfiguration of logging
+        # triggers configuration of logging
         try:
             from bigflow.log import maybe_init_logging_from_env
         except ImportError:

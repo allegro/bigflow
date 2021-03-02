@@ -50,9 +50,11 @@ def run_tests(project_dir: Path, build_dir: Path, test_package: Path):
 
 
 def export_docker_image_to_file(tag: str, target_dir: Path, version: str):
-    image_target_path = target_dir / f'image-{version}.tar'
-    print(f'Exporting the image to file: {image_target_path}' )
-    bf_commons.run_process(f"docker image save {bf_commons.get_docker_image_id(tag)} -o {image_target_path}")
+    image_target_path = target_dir / f"image-{version}.tar"
+    logger.info("Exporting the image to %s ...", image_target_path)
+    bf_commons.run_process(["docker", "image", "save", "-o", image_target_path, bf_commons.get_docker_image_id(tag)])
+    logger.info("Compress the image %s ...", image_target_path)
+    bf_commons.run_process(["gzip", "--fast", image_target_path])
 
 
 def build_docker_image(project_dir: Path, tag: str):
@@ -86,6 +88,7 @@ def build_image(
         project_dir: Path,
         image_dir: Path,
         deployment_config: Path):
+
     os.mkdir(image_dir)
     tag = bf_commons.build_docker_image_tag(docker_repository, version)
     build_docker_image(project_dir, tag)
@@ -421,7 +424,7 @@ def _build_setuptools_spec(
     # TODO: Provide merge semantics for some keys (data_files, install_requires etc)
     kwargs.pop('project_name', None)
     spec = project_setup(**{
-        **internal_config,
+        **params,
         **kwargs,
         'project_name': name,
         'project_dir': project_dir,

@@ -141,7 +141,7 @@ class _StreamOutputDumper(threading.Thread):
             self._result_list.append(line)
 
 
-def run_process(cmd, check=True, **kwargs):
+def run_process(cmd, check=True, input=None, **kwargs) -> str:
     if isinstance(cmd, str):
         cmd = re.split(r"\s+", cmd)
     else:
@@ -154,13 +154,19 @@ def run_process(cmd, check=True, **kwargs):
         cmd, text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
+        stdin=subprocess.PIPE if input is not None else None,
         **kwargs,
     )
 
     stdout_dumper = _StreamOutputDumper(process, process.stdout, logger.info)
     stderr_dumper = _StreamOutputDumper(process, process.stderr, logger.error)
 
+    if input:
+        process.stdin.write(input)
+        process.stdin.close()
+
     code = process.wait()
+
     process.stdout.close()
     process.stderr.close()
     stdout = stdout_dumper.result()
@@ -206,7 +212,7 @@ def build_docker_image_tag(docker_repository: str, package_version: str):
 
 def remove_docker_image_from_local_registry(tag):
     print('Removing the image from the local registry')
-    run_process(f"docker rmi {get_docker_image_id(tag)}")
+    run_process(f"docker rmi {get_docker_image_id(tag)} --no-prune")
 
 
 def as_timedelta(v: typing.Union[None, str, int, float, timedelta]) -> typing.Optional[timedelta]:
