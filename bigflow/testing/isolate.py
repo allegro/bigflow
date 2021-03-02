@@ -25,6 +25,9 @@ import multiprocessing
 import threading
 
 
+from bigflow.commons import public
+
+
 class _ObjectTag:
     """Stub for non-pickable objects, which needed to be transferred between processes"""
 
@@ -185,6 +188,7 @@ class _IsolatedProcessMixin(unittest.TestCase):
         pass
 
 
+@public()
 class ForkIsolateMixin(_IsolatedProcessMixin):
     """Mixin class for subclasses of `unittest.TestCase`
 
@@ -205,6 +209,7 @@ class ForkIsolateMixin(_IsolatedProcessMixin):
     _isolated_test_spawn_method = 'fork'
 
 
+@public()
 class SpawnIsolateMixin(_IsolatedProcessMixin):
     """Mixin class for subclasses of `unittest.TestCase`
 

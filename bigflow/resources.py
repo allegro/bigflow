@@ -5,10 +5,9 @@ import logging
 
 from typing import List, Iterable
 from pathlib import Path
-from deprecated import deprecated
 
 from bigflow.commons import (
-    resolve,
+    public, resolve,
 )
 
 
@@ -33,7 +32,9 @@ def find_all_resources(resources_dir: Path) -> Iterable[str]:
             yield str(path.relative_to(resources_dir.parent))
 
 
-@deprecated(reason="Use 'bigflow.build.pip.read_requirements instead")
+@public(
+    deprecate_reason="Use `bigflow.build.pip.read_requirements` instead",
+)
 def read_requirements(requirements_path: Path, recompile_check=True) -> List[str]:
     from bigflow.build.pip import read_requirements
     return read_requirements(requirements_path, recompile_check)
@@ -66,6 +67,7 @@ def find_file(file_name: str, search_start_file: Path, max_depth: int = 10) -> P
     raise ValueError(f"Can't find the {file_name}")
 
 
+@public()
 def get_resource_absolute_path(resource_file_name: str, search_start_file: Path = None) -> Path:
     '''
     Method allows you to access a file from the resources directory.
@@ -90,10 +92,10 @@ def get_resource_absolute_path(resource_file_name: str, search_start_file: Path 
     return result
 
 
-@deprecated(
-    reason="""
+@public(
+    deprecate_reason="""
         Don't use this method as it doesn't work when called from pip-installed package.
-        Use `bigflow.build.reflect.materialize_setuppy` instead"""
+        Use `bigflow.build.reflect.materialize_setuppy` instead""",
 )
 def find_setup(search_start_file: Path, retries_left: int = 10, sleep_time: float = 5) -> Path:
     '''
@@ -119,10 +121,9 @@ def find_setup(search_start_file: Path, retries_left: int = 10, sleep_time: floa
         return find_setup(search_start_file, retries_left - 1)
 
 
-@deprecated(
-    reason="""
-        Call to this method can be replaced with
-        inliner `(file_path.exists() or file_path.write_text(body)) and file_path` instead.
+@public(
+    deprecate_reason="""
+        Call to this method can be replaced with inliner `(file_path.exists() or file_path.write_text(body)) and file_path`.
     """
 )
 def create_file_if_not_exists(file_path: Path, body: str) -> Path:
@@ -133,8 +134,8 @@ def create_file_if_not_exists(file_path: Path, body: str) -> Path:
     return file_path
 
 
-@deprecated(
-    reason="""
+@public(
+    deprecate_reason="""
         This method doesn't work when called from pip-installed package.
         Use `bigflow.build.reflect.materialize_setuppy` instead"""
 )
@@ -152,8 +153,8 @@ setuptools.setup(
 '''
 
 
-@deprecated(
-    reason="""
+@public(
+    deprecate_reason="""
         This method doesn't work when called from pip-installed package.
         Use `bigflow.build.reflect.materialize_setuppy` instead"""
 )

@@ -3,6 +3,9 @@ import io
 import pprint
 import typing
 
+from bigflow.commons import public
+
+
 DEFAULT_CONFIG_ENV_VAR_PREFIX = 'bf_'
 
 
@@ -11,7 +14,9 @@ def current_env():
     return os.environ.get(f'{DEFAULT_CONFIG_ENV_VAR_PREFIX}env')
 
 
+@public()
 class Config:
+
     def __init__(self,
         name: str,
         properties: typing.Dict[str, str],
@@ -117,6 +122,7 @@ class Config:
             return value
 
 
+@public()
 class DeploymentConfig(Config):
     def __init__(self,
                  name: str,

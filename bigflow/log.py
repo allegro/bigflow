@@ -11,6 +11,7 @@ import google.cloud.logging
 import google.cloud.logging.handlers
 
 from urllib.parse import quote_plus
+from bigflow.commons import public
 
 try:
     from typing import TypedDict
@@ -108,6 +109,7 @@ def init_workflow_logging(workflow: 'bigflow.Workflow', banner=True):
         print("Log config is not provided for the Workflow")
 
 
+@public()
 def init_logging(config: LogConfigDict, workflow_id: str, banner=True):
 
     global _LOGGING_CONFIGURED

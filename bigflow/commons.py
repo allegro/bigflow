@@ -14,15 +14,84 @@ from datetime import datetime, timedelta
 logger = logging.getLogger(__name__)
 
 
-@deprecated(
-    reason="Use `str(x.absolute()) inliner instead",
+T = typing.TypeVar('T')
+
+
+def public(
+    *,
+    alias_for: typing.Union[T, None] = None,
+    class_alias: bool = False,
+    deprecate_reason: typing.Optional[str] = None,
+    deprecate_dropat: typing.Optional[str] = None,
+):
+    """Documentation decorator, used to mark function/class which should be considered as a public API.
+
+    Only elements marked with this decorator may be treated as `stable API`.
+    Any other elements may be deleted/changed without any warning or notice.
+
+    When the decorator is applied to class all attributes/methods without `_` prefix are considered to be public.
+
+    Optional argument `alias_for` indicates that marked element should be discarded and
+    value of `alias_for` should be used instead.  Wrapped (discared) object still
+    may provide type/signature hints for IDE/autocompletion.
+
+    >> def _some_function(x, y, private_arg=None): return x, y, private_arg
+    >> @public(alias_for=some_function)
+    >> def some_function(x, y): ...
+
+    >> sume_function is _some_function
+    True
+
+    Optional argument `class_alias` indicates that wrapped object is a class definition with
+    a single base class.  This base class is used as a value for `alias_for`.
+    It enables such pattern for defining class aliases:
+
+    >> class _Origin: pass
+    >> @public(class_alias=True)
+    >> class Alias(_Origin):
+    >>     pass
+    >> _Origin is Alias
+    True
+    >> Alias.__name__
+    "_Origin"
+
+    """
+
+    assert alias_for is None or not class_alias
+    assert deprecate_reason or not deprecate_dropat
+
+    def wrapper(f: T) -> T:
+        if class_alias:
+            assert isinstance(f, type)
+            assert len(f.__bases__) == 1
+            ff = f.__base__
+        elif alias_for:
+            ff = alias_for
+        else:
+            ff = f
+
+        if f.__doc__ and not ff.__doc__:
+            ff.__doc__ = f.__doc__  # alias is used - pick the docstring
+        elif f is not ff and f.__doc__ and ff.__doc__:
+            logging.warning("Both %r and %r have their docstrings", f, ff)
+
+        if deprecate_reason or deprecate_dropat:
+            return deprecated(reason=deprecate_reason)(ff)
+        return ff
+
+    return wrapper
+
+@public(
+    deprecate_reason="Use `str(x.absolute()) inliner instead",
+    deprecate_dropat="2.0",
 )
 def resolve(path: Path):
     return str(path.absolute())
 
 
-@deprecated(
-    reason="Use `datetime.now().strftime('%Y-%m-%d %H:00:00')` instead.",
+@public(
+    deprecate_reason="Use `datetime.now().strftime('%Y-%m-%d %H:00:00')` instead.",
+    deprecate_dropat="2.0",
 )
 def now(template: str = "%Y-%m-%d %H:00:00"):
     return datetime.now().strftime(template)

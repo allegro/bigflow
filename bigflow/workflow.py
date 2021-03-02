@@ -3,10 +3,10 @@ import collections
 import typing
 import warnings
 import datetime as dt
-
-import bigflow
-
 import logging
+
+import bigflow.configuration
+from bigflow.commons import public
 
 
 logger = logging.getLogger(__name__)
@@ -27,16 +27,19 @@ def get_timezone_offset_seconds() -> int:
     return dt.datetime.now().astimezone().tzinfo.utcoffset(None).seconds
 
 
+@public()
 def hourly_start_time(start_time: dt.datetime) -> dt.datetime:
     td = dt.timedelta(seconds=get_timezone_offset_seconds())
     return start_time.replace(microsecond=0) - td
 
 
+@public()
 def daily_start_time(start_time: dt.datetime) -> dt.datetime:
     td = dt.timedelta(hours=24)
     return start_time.replace(hour=0, minute=0, second=0, microsecond=0) - td
 
 
+@public()
 class JobContext(typing.NamedTuple):
 
     runtime: typing.Optional[dt.datetime]
@@ -103,6 +106,7 @@ class JobContext(typing.NamedTuple):
         return jc
 
 
+@public()
 class Job(abc.ABC):
     """Base abstract class for bigflow.Jobs.  It is recommended to inherit all your jobs from this class."""
 
@@ -115,12 +119,13 @@ class Job(abc.ABC):
     def execute(self, context: JobContext):
         raise NotImplementedError
 
+    @public(deprecate_reason="Method `Job.run` is deprecated, use `Job.execute()` instead")
     def run(self, runtime):
-        warnings.warn("Method `Job.run` is deprecated, use `Job.execute()` instead")
         context = JobContext.make(runtime=runtime)
         return self.execute(context)
 
 
+@public()
 class Workflow(object):
 
     def __init__(
@@ -155,11 +160,11 @@ class Workflow(object):
 
     def run(self, runtime: typing.Union[dt.date, str, None] = None):
         context = self._make_job_context(runtime)
-        for job in self.build_sequential_order():
+        for job in self._build_sequential_order():
             self._execute_job(job, context)
 
     def find_job(self, job_id) -> Job:
-        for job_wrapper in self.build_sequential_order():
+        for job_wrapper in self._build_sequential_order():
             if job_wrapper.job.id == job_id:
                 return job_wrapper.job
         raise ValueError(f'Job {job_id} not found.')
@@ -168,11 +173,11 @@ class Workflow(object):
         context = self._make_job_context(runtime)
         self._execute_job(self.find_job(job_id), context)
 
-    def build_sequential_order(self):
-        return self.definition.sequential_order()
+    def _build_sequential_order(self):
+        return self.definition._sequential_order()
 
-    def call_on_graph_nodes(self, consumer):
-        self.definition.call_on_graph_nodes(consumer)
+    def _call_on_graph_nodes(self, consumer):
+        self.definition._call_on_graph_nodes(consumer)
 
     def _parse_definition(self, definition):
         if isinstance(definition, list):
@@ -217,16 +222,17 @@ class WorkflowJob(Job):
         return "WorkflowJob{job=..., name=%s}" % self.name
 
 
+@public()
 class Definition:
     def __init__(self, jobs: dict):
         self.job_graph = self._build_graph(jobs)
         self.job_order_resolver = JobOrderResolver(self.job_graph)
 
-    def sequential_order(self):
+    def _sequential_order(self):
         return self.job_order_resolver.find_sequential_run_order()
 
-    def call_on_graph_nodes(self, consumer):
-        return self.job_order_resolver.call_on_graph_nodes(consumer)
+    def _call_on_graph_nodes(self, consumer):
+        return self.job_order_resolver._call_on_graph_nodes(consumer)
 
     def _build_graph(self, jobs):
         if isinstance(jobs, list):
@@ -303,10 +309,10 @@ class JobOrderResolver:
         def add_to_ordered_job(job, dependencies):
             ordered_jobs.append(job)
 
-        self.call_on_graph_nodes(add_to_ordered_job)
+        self._call_on_graph_nodes(add_to_ordered_job)
         return ordered_jobs
 
-    def call_on_graph_nodes(self, consumer):
+    def _call_on_graph_nodes(self, consumer):
         visited = set()
         for job in self.parental_map:
             self._call_on_graph_node_helper(

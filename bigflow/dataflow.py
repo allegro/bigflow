@@ -4,13 +4,16 @@ import logging
 from apache_beam import Pipeline
 from apache_beam.options.pipeline_options import PipelineOptions, GoogleCloudOptions
 
+from bigflow.commons import public
 from bigflow.workflow import Job, JobContext
 from bigflow.workflow import DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS, DEFAULT_PIPELINE_LEVEL_EXECUTION_TIMEOUT_SHIFT_IN_SECONDS
 
 logger = logging.getLogger(__file__)
 
 
+@public()
 class BeamJob(Job):
+
     def __init__(
             self,
             id: str,
