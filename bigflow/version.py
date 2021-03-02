@@ -2,7 +2,8 @@ import re
 import logging
 import subprocess
 import typing
-import contextlib
+import tempfile
+import pathlib
 
 from bigflow.commons import run_process
 
@@ -10,11 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_version():
-    try:
-        dirty = bool(run_process(["git", "diff", "--shortstat"], verbose=True).strip())
-    except subprocess.SubprocessError as e:
-        logger.error("Unable to run git diff: %s", e)
-        return "0+BROKEN"
+    dirty = _generate_dirty_suffix()
 
     if not dirty:
         # try direct tag match
@@ -34,7 +31,7 @@ def get_version():
 
     # try generic 'git describe' (fail when there are no tags)
     try:
-        version = run_process(["git", "describe", "--abbrev=10", "--dirty=.dirty", "--long", "--tags"], verbose=False)
+        version = run_process(["git", "describe", "--abbrev=8", "--long", "--tags"], verbose=False)
     except subprocess.SubprocessError as e:
         logger.debug("No long git describtion: %s", e)
     else:
@@ -46,11 +43,10 @@ def get_version():
             -
             (?P<dev>\d+)              # distance to the nearest tag
             -
-            (?P<ghash>g[a-f\d]{10,})  # commit git-hash
-            (?P<dirty>(\.dirty|))      # 'dirty' suffix
+            (?P<ghash>g[a-f\d]{8,})  # commit git-hash
             \s*
         """, version)
-        return "{tag}.dev{dev}+{ghash}{dirty}".format(**m.groupdict())
+        return "{tag}.dev{dev}+{ghash}{dirty}".format(dirty=dirty, **m.groupdict())
 
     # no tags? mayb just githash will work
     try:
@@ -58,11 +54,38 @@ def get_version():
     except subprocess.SubprocessError as e:
         logger.debug("No githash available: %s", e)
     else:
-        dirty_str = ".dirty" if dirty else ""
-        return f"0+g{ghash}{dirty_str}"
+        return f"0+g{ghash}{dirty}"
 
     logger.error("Can't detect project version based on git")
-    return "0+BROKEN"
+    return f"0+BROKEN{dirty}"
+
+
+def _generate_dirty_suffix():
+    try:
+        dirty = bool(run_process(["git", "diff", "--shortstat", "HEAD"], verbose=True).strip())
+    except subprocess.SubprocessError as e:
+        logger.error("Unable to run git diff: %s", e)
+        return ""
+
+    if dirty:
+        tree = _get_workdir_treehash()
+        return f".d{tree[:8]}"
+    else:
+        return ""
+
+
+def _get_workdir_treehash():
+    """Copy git index, add all changed files and returns 'tree-hash'"""
+
+    git_root =  run_process(["git", "rev-parse", "--show-toplevel"]).rstrip("\n")
+    indexf = pathlib.Path(git_root) / ".git" / "index"
+
+    with tempfile.NamedTemporaryFile(buffering=0) as tf:
+        env = {"GIT_INDEX_FILE": tf.name}
+        tf.write(indexf.read_bytes())
+
+        run_process(["git", "add", "-u"], env_add=env, verbose=False)
+        return run_process(["git", "write-tree"], env_add=env, verbose=False)
 
 
 def get_tag():
