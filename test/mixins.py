@@ -93,6 +93,8 @@ class SubprocessMixin(Mixin):
     """Provides methods to run/interact with subprocesses"""
 
     def preprocess_cmdline(self, cmd):
+        if isinstance(cmd, str):
+            cmd = cmd.split()
         return cmd
 
     def __clean_spawned(self, p: pexpect.spawn):

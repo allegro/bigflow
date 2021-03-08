@@ -5,6 +5,7 @@ import subprocess
 import time
 import typing
 import threading
+import os
 
 from pathlib import Path
 from deprecated import deprecated
@@ -141,13 +142,39 @@ class _StreamOutputDumper(threading.Thread):
             self._result_list.append(line)
 
 
-def run_process(cmd, check=True, input=None, **kwargs) -> str:
-    if isinstance(cmd, str):
-        cmd = re.split(r"\s+", cmd)
+def run_process(
+    args: typing.Union[str, typing.List],
+    *,
+    verbose=True,
+    check=True,
+    env_add=None,
+    input=None,
+    env=None,
+    **kwargs,
+):
+    """Run external process, extends `subprocess.run`, returns 'stdout', may throw `subprocess.SubprocessError`.
+
+    Arguments:
+      args - string or list of strings/integers/paths etc, `None` is converted to empty string
+      verbose - True if output of the command should be dumped into `logger.info`
+      check - raise an exception if return code is not equal to 0
+      input - send string to program stdin
+      env - replace set of environment variables
+      env_add - add new/overwrite environment variables (extends `os.environ`)
+
+    """
+    if isinstance(args, str):
+        cmd = re.split(r"\s+", args)
     else:
-        cmd = list(map(str, cmd))
+        cmd = [
+            str(x) if x is not None else ""
+            for x in args
+        ]
 
     logger.debug("cmd %r, kwargs %r", cmd, kwargs)
+    if env_add:
+        env = dict(env or os.environ)
+        env.update(env_add)
 
     start = time.time()
     process = subprocess.Popen(
@@ -155,11 +182,14 @@ def run_process(cmd, check=True, input=None, **kwargs) -> str:
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         stdin=subprocess.PIPE if input is not None else None,
+        env=env,
         **kwargs,
     )
 
-    stdout_dumper = _StreamOutputDumper(process, process.stdout, logger.info)
-    stderr_dumper = _StreamOutputDumper(process, process.stderr, logger.error)
+    stdout_dumper = _StreamOutputDumper(
+        process, process.stdout, logger.info if verbose else logger.debug)
+    stderr_dumper = _StreamOutputDumper(
+        process, process.stderr, logger.error if verbose else logger.debug)
 
     if input:
         process.stdin.write(input)
@@ -207,6 +237,7 @@ def get_docker_image_id(tag):
 
 
 def build_docker_image_tag(docker_repository: str, package_version: str):
+    package_version = package_version.replace("+", "-")  # fix "local version" separator
     return docker_repository + ':' + package_version
 
 
