@@ -69,7 +69,7 @@ def _generate_dirty_suffix():
 
     if dirty:
         tree = _get_workdir_treehash()
-        return f".d{tree[:8]}"
+        return f".t{tree[:8]}"
     else:
         return ""
 
