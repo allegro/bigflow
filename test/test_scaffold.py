@@ -273,7 +273,6 @@ class TemplatingTestCase(unittest.TestCase):
         ]:
             self.assertEqual(self.readfile(expected_file), "OK")
 
-
     def test_conditional_render(self):
         # given
         loader = jinja2.DictLoader({
@@ -303,3 +302,8 @@ class TemplatingTestCase(unittest.TestCase):
             "a1", "b2", "c2",
         ]:
             self.assertFalse((Path(self.tmp_dir) / should_not_exist).exists())
+
+
+class GcpInfrastructureGeneratorTestCase(unittest.TestCase):
+    def test_should_generate_gcp_infrastructure(self):
+        pass
