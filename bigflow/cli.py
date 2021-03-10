@@ -727,12 +727,7 @@ def _cli_start_project():
     print('Bigflow project created successfully.')
 
 
-def check_if_project_setup_exists():
-    bigflow.resources.find_file('setup.py', Path('.'), 1)
-
-
 def validate_project_setup():
-    check_if_project_setup_exists()
     cmd = [
         "python",
         bigflow.build.dev.find_setuppy(),
