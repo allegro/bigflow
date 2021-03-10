@@ -53,8 +53,6 @@ def export_docker_image_to_file(tag: str, target_dir: Path, version: str):
     image_target_path = target_dir / f"image-{version}.tar"
     logger.info("Exporting the image to %s ...", image_target_path)
     bf_commons.run_process(["docker", "image", "save", "-o", image_target_path, bf_commons.get_docker_image_id(tag)])
-    logger.info("Compress the image %s ...", image_target_path)
-    bf_commons.run_process(["gzip", "--fast", image_target_path])
 
 
 def build_docker_image(project_dir: Path, tag: str):
