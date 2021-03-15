@@ -53,8 +53,6 @@ def export_docker_image_to_file(tag: str, target_dir: Path, version: str):
     image_target_path = target_dir / f"image-{version}.tar"
     logger.info("Exporting the image to %s ...", image_target_path)
     bf_commons.run_process(["docker", "image", "save", "-o", image_target_path, bf_commons.get_docker_image_id(tag)])
-    logger.info("Compress the image %s ...", image_target_path)
-    bf_commons.run_process(["gzip", "--fast", image_target_path])
 
 
 def build_docker_image(project_dir: Path, tag: str):
@@ -168,6 +166,7 @@ def build_command(
     deployment_config: Path,
     docker_repository: str,
     version: str,
+    project_requirements_file: str,
 ):
 
     class BuildCommand(distutils.cmd.Command):
@@ -199,6 +198,8 @@ def build_command(
             if self.validate_project_setup:
                 print(SETUP_VALIDATION_MESSAGE)
                 return
+
+            bigflow.build.dataflow.dependency_checker.check_beam_worker_dependencies_conflict(project_requirements_file)
 
             bigflow.cli._valid_datetime(self.start_time)   # FIXME: Don't use private functions.
             if self.build_package or self.should_run_whole_build():
@@ -348,8 +349,6 @@ def project_setup(
             pip install -r {project_requirements_file}
         """))
 
-    bigflow.build.dataflow.dependency_checker.check_beam_worker_dependencies_conflict(project_requirements_file)
-
     params_to_check = [
         ('project_name', project_name),
         ('docker_repository', docker_repository),
@@ -392,7 +391,9 @@ def project_setup(
                 eggs_dir,
                 deployment_config_file,
                 docker_repository,
-                version),
+                version,
+                project_requirements_file=project_requirements_file,
+            ),
             **_hook_bdist_pregenerate_sdist(),
         }
     }

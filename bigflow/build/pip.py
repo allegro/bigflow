@@ -180,7 +180,7 @@ def generate_pinfile(
     logger.info("Clean pins file %s", pins_file_in)
     pins_file_in.write_text("# autocleaned ...")
     current_requirements_txt = requirements_txt.read_text()
-    pip_compile(requirements_in, rebuild=True)
+    pip_compile(requirements_in)
 
     pins = resolve_pins()
     logger.info("Found %d pins: %s", len(pins), ", ".join(pins))
@@ -196,7 +196,7 @@ def generate_pinfile(
     ]))
 
     logger.info("Recompile requirements...")
-    pip_compile(requirements_in, rebuild=True)
+    pip_compile(requirements_in)
 
     if bad_pins:
         libs_list = "\n".join(f" - {x}" for x in sorted(bad_pins))

@@ -119,7 +119,7 @@ def dags_built(test_project_dir_path: Path, expected_workflow_count: int):
 
 
 def docker_image_as_file_built(test_project_dir_path: Path = TEST_PROJECT_PATH):
-    return (test_project_dir_path / 'image' / 'image-0.1.0.tar.gz').exists()
+    return (test_project_dir_path / 'image' / 'image-0.1.0.tar').exists()
 
 
 def docker_image_built_in_registry(docker_repository: str, version: str):
