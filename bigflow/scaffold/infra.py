@@ -146,10 +146,10 @@ def create_gcp_infrastructure(
             cloud_nat_creator()
             destroyers.append(cloud_nat_destroyer)
 
-        composer_name, composer_destroyer, composer_creator = create_cloud_composer(
-            *basic_infra_params, zone)
-        composer_creator()
-        destroyers.insert(0, composer_destroyer)
+        # composer_name, composer_destroyer, composer_creator = create_cloud_composer(
+        #     *basic_infra_params, zone)
+        # composer_creator()
+        # destroyers.insert(0, composer_destroyer)
 
     except Exception as e:
         logger.exception('Error occurred while creating infrastructure. Destroying leftovers.', exc_info=e)
