@@ -10,8 +10,9 @@ import pickle
 import typing
 import os
 import os.path
+import functools
 
-from typing import Optional, List, Union
+from typing import Optional
 from pathlib import Path
 
 import bigflow.commons as bf_commons
@@ -27,13 +28,20 @@ DUMP_PARAMS_SETUPPY_CMDARG = "__bigflow_dump_params"
 
 
 @public()
-def read_setuppy_args(path_to_setup: Union[Path, str, None] = None) -> dict:
+@functools.lru_cache()
+def read_setuppy_args(
+    directory: typing.Union[None, Path, str] = None,
+    path_to_setup: typing.Union[None, Path, str] = None,
+) -> dict:
     """Loads `setup.py`, returns all parameters of `bigflow.build.setup()` function.
 
     This function doesn't unpack 'embeeded sdist' archive when package is installed via pip.
     You could use `bigflow.build.materialize_setuppy` for such purposes, although it is not recommended"""
 
-    path_to_setup = path_to_setup or find_setuppy()
+    assert directory is None or path_to_setup is None
+    if directory:
+        return read_setuppy_args(path_to_setup=find_setuppy(directory))
+
     logger.info("Read project options from %s", path_to_setup)
     with tempfile.NamedTemporaryFile("r+b") as f:
         bf_commons.run_process(["python", path_to_setup, DUMP_PARAMS_SETUPPY_CMDARG, f.name], cwd=str(path_to_setup.parent))
