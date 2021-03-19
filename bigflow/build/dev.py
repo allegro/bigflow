@@ -39,7 +39,7 @@ def read_setuppy_args(
     You could use `bigflow.build.materialize_setuppy` for such purposes, although it is not recommended"""
 
     assert directory is None or path_to_setup is None
-    if directory:
+    if not path_to_setup:
         return read_setuppy_args(path_to_setup=find_setuppy(directory))
 
     logger.info("Read project options from %s", path_to_setup)
