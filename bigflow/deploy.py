@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 
 from google.cloud.storage import Bucket
@@ -11,8 +12,11 @@ import bigflow.commons as bf_commons
 from .commons import decode_version_number_from_file_name, remove_docker_image_from_local_registry, build_docker_image_tag
 
 
+logger = logging.getLogger(__name__)
+
 
 def load_image_from_tar(image_tar_path: str) -> str:
+    logger.info("Load docker image from %s...", image_tar_path)
     for line in bf_commons.run_process(['docker', 'load', '-i', image_tar_path]).split('\n'):
         if 'Loaded image ID:' in line:
             return line.split()[-1].split(':')[-1]
@@ -30,6 +34,7 @@ def deploy_docker_image(
         vault_endpoint: str = None,
         vault_secret: str = None):
     build_ver = decode_version_number_from_file_name(Path(image_tar_path))
+    build_ver = build_ver.replace("+", "-")  # fix local version separator
     image_id = load_image_from_tar(image_tar_path)
     try:
         return _deploy_image_loaded_to_local_registry(build_ver, docker_repository, image_id, auth_method,
