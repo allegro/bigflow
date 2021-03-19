@@ -6,3 +6,5 @@
 -r requirements/dataflow_extras.txt
 twine
 freezegun
+pexpect
+responses

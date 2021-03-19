@@ -119,8 +119,10 @@ class BeamJobTestCase(TestCase):
             workflow_id='count_words',
             definition=[job])
 
-        # when
-        count_words.run('2020-01-01')
+        # then
+        with self.assertRaises(RuntimeError) as e:
+            # when
+            count_words.run('2020-01-01')
 
         # then
         self.assertEqual(cancel_mock.call_count, 1)

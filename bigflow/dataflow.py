@@ -54,6 +54,7 @@ class BeamJob(Job):
             result.wait_until_finish(timeout_in_milliseconds)
             if not result.is_in_terminal_state():
                 result.cancel()
+                raise RuntimeError(f'Job {self.id} timed out ({self.execution_timeout_sec})')
 
     def _create_pipeline(self, options):
         return Pipeline(options=options)
