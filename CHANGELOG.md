@@ -1,5 +1,17 @@
 # BigFlow changelog
 
+## Version 1.2
+
+### Added
+
+* Tool for synching requirements with Dataflow preinstalled python dependencies.
+
+### Changed
+
+* Schema for 'dirty' (not on git tag or there are local changes) versions was changed.
+  Now it includes git commit and git workdir hash instead of random suffix.
+* Don't delete intermediate docker layers after build.
+* Dockerfile template was changed (does not affect existing projects).
 
 ## Version 1.1
 
