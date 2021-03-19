@@ -28,10 +28,9 @@ DUMP_PARAMS_SETUPPY_CMDARG = "__bigflow_dump_params"
 
 
 @public()
-@functools.lru_cache()
 def read_setuppy_args(
-    directory: typing.Union[None, Path, str] = None,
     path_to_setup: typing.Union[None, Path, str] = None,
+    directory: typing.Union[None, Path, str] = None,
 ) -> dict:
     """Loads `setup.py`, returns all parameters of `bigflow.build.setup()` function.
 
@@ -40,7 +39,12 @@ def read_setuppy_args(
 
     assert directory is None or path_to_setup is None
     if not path_to_setup:
-        return read_setuppy_args(path_to_setup=find_setuppy(directory))
+        path_to_setup = find_setuppy(directory)
+    return _read_setuppy_args(path_to_setup)
+
+
+@functools.lru_cache()
+def _read_setuppy_args(path_to_setup: Path) -> dict:
 
     logger.info("Read project options from %s", path_to_setup)
     with tempfile.NamedTemporaryFile("r+b") as f:
