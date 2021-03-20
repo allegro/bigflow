@@ -120,7 +120,7 @@ class BeamJobTestCase(TestCase):
             definition=[job])
 
         # then
-        with self.assertRaises(RuntimeError) as e:
+        with self.assertRaises(TimeoutError) as e:
             # when
             count_words.run('2020-01-01')
 
