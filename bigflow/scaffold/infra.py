@@ -3,7 +3,7 @@
 import typing as tp
 import logging
 import functools
-import bigflow.commons as commons
+from bigflow.commons import run_process
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ def secure_destroy(infrastructure_part_name: str) -> tp.Callable[[Infrastructure
     return secure_destroy_decorator
 
 
-def create_cloud_router(
+def _create_cloud_router(
         gcp_project_id: str,
         bigflow_project_name: str,
         environment_name: str,
@@ -36,46 +36,52 @@ def create_cloud_router(
 
     @secure_destroy(f'{router_name} (Google Cloud router)')
     def destroy() -> None:
-        commons.run_process([
-            'yes', '|',
+        logger.info(run_process([
             'gcloud', 'compute',
             '--project', gcp_project_id,
             'routers', 'delete', router_name,
-            '--region', region
-        ])
+            '--region', region,
+            '--quiet'
+        ]))
 
-    def creator() -> None:
-        commons.run_process([
+    def create() -> None:
+        logger.info(run_process([
             'gcloud', 'compute',
             '--project', gcp_project_id,
             'routers', 'create', router_name,
             '--network', 'default',
             '--region', region
-        ])
+        ]))
 
-    return router_name, destroy, creator
+    return router_name, destroy, create
 
 
-def create_cloud_nat(
+def _create_cloud_nat(
         gcp_project_id: str,
         bigflow_project_name: str,
         environment_name: str,
-        region: str,
-        router_name: str) -> tp.Tuple[str, InfrastructureDestroyer, InfrastructureCreator]:
+        region: str) -> tp.Tuple[str, InfrastructureDestroyer, InfrastructureCreator]:
     nat_name = f'{BIGFLOW_INFRA_PREFIX}-nat-{bigflow_project_name}-{environment_name}-{region}'
+    router_name, router_destroyer, router_creator = _create_cloud_router(
+        gcp_project_id,
+        bigflow_project_name,
+        environment_name,
+        region)
 
     @secure_destroy(f'{nat_name} (Google Cloud NAT)')
     def destroy() -> None:
-        commons.run_process([
-            'yes', '|',
+        logger.info(run_process([
             'gcloud', 'compute',
             '--project', gcp_project_id,
             'routers', 'nats', 'delete', nat_name,
-            '--router', router_name
-        ])
+            '--router', router_name,
+            '--quiet'
+        ]))
+        router_destroyer()
 
-    def creator() -> None:
-        commons.run_process([
+    def create() -> None:
+        router_creator()
+        logger.info(run_process([
             'gcloud', 'compute',
             '--project', gcp_project_id,
             'routers', 'nats', 'create', nat_name,
@@ -83,75 +89,71 @@ def create_cloud_nat(
             '--auto-allocate-nat-external-ips',
             '--nat-all-subnet-ip-ranges',
             '--enable-logging'
-        ])
+        ]))
 
-    return nat_name, destroy, creator
+    return nat_name, destroy, create
 
 
-def create_cloud_composer(
+def _composer_create_command(
+        composer_name: str,
         gcp_project_id: str,
-        bigflow_project_name: str,
-        environment_name: str,
-        region: str,
-        zone: str) -> tp.Tuple[str, InfrastructureDestroyer, InfrastructureCreator]:
-    composer_name = f'{BIGFLOW_INFRA_PREFIX}-composer-{bigflow_project_name}-{environment_name}-{region}'
-
-    @secure_destroy(f'{composer_name} (Google Cloud Composer)')
-    def destroyer() -> None:
-        commons.run_process([
-            'yes', '|',
-            'gcloud', 'composer',
-            '--project', gcp_project_id,
-            'environments', 'delete', composer_name
-        ])
-
-    def creator() -> None:
-        commons.run_process([
-            'gcloud', 'composer',
-            '--project', gcp_project_id,
-            'environments', 'create', composer_name,
-            f'--location={region}',
-            f'--zone={zone}',
-            f'--env-variables=env={environment_name}',
-            f'--machine-type=n1-standard-2',
-            f'--node-count=3',
-            f'--python-version=3',
-            f'--enable-ip-alias',
-            f'--network=default',
-            f'--subnetwork=default',
-            f'--enable-private-environment',
-            f'--enable-private-endpoint',
-        ])
-
-    return composer_name, destroyer, creator
-
-
-def create_gcp_infrastructure(
-        gcp_project_id: str,
-        bigflow_project_name: str,
-        environment_name: str,
         region: str,
         zone: str,
-        should_create_cloud_nat: bool = True):
-    destroyers: tp.List[InfrastructureDestroyer] = []
-    basic_infra_params = (gcp_project_id, bigflow_project_name, environment_name, region)
+        environment_name: str) -> tp.List[str]:
+    return [
+        'gcloud', 'composer',
+        '--project', gcp_project_id,
+        'environments', 'create', composer_name,
+        f'--location={region}',
+        f'--zone={zone}',
+        f'--env-variables=env={environment_name}',
+        f'--machine-type=n1-standard-2',
+        f'--node-count=3',
+        f'--python-version=3',
+        f'--enable-ip-alias',
+        f'--network=default',
+        f'--subnetwork=default',
+        f'--enable-private-environment',
+        f'--enable-private-endpoint',
+    ]
+
+
+def cloud_composer(
+        gcp_project_id: str,
+        bigflow_project_name: str,
+        environment_name: str = 'dev',
+        region: str = 'europe-west1',
+        zone: str = 'europe-west1-d') -> tp.Tuple[str, InfrastructureDestroyer, InfrastructureCreator]:
+    composer_name = f'{BIGFLOW_INFRA_PREFIX}-composer-{bigflow_project_name}-{environment_name}-{region}'
+    cloud_nat_name, cloud_nat_destroyer, cloud_nat_creator = _create_cloud_nat(
+        gcp_project_id, bigflow_project_name, environment_name, region)
+
+    @secure_destroy(f'{composer_name} (Google Cloud Composer)')
+    def destroy() -> None:
+        logger.info(run_process([
+            'gcloud', 'composer',
+            'environments', 'delete', composer_name,
+            '--location', region,
+            '--project', gcp_project_id,
+            '--quiet'
+        ]))
+        cloud_nat_destroyer()
+
+    def create() -> None:
+        cloud_nat_creator()
+        logger.info(run_process(_composer_create_command(
+            composer_name, gcp_project_id, region, zone, environment_name)))
+
+    return composer_name, destroy, create
+
+
+def try_create(
+        name: str,
+        destroyer: InfrastructureDestroyer,
+        creator: InfrastructureCreator) -> None:
     try:
-        if should_create_cloud_nat:
-            router_name, router_destroyer, router_creator = create_cloud_router(*basic_infra_params)
-            router_creator()
-            destroyers.append(router_destroyer)
-
-            cloud_nat_name, cloud_nat_destroyer, cloud_nat_creator = create_cloud_nat(
-                *basic_infra_params, router_name)
-            cloud_nat_creator()
-            destroyers.append(cloud_nat_destroyer)
-
-        # composer_name, composer_destroyer, composer_creator = create_cloud_composer(
-        #     *basic_infra_params, zone)
-        # composer_creator()
-        # destroyers.insert(0, composer_destroyer)
-
+        creator()
     except Exception as e:
-        logger.exception('Error occurred while creating infrastructure. Destroying leftovers.', exc_info=e)
-        for destroyer in destroyers:
-            destroyer()
+        logger.error(f"Can't create {name}. Trying to destroy leftovers.")
+        logger.exception(e)
+        destroyer()
