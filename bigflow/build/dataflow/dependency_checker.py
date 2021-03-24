@@ -40,11 +40,21 @@ def build_requirements_dict(requirements: List[str]) -> Dict[str, str]:
 def load_beam_worker_preinstalled_dependencies(beam_version, py_version):
     fname = f"beam{beam_version}_py{py_version}.txt"
     txt = importlib.resources.read_text(bigflow.build.dataflow.workerdeps, fname)
-    return dict(
+    result = dict(
         line.lower().split("==", 2)
         for line in txt.splitlines()
         if line.strip() and not line.startswith("#")
     )
+
+    if result['google-cloud-core'] == "1.1.0":
+        # Bumpup version of `google-cloud-storage` to 1.2
+        # Google has preinstalled 1.1, but semi-fresh versions of google-cloud-storage depends on 1.2
+        # Actual difference between 1.1 and 1.2 is literally only 1 single commit
+        # https://github.com/googleapis/python-cloud-core/commit/b212be20bc95127a2a0fed686c8bbb3ad72c47dd
+        # So it should be safe to upgrade from 1.1 to 1.2.
+        result['google-cloud-core'] = "1.2.0"
+
+    return result
 
 
 def detect_dataflow_conflicts(req_path: Path):
