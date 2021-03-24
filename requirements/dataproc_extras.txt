@@ -1,2 +1,2 @@
-google-cloud-dataproc~=2.0
-pyspark~=3.0
+google-cloud-dataproc>=2,<3
+pyspark>=3.0,<4
