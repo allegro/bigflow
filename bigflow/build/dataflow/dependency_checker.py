@@ -57,7 +57,7 @@ def load_beam_worker_preinstalled_dependencies(beam_version, py_version):
     return result
 
 
-def detect_dataflow_conflicts(req_path: Path):
+def detect_dataflow_conflicts(req_path: Path, all=False):
 
     req_path = req_path.with_suffix(".txt")
     existing_pinfile = req_path.parent / "dataflow_pins.in"
@@ -85,7 +85,7 @@ def detect_dataflow_conflicts(req_path: Path):
     conflicts = {
         k: (reqs[k], workerdeps[k])
         for k in common_deps
-        if reqs[k] != workerdeps[k]
+        if (reqs[k] != workerdeps[k] or all)
         and not re.search(rf"\W{re.escape(k)}\W", existing_pins)  # pin is ignored
     }
 
@@ -125,5 +125,5 @@ def sync_requirements_with_dataflow_workers(req_path=None):
     return bigflow.build.pip.generate_pinfile(
         req_path,
         pins_in,
-        lambda: [f"{a}=={c}" for a, (b, c) in detect_dataflow_conflicts(req_path).items()],
+        lambda: [f"{a}=={c}" for a, (b, c) in detect_dataflow_conflicts(req_path, True).items()],
     )
