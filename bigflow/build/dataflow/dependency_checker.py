@@ -28,10 +28,13 @@ def detect_beam_version(reqs: List[str]):
 
 def build_requirements_dict(requirements: List[str]) -> Dict[str, str]:
     matcher = re.compile(r"(.*?)(?:\[.*?\])?==(.*)")
-    return dict(
-        matcher.match(line.lower()).groups()
-        for line in requirements
-    )
+    res = {}
+    for line in requirements:
+        m = matcher.match(line.lower())
+        if m:
+            k, v = m.groups()
+            res[k] = v
+    return res
 
 
 def load_beam_worker_preinstalled_dependencies(beam_version, py_version):
@@ -53,7 +56,7 @@ def detect_dataflow_conflicts(req_path: Path):
     beam_version = detect_beam_version(requirements)
     if not beam_version:
         logger.debug("Beam is not used - don't perform worker dependencies conflict check")
-        return
+        return {}
 
     py_version = detect_py_version()
     existing_pins = existing_pinfile.read_text() if existing_pinfile.exists() else ""
@@ -65,7 +68,7 @@ def detect_dataflow_conflicts(req_path: Path):
         workerdeps = load_beam_worker_preinstalled_dependencies(beam_version, py_version)
     except FileNotFoundError:
         logger.error("Unsupported beam/python version: %s/%s", beam_version, py_version)
-        return
+        return {}
 
     reqs = build_requirements_dict(requirements)
     common_deps = set(reqs) & set(workerdeps)
