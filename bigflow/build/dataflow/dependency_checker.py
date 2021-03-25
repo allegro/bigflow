@@ -82,7 +82,8 @@ def detect_dataflow_conflicts(req_path: Path, all=False):
     common_deps = set(reqs) & set(workerdeps)
     conflicts = {
         k: (reqs[k], workerdeps[k])
-        for k in common_deps
+        for k in reqs  # preserve order of `reqs`
+        if k in common_deps
         if (reqs[k] != workerdeps[k] or all)
         and not re.search(rf"\W{re.escape(k)}\W", existing_pins)  # pin is ignored
     }
