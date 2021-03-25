@@ -28,23 +28,36 @@ def detect_beam_version(reqs: List[str]):
 
 def build_requirements_dict(requirements: List[str]) -> Dict[str, str]:
     matcher = re.compile(r"(.*?)(?:\[.*?\])?==(.*)")
-    return dict(
-        matcher.match(line.lower()).groups()
-        for line in requirements
-    )
+    res = {}
+    for line in requirements:
+        m = matcher.match(line.lower())
+        if m:
+            k, v = m.groups()
+            res[k] = v
+    return res
 
 
 def load_beam_worker_preinstalled_dependencies(beam_version, py_version):
     fname = f"beam{beam_version}_py{py_version}.txt"
     txt = importlib.resources.read_text(bigflow.build.dataflow.workerdeps, fname)
-    return dict(
+    result = dict(
         line.lower().split("==", 2)
         for line in txt.splitlines()
         if line.strip() and not line.startswith("#")
     )
 
+    if result['google-cloud-core'] == "1.1.0":
+        # Bumpup version of `google-cloud-storage` to 1.2
+        # Google has preinstalled 1.1, but semi-fresh versions of google-cloud-storage depends on 1.2
+        # Actual difference between 1.1 and 1.2 is literally only 1 single commit
+        # https://github.com/googleapis/python-cloud-core/commit/b212be20bc95127a2a0fed686c8bbb3ad72c47dd
+        # So it should be safe to upgrade from 1.1 to 1.2.
+        result['google-cloud-core'] = "1.2.0"
 
-def detect_dataflow_conflicts(req_path: Path):
+    return result
+
+
+def detect_dataflow_conflicts(req_path: Path, all=False):
 
     req_path = req_path.with_suffix(".txt")
     existing_pinfile = req_path.parent / "dataflow_pins.in"
@@ -53,7 +66,7 @@ def detect_dataflow_conflicts(req_path: Path):
     beam_version = detect_beam_version(requirements)
     if not beam_version:
         logger.debug("Beam is not used - don't perform worker dependencies conflict check")
-        return
+        return {}
 
     py_version = detect_py_version()
     existing_pins = existing_pinfile.read_text() if existing_pinfile.exists() else ""
@@ -65,14 +78,14 @@ def detect_dataflow_conflicts(req_path: Path):
         workerdeps = load_beam_worker_preinstalled_dependencies(beam_version, py_version)
     except FileNotFoundError:
         logger.error("Unsupported beam/python version: %s/%s", beam_version, py_version)
-        return
+        return {}
 
     reqs = build_requirements_dict(requirements)
     common_deps = set(reqs) & set(workerdeps)
     conflicts = {
         k: (reqs[k], workerdeps[k])
         for k in common_deps
-        if reqs[k] != workerdeps[k]
+        if (reqs[k] != workerdeps[k] or all)
         and not re.search(rf"\W{re.escape(k)}\W", existing_pins)  # pin is ignored
     }
 
@@ -112,5 +125,5 @@ def sync_requirements_with_dataflow_workers(req_path=None):
     return bigflow.build.pip.generate_pinfile(
         req_path,
         pins_in,
-        lambda: [f"{a}=={c}" for a, (b, c) in detect_dataflow_conflicts(req_path).items()],
+        lambda: [f"{a}=={c}" for a, (b, c) in detect_dataflow_conflicts(req_path, True).items()],
     )

@@ -1,1 +1,2 @@
 recursive-include bigflow/scaffold/templates *
+include bigflow/build/dataflow/workerdeps/*
