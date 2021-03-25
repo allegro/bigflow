@@ -3,11 +3,10 @@
 # $source-file: resources/requirements.in
 #
 # run 'bigflow build-requirements resources/requirements.in' to update this file
-
 better-setuptools-git-version==1.0.5
     # via bigflow
 bigflow[log]==1.1.0a3
-    # via -r resources/requirements.in
+    # via -r requirements.in
 cachetools==4.2.0
     # via google-auth
 certifi==2020.12.5
@@ -87,7 +86,7 @@ toml==0.10.2
     # via bigflow
 unittest-xml-reporting==3.0.4
     # via bigflow
-urllib3==1.26.2
+urllib3==1.26.3
     # via requests
 wheel==0.36.2
     # via bigflow
