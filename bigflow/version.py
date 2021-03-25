@@ -5,9 +5,14 @@ import typing
 import tempfile
 import pathlib
 
-from bigflow.commons import run_process
+import bigflow.commons
+
 
 logger = logging.getLogger(__name__)
+
+
+def run_process(*args, verbose=False, **kwargs):
+    return bigflow.commons.run_process(*args, verbose=verbose, **kwargs)
 
 
 def get_version():
@@ -16,7 +21,7 @@ def get_version():
     if not dirty:
         # try direct tag match
         try:
-            tag = run_process(["git", "describe", "--exact-match", "--dirty=+dirty", "--tags"], verbose=False)
+            tag = run_process(["git", "describe", "--exact-match", "--dirty=+dirty", "--tags"])
         except subprocess.SubprocessError as e:
             logger.debug("No direct git tag match: %s", e)
         else:
@@ -31,7 +36,7 @@ def get_version():
 
     # try generic 'git describe' (fail when there are no tags)
     try:
-        version = run_process(["git", "describe", "--abbrev=8", "--long", "--tags"], verbose=False)
+        version = run_process(["git", "describe", "--abbrev=8", "--long", "--tags"])
     except subprocess.SubprocessError as e:
         logger.debug("No long git describtion: %s", e)
     else:
@@ -50,7 +55,7 @@ def get_version():
 
     # no tags? mayb just githash will work
     try:
-        ghash = run_process(["git", "rev-parse", "HEAD"], verbose=False)[:12]
+        ghash = run_process(["git", "rev-parse", "HEAD"])[:12]
     except subprocess.SubprocessError as e:
         logger.debug("No githash available: %s", e)
     else:
@@ -62,7 +67,7 @@ def get_version():
 
 def _generate_dirty_suffix():
     try:
-        dirty = bool(run_process(["git", "diff", "--shortstat", "HEAD"], verbose=True).strip())
+        dirty = bool(run_process(["git", "diff", "--shortstat", "HEAD"]).strip())
     except subprocess.SubprocessError as e:
         logger.error("Unable to run git diff: %s", e)
         return ""
@@ -84,8 +89,8 @@ def _get_workdir_treehash():
         env = {"GIT_INDEX_FILE": tf.name}
         tf.write(indexf.read_bytes())
 
-        run_process(["git", "add", "-u"], env_add=env, verbose=False)
-        return run_process(["git", "write-tree"], env_add=env, verbose=False)
+        run_process(["git", "add", "-u"], env_add=env)
+        return run_process(["git", "write-tree"], env_add=env)
 
 
 def get_tag():
