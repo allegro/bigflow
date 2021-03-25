@@ -306,10 +306,11 @@ class AutoConfigurationTestCase(TestCase):
         # given
         get_version_mock.side_effect = self.get_version_error
 
+        # when
+        v = secure_get_version()
+
         # then
-        with self.assertRaises(ValueError) as e:
-            # when
-            secure_get_version()
+        self.assertEqual(v, "0")
 
     @mock.patch('setuptools.setup')
     def test_should_suite_project_setup(self, setuptools_setup):

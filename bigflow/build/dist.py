@@ -270,9 +270,10 @@ def secure_get_version() -> str:
     try:
         return bigflow.version.get_version()
     except Exception as e:
-        print(e)
-        raise ValueError("Can't get the current package version. To use the automatic versioning, "
-                         "you need to use git inside your project directory.")
+        logger.error("Can't get the current package version. To use the automatic versioning, "
+                         "you need to use git inside your project directory: %s", e)
+        # Temp fix - apache beam is using 'setup.py' internally when git/gitrepo is not awailable.
+        return "0"
 
 
 def auto_configuration(project_name: str, project_dir: Path = Path('.').parent) -> dict:
