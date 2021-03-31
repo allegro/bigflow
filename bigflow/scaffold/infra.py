@@ -153,7 +153,6 @@ def try_create(
         creator: InfrastructureCreator) -> None:
     try:
         creator()
-    except Exception as e:
-        logger.error(f"Can't create {name}. Trying to destroy leftovers.")
-        logger.exception(e)
+    except Exception:
+        logger.exception(f"Can't create {name}. Trying to destroy leftovers.")
         destroyer()
