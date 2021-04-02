@@ -319,7 +319,7 @@ class CloudComposerCreatorTestCase(unittest.TestCase):
         gcp_project_id, bigflow_project_name, environment_name, region, zone = self.infrastructure_parameters
 
         # when
-        infra.try_create(*infra.cloud_composer(
+        infra.try_create(infra.CloudComposer(
             gcp_project_id,
             bigflow_project_name,
             environment_name,
@@ -375,7 +375,7 @@ class CloudComposerCreatorTestCase(unittest.TestCase):
         composer_create_command_mock.side_effect = raise_error
 
         # when
-        infra.try_create(*infra.cloud_composer(
+        infra.try_create(infra.CloudComposer(
             gcp_project_id,
             bigflow_project_name,
             environment_name,
