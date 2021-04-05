@@ -165,7 +165,7 @@ def try_create(infrastructure_element: _InfrastructureManager) -> None:
         infrastructure_element.create()
     except Exception:
         logger.exception(f"Can't create {infrastructure_element.name}. Trying to destroy leftovers.")
-        infrastructure_element.destroy()
+        infrastructure_element.secure_destroy()
 
 
 if __name__ == '__main__':
