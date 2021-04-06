@@ -1,4 +1,3 @@
-import shutil
 import subprocess
 import unittest
 import tempfile
@@ -11,6 +10,7 @@ import jinja2
 
 from bigflow.cli import cli
 from bigflow.scaffold import templating as tt
+from bigflow.scaffold import infra
 
 
 class ProjectScaffoldE2ETestCase(TestCase):
@@ -273,7 +273,6 @@ class TemplatingTestCase(unittest.TestCase):
         ]:
             self.assertEqual(self.readfile(expected_file), "OK")
 
-
     def test_conditional_render(self):
         # given
         loader = jinja2.DictLoader({
@@ -303,3 +302,128 @@ class TemplatingTestCase(unittest.TestCase):
             "a1", "b2", "c2",
         ]:
             self.assertFalse((Path(self.tmp_dir) / should_not_exist).exists())
+
+
+class CloudComposerCreatorTestCase(unittest.TestCase):
+    infrastructure_parameters = (
+        'fake-gcp-project',
+        'fake-bigflow-project',
+        'dev',
+        'europe-west2',
+        'europe-west2-b'
+    )
+
+    @mock.patch('bigflow.scaffold.infra.run_process')
+    def test_should_create_cloud_composer(self, run_process_mock):
+        # given
+        gcp_project_id, bigflow_project_name, environment_name, region, zone = self.infrastructure_parameters
+
+        # when
+        infra.try_create(infra.CloudComposer(
+            gcp_project_id,
+            bigflow_project_name,
+            environment_name,
+            region,
+            zone
+        ))
+
+        # then
+        expected_router_name = f'bigflow-router-{bigflow_project_name}-{environment_name}-{region}'
+        run_process_mock.assert_has_calls([
+            mock.call([
+                'gcloud', 'compute',
+                '--project', gcp_project_id,
+                'routers', 'create', expected_router_name,
+                '--network', 'default',
+                '--region', region
+            ]),
+            mock.call([
+                'gcloud', 'compute',
+                '--project', gcp_project_id,
+                'routers', 'nats', 'create', f'bigflow-nat-{bigflow_project_name}-{environment_name}-{region}',
+                f'--router={expected_router_name}',
+                '--auto-allocate-nat-external-ips',
+                '--nat-all-subnet-ip-ranges',
+                '--enable-logging'
+            ]),
+            mock.call([
+                'gcloud', 'composer',
+                '--project', gcp_project_id,
+                'environments', 'create', f'bigflow-composer-{bigflow_project_name}-{environment_name}-{region}',
+                f'--location={region}',
+                f'--zone={zone}',
+                f'--env-variables=env={environment_name}',
+                f'--machine-type=n1-standard-2',
+                f'--node-count=3',
+                f'--python-version=3',
+                f'--enable-ip-alias',
+                f'--network=default',
+                f'--subnetwork=default',
+                f'--enable-private-environment',
+                f'--enable-private-endpoint',
+            ])
+        ])
+
+    @mock.patch('bigflow.scaffold.infra.run_process')
+    @mock.patch('bigflow.scaffold.infra._composer_create_command')
+    def test_should_destroy_leftovers_when_error_occurs_during_creation(self, composer_create_command_mock, run_process_mock):
+        # given
+        def raise_error(*args):
+            raise ValueError('panic!')
+
+        gcp_project_id, bigflow_project_name, environment_name, region, zone = self.infrastructure_parameters
+        composer_create_command_mock.side_effect = raise_error
+
+        # when
+        infra.try_create(infra.CloudComposer(
+            gcp_project_id,
+            bigflow_project_name,
+            environment_name,
+            region,
+            zone
+        ))
+
+        # then
+        expected_router_name = f'bigflow-router-{bigflow_project_name}-{environment_name}-{region}'
+        expected_composer_name = f'bigflow-composer-{bigflow_project_name}-{environment_name}-{region}'
+        expected_nat_name = f'bigflow-nat-{bigflow_project_name}-{environment_name}-{region}'
+
+        run_process_mock.assert_has_calls([
+            mock.call([
+                'gcloud', 'compute',
+                '--project', gcp_project_id,
+                'routers', 'create', expected_router_name,
+                '--network', 'default',
+                '--region', region
+            ]),
+            mock.call([
+                'gcloud', 'compute',
+                '--project', gcp_project_id,
+                'routers', 'nats', 'create', f'bigflow-nat-{bigflow_project_name}-{environment_name}-{region}',
+                f'--router={expected_router_name}',
+                '--auto-allocate-nat-external-ips',
+                '--nat-all-subnet-ip-ranges',
+                '--enable-logging'
+            ]),
+            mock.call([
+                'gcloud', 'composer',
+                'environments', 'delete', expected_composer_name,
+                '--location', region,
+                '--project', gcp_project_id,
+                '--quiet'
+            ]),
+            mock.call([
+                'gcloud', 'compute',
+                '--project', gcp_project_id,
+                'routers', 'nats', 'delete', expected_nat_name,
+                '--router', expected_router_name,
+                '--quiet'
+            ]),
+            mock.call([
+                'gcloud', 'compute',
+                '--project', gcp_project_id,
+                'routers', 'delete', expected_router_name,
+                '--region', region,
+                '--quiet'
+            ])
+        ])
