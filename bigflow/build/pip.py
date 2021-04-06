@@ -149,7 +149,7 @@ def check_requirements_needs_recompile(requiremenets: Path) -> bool:
 def read_requirements(requirements_path: Path, recompile_check=True) -> List[str]:
     """Reads and parses 'requirements.txt' file.
 
-    Returns list of requirement specs, skipping comments and empty lines
+    Returns list of requirement specs, skipping comments and empty lines and pip directives.
     """
 
     if recompile_check and check_requirements_needs_recompile(requirements_path):
@@ -163,6 +163,8 @@ def read_requirements(requirements_path: Path, recompile_check=True) -> List[str
                 subrequirements_file_name = line.replace("-r ", "")
                 subrequirements_path = requirements_path.parent / subrequirements_file_name
                 result.extend(read_requirements(subrequirements_path, recompile_check=False))
+            elif line.startswith("--"):
+                logger.debug("skip requirements line %r", line)
             elif line:
                 result.append(line)
 
