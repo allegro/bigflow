@@ -1,5 +1,6 @@
 from unittest import TestCase
 from unittest import mock
+import unittest
 from unittest.mock import patch
 
 import apache_beam as beam
@@ -174,8 +175,12 @@ class BeamJobTestCase(TestCase):
                 wait_until_finish=False)
 
     @patch.object(RunnerResult, 'is_in_terminal_state', create=True)
-    @patch.object(BeamJob, '_create_pipeline')
-    def test_should_create_pipeline_from_pipeline_options(self, _create_pipeline_mock, is_in_terminal_state_mock):
+    @patch('bigflow.dataflow.Pipeline')
+    def test_should_create_pipeline_from_pipeline_options(
+        self,
+        _create_pipeline_mock: mock.Mock,
+        is_in_terminal_state_mock,
+    ):
         # given
         is_in_terminal_state_mock.return_value = True
         driver = CountWordsDriver(CounterStater(CounterState()))
@@ -198,7 +203,11 @@ class BeamJobTestCase(TestCase):
         count_words.run('2020-01-01')
 
         # then
-        _create_pipeline_mock.assert_called_with(options)
+        options.get_all_options()
+        self.assertDictEqual(
+            options.get_all_options(),
+            _create_pipeline_mock.call_args[1]['options'].get_all_options(),
+        )
 
     def test_should_throw_if_pipeline_options_and_pipeline_both_not_provided(self):
         with self.assertRaises(ValueError):
