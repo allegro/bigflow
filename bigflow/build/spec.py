@@ -106,26 +106,55 @@ def parse_project_spec(
     )
 
 
-def _read_project_spec_raw(dir: Path = None) -> dict:
+def render_project_specs(prj: BigflowProjectSpec) -> dict:
+    return {
+        'version': prj.version,
+        'name': prj.name,
+        'packages': prj.packages,
+        'install_requires': prj.install_requires,
+        'docker_repository': prj.docker_repository,
+        'deployment_config_file': prj.deployment_config_file,
+        'project_requirements_file': prj.project_requirements_file,
+    }
+
+
+def add_spec_to_pyproject_toml(pyproject_toml: Path, prj: BigflowProjectSpec):
+    if pyproject_toml.exists():
+        data = toml.load(pyproject_toml)
+    else:
+        data = {}
+    data['bigflow-project'] = render_project_specs(prj)
+    pyproject_toml.write_text(toml.dumps(data))
+
+
+def mabye_read_project_spec_from_pyproject(dir: Path = None):
     dir = dir or Path.cwd()
+    if not (dir / "pyproject.toml").exists():
+        return
 
-    if (dir / "pyproject.toml").exists():
-        logger.debug("Trying load bigflow project spec from pyproject.toml")
-        data = toml.load(dir / "pyproject.toml")
-        if 'bigflow' in data:
-            return data['bigflow']
+    logger.debug("Trying load bigflow project spec from pyproject.toml")
+    data = toml.load(dir / "pyproject.toml")
+    if 'bigflow-project' in data:
+        return parse_project_spec(project_dir=dir, **data['bigflow-project'])
 
-    logger.debug("Load bigflow project spec from `setup.py`")
-    from bigflow.build.dev import read_setuppy_args
-    return read_setuppy_args(directory=dir)
+
+def maybe_read_project_spec_from_setuppy(dir: Path = None):
+    dir = dir or Path.cwd()
+    setuppy = dir / "setup.py"
+    if not setuppy.exists():
+        return
+    data = bigflow.build.dev.read_setuppy_args(setuppy)
+    return parse_project_spec(project_dir=dir, **data)
 
 
 def read_project_spec(dir: Path = None):
     try:
-        praw = _read_project_spec_raw(dir)
-        return parse_project_spec(project_dir=dir, **praw)
+        ret = mabye_read_project_spec_from_pyproject(dir) or maybe_read_project_spec_from_setuppy(dir)
     except Exception:
         raise ValueError('The project configuration is invalid. Check the documentation how to create a valid `setup.py`: https://github.com/allegro/bigflow/blob/master/docs/build.md')
+    if not ret:
+        raise ValueError("Unable to find bigflow project configuration, Check the documentation https://github.com/allegro/bigflow/blob/master/docs/build.md")
+    return ret
 
 
 def _validate_deployment_config(config: dict):

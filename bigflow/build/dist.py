@@ -9,6 +9,8 @@ import pickle
 import distutils.cmd
 import distutils.command.sdist
 import distutils.dist
+import distutils.filelist
+import distutils.log as dlog
 
 from pathlib import Path
 from datetime import datetime
@@ -21,7 +23,7 @@ import bigflow.build.pip
 import bigflow.build.dev
 import bigflow.build.operate
 
-from bigflow.build.spec import BigflowProjectSpec, parse_project_spec
+from bigflow.build.spec import BigflowProjectSpec, parse_project_spec, add_spec_to_pyproject_toml
 
 
 logger = logging.getLogger(__name__)
@@ -77,17 +79,39 @@ def _hook_pregenerate_sdist(command_cls):
 
 class sdist(distutils.command.sdist.sdist):
     """Customized `sdist` command"""
+    distribution: BigflowDistribution
+
+    def make_release_tree(self, base_dir, files):
+        super().make_release_tree(base_dir, files)
+        self._generate_files(base_dir)
 
     def add_defaults(self):
         super().add_defaults()
         self._add_defaults_bigflow()
+
+    def _generate_files(self, base_dir):
+
+        # append generated project specs to pyproject.toml
+        p = Path(base_dir) / "pyproject.toml"
+        dlog.info("add full bigflow project info to %s", p)
+        if p.exists():  # break hard link
+            content = p.read_bytes()
+            p.unlink()
+            p.write_bytes(content)
+
+        add_spec_to_pyproject_toml(p, self.distribution.bigflow_project_spec)
+
+        # replace 'setup.py' with shim
+        p = Path(base_dir) / "setup.py"
+        if p.exists():
+            p.rename(p.parent / "setup.py.orig")
+        p.write_text("""from bigflow.build import setup; setup()""")
 
     def _add_defaults_bigflow(self):
         self.filelist.extend(
             filter(os.path.exists, [
                 "setup.py",
                 "pyproject.toml",
-                "bfprojectspec.json",
                 "deployment_config.py",
                 "requirements.in",
                 "requirements.txt",
@@ -179,7 +203,7 @@ def _maybe_dump_setup_params(params):
         sys.exit(0)
 
 
-def setup(project_dir=None, **kwargs):
+def setup(project_dir=None,  **kwargs):
 
     project_dir = Path(project_dir or Path.cwd())
     _maybe_dump_setup_params(kwargs)
