@@ -23,6 +23,8 @@ import bigflow.resources
 import bigflow.commons as bf_commons
 import bigflow.build.dist
 import bigflow.build.dev
+import bigflow.build.operate
+import bigflow.build.spec
 import bigflow.migrate
 
 from bigflow import Config
@@ -550,56 +552,31 @@ def find_image_file():
 
 
 def _cli_build_image(args):
-    validate_project_setup()
-    bf_commons.run_process([
-        "python",
-        bigflow.build.dev.find_setuppy(),
-        "build_project",
-        "--build-image",
-    ])
+    prj = bigflow.build.spec.read_project_spec()
+    bigflow.build.operate.build_image(prj)
 
 
 def _cli_build_package():
-    validate_project_setup()
-    bf_commons.run_process([
-        "python",
-        bigflow.build.dev.find_setuppy(),
-        "build_project",
-        "--build-package",
-    ])
+    prj = bigflow.build.spec.read_project_spec()
+    bigflow.build.operate.build_package(prj)
 
 
 def _cli_build_dags(args):
-    validate_project_setup()
-    cmd = [
-        "python",
-        bigflow.build.dev.find_setuppy(),
-        "build_project",
-        "--build-dags",
-    ]
-    if _is_workflow_selected(args):
-        cmd.append('--workflow')
-        cmd.append(args.workflow)
-    if _is_starttime_selected(args):
-        cmd.append('--start-time')
-        cmd.append(args.start_time)
-    bf_commons.run_process(cmd)
+    prj = bigflow.build.spec.read_project_spec()
+    bigflow.build.operate.build_dags(
+        prj,
+        start_time=args.start_time if _is_starttime_selected(args) else datetime.now().strftime("%Y-%m-%d %H:00:00"),
+        workflow_id=args.workflow if _is_workflow_selected(args) else None,
+    )
 
 
 def _cli_build(args):
-    validate_project_setup()
-    cmd = [
-        "python",
-        bigflow.build.dev.find_setuppy(),
-        "build_project",
-    ]
-    if _is_workflow_selected(args):
-        cmd.append('--workflow')
-        cmd.append(args.workflow)
-    if _is_starttime_selected(args):
-        cmd.append('--start-time')
-        cmd.append(args.start_time)
-    bf_commons.run_process(cmd)
+    prj = bigflow.build.spec.read_project_spec()
+    bigflow.build.operate.build_project(
+        prj,
+        start_time=args.start_time if _is_starttime_selected(args) else datetime.now().strftime("%Y-%m-%d %H:00:00"),
+        workflow_id=args.workflow if _is_workflow_selected(args) else None,
+    )
 
 
 def _create_build_requirements_parser(subparsers):
@@ -725,19 +702,6 @@ def _cli_start_project():
 
     start_project(**config)
     print('Bigflow project created successfully.')
-
-
-def validate_project_setup():
-    cmd = [
-        "python",
-        bigflow.build.dev.find_setuppy(),
-        "build_project",
-        "--validate-project-setup",
-    ]
-    output = bf_commons.run_process(cmd)
-
-    if bigflow.build.dist.SETUP_VALIDATION_MESSAGE not in output:
-        raise ValueError('The `setup.py` is invalid. Check the documentation how to create a valid `setup.py`: https://github.com/allegro/bigflow/blob/master/docs/build.md')
 
 
 def _cli_project_version(args):

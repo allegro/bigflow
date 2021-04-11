@@ -1,3 +1,4 @@
+"""Read and parse bigflow project configuration (setup.py / pyproject.toml)"""
 
 import textwrap
 import setuptools
@@ -120,8 +121,11 @@ def _read_project_spec_raw(dir: Path = None) -> dict:
 
 
 def read_project_spec(dir: Path = None):
-    praw = _read_project_spec_raw(dir)
-    return parse_project_spec(project_dir=dir, **praw)
+    try:
+        praw = _read_project_spec_raw(dir)
+        return parse_project_spec(project_dir=dir, **praw)
+    except Exception:
+        raise ValueError('The project configuration is invalid. Check the documentation how to create a valid `setup.py`: https://github.com/allegro/bigflow/blob/master/docs/build.md')
 
 
 def _validate_deployment_config(config: dict):

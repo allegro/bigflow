@@ -1,6 +1,9 @@
+from mock.mock import _set_return_value
+from bigflow.build.operate import build_project
 from unittest import TestCase
 import itertools
 import mock
+import freezegun
 
 from bigflow.cli import *
 
@@ -568,33 +571,43 @@ deployment_config = Config(name='dev',
         with self.assertRaises(SystemExit):
             cli(['build-dags', '-w', 'some_workflow', '-t', '20200101'])
 
-    @mock.patch('bigflow.commons.run_process')
-    @mock.patch('bigflow.cli.validate_project_setup')
+    @mock.patch('bigflow.build.operate.build_dags')
+    @mock.patch('bigflow.build.spec.read_project_spec')
+    @freezegun.freeze_time("2001-02-03 15:00:00")
     def test_should_call_cli_build_dags_commands_with_NOW_and_ALL(
-            self, validate_project_setup_mock, run_process_mock):
-        # given
-        validate_project_setup_mock.return_value = '.'
-
+        self,
+        read_project_spec: mock.Mock,
+        build_dags_mock: mock.Mock,
+    ):
         # when
         cli(['build-dags','--workflow', 'ALL', '--start-time', 'NOW'])
 
         # then
-        run_process_mock.assert_any_call([
-            "python", EXAMPLE_PROJECT_SETUPPY, "build_project", "--build-dags"])
+        read_project_spec.assert_called_once()
+        build_dags_mock.assert_any_call(
+            read_project_spec.return_value,
+            start_time="2001-02-03 15:00:00",
+            workflow_id=None,
+        )
 
-    @mock.patch('bigflow.commons.run_process')
-    @mock.patch('bigflow.cli.validate_project_setup')
+    @mock.patch('bigflow.build.operate.build_project')
+    @mock.patch('bigflow.build.spec.read_project_spec')
+    @freezegun.freeze_time("2001-02-03 15:00:00")
     def test_should_call_cli_build_commands_with_NOW_and_ALL(
-            self, validate_project_setup_mock, run_process_mock):
-        # given
-        validate_project_setup_mock.return_value = '.'
-
+        self,
+        read_project_spec: mock.Mock,
+        build_project_mock: mock.Mock,
+    ):
         # when
         cli(['build','--workflow', 'ALL', '--start-time', 'NOW'])
 
         # then
-        run_process_mock.assert_any_call([
-            "python", EXAMPLE_PROJECT_SETUPPY, "build_project"])
+        read_project_spec.assert_called_once()
+        build_project_mock.assert_any_call(
+            read_project_spec.return_value,
+            start_time="2001-02-03 15:00:00",
+            workflow_id=None,
+        )
 
     @mock.patch('bigflow.cli._cli_build_image')
     def test_should_call_cli_build_image_command(self, _cli_build_image_mock):
@@ -604,19 +617,24 @@ deployment_config = Config(name='dev',
         # then
         _cli_build_image_mock.assert_called_with(Namespace(operation='build-image', verbose=False))
 
-    @mock.patch('bigflow.commons.run_process')
-    @mock.patch('bigflow.cli.validate_project_setup')
+    @mock.patch('bigflow.build.operate.build_project')
+    @mock.patch('bigflow.build.spec.read_project_spec')
+    @freezegun.freeze_time("2001-02-03 15:00:00")
     def test_should_call_build_command_through_CLI(
-            self, validate_project_setup_mock, run_process_mock):
-        # given
-        validate_project_setup_mock.return_value = '.'
-
+        self,
+        read_project_spec: mock.Mock,
+        build_project_mock: mock.Mock,
+    ):
         # when
         cli(['build'])
 
         # then
-        run_process_mock.assert_any_call([
-            "python", EXAMPLE_PROJECT_SETUPPY, "build_project"])
+        read_project_spec.assert_called_once()
+        build_project_mock.assert_any_call(
+            read_project_spec.return_value,
+            start_time="2001-02-03 15:00:00",
+            workflow_id=None,
+        )
 
     @mock.patch('bigflow.cli._cli_build_package')
     def test_should_call_cli_build_package_command(self, _cli_build_package_mock):
@@ -647,50 +665,53 @@ deployment_config = Config(name='dev',
         # then
         _cli_build_mock.assert_called_with(Namespace(operation='build', start_time='2020-01-01 00:00:00', workflow='some_workflow', verbose=False))
 
-    @mock.patch('bigflow.commons.run_process')
-    @mock.patch('bigflow.cli.validate_project_setup')
-    def test_should_call_build_package_command_through_CLI(self, validate_project_setup_mock, run_process_mock):
+    @mock.patch('bigflow.build.operate.build_package')
+    @mock.patch('bigflow.build.spec.read_project_spec')
+    def test_should_call_build_package_command_through_CLI(
+        self,
+        read_project_mock: mock.Mock,
+        build_package_mock: mock.Mock,
+    ):
+
         # when
         cli(['build-package'])
 
         # then
-        run_process_mock.assert_any_call([
-            "python", EXAMPLE_PROJECT_SETUPPY, "build_project", "--build-package"])
+        read_project_mock.assert_called_once()
+        build_package_mock.assert_any_call(read_project_mock.return_value)
 
-    @mock.patch('bigflow.commons.run_process')
-    @mock.patch('bigflow.resources.find_file')
-    @mock.patch('bigflow.cli.validate_project_setup')
-    def test_should_call_build_image_command_through_CLI(self, validate_project_setup_mock, find_file_mock,
-                                                         run_process_mock):
+    @mock.patch('bigflow.build.operate.build_image')
+    @mock.patch('bigflow.build.spec.read_project_spec')
+    def test_should_call_build_image_command_through_CLI(
+        self,
+        read_project_mock: mock.Mock,
+        build_image_mock: mock.Mock,
+    ):
         # when
         cli(['build-image'])
 
         # then
-        run_process_mock.assert_any_call([
-            "python", EXAMPLE_PROJECT_SETUPPY, "build_project", "--build-image"])
+        read_project_mock.assert_called_once()
+        build_image_mock.assert_any_call(read_project_mock.return_value)
 
-    @mock.patch('bigflow.commons.run_process')
-    @mock.patch('bigflow.cli.validate_project_setup')
-    def test_should_call_build_dags_command_through_CLI(self, validate_project_setup_mock, run_process_mock):
+    @mock.patch('bigflow.build.operate.build_dags')
+    @mock.patch('bigflow.build.spec.read_project_spec')
+    @freezegun.freeze_time("2001-02-03 15:00:00")
+    def test_should_call_build_dags_command_through_CLI(
+        self,
+        read_project_mock: mock.Mock,
+        build_dags_mock: mock.Mock,
+    ):
         # when
         cli(['build-dags'])
 
         # then
-        run_process_mock.assert_any_call([
-            "python", EXAMPLE_PROJECT_SETUPPY, "build_project", "--build-dags"])
-
-    @mock.patch('bigflow.commons.run_process')
-    @mock.patch('bigflow.cli.validate_project_setup')
-    def test_should_validate_project_setup_before_build(
-            self, validate_project_setup_mock, run_process_mock):
-        # when
-        cli(['build'])
-        cli(['build-image'])
-        cli(['build-dags'])
-        cli(['build-package'])
-
-        # then
-        self.assertEqual(validate_project_setup_mock.call_count, 4)
+        read_project_mock.assert_called_once()
+        build_dags_mock.assert_any_call(
+            read_project_mock.return_value,
+            start_time="2001-02-03 15:00:00",
+            workflow_id=None,
+        )
 
     @mock.patch('bigflow.cli.get_version')
     def test_should_call_cli_project_version_command(self, get_version):
