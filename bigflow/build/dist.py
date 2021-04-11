@@ -1,19 +1,10 @@
-"""Integrates `bigfow` with `setuptools`
-"""
+"""Integrates bigflow build toolchain with 'distutils'"""
 
 import os
-import subprocess
 import sys
-import shutil
-import textwrap
-import unittest
 import setuptools
-import typing
-import xmlrunner
 import logging
-import typing
 import pickle
-import dataclasses
 
 import distutils.cmd
 import distutils.command.sdist
@@ -28,10 +19,9 @@ import bigflow.dagbuilder
 import bigflow.version
 import bigflow.build.pip
 import bigflow.build.dev
-import bigflow.build.dataflow.dependency_checker
-import bigflow.commons as bf_commons
+import bigflow.build.operate
 
-from bigflow.build.spec import BigflowProjectSpec, read_project_spec, parse_project_spec
+from bigflow.build.spec import BigflowProjectSpec, parse_project_spec
 
 
 logger = logging.getLogger(__name__)
@@ -39,76 +29,15 @@ logger = logging.getLogger(__name__)
 SETUP_VALIDATION_MESSAGE = 'BigFlow setup is valid.'
 
 
-def run_tests(prj: BigflowProjectSpec):
-    output_dir = "build/junit-reports"
-    try:
-        return bf_commons.run_process([
-            "python", "-m", "xmlrunner", "discover",
-            "-s", ".",
-            # "-t", project_dir,
-            "-o", output_dir,
-        ])
-    except subprocess.CalledProcessError:
-        raise ValueError("Test suite failed.")
-
-
-def export_docker_image_to_file(tag: str, target_dir: Path, version: str):
-    image_target_path = target_dir / f"image-{version}.tar"
-    logger.info("Exporting the image to %s ...", image_target_path)
-    bf_commons.run_process(["docker", "image", "save", "-o", image_target_path, bf_commons.get_docker_image_id(tag)])
-
-
-def build_docker_image(project_dir: Path, tag: str):
-    print('Building a Docker image. It might take a while.')
-    bf_commons.run_process(f'docker build {project_dir} --tag {tag}')
-
-
-def build_image(
-    prj: BigflowProjectSpec,
-):
-    image_dir = prj.project_dir / ".image"
-    os.mkdir(image_dir)
-    tag = bf_commons.build_docker_image_tag(prj.docker_repository, prj.version)
-    build_docker_image(prj.project_dir, tag)
-
-    try:
-        export_docker_image_to_file(tag, image_dir, prj.version)
-        dconf_file = Path(prj.deployment_config_file)
-        shutil.copyfile(dconf_file, image_dir / dconf_file.name)
-    finally:
-        bf_commons.remove_docker_image_from_local_registry(tag)
-
-
-def build_dags(
-    prj: BigflowProjectSpec,
-    start_time: str,
-    workflow_id: typing.Optional[str] = None,
-):
-    # DON'T USE 'bigflow.cli'!
-    bigflow.cli._valid_datetime(start_time)   # FIXME: Don't use private functions.
-
-    for workflow in bigflow.cli.walk_workflows(Path(prj.root_package)):
-
-        if workflow_id is not None and workflow_id != workflow.workflow_id:
-            continue
-        print(f'Generating DAG file for {workflow.workflow_id}')
-        bigflow.dagbuilder.generate_dag_file(
-            str(prj.project_dir),
-            prj.docker_repository,
-            workflow,
-            start_time,
-            prj.version,
-            prj.root_package,
-        )
-
-
 class BigflowDistribution(distutils.dist.Distribution):
+    """Customized Distribution for bigflow projects. Add custom commands, allow access to bigflow project spec."""
 
     def __init__(self, attrs=None):
+        self.bigflow_project_spec = None
         attrs = dict(attrs or {})
         cmdclass = attrs.setdefault('cmdclass', {})
-        cmdclass['build_project'] = BuildProjectCommand
-        cmdclass['sdist'] = SdistCommand
+        cmdclass['build_project'] = build_project
+        cmdclass['sdist'] = sdist
         super().__init__(attrs)
 
     def get_command_class(self, command):
@@ -146,7 +75,8 @@ def _hook_pregenerate_sdist(command_cls):
     )
 
 
-class SdistCommand(distutils.command.sdist.sdist):
+class sdist(distutils.command.sdist.sdist):
+    """Customized `sdist` command"""
 
     def add_defaults(self):
         super().add_defaults()
@@ -157,6 +87,7 @@ class SdistCommand(distutils.command.sdist.sdist):
             filter(os.path.exists, [
                 "setup.py",
                 "pyproject.toml",
+                "bfprojectspec.json",
                 "deployment_config.py",
                 "requirements.in",
                 "requirements.txt",
@@ -166,7 +97,9 @@ class SdistCommand(distutils.command.sdist.sdist):
             ]))
 
 
-class BuildProjectCommand(distutils.cmd.Command):
+# Deprecated: there is no more need for this command since 1.3
+# It exists however for backward compatability.
+class build_project(distutils.cmd.Command):
 
     distribution: BigflowDistribution
 
@@ -188,66 +121,55 @@ class BuildProjectCommand(distutils.cmd.Command):
         self.workflow = None
         self.validate_project_setup = False
 
-    def should_run_whole_build(self):
-        return not (self.build_dags or self.build_package or self.build_image)
-
     def finalize_options(self) -> None:
         pass
 
     def run(self) -> None:
+        print("Note: don't use `setup.py` directly, instead use `bigflow build` command-line tool")
         if self.validate_project_setup:
             print(SETUP_VALIDATION_MESSAGE)
             return
-
-        prj = read_project_spec()
-
-        if self.build_package or self.should_run_whole_build():
-            print('Building the pip package')
-            clear_package_leftovers(prj)
-            print('Run tests...')
-            run_tests(prj)
-            self.run_command('bdist_wheel')
-
-        if self.build_dags or self.should_run_whole_build():
-            print('Building the dags')
-            clear_dags_leftovers(prj)
-            build_dags(prj, self.start_time, self.workflow)
-
-        if self.build_image or self.should_run_whole_build():
-            print('Building the image')
-            clear_image_leftovers(prj)
-            build_image(prj)
-
-
-def _rmtree(p: Path):
-    logger.info("Removing %s", p)
-    shutil.rmtree(p, ignore_errors=True)
-
-
-def clear_image_leftovers(prj: BigflowProjectSpec):
-    _rmtree(prj.project_dir / ".image")
-
-
-def clear_dags_leftovers(prj: BigflowProjectSpec):
-    _rmtree(prj.project_dir / ".dags")
-
-
-def clear_package_leftovers(prj: BigflowProjectSpec):
-    _rmtree(prj.project_dir / "build")
-    _rmtree(prj.project_dir / "dist")
-    _rmtree(prj.project_dir / f"{prj.name}.egg")
+        prj = self.distribution.bigflow_project_spec
+        if self.build_package:
+            bigflow.build.operate.build_package(prj)
+        elif self.build_dags:
+            bigflow.build.operate.build_dags(prj, self.start_time, self.workflow)
+        elif self.build_image:
+            bigflow.build.operate.build_image(prj)
+        else:
+            bigflow.build.operate.build_project(prj, self.start_time, self.workflow)
 
 
 def projectspec_to_setuppy_kwargs(p: BigflowProjectSpec):
     return {
+        'bigflow_project_spec': p,
         'name': p.name,
         'version': p.version,
         'packages': p.packages,
         'install_requires': p.install_requires,
-        'distclass': BigflowDistribution,
         'data_files': p.data_files,
+        'script_name': "setup.py",
         **p.bypass_setuptools,
     }
+
+
+def run_setup_command(prj: BigflowProjectSpec, command, options=None):
+    """Execute distutils command in the scope of same python process."""
+
+    attrs = projectspec_to_setuppy_kwargs(prj)
+    logger.debug("Create tmp Distribution with attrs %r", attrs)
+    dist = BigflowDistribution(attrs)
+
+    if options:
+        logger.debug("Update command options with %s", options)
+        dist.get_option_dict(command).update(options)
+
+    cmd_obj = dist.get_command_obj(command)
+    logger.debug("Command object is %s", cmd_obj)
+    cmd_obj.ensure_finalized()
+
+    logger.info("Run command %s with options %s", command, options)
+    cmd_obj.run()
 
 
 def _maybe_dump_setup_params(params):
@@ -257,23 +179,19 @@ def _maybe_dump_setup_params(params):
         sys.exit(0)
 
 
-def _configure_setup_logging():
-    # TODO: Capture logging settings of 'wrapping' 'bigflow' cli-command (verbosity flags).
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(message)s",
-    )
+def setup(project_dir=None, **kwargs):
 
-
-def setup(**kwargs):
+    project_dir = Path(project_dir or Path.cwd())
     _maybe_dump_setup_params(kwargs)
-    _configure_setup_logging()
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
 
-    prj = parse_project_spec(project_dir=Path.cwd(), **kwargs)
+    prj = parse_project_spec(project_dir=project_dir, **kwargs)
     setuppy_kwargs = projectspec_to_setuppy_kwargs(prj)
 
     logger.debug("setuptools.setup(**%r)", setuppy_kwargs)
-    return setuptools.setup(**setuppy_kwargs)
-
+    return setuptools.setup(
+        distclass=BigflowDistribution,
+        **setuppy_kwargs,
+    )
 
 
