@@ -9,14 +9,4 @@ def setup(**kwargs):
     return d.setup(**kwargs)
 
 
-# TODO: Remove functions in v2.0
-import bigflow.build.dist as _dist
-_reason = "Use `bigflow.build.setup` instead"
-default_project_setup = public(deprecate_reason=_reason)(_dist.default_project_setup)
-auto_configuration = public(deprecate_reason=_reason)(_dist.auto_configuration)
-project_setup = public(deprecate_reason=_reason)(_dist.project_setup)
-__all__ = [
-    'default_project_setup',
-    'auto_configuration',
-    'project_setup',
-]
+from bigflow.build.legacy import *

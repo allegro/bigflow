@@ -276,17 +276,4 @@ def setup(**kwargs):
     return setuptools.setup(**setuppy_kwargs)
 
 
-## -- LEGACY --
 
-def auto_configuration(project_name: str, project_dir: Path = Path('.').parent) -> dict:
-    return {
-        'project_name': project_name,
-        'project_dir': project_dir,
-    }
-
-def project_setup(project_name: str) -> dict:
-    return {'name': project_name}
-
-
-def default_project_setup(project_name: str, project_dir=None):
-    return setup(name=project_name)
