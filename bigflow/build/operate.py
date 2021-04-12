@@ -25,16 +25,20 @@ logger = logging.getLogger(__name__)
 
 
 def run_tests(prj: BigflowProjectSpec):
+    logger.info('Runing tests...')
     output_dir = "build/junit-reports"
     try:
-        return bf_commons.run_process([
+        bf_commons.run_process([
             "python", "-m", "xmlrunner", "discover",
             "-s", ".",
             # "-t", project_dir,
             "-o", output_dir,
         ])
     except subprocess.CalledProcessError:
-        raise ValueError("Test suite failed.")
+        logger.error("Test suite was FAILED")
+        exit(1)
+
+    logger.info("Test suite was PASSED")
 
 
 def _export_docker_image_to_file(tag: str, target_dir: Path, version: str):
@@ -44,14 +48,14 @@ def _export_docker_image_to_file(tag: str, target_dir: Path, version: str):
 
 
 def _build_docker_image(project_dir: Path, tag: str):
-    print('Building a Docker image. It might take a while.')
+    logger.info("Building a docker image...")
     bf_commons.run_process(f'docker build {project_dir} --tag {tag}')
 
 
 def build_image(
     prj: BigflowProjectSpec,
 ):
-    logger.info('Building the image')
+    logger.info("Building docker image...")
     clear_image_leftovers(prj)
 
     image_dir = prj.project_dir / ".image"
@@ -67,35 +71,46 @@ def build_image(
     finally:
         bf_commons.remove_docker_image_from_local_registry(tag)
 
+    logger.info("Docker image was built")
+
 
 def build_dags(
     prj: BigflowProjectSpec,
     start_time: str,
     workflow_id: typing.Optional[str] = None,
 ):
-    logger.info('Building the dags')
+    logger.info("Building airflow DAGs...")
     clear_dags_leftovers(prj)
 
     # FIXME: DON'T USE 'bigflow.cli'!
     from bigflow.cli import _valid_datetime, walk_workflows
     _valid_datetime(start_time)
 
-    for workflow in walk_workflows(Path(prj.root_package)):
-        if workflow_id is not None and workflow_id != workflow.workflow_id:
+    cnt = 0
+    for root_package in prj.packages:
+        if "." in root_package:
+            # leaf package
             continue
-        print(f'Generating DAG file for {workflow.workflow_id}')
-        bigflow.dagbuilder.generate_dag_file(
-            str(prj.project_dir),
-            prj.docker_repository,
-            workflow,
-            start_time,
-            prj.version,
-            prj.root_package,
-        )
+
+        for workflow in walk_workflows(prj.project_dir / root_package):
+            if workflow_id is not None and workflow_id != workflow.workflow_id:
+                continue
+            print(f'Generating DAG file for {workflow.workflow_id}')
+            cnt += 1
+            bigflow.dagbuilder.generate_dag_file(
+                str(prj.project_dir),
+                prj.docker_repository,
+                workflow,
+                start_time,
+                prj.version,
+                root_package,
+            )
+
+    logger.info("Geneated %d DAG files", cnt)
 
 
 def _rmtree(p: Path):
-    logger.info("Removing %s", p)
+    logger.info("Removing directory %s", p)
     shutil.rmtree(p, ignore_errors=True)
 
 
@@ -108,9 +123,8 @@ def clear_dags_leftovers(prj: BigflowProjectSpec):
 
 
 def build_package(prj: BigflowProjectSpec):
-    logger.info('Building the pip package')
+    logger.info('Building python package')
     clear_package_leftovers(prj)
-    logger.info('Run tests...')
     run_tests(prj)
     bigflow.build.dist.run_setup_command(prj, 'bdist_wheel')
 
@@ -126,6 +140,8 @@ def build_project(
     start_time: str,
     workflow_id: typing.Optional[str] = None,
 ):
+    logger.info("Build the project")
     build_package(prj)
     build_image(prj)
     build_dags(prj, start_time, workflow_id=workflow_id)
+    logger.info("Project was built")
