@@ -22,8 +22,7 @@ import bigflow.version
 import bigflow.build.pip
 import bigflow.build.dev
 import bigflow.build.operate
-
-from bigflow.build.spec import BigflowProjectSpec, parse_project_spec, add_spec_to_pyproject_toml
+import bigflow.build.spec as spec
 
 
 logger = logging.getLogger(__name__)
@@ -78,7 +77,14 @@ def _hook_pregenerate_sdist(command_cls):
 
 
 class sdist(distutils.command.sdist.sdist):
-    """Customized `sdist` command"""
+    """Customized `sdist` command.
+
+    - Add custom items to MANIFEST
+    - Write project spec into 'pyproject.toml'
+      (freeze calculated properties, like version etc)
+    - Generate shim 'setup.py' when it is missing
+    """
+
     distribution: BigflowDistribution
 
     def make_release_tree(self, base_dir, files):
@@ -93,19 +99,17 @@ class sdist(distutils.command.sdist.sdist):
 
         # append generated project specs to pyproject.toml
         p = Path(base_dir) / "pyproject.toml"
+
         dlog.info("add full bigflow project info to %s", p)
-        if p.exists():  # break hard link
+        if p.exists():  # break hard links
             content = p.read_bytes()
             p.unlink()
             p.write_bytes(content)
+        spec.add_spec_to_pyproject_toml(p, self.distribution.bigflow_project_spec)
 
-        add_spec_to_pyproject_toml(p, self.distribution.bigflow_project_spec)
-
-        # replace 'setup.py' with shim
-        p = Path(base_dir) / "setup.py"
-        if p.exists():
-            p.rename(p.parent / "setup.py.orig")
-        p.write_text("""from bigflow.build import setup; setup()""")
+        # generate shim 'setup.py'
+        if not p.exists():
+            p.write_text("""from bigflow.build import setup; setup()""")
 
     def _add_defaults_bigflow(self):
         self.filelist.extend(
@@ -164,20 +168,28 @@ class build_project(distutils.cmd.Command):
             bigflow.build.operate.build_project(prj, self.start_time, self.workflow)
 
 
-def projectspec_to_setuppy_kwargs(p: BigflowProjectSpec):
-    return {
+def projectspec_to_setuppy_kwargs(p: spec.BigflowProjectSpec):
+    attrs = {
         'bigflow_project_spec': p,
         'name': p.name,
         'version': p.version,
         'packages': p.packages,
-        'install_requires': p.install_requires,
-        'data_files': p.data_files,
+        'install_requires': p.requries,
+        'data_files': [
+            ('resources', list(bigflow.resources.find_all_resources(p.project_dir / p.resources_dir))),
+            (f"bigflow__project/{p.name}", ["build/bf-project.tar"]),
+            *(p.data_files or []),
+        ],
         'script_name': "setup.py",
-        **p.bypass_setuptools,
+        **p.metainfo,
+        **p.setuptools,
     }
+    # filter None values
+    attrs = {k: v for k, v in attrs.items() if v is not None}
+    return attrs
 
 
-def run_setup_command(prj: BigflowProjectSpec, command, options=None):
+def run_setup_command(prj: spec.BigflowProjectSpec, command, options=None):
     """Execute distutils command in the scope of same python process."""
 
     attrs = projectspec_to_setuppy_kwargs(prj)
@@ -203,13 +215,14 @@ def _maybe_dump_setup_params(params):
         sys.exit(0)
 
 
-def setup(project_dir=None,  **kwargs):
+def setup(project_dir=None, **kwargs):
+    _maybe_dump_setup_params(kwargs)
+
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+    logger.info("Run bigflow.build.setup...")
 
     project_dir = Path(project_dir or Path.cwd())
-    _maybe_dump_setup_params(kwargs)
-    logging.basicConfig(level=logging.INFO, format="%(message)s")
-
-    prj = parse_project_spec(project_dir=project_dir, **kwargs)
+    prj = spec.read_project_spec_pyproject(project_dir=project_dir, **kwargs)
     setuppy_kwargs = projectspec_to_setuppy_kwargs(prj)
 
     logger.debug("setuptools.setup(**%r)", setuppy_kwargs)
