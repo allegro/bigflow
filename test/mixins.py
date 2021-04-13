@@ -82,6 +82,8 @@ class PrototypedDirMixin(TempCwdMixin, FileUtilsMixin):
         assert self.cwd.is_absolute()
 
         proto_path = Path(__file__).parent / self.proto_dir
+        assert proto_path.is_dir()
+
         for f in proto_path.glob("*"):
             copyf = shutil.copytree if f.is_dir() else shutil.copyfile
             copyf(f, self.cwd / f.name)
@@ -209,3 +211,12 @@ class BfCliInteractionMixin(SubprocessMixin, BigflowInPythonPathMixin):
     def bigflow_spawn(self, cmd, **kwargs):
         cmd = ["python", "-m", "bigflow", *cmd]
         return self.subprocess_spawn(cmd, **kwargs)
+
+
+class ABCTestCase(unittest.TestCase):
+
+    __test__ = True
+
+    def run(self, result=None):
+        if self.__test__:
+            return super().run(result)

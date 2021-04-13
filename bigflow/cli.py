@@ -172,12 +172,11 @@ def execute_workflow(root_package: Path, workflow_id: str, runtime=None):
 
 
 def read_project_name_from_setup() -> Optional[str]:
-    logger.info("Read project name from `setup.py`")
+    logger.debug("Read project name from project spec")
     try:
-        params = bigflow.build.dev.read_setuppy_args()
-        return params.get('name')
+        return bigflow.build.spec.get_project_spec().name
     except Exception as e:
-        logger.warning("Unable to read 'setup.py': %s", e)
+        logger.warning("Unable to read project name: %s", e)
         return None
 
 
@@ -190,6 +189,7 @@ def find_root_package(project_name: Optional[str], project_dir: Optional[str]) -
     @return: Path
     """
     if project_name is not None:
+        project_name = project_name.replace("-", "_")
         return Path(project_name)
     else:
         root_module = import_module(project_dir)
@@ -545,6 +545,7 @@ def _cli_deploy_image(args):
 def find_image_file():
     # TODO parametrize ".image" using settings from build.py
     files = glob1(".image", "*-*.tar")
+    print("Z" * 100, list(files))
     if files:
         return os.path.join(".image", files[0])
     else:
@@ -552,17 +553,17 @@ def find_image_file():
 
 
 def _cli_build_image(args):
-    prj = bigflow.build.spec.read_project_spec()
+    prj = bigflow.build.spec.get_project_spec()
     bigflow.build.operate.build_image(prj)
 
 
 def _cli_build_package():
-    prj = bigflow.build.spec.read_project_spec()
+    prj = bigflow.build.spec.get_project_spec()
     bigflow.build.operate.build_package(prj)
 
 
 def _cli_build_dags(args):
-    prj = bigflow.build.spec.read_project_spec()
+    prj = bigflow.build.spec.get_project_spec()
     bigflow.build.operate.build_dags(
         prj,
         start_time=args.start_time if _is_starttime_selected(args) else datetime.now().strftime("%Y-%m-%d %H:00:00"),
@@ -571,7 +572,7 @@ def _cli_build_dags(args):
 
 
 def _cli_build(args):
-    prj = bigflow.build.spec.read_project_spec()
+    prj = bigflow.build.spec.get_project_spec()
     bigflow.build.operate.build_project(
         prj,
         start_time=args.start_time if _is_starttime_selected(args) else datetime.now().strftime("%Y-%m-%d %H:00:00"),

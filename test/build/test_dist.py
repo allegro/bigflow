@@ -1,34 +1,33 @@
 import os
-import json
 import shutil
 import datetime
 import subprocess
-import tempfile
 
 from datetime import timedelta
 
 from pathlib import Path
 from unittest import TestCase, mock
 
-import bigflow.build
-from bigflow.build.dist import SETUP_VALIDATION_MESSAGE
+import bigflow.build.spec as spec
+
 from bigflow.cli import walk_module_files
+from bigflow.build.dist import SETUP_VALIDATION_MESSAGE
 
 from bigflow.commons import (
     get_docker_image_id,
     build_docker_image_tag,
 )
-from bigflow.build.dist import (
+from bigflow.build import (
     auto_configuration,
-    get_docker_repository_from_deployment_config,
-    setup,
-    secure_get_version,
-    default_project_setup,
+    project_setup,
+)
+from bigflow.build.operate import (
     clear_image_leftovers,
     clear_dags_leftovers,
     clear_package_leftovers,
     build_image,
 )
+
 
 PROJECT_NAME = 'main_package'
 DOCKER_REPOSITORY = 'test_docker_repository'
@@ -59,8 +58,8 @@ def rmdir(dir_path: Path):
 
 
 def create_image_leftovers(test_project_dir_path: Path = TEST_PROJECT_PATH):
-    mkdir(test_project_dir_path / 'image')
-    (test_project_dir_path / 'image' / 'leftover').touch()
+    mkdir(test_project_dir_path / '.image')
+    (test_project_dir_path / '.image' / 'leftover').touch()
 
 
 def create_package_leftovers(
@@ -92,7 +91,7 @@ def package_leftovers_exist(
 
 
 def image_leftovers_exist(test_project_dir_path: Path = TEST_PROJECT_PATH):
-    return os.path.exists(test_project_dir_path / 'image' / 'leftover')
+    return os.path.exists(test_project_dir_path / '.image' / 'leftover')
 
 
 def dir_not_empty(dir_path: Path):
@@ -100,7 +99,7 @@ def dir_not_empty(dir_path: Path):
 
 
 def deployment_config_copied(test_project_dir_path: Path = TEST_PROJECT_PATH):
-    return (test_project_dir_path / 'image' / 'deployment_config.py').exists()
+    return (test_project_dir_path / '.image' / 'deployment_config.py').exists()
 
 
 def python_package_built(test_project_dir_path: Path = TEST_PROJECT_PATH):
@@ -119,7 +118,7 @@ def dags_built(test_project_dir_path: Path, expected_workflow_count: int):
 
 
 def docker_image_as_file_built(test_project_dir_path: Path = TEST_PROJECT_PATH):
-    return (test_project_dir_path / 'image' / 'image-0.1.0.tar').exists()
+    return (test_project_dir_path / '.image' / 'image-0.1.0.tar').exists()
 
 
 def docker_image_built_in_registry(docker_repository: str, version: str):
@@ -138,6 +137,12 @@ def dags_contain(test_project_dir_path: Path, substring: str):
 class SetupTestCase(TestCase):
     def setUp(self) -> None:
         self.test_project = TestProject()
+        self.prj = spec.parse_project_spec(
+            name=PROJECT_NAME,
+            project_dir=TEST_PROJECT_PATH,
+            docker_repository=DOCKER_REPOSITORY,
+            requries=[],
+        )
 
 
 class BuildProjectE2E(SetupTestCase):
@@ -174,9 +179,9 @@ class BuildProjectE2E(SetupTestCase):
 class BuildPackageCommandE2E(SetupTestCase):
     def test_should_execute_build_package_command(self):
         # given
-        create_package_leftovers()
-        clear_image_leftovers(IMAGE_DIR_PATH)
-        clear_dags_leftovers(DAGS_DIR_PATH)
+        create_package_leftovers(self.prj.project_dir)
+        clear_image_leftovers(self.prj)
+        clear_dags_leftovers(self.prj)
 
         # when
         self.test_project.run_build('python setup.py build_project --build-package')
@@ -190,10 +195,11 @@ class BuildPackageCommandE2E(SetupTestCase):
 class BuildDagsCommandE2E(SetupTestCase):
 
     def test_should_execute_build_dags_command(self):
+
         # given
-        create_dags_leftovers()
-        clear_image_leftovers(IMAGE_DIR_PATH)
-        clear_package_leftovers(DIST_DIR_PATH, EGGS_DIR_PATH, BUILD_PATH)
+        create_dags_leftovers(self.prj.project_dir)
+        clear_image_leftovers(self.prj)
+        clear_package_leftovers(self.prj)
 
         # when
         self.test_project.run_build('python setup.py build_project --build-dags')
@@ -227,10 +233,12 @@ class BuildDagsCommandE2E(SetupTestCase):
 class BuildImageCommandE2E(SetupTestCase):
 
     def test_should_execute_build_image_command(self):
+
         # given
-        create_image_leftovers()
-        clear_dags_leftovers(DAGS_DIR_PATH)
-        clear_package_leftovers(DIST_DIR_PATH, EGGS_DIR_PATH, BUILD_PATH)
+        create_image_leftovers(self.prj.project_dir)
+        clear_dags_leftovers(self.prj)
+        clear_package_leftovers(self.prj)
+
         self.test_project.run_build('python setup.py build_project --build-package')
 
         # when
@@ -243,16 +251,16 @@ class BuildImageCommandE2E(SetupTestCase):
         self.assertTrue(deployment_config_copied())
 
 
-class BuildImageTest(TestCase):
+class BuildImageTest(SetupTestCase):
 
     @mock.patch('bigflow.commons.build_docker_image_tag')
-    @mock.patch('bigflow.build.dist.build_docker_image')
-    @mock.patch('bigflow.build.dist.export_docker_image_to_file')
+    @mock.patch('bigflow.build.operate._build_docker_image')
+    @mock.patch('bigflow.build.operate._export_docker_image_to_file')
     @mock.patch('bigflow.commons.remove_docker_image_from_local_registry')
     def test_should_remove_image_from_local_registry_when_export_to_image_failed(self,
                                                                                  remove_docker_image_from_local_registry,
                                                                                  export_docker_image_to_file,
-                                                                                 build_docker_image,
+                                                                                 build_docker_image: mock.Mock,
                                                                                  build_docker_image_tag):
         # given
         image_dir_path = Path('image_dir')
@@ -260,75 +268,10 @@ class BuildImageTest(TestCase):
         export_docker_image_to_file.side_effect = Exception('export failed')
         build_docker_image_tag.return_value = 'tag_value'
 
-
         # when:
         with self.assertRaises(Exception):
-            build_image('docker_repository', 'v1', Path('project_dir'), image_dir_path, Path('deployment_config'))
+            build_image(self.prj)
 
         # then
-        build_docker_image.assert_called_with(Path('project_dir'), 'tag_value')
+        build_docker_image.assert_called_with(self.prj.project_dir, 'tag_value')
         remove_docker_image_from_local_registry.assert_called_with('tag_value')
-
-
-class AutoConfigurationTestCase(TestCase):
-    @mock.patch('bigflow.version.get_version')
-    def test_should_produce_default_configuration_for_project_setup(self, get_version_mock):
-        # given
-        get_version_mock.return_value = '0.1.0'
-        project_dir = TEST_PROJECT_PATH
-
-        # expected
-        self.assertEqual(auto_configuration('example_project', project_dir), {
-            'project_name': 'example_project',
-            'docker_repository': 'test_repository',
-            'root_package': project_dir / 'example_project',
-            'project_dir': project_dir,
-            'build_dir': project_dir / 'build',
-            'test_package': project_dir / 'test',
-            'dags_dir': project_dir / '.dags',
-            'dist_dir': project_dir / 'dist',
-            'image_dir': project_dir / '.image',
-            'eggs_dir': project_dir / 'example_project.egg-info',
-            'deployment_config_file': project_dir / 'deployment_config.py',
-            'version': '0.1.0',
-            'resources_dir': project_dir / 'resources',
-            'project_requirements_file': project_dir / 'resources' / 'requirements.txt'
-        })
-
-    def test_should_raise_error_when_cant_find_deployment_config(self):
-        # then
-        with self.assertRaises(ValueError) as e:
-            # when
-            get_docker_repository_from_deployment_config(TEST_PROJECT_PATH / 'unknown.py')
-
-    @mock.patch('bigflow.version.get_version')
-    def test_should_raise_error_when_cant_get_version(self, get_version_mock):
-        # given
-        get_version_mock.side_effect = self.get_version_error
-
-        # when
-        v = secure_get_version()
-
-        # then
-        self.assertEqual(v, "0")
-
-    @mock.patch('setuptools.setup')
-    def test_should_suite_project_setup(self, setuptools_setup):
-        # given
-        project_dir = TEST_PROJECT_PATH
-        setuptools_setup.return_value = True
-
-        # expected
-        self.assertTrue(setup(**auto_configuration('example_project', project_dir)))
-
-    def test_should_raise_an_error_when_docker_repository_not_in_lower_case(self):
-        with tempfile.NamedTemporaryFile(mode='w+t') as f:
-            f.write("""
-               import bigflow
-               deployment_config = bigflow.Config(properties={'docker_repository': "Docker_Repository"})
-            """)
-            with self.assertRaises(ValueError):
-                bigflow.build.dist.get_docker_repository_from_deployment_config(Path(f.name))
-
-    def get_version_error(self):
-        raise RuntimeError('get_version error')
