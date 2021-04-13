@@ -4,27 +4,29 @@ import os
 from pathlib import Path
 
 from bigflow.commons import public
-
+from bigflow.build.spec import read_project_spec_nosetuppy
+from bigflow.build.dist import projectspec_to_setuppy_kwargs
+from bigflow.build.dist import setup
 
 _reason = "Use `bigflow.build.setup` instead"
 
 
 @public(deprecate_reason=_reason)
-def auto_configuration(project_name: str, project_dir: Path = Path('.').parent) -> dict:
+def auto_configuration(project_name: str, project_dir: Path = Path('.').parent, **kwargs) -> dict:
+    project_dir = project_dir or Path.cwd()
     return {
         'project_name': project_name,
         'project_dir': project_dir,
+        **kwargs,
     }
 
 
 @public(deprecate_reason=_reason)
-def project_setup(project_name: str) -> dict:
-    return {'name': project_name}
+def project_setup(project_name, project_dir=None, **kwargs) -> dict:
+    prj = read_project_spec_nosetuppy(project_dir=project_dir, name=project_name, **kwargs)
+    return projectspec_to_setuppy_kwargs(prj)
 
 
 @public(deprecate_reason=_reason)
-def default_project_setup(project_name: str, project_dir=None):
-    if project_dir:
-        os.chdir(project_dir)
-    import bigflow.build.dist
-    return bigflow.build.dist.setup(name=project_name, project_dir=project_dir)
+def default_project_setup(project_name: str, project_dir=None, **kwargs):
+    setup(**project_setup(**auto_configuration(project_name, project_dir, **kwargs)))

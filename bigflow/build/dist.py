@@ -170,6 +170,7 @@ class build_project(distutils.cmd.Command):
 
 def projectspec_to_setuppy_kwargs(p: spec.BigflowProjectSpec):
     attrs = {
+        'distclass': BigflowDistribution,
         'bigflow_project_spec': p,
         'name': p.name,
         'version': p.version,
@@ -222,13 +223,10 @@ def setup(project_dir=None, **kwargs):
     logger.info("Run bigflow.build.setup...")
 
     project_dir = Path(project_dir or Path.cwd())
-    prj = spec.read_project_spec_pyproject(project_dir=project_dir, **kwargs)
+    prj = spec.read_project_spec_nosetuppy(project_dir=project_dir, **kwargs)
     setuppy_kwargs = projectspec_to_setuppy_kwargs(prj)
 
     logger.debug("setuptools.setup(**%r)", setuppy_kwargs)
     return setuptools.setup(
-        distclass=BigflowDistribution,
         **setuppy_kwargs,
     )
-
-

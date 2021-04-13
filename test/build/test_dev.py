@@ -18,7 +18,7 @@ class ReadProjectParametersLegacyTestCase(
 
         # then
         self.assertIn('name', params)
-        self.assertEqual("bf_simple_v10", params['name'])
+        self.assertEqual("bf-simple-v10", params['name'])
 
 
 
@@ -40,6 +40,7 @@ class ReadProjectParametersTestCase(
             author="Bigflow UnitTest",
             description="Sample bigflow project",
             url="http://example.org",
+            version="1.2.3",
         ), params)
 
     def test_should_read_project_params_from_subdir(self):

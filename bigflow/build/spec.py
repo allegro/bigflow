@@ -1,12 +1,13 @@
 """Read and parse bigflow project configuration (setup.py / pyproject.toml)"""
 
+import functools
 import textwrap
 import typing
 import logging
 import typing
 import dataclasses
 import toml
-import pprint
+
 from pathlib import Path
 
 import setuptools
@@ -85,14 +86,12 @@ def parse_project_spec(
     """Creates instance of BigflowProjectSpec. Populate defaults, coerce values"""
 
     logger.info("Prepare bigflow project spec...")
-
-    project_dir = project_dir or Path.cwd()
     name = name.replace("_", "-")  # PEP8 compliant package names
 
     docker_repository = docker_repository or get_docker_repository_from_deployment_config(deployment_config_file)
     version = version or secure_get_version()
-    packages = packages or discover_project_packages(project_dir)
-    requries = requries or read_project_requirements(project_requirements_file)
+    packages = packages if packages is not None else discover_project_packages(project_dir)
+    requries = requries if requries is not None else read_project_requirements(project_requirements_file)
     metainfo = {k: kwargs.pop(k) for k in _PROJECT_METAINFO_KEYS if k in kwargs}
 
     setuptools = kwargs  # all unknown arguments
@@ -137,19 +136,25 @@ def add_spec_to_pyproject_toml(pyproject_toml: Path, prj: BigflowProjectSpec):
         data = toml.load(pyproject_toml)
     else:
         data = {}
-    data['bigflow-project'] = render_project_spec(prj)
+    data.setdefault('bigflow-project', {}).update(
+        render_project_spec(prj)
+    )
+    data.setdefault('build-system', {
+        'requires': [f"bigflow=={bigflow.__version__}"],
+        'build-backend': "bigflow.build.meta",
+    })
     pyproject_toml.write_text(toml.dumps(data))
 
 
 
-def read_project_spec_pyproject(project_dir, **kwargs):
-    """Read project spec from pyproject.toml, allowing to overwrite any options.
-    Does *NOT* inspect `setup.py` (as it is intented to be used from setup.py)"""
+@functools.lru_cache(maxsize=None)
+def get_project_spec(dir: Path = None):
+    """Reads project spec from `setup.py` and/or `pyproject.toml`.
+    Memoize results (key = project path).
+    """
 
-    data = {}
-    data.update(_mabye_read_pyproject(project_dir) or {})
-    data.update(kwargs)
-    return parse_project_spec(project_dir, **data)
+    dir = dir or Path.cwd()
+    return read_project_spec(dir)
 
 
 def _mabye_read_pyproject(dir: Path):
@@ -160,10 +165,25 @@ def _mabye_read_pyproject(dir: Path):
         return data.get('bigflow-project')
 
 
-def read_project_spec(dir: Path = None):
-    dir = dir or Path.cwd()
+def read_project_spec_nosetuppy(project_dir, **kwargs):
+    """Read project spec from pyproject.toml, allowing to overwrite any options.
+    Does *NOT* inspect `setup.py` (as it is intented to be used from setup.py)"""
+
+    data = {}
+    data.update(_mabye_read_pyproject(project_dir) or {})
+    data.update(kwargs)
+    return parse_project_spec(project_dir, **data)
+
+
+def read_project_spec(dir: Path) -> BigflowProjectSpec:
+    """Reads project spec from `setup.py` and/or `pyproject.toml`"""
 
     setuppy = dir / "setup.py"
+    prj_setuppy = dir / "project_setup.py"  # legacy
+    if not setuppy.exists() and prj_setuppy.exists():
+        logger.info("Use deprecated 'project_setup.py' instead of 'setup.py'")
+        setuppy = prj_setuppy
+
     if setuppy.exists():
         logger.debug("Read project spec from `setup.py` and `pyproject.toml`")
         setuppy_kwargs = bigflow.build.dev.read_setuppy_args(setuppy)
@@ -172,7 +192,7 @@ def read_project_spec(dir: Path = None):
         setuppy_kwargs = {}
 
     try:
-        return read_project_spec_pyproject(dir, **setuppy_kwargs)
+        return read_project_spec_nosetuppy(dir, **setuppy_kwargs)
     except Exception:
         raise ValueError(
             "The project configuration is invalid. "
@@ -183,7 +203,7 @@ def read_project_spec(dir: Path = None):
 
 # Provide defaults for project-spec
 
-def discover_project_packages(project_dir):
+def discover_project_packages(project_dir: Path):
     ret = setuptools.find_packages(where=project_dir, exclude=["test.*", "test"])
     logger.info(
         "Automatically discovered %d packages: \n%s",
@@ -214,6 +234,7 @@ def get_docker_repository_from_deployment_config(deployment_config_file: Path) -
     try:
         config = bigflow.cli.import_deployment_config(str(deployment_config_file), 'docker_repository')
     except ValueError:
+        raise
         raise ValueError(f"Can't find the specified deployment configuration: {deployment_config_file}")
 
     if isinstance(config, bigflow.Config):

@@ -1,8 +1,10 @@
+from logging import shutdown
 from mock.mock import _set_return_value
 from bigflow.build.operate import build_project
 from unittest import TestCase
 import itertools
 import mock
+import shutil
 import freezegun
 
 from bigflow.cli import *
@@ -21,6 +23,8 @@ class CliTestCase(TestCase):
 
         global TEST_MODULE_PATH
         TEST_MODULE_PATH = Path(__file__).parent / 'test_module'
+
+        bigflow.build.spec.get_project_spec.cache_clear()
 
     def tearDown(self):
         try:
@@ -483,6 +487,7 @@ deployment_config = Config(name='dev',
     @mock.patch('bigflow.cli.deploy_docker_image')
     def test_should_find_tar_in_image_directory(self, deploy_docker_image_mock):
         # given
+        shutil.rmtree(Path.cwd() / ".image")
         self._touch_file('image-123.tar', '', '.image')
 
         # when
