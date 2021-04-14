@@ -4,11 +4,15 @@ import uuid
 
 from apache_beam import Pipeline
 from apache_beam.options.pipeline_options import PipelineOptions
+from apache_beam.runners.runner import PipelineResult, PipelineState
 
 from typing import Dict, Union
 
-from bigflow.commons import public
+from bigflow.commons import public, build_docker_image_tag
 from bigflow.workflow import Job, JobContext
+
+import bigflow.build.reflect
+
 
 logger = logging.getLogger(__file__)
 
@@ -27,6 +31,8 @@ class BeamJob(Job):
             wait_until_finish: bool = True,
             test_pipeline: Pipeline = None,
             execution_timeout_sec: int = None,
+            use_docker_image: typing.Union[str, bool] = False,
+            project_name=None,
             **kwargs,
     ):
         if bool(test_pipeline) == bool(pipeline_options):
@@ -55,6 +61,9 @@ class BeamJob(Job):
 
         self._test_pipeline = test_pipeline
 
+        self.use_docker_image = use_docker_image
+        self.project_name = project_name or bigflow.build.reflect.infer_project_name(stack=2)
+
     def execute(self, context: JobContext):
         pipeline = self._test_pipeline or self.create_pipeline(context)
 
@@ -67,11 +76,11 @@ class BeamJob(Job):
         logger.info("wait pipeline result...")
         self.wait_pipeline_result(result)
 
-    def wait_pipeline_result(self, result: Pipeline):
+    def wait_pipeline_result(self, result: PipelineResult):
         if self.wait_until_finish and self.execution_timeout_sec:
             timeout_in_milliseconds = 1000 * (self.execution_timeout_sec - self.pipeline_level_execution_timeout_shift)
             result.wait_until_finish(timeout_in_milliseconds)
-            if not result.is_in_terminal_state():
+            if not PipelineState.is_terminal(result.state):
                 result.cancel()
                 raise RuntimeError(f'Job {self.id} timed out ({self.execution_timeout_sec})')
 
@@ -100,15 +109,15 @@ class BeamJob(Job):
         logger.debug("Add defaults to pipeline options")
 
         if 'job_name' not in options:
-            job_name = f"{self.id}-{uuid.uuid4().hex}"
+            slug = self.id.replace("_", "-")
+            job_name = f"{slug}-{uuid.uuid4().hex}"
             logger.info("Set job name to deafult %s", job_name)
             options['job_name'] = job_name
 
         if 'setup_file' not in options:
-            from bigflow.build.reflect import materialize_setuppy
-            setuppy = materialize_setuppy()
+            setuppy = bigflow.build.reflect.materialize_setuppy(self.project_name)
             logging.debug("Add setup.py %s to pipeline options", setuppy)
-            options['setup_file'] = materialize_setuppy()
+            options['setup_file'] = setuppy
         else:
             logging.debug("Pipeline options already contains 'setup_file': %s", options['setup_file'])
 
@@ -118,3 +127,11 @@ class BeamJob(Job):
         else:
             logger.info("A workflow not found in the context. Skipping logging initialization.")
 
+        if self.use_docker_image:
+            if isinstance(self.use_docker_image, str):
+                imgid = self.use_docker_image
+            else:
+                pspec = bigflow.build.reflect.get_project_spec(self.project_name)
+                imgid = build_docker_image_tag(pspec.docker_repository, pspec.version)
+            logger.info("Use docker image %s for beam workers", imgid)
+            options['worker_harness_container_image'] = imgid

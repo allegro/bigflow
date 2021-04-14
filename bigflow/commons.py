@@ -20,6 +20,7 @@ T = typing.TypeVar('T')
 
 def public(
     *,
+    experimental: bool = False,
     alias_for: typing.Union[T, None] = None,
     class_alias: bool = False,
     deprecate_reason: typing.Optional[str] = None,
