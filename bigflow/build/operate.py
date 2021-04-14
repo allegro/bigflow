@@ -48,7 +48,7 @@ def _export_docker_image_to_file(tag: str, target_dir: Path, version: str):
 
 
 def _build_docker_image(project_dir: Path, tag: str):
-    logger.info("Building a docker image...")
+    logger.debug("Run docker build...")
     bf_commons.run_process(f'docker build {project_dir} --tag {tag}')
 
 

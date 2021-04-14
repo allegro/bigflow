@@ -3,7 +3,7 @@ import logging
 import uuid
 
 from apache_beam import Pipeline
-from apache_beam.options.pipeline_options import PipelineOptions
+from apache_beam.options.pipeline_options import PipelineOptions, WorkerOptions
 
 from typing import Dict, Union
 
@@ -87,6 +87,10 @@ class BeamJob(Job):
     def create_pipeline(self, context):
         logger.debug("Create new pipline for context %s", context)
         popts = self.create_pipeline_options(context)
+
+        popts.view_as(WorkerOptions).use_public_ips = False
+        print("ZOOOOOOO", vars(popts))
+
         return Pipeline(options=popts)
 
     def create_pipeline_options(self, context: JobContext) -> PipelineOptions:

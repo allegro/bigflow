@@ -45,6 +45,9 @@ class _BaseBuildReflectTest(
         self.assertEqual("bf-selfbuild-project", self.runpy_n_dump('bf_selfbuild_project.buildme.infer_project_name'))
         self.assertEqual("bf-selfbuild-project", self.runpy_n_dump('bf_selfbuild_other_package.buildme.infer_project_name'))
 
+        # then - check reading of project spec
+        self.assertEqual("bf-selfbuild-project", self.runpy_n_dump('bf_selfbuild_project.buildme.project_spec').name)
+
         # then - self-build sdist/wheel/egg pacakges
         sdist_pkg = self.runpy_n_dump('bf_selfbuild_project.buildme.build_sdist')
         self.addCleanup(os.unlink, sdist_pkg)

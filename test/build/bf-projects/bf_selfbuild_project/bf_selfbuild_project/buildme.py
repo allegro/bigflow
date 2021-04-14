@@ -14,3 +14,7 @@ def build_wheel():
 
 def build_egg():
     return r.build_egg()
+
+def project_spec():
+    return r.get_project_spec()
+

@@ -54,7 +54,10 @@ def _hook_pregenerate_sdist(command_cls):
     Runs 'sdist' and copy result into 'build/bf-project.tar.gz'
     """
 
-    def run(self):
+    def run(self: distutils.cmd.Command):
+        distribution: BigflowDistribution = self.distribution
+
+        # build sdist package & copy into /build
         sdist = self.get_finalized_command('sdist')
         sdist.ensure_finalized()
         sdist.formats = ["tar"]  # overwrite
@@ -63,9 +66,14 @@ def _hook_pregenerate_sdist(command_cls):
 
         if len(sdist_tarball) > 1:
             self.warn("ingnored 'sdist' results", sdist_tarball[1:])
-
         self.mkpath("build")
         self.copy_file(sdist_tarball[0], "build/bf-project.tar")
+
+        # generate patched pyproject.toml inside /build
+        pyproject_toml = Path("build", "pyproject.toml")
+        if Path("pyproject.toml").exists():
+            self.copy_file("pyproject.toml", pyproject_toml)
+        spec.add_spec_to_pyproject_toml(pyproject_toml, distribution.bigflow_project_spec)
 
         return command_cls.run(self)
 
@@ -178,7 +186,7 @@ def projectspec_to_setuppy_kwargs(p: spec.BigflowProjectSpec):
         'install_requires': p.requries,
         'data_files': [
             ('resources', list(bigflow.resources.find_all_resources(p.project_dir / p.resources_dir))),
-            (f"bigflow__project/{p.name}", ["build/bf-project.tar"]),
+            (f"bigflow__project/{p.name}", ["build/bf-project.tar", "build/pyproject.toml"]),
             *(p.data_files or []),
         ],
         'script_name': "setup.py",
