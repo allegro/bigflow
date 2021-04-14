@@ -163,6 +163,8 @@ def _mabye_read_pyproject(dir: Path):
         logger.info("Load config %s", pyproject_toml)
         data = toml.load(pyproject_toml)
         return data.get('bigflow-project')
+    else:
+        logger.debug("File %s not found", pyproject_toml)
 
 
 def read_project_spec_nosetuppy(project_dir, **kwargs):
@@ -234,7 +236,6 @@ def get_docker_repository_from_deployment_config(deployment_config_file: Path) -
     try:
         config = bigflow.cli.import_deployment_config(str(deployment_config_file), 'docker_repository')
     except ValueError:
-        raise
         raise ValueError(f"Can't find the specified deployment configuration: {deployment_config_file}")
 
     if isinstance(config, bigflow.Config):

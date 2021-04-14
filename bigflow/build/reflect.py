@@ -6,6 +6,7 @@ allowing to build whl/egg/tar packages from pip-installed source.
 Thoose packages may be latter used by pyspark, beam, etc.
 """
 
+
 import sys
 import os
 import inspect
@@ -20,6 +21,9 @@ from pathlib import Path
 
 import bigflow.commons as bfc
 import bigflow.build.dev
+import bigflow.build.spec
+
+from bigflow.build.spec import BigflowProjectSpec
 from bigflow.commons import public
 
 
@@ -72,17 +76,19 @@ def _infer_project_name_by_distribution(module: types.ModuleType) -> Optional[st
 
 
 def _infer_project_name_by_setuppy_near_module(module: types.ModuleType) -> Optional[str]:
-    file = _module_to_enclosing_directory(module).parent / "setup.py"
-    if not file.exists():
-        logger.debug("Not found file %s", file)
+    d = _module_to_enclosing_directory(module).parent
+    setuppy = d / "setup.py"
+    ppt = d / "pyproject.toml"
+
+    if not setuppy.exists() and not ppt.exists():
+        logger.debug("Not found files %s / %s", setuppy, ppt)
         return None
 
     try:
-        logger.debug("Found 'setup.py' - read project parameters (check if it is 'bigflow' project)")
-        pp = bigflow.build.dev.read_setuppy_args(file)
-        return pp['name'].replace("_", "-")
+        logger.debug("Found setup.py or pyproject.toml - read project parameters")
+        return bigflow.build.spec.read_project_spec(d).name
     except Exception:
-        logger.exception("Found %r, but it is not a correct bigflow project", file)
+        logger.exception("Found %r, but it is not a correct bigflow project", d)
         return None
 
 
@@ -111,20 +117,33 @@ def _locate_self_package(project_name) -> Optional[Path]:
         return None
 
 
-def _locate_setuppy_plain_source(project_name):
+def _locate_self_pyproject_toml(project_name) -> Optional[Path]:
+    p = Path(sys.prefix) / "bigflow__project" / project_name / "pyproject.toml"
+    if p.exists():
+        logger.debug("Found pyproject.toml for project %r: %s", project_name, p)
+        return p
+    else:
+        logger.debug("Not found pyproject.toml for project %r", project_name)
+        return None
 
-    logger.debug("Locate 'setup.py' near the toplevel project module...")
+
+def _locate_path_for_project_module(project_name, filename):
+
+    logger.debug("Locate toplevel project module path for %s", project_name)
     modname = project_name.replace("-", "_")
     module = sys.modules.get(modname)
+
     if not module:
         logger.warning("Could not find module %r", modname)
     else:
-        file = _module_to_enclosing_directory(module).parent / "setup.py"
+        file = _module_to_enclosing_directory(module).parent / filename
+        print("U", list(file.parent.glob("*")), file=sys.stderr)
         if file.exists():
-            logger.debug("Found 'setup.py' at %s", file)
+            logger.debug("Found %s at %s", filename, file)
             return file
         else:
-            logger.debug("Not found %s", file)
+            print("NOT FOUND", file, file=sys.stderr)
+            logger.debug("Not found %s", filename)
     return None
 
 
@@ -153,6 +172,27 @@ def _locate_plain_setuppy_on_fs(stack):
 
 
 @public()
+def get_project_spec(
+    project_name: Optional[str] = None,
+) -> BigflowProjectSpec:
+    """Read & parses project spec.
+    This function should be used from inside project.
+    """
+
+    project_name = project_name or infer_project_name(stack=2)
+    ppt_file = (
+        _locate_path_for_project_module(project_name, "pyproject.toml")
+        or _locate_path_for_project_module(project_name, "setup.py")
+        or _locate_self_pyproject_toml(project_name)
+    )
+
+    if not ppt_file:
+        raise FileNotFoundError("Unable to find 'pyproject.toml' or 'setup.py'")
+
+    return bigflow.build.spec.get_project_spec(ppt_file.parent)
+
+
+@public()
 def materialize_setuppy(
     project_name: Optional[str] = None,
     tempdir: Optional[str] = None,
@@ -166,7 +206,7 @@ def materialize_setuppy(
         tempdir = tempfile.mkdtemp()
 
     tarpkg = _locate_self_package(project_name)
-    setuppy = _locate_setuppy_plain_source(project_name)
+    setuppy = _locate_path_for_project_module(project_name, "setup.py")
 
     if setuppy is None and project_name is None:
         setuppy = _locate_plain_setuppy_on_fs(stack=2)
