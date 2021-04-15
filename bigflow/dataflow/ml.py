@@ -63,6 +63,7 @@ class CatBoostClassifierModel(BaseModel):
 
     def predict(self, X: pd.DataFrame):
         m = self.ensure_model()
+        X = X.reset_index()
         Xs = X[m.feature_names_]
         return super().predict(Xs)
 

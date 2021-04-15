@@ -8,12 +8,17 @@ import contextlib
 import typing
 import os
 import csv
-from apache_beam.portability.api.beam_runner_api_pb2 import PCollection
+from apache_beam.pvalue import PCollection
 
 import pandas as pd
 
 import apache_beam as beam
 import apache_beam.io as beam_io
+
+import apache_beam.dataframe as df
+import apache_beam.dataframe.io as df_io
+import apache_beam.dataframe.convert as df_convert
+
 
 from apache_beam.io.filesystems import FileSystems
 
@@ -49,7 +54,7 @@ def _to_dataframe(x):
 
 
 @beam.ptransform_fn
-def ReadCSVFiles(
+def ReadCSVFilesPlain(
     p: beam.Pipeline,
     file_pattern: str,
     fieldnames: typing.List[str],
@@ -64,8 +69,8 @@ def ReadCSVFiles(
 
 
 @beam.ptransform_fn
-def WriteCSVFiles(
-    pcoll: PCollection,
+def WritePandasToCSV(
+    pcoll: PCollection[pd.DataFrame],
     file_path_prefix: str,
     **kwargs,
 ):
@@ -74,3 +79,13 @@ def WriteCSVFiles(
         | "Convert to csv lines"    >> beam.MapTuple(lambda *args: ",".join(map(str, args)))
         | "Write results to csv"    >> beam_io.WriteToText(file_path_prefix=file_path_prefix, **kwargs)
     )
+
+
+@beam.ptransform_fn
+def ReadCSVToPandas(
+    p: beam.Pipeline,
+    *args,
+    **kwargs,
+) -> PCollection[pd.DataFrame]:
+    data = p | "Read CSV" >> df_io.read_csv(*args, **kwargs)
+    return df_convert.to_pcollection(data, yield_elements='pandas')
