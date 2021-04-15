@@ -134,4 +134,8 @@ class BeamJob(Job):
                 pspec = bigflow.build.reflect.get_project_spec(self.project_name)
                 imgid = build_docker_image_tag(pspec.docker_repository, pspec.version)
             logger.info("Use docker image %s for beam workers", imgid)
+
             options['worker_harness_container_image'] = imgid
+            experiments = options.setdefault('experiments', [])
+            if 'use_runner_v2' not in experiments:
+                experiments.append('use_runner_v2')
