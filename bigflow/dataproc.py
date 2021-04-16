@@ -50,7 +50,8 @@ class PySparkJob(bigflow.Job):
         worker_machine_type: str = 'n1-standard-1',
         env: typing.Optional[str] = None,
         project_name: typing.Optional[str] = None,
-        execution_timeout_sec: int = DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS
+        execution_timeout_sec: int = DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS,
+        internal_ip_only: bool = False
     ):
         self.id = id
 
@@ -78,6 +79,7 @@ class PySparkJob(bigflow.Job):
         self._project = project_name or bigflow.build.reflect.infer_project_name(stack=2)
 
         self.execution_timeout_sec = execution_timeout_sec
+        self.internal_ip_only = internal_ip_only
 
     def _generate_internal_jobid(self, context):
         job_random_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=10))
@@ -112,6 +114,7 @@ class PySparkJob(bigflow.Job):
                 requirements=self.pip_packages,
                 worker_machine_type=self.worker_machine_type,
                 worker_num_instances=self.worker_num_instances,
+                internal_ip_only=self.internal_ip_only
             )
             yield cluster_name
         finally:
@@ -242,7 +245,15 @@ def _print_job_output_log(storage_client, dataproc_cluster_client, project_id, r
     logger.info("JOB OUTPUT:\n=====\n%s\n=====", log_buffer.getvalue().decode())
 
 
-def _create_cluster(dataproc_cluster_client, project_id, region, cluster_name, requirements, worker_num_instances, worker_machine_type):
+def _create_cluster(
+        dataproc_cluster_client,
+        project_id,
+        region,
+        cluster_name,
+        requirements,
+        worker_num_instances,
+        worker_machine_type,
+        internal_ip_only: bool = False):
     packages = " ".join(filter(None, requirements))
     cluster_data = {
         # "project_id": project_id,
@@ -265,7 +276,8 @@ def _create_cluster(dataproc_cluster_client, project_id, region, cluster_name, r
                 {"executable_file": "gs://goog-dataproc-initialization-actions-{}/python/pip-install.sh".format(region)}
             ],
             "gce_cluster_config": {
-                "metadata": [('PIP_PACKAGES', packages)]
+                "metadata": [('PIP_PACKAGES', packages)],
+                "internal_ip_only": internal_ip_only
             }
         },
     }
