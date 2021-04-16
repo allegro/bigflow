@@ -43,7 +43,7 @@ _PROJECT_METAINFO_KEYS = (
 class BigflowProjectSpec:
     """Parameters of bigflow project."""
 
-    # transients: not part of 'pyproject.toml'
+    # Path to directory containing 'pyproject.toml' or 'setup.py', transient
     project_dir: Path
 
     # Basic setuptools info - required or semi-required
@@ -146,15 +146,15 @@ def add_spec_to_pyproject_toml(pyproject_toml: Path, prj: BigflowProjectSpec):
     pyproject_toml.write_text(toml.dumps(data))
 
 
-
 @functools.lru_cache(maxsize=None)
-def get_project_spec(dir: Path = None):
+def get_project_spec(project_dir: Path = None):
     """Reads project spec from `setup.py` and/or `pyproject.toml`.
-    Memoize results (key = project path).
+
+    Memoize results (key = project path).  Intented for use from `bigflow.cli` and similar tools.
     """
 
-    dir = dir or Path.cwd()
-    return read_project_spec(dir)
+    project_dir = project_dir or Path.cwd()
+    return read_project_spec(project_dir)
 
 
 def _mabye_read_pyproject(dir: Path):

@@ -31,7 +31,7 @@ def run_tests(prj: BigflowProjectSpec):
         bf_commons.run_process([
             "python", "-m", "xmlrunner", "discover",
             "-s", ".",
-            # "-t", project_dir,
+            "-t", prj.project_dir,
             "-o", output_dir,
         ])
     except subprocess.CalledProcessError:

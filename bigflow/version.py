@@ -16,6 +16,9 @@ def run_process(*args, verbose=False, **kwargs):
 
 
 def get_version():
+    if not _is_git_available():
+        raise RuntimeError("No git repo is available")
+
     dirty = _generate_dirty_suffix()
 
     if not dirty:
@@ -63,6 +66,15 @@ def get_version():
 
     logger.error("Can't detect project version based on git")
     return f"0+BROKEN{dirty}"
+
+
+def _is_git_available():
+    try:
+        run_process(["git", "rev-parse", "--is-inside-work-tree"])
+    except subprocess.SubprocessError:
+        return False
+    else:
+        return True
 
 
 def _generate_dirty_suffix():

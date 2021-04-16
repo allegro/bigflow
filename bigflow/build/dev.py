@@ -38,81 +38,89 @@ def read_setuppy_args(
     You could use `bigflow.build.materialize_setuppy` for such purposes, although it is not recommended"""
 
     assert directory is None or path_to_setup is None
-    if not path_to_setup:
-        path_to_setup = find_setuppy(directory)
+    path_to_setup = path_to_setup or find_setuppy(directory)
     return _read_setuppy_args(path_to_setup)
 
 
 @functools.lru_cache()
 def _read_setuppy_args(path_to_setup: Path) -> dict:
-
     logger.info("Read project options from %s", path_to_setup)
     with tempfile.NamedTemporaryFile("r+b") as f:
         bf_commons.run_process(["python", path_to_setup, DUMP_PARAMS_SETUPPY_CMDARG, f.name], cwd=str(path_to_setup.parent))
-        params = pickle.load(f)
-
-    legacy_project_name = _read_project_name_from_setup_legacy(path_to_setup.parent)
-    if legacy_project_name and params.get('name') != legacy_project_name:
-        logging.error(
-            "Project name mismatch: setup.PROJECT_NAME == %r, "
-            "but setup(name=%r). It is recommended to remove 'PROJECT_NAME' variable from 'project_setup.py'",
-            legacy_project_name, params.get('name'))
-
-    return params
-
-
-def _read_project_name_from_setup_legacy(direcotry: Path) -> Optional[str]:
-    # TODO: Remove this function in v1.3
-    import unittest.mock as mock
-    with mock.patch('bigflow.build.dist.setup', lambda **kwargs: None):
-        sys_path_original = list(sys.path)
-        try:
-            sys.path.insert(0, direcotry)
-            import project_setup
-            return project_setup.PROJECT_NAME
-        except Exception:
-            return None
-        finally:
-            sys.path.clear()
-            sys.path.extend(sys_path_original)
+        return pickle.load(f)
 
 
 @public()
+def find_project_dir(cwd: typing.Union[None, Path, str] = None) -> Path:
+    """Find location of project root.
+    Scan provided directory and its parents, searching for any `setup.py` or `pyproject.toml`.
+    Scanning doesn't escape user home directory."""
+
+    d = cwd = Path(cwd or Path.cwd()).resolve()
+    while True:
+
+        if (d / "pyproject.toml").exists():
+            logger.debug("Found 'pyproject.toml' at %s", d)
+            return d
+
+        if (d / "setup.py").exists():
+            logger.debug("Found 'setup.py' at %s", d)
+            try:
+                logger.debug("Check if %d is project root")
+                read_setuppy_args(d)
+            except Exception as e:
+                logger.debug("Directory %s is not a project root", exc_info=e)
+            else:
+                return d
+
+        if (d / "project_setup.py").exists():
+            logger.warning("Found legacy `project_setup.py`, please rename it to `setup.py`")
+            return d
+
+        if (d / ".git").is_dir():
+            logger.debug("Found '.git' at %s", d)
+            return d
+
+        if d == d.parent:
+            logger.info("Stop project dir searching - reach root at %s", d)
+            break  # root
+        if d == Path.home():
+            logger.info("Stop project root searching - reach home %d", d)
+            break  # outside of home
+        d = d.parent
+
+    raise FileNotFoundError("Not found project root at %s", cwd)
+
+
+@public(deprecate_reason="Use `find_project_dir`")
 def find_setuppy(directory: typing.Union[None, Path, str] = None) -> Path:
     """Find location of project setup.py.
 
     Scan provided directory and its parents, searching for any `setup.py`
     Scanning doesn't escape user home directory."""
 
-    directory = Path(directory or Path.cwd()).resolve()
+    project_dir = find_project_dir(directory)
+    setup_py: Path = project_dir / "setup.py"
+    prj_setup_py: Path = project_dir / "project_setup.py"
 
-    while True:
-
-        setup_py = directory / "setup.py"
-        pyproject = directory / "pyproject.toml"
-        prj_setup_py = directory / "project_setup.py"
-        if setup_py.exists() and pyproject.exists():
-            return setup_py
-        if prj_setup_py.exists():
-            return prj_setup_py
-
-        if directory == directory.parent or directory == Path.home():
-            break
-        directory = directory.parent
-
-    raise FileNotFoundError("Not found `setup.py` not `project_setup.py`")
+    if setup_py.exists():
+        return setup_py
+    elif prj_setup_py.exists():
+        return prj_setup_py
+    else:
+        raise FileNotFoundError("Not found `setup.py` not `project_setup.py`")
 
 
-def install_syspath(setuppy_path: Optional[Path] = None, chdir: bool = True):
+def install_syspath(project_dir: Optional[Path] = None, chdir: bool = True):
     """Makes project files importable by 'bigflow' cli tool"""
-    if setuppy_path is None:
-        try:
-            setuppy_path = find_setuppy()
-        except FileNotFoundError:
-            logger.debug("Could not find `setup.py` - don't modify sys.path")
-            return
 
-    d = str(setuppy_path.parent)
+    try:
+        project_dir = project_dir or find_project_dir()
+    except FileNotFoundError:
+        logger.debug("Could not find `setup.py` - don't modify sys.path")
+        return
+
+    d = str(project_dir)
     if d not in sys.path:
         logger.debug("Add %r to `sys.path`", d)
         sys.path.insert(0, d)

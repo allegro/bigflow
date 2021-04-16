@@ -75,7 +75,7 @@ class PySparkJob(bigflow.Job):
         else:
             self.pip_packages = pip_packages
 
-        self._project = project_name or bigflow.build.reflect.infer_project_name(stack=2)
+        self._project = project_name or bigflow.build.reflect.get_project_spec().name
 
         self.execution_timeout_sec = execution_timeout_sec
 
