@@ -120,7 +120,7 @@ def sync_requirements_with_dataflow_workers(req_path=None):
 
     if req_path is None:
         params = bigflow.build.spec.get_project_spec()
-        req_path = Path(params.get('project_requirements_file', "resources/requirements.txt"))
+        req_path = Path(params.project_requirements_file or "resources/requirements.txt")
 
     pins_in = req_path.parent / "dataflow_pins.in"
     return bigflow.build.pip.generate_pinfile(

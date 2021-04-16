@@ -18,7 +18,7 @@ class ReadProjectParametersLegacyTestCase(
 
         # then
         self.assertIn('name', params)
-        self.assertEqual("bf-simple-v10", params['name'])
+        self.assertEqual("bf_simple_v10", params['name'])
 
 
 

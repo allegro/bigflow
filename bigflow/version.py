@@ -17,7 +17,8 @@ def run_process(*args, verbose=False, **kwargs):
 
 def get_version():
     if not _is_git_available():
-        raise RuntimeError("No git repo is available")
+        logger.warning("No git repo is available")
+        return f"0+BROKEN"
 
     dirty = _generate_dirty_suffix()
 

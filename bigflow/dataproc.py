@@ -75,8 +75,7 @@ class PySparkJob(bigflow.Job):
         else:
             self.pip_packages = pip_packages
 
-        self._project = project_name or bigflow.build.reflect.get_project_spec().name
-
+        self._project_pkg_path = project_name or bigflow.build.reflect.locate_project_path(project_name)
         self.execution_timeout_sec = execution_timeout_sec
 
     def _generate_internal_jobid(self, context):
@@ -151,7 +150,7 @@ class PySparkJob(bigflow.Job):
         logger.info("Prapare and upload python package...")
         bucket = storage_client.get_bucket(self.bucket_id)
 
-        egg_local_path = str(bigflow.build.reflect.build_egg(self._project))
+        egg_local_path = str(bigflow.build.reflect.build_egg(self._project_pkg_path))
         egg_path = _upload_egg(egg_local_path, bucket, job_internal_id)
 
         driver_path = f"{job_internal_id}/{self.driver_filename}"

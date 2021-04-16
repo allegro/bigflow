@@ -29,7 +29,6 @@ import bigflow.build.spec
 from bigflow.build.spec import BigflowProjectSpec
 from bigflow.commons import public
 
-logging.basicConfig(level='DEBUG')
 logger = logging.getLogger(__name__)
 
 
@@ -95,13 +94,25 @@ def _locate_dev_project_directory_by_module(module: types.ModuleType) -> Optiona
     if not setuppy.exists() and not ppt.exists():
         logger.debug("Not found files %s / %s", setuppy, ppt)
         return None
+
+    try:
+        bigflow.build.spec.read_project_spec(d)
+    except Exception:
+        logger.debug("Invalid bigflow project spec: ", exc_info=True)
+        return None
+
     return d
 
 
-def _locate_project_path(project_name=None) -> Path:
+@public()
+def locate_project_path(project_name: Union[str, Path, None]) -> Path:
     """Returns path to either project sdist package (tar) or directory with project sources"""
 
-    if project_name:
+    if isinstance(project_name, Path):
+        logger.debug("Given explicit project location - do nothing")
+        return project_name
+
+    elif project_name:
         logger.debug("Explicit project name - try to locate self-installed sdist package")
         pkg = _locate_self_package(project_name)
         if pkg:
@@ -170,7 +181,7 @@ def get_project_spec(project_name: Optional[str] = None) -> BigflowProjectSpec:
     This function should be used only from project runtime (not from 'bigflow' cli tool).
     """
 
-    pkg = _locate_project_path(project_name)
+    pkg = locate_project_path(project_name)
     logger.debug("Project loated at %s", pkg)
 
     if pkg.is_dir():
@@ -198,12 +209,12 @@ def _ensure_setuppy_exists(setuppy: Path):
 
 @public()
 def materialize_setuppy(
-    project_name: Optional[str] = None,
+    project_name: Optional[Union[str, Path]] = None,
     tempdir: Optional[str] = None,
 ) -> Path:
     """Locates project setup.py.  Unpacks embedded sdist distribution when needed."""
 
-    pkg: Path = _locate_project_path(project_name)
+    pkg = locate_project_path(project_name)
 
     if pkg.is_dir():
         setuppy = pkg / "setup.py"
