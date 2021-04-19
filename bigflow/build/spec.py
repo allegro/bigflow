@@ -64,7 +64,7 @@ class BigflowProjectSpec:
     # Known package metainformation (author, url, description etc, see _PROJECT_METAINFO_KEYS)
     metainfo: typing.Dict[str, typing.Any]
 
-    # Just bypass any unknow options to 'distutils'
+    # Just bypass any unknown options to 'distutils'
     setuptools: typing.Dict[str, typing.Any]
 
 
@@ -157,7 +157,7 @@ def get_project_spec(project_dir: Path = None):
     return read_project_spec(project_dir)
 
 
-def _mabye_read_pyproject(dir: Path):
+def _maybe_read_pyproject(dir: Path):
     pyproject_toml = dir / "pyproject.toml"
     if pyproject_toml.exists():
         logger.info("Load config %s", pyproject_toml)
@@ -172,7 +172,7 @@ def read_project_spec_nosetuppy(project_dir, **kwargs):
     Does *NOT* inspect `setup.py` (as it is intented to be used from setup.py)"""
 
     data = {}
-    data.update(_mabye_read_pyproject(project_dir) or {})
+    data.update(_maybe_read_pyproject(project_dir) or {})
     data.update(kwargs)
     return parse_project_spec(project_dir, **data)
 
@@ -254,7 +254,7 @@ def secure_get_version() -> str:
     logger.debug("Autodetected project version using git")
     try:
         version = bigflow.version.get_version()
-        logger.info("Autodected project version is %s", version)
+        logger.info("Autodetected project version is %s", version)
         return version
     except Exception as e:
         logger.error("Can't get the current package version. To use the automatic versioning, "

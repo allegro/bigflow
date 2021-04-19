@@ -2,6 +2,7 @@
 
 import os
 import sys
+from typing import Dict, Optional, Union
 import setuptools
 import logging
 import pickle
@@ -33,7 +34,7 @@ SETUP_VALIDATION_MESSAGE = 'BigFlow setup is valid.'
 class BigflowDistribution(distutils.dist.Distribution):
     """Customized Distribution for bigflow projects. Add custom commands, allow access to bigflow project spec."""
 
-    def __init__(self, attrs=None):
+    def __init__(self, attrs: Optional[Dict]=None):
         self.bigflow_project_spec = None
         attrs = dict(attrs or {})
         cmdclass = attrs.setdefault('cmdclass', {})
@@ -41,7 +42,7 @@ class BigflowDistribution(distutils.dist.Distribution):
         cmdclass['sdist'] = sdist
         super().__init__(attrs)
 
-    def get_command_class(self, command):
+    def get_command_class(self, command: str):
         cls = super().get_command_class(command)
         if command.startswith("bdist"):
             cls = _hook_pregenerate_sdist(cls)

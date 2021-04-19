@@ -545,7 +545,6 @@ def _cli_deploy_image(args):
 def find_image_file():
     # TODO parametrize ".image" using settings from build.py
     files = glob1(".image", "*-*.tar")
-    print("Z" * 100, list(files))
     if files:
         return os.path.join(".image", files[0])
     else:

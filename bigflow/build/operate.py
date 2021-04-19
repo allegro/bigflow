@@ -24,14 +24,14 @@ from bigflow.build.spec import BigflowProjectSpec
 logger = logging.getLogger(__name__)
 
 
-def run_tests(prj: BigflowProjectSpec):
+def run_tests(project_spec: BigflowProjectSpec):
     logger.info('Runing tests...')
     output_dir = "build/junit-reports"
     try:
         bf_commons.run_process([
             "python", "-m", "xmlrunner", "discover",
             "-s", ".",
-            "-t", prj.project_dir,
+            "-t", project_spec.project_dir,
             "-o", output_dir,
         ])
     except subprocess.CalledProcessError:
@@ -53,20 +53,20 @@ def _build_docker_image(project_dir: Path, tag: str):
 
 
 def build_image(
-    prj: BigflowProjectSpec,
+    project_spec: BigflowProjectSpec,
 ):
     logger.info("Building docker image...")
-    clear_image_leftovers(prj)
+    clear_image_leftovers(project_spec)
 
-    image_dir = prj.project_dir / ".image"
+    image_dir = project_spec.project_dir / ".image"
     os.mkdir(image_dir)
 
-    tag = bf_commons.build_docker_image_tag(prj.docker_repository, prj.version)
-    _build_docker_image(prj.project_dir, tag)
+    tag = bf_commons.build_docker_image_tag(project_spec.docker_repository, project_spec.version)
+    _build_docker_image(project_spec.project_dir, tag)
 
     try:
-        _export_docker_image_to_file(tag, image_dir, prj.version)
-        dconf_file = Path(prj.deployment_config_file)
+        _export_docker_image_to_file(tag, image_dir, project_spec.version)
+        dconf_file = Path(project_spec.deployment_config_file)
         shutil.copyfile(dconf_file, image_dir / dconf_file.name)
     finally:
         bf_commons.remove_docker_image_from_local_registry(tag)
@@ -75,34 +75,34 @@ def build_image(
 
 
 def build_dags(
-    prj: BigflowProjectSpec,
+    project_spec: BigflowProjectSpec,
     start_time: str,
     workflow_id: typing.Optional[str] = None,
 ):
     logger.info("Building airflow DAGs...")
-    clear_dags_leftovers(prj)
+    clear_dags_leftovers(project_spec)
 
-    # FIXME: DON'T USE 'bigflow.cli'!
+    # TODO: Move common frunctions from bigflow.cli to bigflow.commons (or other shared module)
     from bigflow.cli import _valid_datetime, walk_workflows
     _valid_datetime(start_time)
 
     cnt = 0
-    for root_package in prj.packages:
+    for root_package in project_spec.packages:
         if "." in root_package:
             # leaf package
             continue
 
-        for workflow in walk_workflows(prj.project_dir / root_package):
+        for workflow in walk_workflows(project_spec.project_dir / root_package):
             if workflow_id is not None and workflow_id != workflow.workflow_id:
                 continue
-            print(f'Generating DAG file for {workflow.workflow_id}')
+            logger.info("Generating DAG file for %s", workflow.workflow_id)
             cnt += 1
             bigflow.dagbuilder.generate_dag_file(
-                str(prj.project_dir),
-                prj.docker_repository,
+                str(project_spec.project_dir),
+                project_spec.docker_repository,
                 workflow,
                 start_time,
-                prj.version,
+                project_spec.version,
                 root_package,
             )
 
@@ -114,34 +114,34 @@ def _rmtree(p: Path):
     shutil.rmtree(p, ignore_errors=True)
 
 
-def clear_image_leftovers(prj: BigflowProjectSpec):
-    _rmtree(prj.project_dir / ".image")
+def clear_image_leftovers(project_spec: BigflowProjectSpec):
+    _rmtree(project_spec.project_dir / ".image")
 
 
-def clear_dags_leftovers(prj: BigflowProjectSpec):
-    _rmtree(prj.project_dir / ".dags")
+def clear_dags_leftovers(project_spec: BigflowProjectSpec):
+    _rmtree(project_spec.project_dir / ".dags")
 
 
-def build_package(prj: BigflowProjectSpec):
+def build_package(project_spec: BigflowProjectSpec):
     logger.info('Building python package')
-    clear_package_leftovers(prj)
-    run_tests(prj)
-    bigflow.build.dist.run_setup_command(prj, 'bdist_wheel')
+    clear_package_leftovers(project_spec)
+    run_tests(project_spec)
+    bigflow.build.dist.run_setup_command(project_spec, 'bdist_wheel')
 
 
-def clear_package_leftovers(prj: BigflowProjectSpec):
-    _rmtree(prj.project_dir / "build")
-    _rmtree(prj.project_dir / "dist")
-    _rmtree(prj.project_dir / f"{prj.name}.egg")
+def clear_package_leftovers(project_spec: BigflowProjectSpec):
+    _rmtree(project_spec.project_dir / "build")
+    _rmtree(project_spec.project_dir / "dist")
+    _rmtree(project_spec.project_dir / f"{project_spec.name}.egg")
 
 
 def build_project(
-    prj: BigflowProjectSpec,
+    project_spec: BigflowProjectSpec,
     start_time: str,
     workflow_id: typing.Optional[str] = None,
 ):
     logger.info("Build the project")
-    build_package(prj)
-    build_image(prj)
-    build_dags(prj, start_time, workflow_id=workflow_id)
+    build_package(project_spec)
+    build_image(project_spec)
+    build_dags(project_spec, start_time, workflow_id=workflow_id)
     logger.info("Project was built")

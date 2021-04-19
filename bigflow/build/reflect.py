@@ -175,10 +175,13 @@ def _expect_single_file(directory: str, pattern: str) -> Path:
 
 
 @public()
-def get_project_spec(project_name: Optional[str] = None) -> BigflowProjectSpec:
-    """Read & parses *current* project spec.
+def get_project_spec(
+    project_name: Union[str, Path, None] = None,
+) -> BigflowProjectSpec:
+    """Read & parse current project spec.
 
-    This function should be used only from project runtime (not from 'bigflow' cli tool).
+    This function should be called from inside the project as
+    it uses dynamic inspection to find project name.
     """
 
     pkg = locate_project_path(project_name)
