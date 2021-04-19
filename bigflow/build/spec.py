@@ -126,6 +126,8 @@ def render_project_spec(prj: BigflowProjectSpec) -> dict:
         'docker_repository': prj.docker_repository,
         'deployment_config_file': prj.deployment_config_file,
         'project_requirements_file': prj.project_requirements_file,
+        # 'data_files': prj.data_files,  # https://github.com/uiri/toml/issues/270
+        'resources_dir': prj.resources_dir,
         **prj.metainfo,
         **prj.setuptools,
     }

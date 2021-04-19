@@ -63,7 +63,11 @@ class _BaseRealProjectTest(
     expected_packages: List[str]
     expected_metainfo: Dict[str, Any]
 
-    # TODO: Add more tests.
+    expected_requires: List[str] = [
+        "datetime_truncate==1.1.0",
+        "six==1.15.0",
+        "typing==3.7.4.3",
+    ]
 
     def test_read_spec_from_setuppy(self):
 
@@ -74,7 +78,50 @@ class _BaseRealProjectTest(
         self.assertEqual(s.project_dir, self.cwd)
         self.assertEqual(s.name, self.expected_name)
         self.assertEqual(s.metainfo, self.expected_metainfo)
-        self.assertCountEqual(s.packages, self.expected_packages)
+
+        self.assertEqual(s.docker_repository, "test_repository")
+        self.assertCountEqual(s.requries, self.expected_requires)
+        self.assertCountEqual(
+            s.packages,
+            self.expected_packages,
+        )
+
+    def test_fill_defaults(self):
+
+        # given
+        s = spec.read_project_spec(self.cwd)
+        s.name = "new-name"
+        s.version = "3.4.5+local"
+        # s.data_files = [("one", ["two", "three/file"])]  # https://github.com/uiri/toml/issues/270
+        s.deployment_config_file = "no_deployment.py"
+        s.project_requirements_file = "req.txt"
+        s.resources_dir = "no_resources"
+        s.requries = ["my-lib"]
+        s.packages = ["a", "b"]
+        s.metainfo = {
+            'author': "Me",
+            'author_email': "no@example.org",
+            'description': "No",
+            'url': "http://example.org/myproject",
+        }
+
+        # when
+        spec.add_spec_to_pyproject_toml(self.cwd / "pyproject.toml", s)
+
+        # then
+        ss = spec.read_project_spec_nosetuppy(self.cwd)
+        for f in [
+            'name',
+            'version',
+            'deployment_config_file',
+            'project_requirements_file',
+            'resources_dir',
+            'requries',
+            'packages',
+            'metainfo',
+            'data_files',
+        ]:
+            self.assertEqual(getattr(s, f), getattr(ss, f), f"field {f} should be same")
 
 
 class SpecBigflowV10TestCase(_BaseRealProjectTest):
