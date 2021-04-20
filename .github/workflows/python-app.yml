@@ -28,8 +28,8 @@ jobs:
         pip install -r test/requirements.txt
     - name: Tests
       run: |
-        git config --global user.email "you@example.com"
-        git config --global user.name "Your name"
+        git config --global user.email "fake@example.com"
+        git config --global user.name "fake name"
         python -m unittest discover -s bigflow -t . -p '*.py'
         python -m unittest discover -s test -p '*.py'
 
