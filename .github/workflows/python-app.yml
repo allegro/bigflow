@@ -31,5 +31,5 @@ jobs:
       run: |
         sudo apt update
         sudo apt install git
-        python -m unittest discover -s bigflow -t . -p '*.py'
-        python -m unittest discover -s test -p '*.py'
+        git commit -m message
+
