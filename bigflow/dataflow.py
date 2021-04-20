@@ -6,7 +6,12 @@ from apache_beam import Pipeline
 from apache_beam.options.pipeline_options import PipelineOptions
 from apache_beam.runners.runner import PipelineResult, PipelineState
 
-from typing import Dict, Union
+from typing import Dict, List, Union, Optional, Tuple
+
+try:
+    from typing import TypedDict, Literal
+except ImportError:
+    from typing_extensions import TypedDict, Literal
 
 from bigflow.commons import public, build_docker_image_tag
 from bigflow.workflow import Job, JobContext
@@ -17,6 +22,43 @@ import bigflow.build.reflect
 logger = logging.getLogger(__file__)
 
 
+class PipelineOptionsDict(TypedDict, total=False):
+    """Standard dataflow pipeline options.
+
+    See sources for full list of supported options.
+    https://github.com/apache/beam/blob/master/sdks/python/apache_beam/options/pipeline_options.py
+    """
+
+    runner: Literal['DirectRunner', 'DataflowRunner']
+    experiments: List[str]
+    streaming: bool
+
+    job_name: str
+    labels: List[str]
+
+    temp_location: str
+    staging_location: str
+
+    project: str
+    region: str
+    zone: str
+    worker_region: str
+    worker_zone: str
+
+    autoscaling_algorithm: Literal['THROUGHPUT_BASED', 'NONE']
+    machine_type: str
+    num_workers: int
+    max_workers: int
+
+    network: str
+    subnetwork: str
+    use_public_ips: bool
+    service_account_email: str
+    worker_disk_type: str
+    disk_size_gb: int
+    flexrs_goal: str
+
+
 @public()
 class BeamJob(Job):
 
@@ -25,9 +67,14 @@ class BeamJob(Job):
     def __init__(
             self,
             id: str = None,
+
             entry_point: typing.Callable[[Pipeline, JobContext, dict], None] = None,
-            pipeline_options: Union[typing.Dict, PipelineOptions, None] = None,
+            entry_point_args: Optional[Tuple] = None,
+            entry_point_kwargs: Optional[Dict] = None,
             entry_point_arguments: typing.Optional[dict] = None,
+
+            pipeline_options: Union[PipelineOptionsDict, PipelineOptions, None] = None,
+
             wait_until_finish: bool = True,
             test_pipeline: Pipeline = None,
             execution_timeout_sec: int = None,
@@ -35,7 +82,7 @@ class BeamJob(Job):
             project_name=None,
             **kwargs,
     ):
-        if bool(test_pipeline) == bool(pipeline_options):
+        if bool(test_pipeline) == bool(pipeline_options is not None):
             raise ValueError("One of the pipeline and pipeline_options must be provided.")
 
         if not wait_until_finish and execution_timeout_sec:
@@ -47,20 +94,32 @@ class BeamJob(Job):
         )
 
         if isinstance(pipeline_options, PipelineOptions):
+            logger.warning("Pipeline options should be passed as a dict")
             pipeline_options = pipeline_options.get_all_options(drop_default=True)
-            self._set_default_pipeline_options = False
+            self.no_default_pipeline_options = False
         else:
-            self._set_default_pipeline_options = True
-
+            self.no_default_pipeline_options = True
         self.pipeline_options = dict(pipeline_options or {})
         assert PipelineOptions.from_dictionary(self.pipeline_options)
 
-        self.entry_point = entry_point
-        self.entry_point_arguments = entry_point_arguments
         self.wait_until_finish = wait_until_finish
         self.test_pipeline = test_pipeline
-
         self.use_docker_image = use_docker_image
+        self.entry_point = entry_point
+
+        if entry_point_arguments is None:
+            # threading-like - tuple/dict for args/kwargs
+            self.entry_point_args = entry_point_args or ()
+            self.entry_point_kwargs = entry_point_kwargs or {}
+            self.entry_point_arguments = None
+        else:
+            # old style - single positional argument with type 'dict'
+            assert entry_point_args is None, "Mixins of `entry_point_args` and `entry_point_arguments` is not allowed"
+            assert entry_point_kwargs is None, "Mixins of `entry_point_kwargs` and `entry_point_arguments` is not allowed"
+            self.entry_point_args = (entry_point_arguments,)
+            self.entry_point_kwargs = {}
+            self.entry_point_arguments = entry_point_arguments
+
         self._project_path = bigflow.build.reflect.locate_project_path(project_name)
 
     def execute(self, context: JobContext):
@@ -83,28 +142,30 @@ class BeamJob(Job):
                 result.cancel()
                 raise RuntimeError(f'Job {self.id} timed out ({self.execution_timeout_sec})')
 
-    def new_pipeline(self, context):
+    def new_pipeline(self, context: JobContext) -> Pipeline:
         logger.debug("Create new pipline for context %s", context)
         popts = self.create_pipeline_options(context)
         return Pipeline(options=popts)
 
-    def init_pipeline(self, context, pipeline):
+    def init_pipeline(self, context: JobContext, pipeline: Pipeline):
         if not self.entry_point:
             raise RuntimeError("You need override method 'init_pipeline' or provide 'entry_point' argument")
-        self.entry_point(pipeline, context, self.entry_point_arguments)
+        self.entry_point(pipeline, context, *self.entry_point_args, **self.entry_point_kwargs)
 
-    def run_pipeline(self, context, pipeline):
+    def run_pipeline(self, context: JobContext, pipeline: Pipeline):
         logger.info("Run pipeline, context %s", context)
         return pipeline.run()
 
     def create_pipeline_options(self, context: JobContext) -> PipelineOptions:
         options = dict(self.pipeline_options)
-        if self._set_default_pipeline_options:
-            self.set_default_pipeline_options(options, context)
+        self.set_default_pipeline_options(context, options)
         logger.debug("Pipeline options from dict %s", options)
         return PipelineOptions.from_dictionary(options)
 
-    def set_default_pipeline_options(self, options: Dict, context: JobContext):
+    def set_default_pipeline_options(self, context: JobContext, options: PipelineOptionsDict):
+        if not self.no_default_pipeline_options:
+            return
+
         logger.debug("Add defaults to pipeline options")
 
         if 'job_name' not in options:
