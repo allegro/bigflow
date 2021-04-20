@@ -1,5 +1,6 @@
 from unittest import TestCase
 from unittest import mock
+import unittest
 from unittest.mock import patch
 
 import apache_beam as beam
@@ -58,12 +59,18 @@ class CountWordsDriver:
 
 
 @mock.patch('sys.argv', ["python"])  # Beam tries to parse cmdargs eagerly - it breaks external test launchers
+@mock.patch('bigflow.build.reflect.locate_project_path')
 class BeamJobTestCase(TestCase):
 
-    @patch.object(RunnerResult, 'is_in_terminal_state', create=True)
-    def test_should_run_beam_job(self, is_in_terminal_state_mock):
+    @patch.object(RunnerResult, 'state', new_callable=mock.PropertyMock)
+    def test_should_run_beam_job(
+        self,
+        state_mock,
+        locate_project_mock,
+    ):
         # given
-        is_in_terminal_state_mock.return_value = True
+        state_mock.return_value = "DONE"
+
         driver = CountWordsDriver(CounterStater(CounterState()))
         job = BeamJob(
             id='count_words',
@@ -96,14 +103,20 @@ class BeamJobTestCase(TestCase):
         # and sets default value for execution_timeout_sec
         self.assertEqual(job.execution_timeout_sec, DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS)
 
-    @patch.object(RunnerResult, 'is_in_terminal_state', create=True)
+    @patch.object(RunnerResult, 'state', new_callable=mock.PropertyMock)
     @patch.object(RunnerResult, 'cancel')
     @patch.object(RunnerResult, 'wait_until_finish')
-    def test_should_run_beam_job_with_timeout_with_cancel(self, wait_until_finish_mock, cancel_mock,
-                                                          is_in_terminal_state_mock):
+    def test_should_run_beam_job_with_timeout_with_cancel(
+        self,
+        wait_until_finish_mock,
+        cancel_mock,
+        state_mock,
+        locate_project_mock,
+    ):
         # given
         wait_until_finish_mock.return_value = 'DONE'
-        is_in_terminal_state_mock.return_value = False
+        state_mock.return_value = 'RUNNING'
+
         driver = CountWordsDriver(CounterStater(CounterState()))
         job = BeamJob(
             id='count_words',
@@ -128,14 +141,20 @@ class BeamJobTestCase(TestCase):
         self.assertEqual(cancel_mock.call_count, 1)
         wait_until_finish_mock.assert_called_with((600 - DEFAULT_PIPELINE_LEVEL_EXECUTION_TIMEOUT_SHIFT_IN_SECONDS) * 1000)
 
-    @patch.object(RunnerResult, 'is_in_terminal_state', create=True)
+    @patch.object(RunnerResult, 'state', new_callable=mock.PropertyMock)
     @patch.object(RunnerResult, 'cancel')
     @patch.object(RunnerResult, 'wait_until_finish')
-    def test_should_run_beam_job_with_timeout_without_cancel(self, wait_until_finish_mock, cancel_mock,
-                                                             is_in_terminal_state_mock):
+    def test_should_run_beam_job_with_timeout_without_cancel(
+        self,
+        wait_until_finish_mock,
+        cancel_mock,
+        state_mock,
+        locate_project_mock,
+    ):
         # given
         wait_until_finish_mock.return_value = 'DONE'
-        is_in_terminal_state_mock.return_value = True
+        state_mock.return_value = 'DONE'
+
         driver = CountWordsDriver(CounterStater(CounterState()))
         job = BeamJob(
             id='count_words',
@@ -158,7 +177,10 @@ class BeamJobTestCase(TestCase):
         self.assertEqual(cancel_mock.call_count, 0)
         wait_until_finish_mock.assert_called_with((600 - DEFAULT_PIPELINE_LEVEL_EXECUTION_TIMEOUT_SHIFT_IN_SECONDS) * 1000)
 
-    def test_should_throw_if_wait_until_finish_set_to_false_and_execution_timeout_passed(self):
+    def test_should_throw_if_wait_until_finish_set_to_false_and_execution_timeout_passed(
+        self,
+        locate_project_mock,
+    ):
         # given
         with self.assertRaises(ValueError):
             driver = CountWordsDriver(CounterStater(CounterState()))
@@ -173,11 +195,15 @@ class BeamJobTestCase(TestCase):
                 execution_timeout_sec=1,
                 wait_until_finish=False)
 
-    @patch.object(RunnerResult, 'is_in_terminal_state', create=True)
-    @patch.object(BeamJob, '_create_pipeline')
-    def test_should_create_pipeline_from_pipeline_options(self, _create_pipeline_mock, is_in_terminal_state_mock):
+    @patch('bigflow.dataflow.Pipeline')
+    def test_should_create_pipeline_from_pipeline_options(
+        self,
+        _create_pipeline_mock: mock.Mock,
+        locate_project_mock,
+    ):
         # given
-        is_in_terminal_state_mock.return_value = True
+        _create_pipeline_mock.return_value.run.return_value = RunnerResult('DONE', None)
+
         driver = CountWordsDriver(CounterStater(CounterState()))
         options = PipelineOptions()
         job = BeamJob(
@@ -188,7 +214,8 @@ class BeamJobTestCase(TestCase):
                 'words_to_count': ['trash', 'valid', 'word', 'valid']
             },
             pipeline_options=options,
-            execution_timeout_sec=1)
+            execution_timeout_sec=10,
+        )
 
         count_words = Workflow(
             workflow_id='count_words',
@@ -198,9 +225,16 @@ class BeamJobTestCase(TestCase):
         count_words.run('2020-01-01')
 
         # then
-        _create_pipeline_mock.assert_called_with(options)
+        options.get_all_options()
+        self.assertDictEqual(
+            options.get_all_options(),
+            _create_pipeline_mock.call_args[1]['options'].get_all_options(),
+        )
 
-    def test_should_throw_if_pipeline_options_and_pipeline_both_not_provided(self):
+    def test_should_throw_if_pipeline_options_and_pipeline_both_not_provided(
+        self,
+        locate_project_mock,
+    ):
         with self.assertRaises(ValueError):
             driver = CountWordsDriver(CounterStater(CounterState()))
             BeamJob(
@@ -212,7 +246,10 @@ class BeamJobTestCase(TestCase):
                 },
                 execution_timeout_sec=1)
 
-    def test_should_throw_if_pipeline_options_and_pipeline_both_provided(self):
+    def test_should_throw_if_pipeline_options_and_pipeline_both_provided(
+        self,
+        locate_project_mock,
+    ):
         with self.assertRaises(ValueError):
             driver = CountWordsDriver(CounterStater(CounterState()))
             BeamJob(
