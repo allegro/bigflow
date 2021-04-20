@@ -159,7 +159,5 @@ setuptools.setup(
         Use `bigflow.build.reflect.materialize_setuppy` instead"""
 )
 def find_or_create_setup_for_main_project_package(project_name: str = None, search_start_file: Path = None) -> Path:
-    import bigflow.build.reflect as br
-    if project_name is None:
-        project_name = br.infer_project_name(stack=3)  # +1 stack for @deprecated
-    return br.materialize_setuppy(project_name)
+    from bigflow.build.reflect import materialize_setuppy
+    return materialize_setuppy(project_name)

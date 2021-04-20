@@ -40,6 +40,7 @@ class ReadProjectParametersTestCase(
             author="Bigflow UnitTest",
             description="Sample bigflow project",
             url="http://example.org",
+            version="1.2.3",
         ), params)
 
     def test_should_read_project_params_from_subdir(self):

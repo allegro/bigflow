@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Dict, List
 
 import bigflow.build.pip
-import bigflow.build.dev
+import bigflow.build.spec
 import bigflow.build.dataflow.workerdeps
 
 
@@ -117,9 +117,11 @@ def check_beam_worker_dependencies_conflict(req_path: Path):
 
 
 def sync_requirements_with_dataflow_workers(req_path=None):
+
     if req_path is None:
-        params = bigflow.build.dev.read_setuppy_args()
-        req_path = Path(params.get('project_requirements_file', "resources/requirements.txt"))
+        params = bigflow.build.spec.get_project_spec()
+        req_path = Path(params.project_requirements_file or "resources/requirements.txt")
+
     pins_in = req_path.parent / "dataflow_pins.in"
     return bigflow.build.pip.generate_pinfile(
         req_path,

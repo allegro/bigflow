@@ -1,7 +1,11 @@
 import os
 import sys
+print("VEERSION", sys.version)
+
+
 from pathlib import Path
 from setuptools import setup
+
 
 
 def add_bigflow_to_path():
@@ -9,7 +13,7 @@ def add_bigflow_to_path():
     bf_path_index = str(Path(__file__).absolute()).split(os.sep).index('bigflow')
     bf_path_parts = str(Path(__file__).absolute()).split(os.sep)[:bf_path_index + 1]
     bf_package = os.path.join(os.sep, *bf_path_parts)
-    print(f'Adding to path: {bf_package}')
+    #print(f'Adding to path: {bf_package}')
     sys.path.insert(0, bf_package)
 
 
@@ -19,8 +23,8 @@ BUILD_PATH = Path(__file__).parent / 'build'
 TEST_PATH = Path(__file__).parent / 'test'
 DAGS_DIR_PATH = Path(__file__).parent / '.dags'
 DIST_DIR_PATH = Path(__file__).parent / 'dist'
-IMAGE_DIR_PATH = Path(__file__).parent / 'image'
-EGGS_DIR_PATH = Path(__file__).parent / f'{PROJECT_NAME}.egg-info'
+IMAGE_DIR_PATH = Path(__file__).parent / '.image'
+EGGS_DIR_PATH = Path(__file__).parent / '{PROJECT_NAME}.egg-info'
 ROOT_PACKAGE = Path(__file__).parent / 'main_package'
 DOCKER_REPOSITORY = 'test_docker_repository'
 DEPLOYMENT_CONFIG_PATH = Path(__file__).parent / 'deployment_config.py'

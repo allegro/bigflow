@@ -6,32 +6,37 @@ allowing to build whl/egg/tar packages from pip-installed source.
 Thoose packages may be latter used by pyspark, beam, etc.
 """
 
+
 import sys
 import os
 import inspect
 import logging
 import tarfile
 import tempfile
+import textwrap
 import types
 import pkg_resources
+import importlib
+import functools
 
-from typing import Optional, List
+from typing import Optional, List, Tuple, Union
 from pathlib import Path
 
 import bigflow.commons as bfc
 import bigflow.build.dev
-from bigflow.commons import public
+import bigflow.build.spec
 
+from bigflow.build.spec import BigflowProjectSpec
+from bigflow.commons import public
 
 logger = logging.getLogger(__name__)
 
 
-def _capture_caller_module(stack=1):
-    caller_stack_frame = inspect.stack()[stack][0]
-    caller_module = inspect.getmodule(caller_stack_frame)
-    return caller_module
+def _memoize(f):
+    return functools.lru_cache(maxsize=None)(f)
 
 
+@_memoize
 def _iter_dist_toplevel_packages(distname) -> List[str]:
     try:
         dist = pkg_resources.get_distribution(distname)
@@ -46,6 +51,16 @@ def _iter_dist_toplevel_packages(distname) -> List[str]:
         return []
 
 
+@_memoize
+def _get_topmodule_to_dist_mapping():
+    all_dist_names = list(pkg_resources.Environment())
+    return {
+        p: dname
+        for dname in all_dist_names
+        for p in _iter_dist_toplevel_packages(dname)
+    }
+
+
 def _module_to_enclosing_directory(module: types.ModuleType) -> Path:
     if getattr(module, '__path__', None):
         return Path(next(iter(module.__path__)))
@@ -56,49 +71,83 @@ def _module_to_enclosing_directory(module: types.ModuleType) -> Path:
 
 def _infer_project_name_by_distribution(module: types.ModuleType) -> Optional[str]:
     top = module.__name__.split(".", 2)[0]
-    all_dist_names = list(pkg_resources.Environment())
-    top_to_dist_name = {
-        p: dname
-        for dname in all_dist_names
-        for p in _iter_dist_toplevel_packages(dname)
-    }
+    top_to_dist_name = _get_topmodule_to_dist_mapping()
     try:
         dist_name = top_to_dist_name[top]
     except KeyError:
         return None
+    else:
+        dist = pkg_resources.get_distribution(dist_name)
+        return dist.project_name
 
-    dist = pkg_resources.get_distribution(dist_name)
-    return dist.project_name
 
+def _locate_dev_project_directory_by_module(module: types.ModuleType) -> Optional[str]:
+    """Tries to locate setup.py/pyproject.toml near the module enclosing folder"""
 
-def _infer_project_name_by_setuppy_near_module(module: types.ModuleType) -> Optional[str]:
-    file = _module_to_enclosing_directory(module).parent / "setup.py"
-    if not file.exists():
-        logger.debug("Not found file %s", file)
+    top_name = module.__name__.split(".", 2)[0]
+    top_module = importlib.import_module(top_name)
+    d = _module_to_enclosing_directory(top_module).parent
+
+    setuppy = d / "setup.py"
+    ppt = d / "pyproject.toml"
+
+    if not setuppy.exists() and not ppt.exists():
+        logger.debug("Not found files %s / %s", setuppy, ppt)
         return None
 
     try:
-        logger.debug("Found 'setup.py' - read project parameters (check if it is 'bigflow' project)")
-        pp = bigflow.build.dev.read_setuppy_args(file)
-        return pp['name'].replace("_", "-")
+        bigflow.build.spec.read_project_spec(d)
     except Exception:
-        logger.exception("Found %r, but it is not a correct bigflow project", file)
+        logger.debug("Invalid bigflow project spec: ", exc_info=True)
         return None
 
+    return d
 
-def infer_project_name(stack=1) -> str:
-    """Apply heuristics to detect current project name."""
 
-    module = _capture_caller_module(stack + 1)
-    top_module = sys.modules.get(module.__name__.split(".", 2)[0])
-    project_name = (
-        None
-        or _infer_project_name_by_setuppy_near_module(top_module)
-        or _infer_project_name_by_distribution(top_module)
-        or top_module.__name__.replace("_", "-")
-    )
-    logger.debug("Project name inferred to be %r", project_name)
-    return project_name
+@public()
+def locate_project_path(project_name: Union[str, Path, None]) -> Path:
+    """Returns path to either project sdist package (tar) or directory with project sources"""
+
+    if isinstance(project_name, Path):
+        logger.debug("Given explicit project location - do nothing")
+        return project_name
+
+    elif project_name:
+        logger.debug("Explicit project name - try to locate self-installed sdist package")
+        pkg = _locate_self_package(project_name)
+        if pkg:
+            logger.debug("Self-package was found at %s", pkg)
+            return pkg
+        logger.debug("No self-package found - maybe our project is not pip-installed")
+
+    # no explicit package name - inspect stack to find setup.py / pyproject.toml or detect project name
+    logger.debug("Inspect stack to find project root directory...")
+
+    s = inspect.stack()
+    for frame_info in s:
+        logger.debug("Analyze frame %s", frame_info)
+
+        m = inspect.getmodule(frame_info[0])
+        if not m:
+            continue
+        logger.debug("Module is %s - %s", m, m.__name__)
+
+        if m.__name__.startswith("bigflow."):
+            continue
+
+        pdir = _locate_dev_project_directory_by_module(m)
+        if pdir:
+            logger.debug("Found project sources at %s", pdir)
+            return pdir
+
+        pname = _infer_project_name_by_distribution(m)
+        if pname:
+            logger.debug("Project name inferred to %s", pname)
+            pkg = _locate_self_package(pname)
+            if pkg:
+                return pkg
+
+    raise RuntimeError("Unable to infer project path")
 
 
 def _locate_self_package(project_name) -> Optional[Path]:
@@ -109,23 +158,6 @@ def _locate_self_package(project_name) -> Optional[Path]:
     else:
         logger.debug("Sdist distribution for project %r not found", project_name)
         return None
-
-
-def _locate_setuppy_plain_source(project_name):
-
-    logger.debug("Locate 'setup.py' near the toplevel project module...")
-    modname = project_name.replace("-", "_")
-    module = sys.modules.get(modname)
-    if not module:
-        logger.warning("Could not find module %r", modname)
-    else:
-        file = _module_to_enclosing_directory(module).parent / "setup.py"
-        if file.exists():
-            logger.debug("Found 'setup.py' at %s", file)
-            return file
-        else:
-            logger.debug("Not found %s", file)
-    return None
 
 
 def _expect_single_file(directory: str, pattern: str) -> Path:
@@ -142,54 +174,63 @@ def _expect_single_file(directory: str, pattern: str) -> Path:
         return fs[0]
 
 
-def _locate_plain_setuppy_on_fs(stack):
-    calmod = _capture_caller_module(stack+1)
-    encdir = _module_to_enclosing_directory(calmod)
-    try:
-        return bigflow.build.dev.find_setuppy(encdir)
-    except FileNotFoundError:
-        logger.debug("Could not find `setup.py` in parents of %s", encdir)
-        return None
+@public()
+def get_project_spec(
+    project_name: Union[str, Path, None] = None,
+) -> BigflowProjectSpec:
+    """Read & parse current project spec.
+
+    This function should be called from inside the project as
+    it uses dynamic inspection to find project name.
+    """
+
+    pkg = locate_project_path(project_name)
+    logger.debug("Project loated at %s", pkg)
+
+    if pkg.is_dir():
+        pdir = pkg
+    else:
+        # sdist-package & pyproject.toml are located in the same directory
+        pdir = pkg.parent
+        assert (pdir / "pyproject.toml").exists()
+
+    return bigflow.build.spec.read_project_spec(pdir)
+
+
+def _ensure_setuppy_exists(setuppy: Path):
+    if setuppy.exists():
+        return
+    elif (setuppy.parent / "pyproject.toml").exists():
+        logger.debug("Write dummy setup.py at %s", setuppy)
+        setuppy.write_text(textwrap.dedent("""
+            # dummy setup.py, generated by 'bigflow', see pyproject.toml for project parameters
+            import bigflow.build; buigflow.build.setup()
+        """))
+    else:
+        raise FileNotFoundError("Unable to find file", setuppy)
 
 
 @public()
 def materialize_setuppy(
-    project_name: Optional[str] = None,
+    project_name: Optional[Union[str, Path]] = None,
     tempdir: Optional[str] = None,
 ) -> Path:
-    """Locates project setup.py.  Unpacks embedded sdist distribution when needed.
-    """
+    """Locates project setup.py.  Unpacks embedded sdist distribution when needed."""
 
-    if project_name is None:
-        project_name = infer_project_name(stack=2)
-    if tempdir is None:
-        tempdir = tempfile.mkdtemp()
+    pkg = locate_project_path(project_name)
 
-    tarpkg = _locate_self_package(project_name)
-    setuppy = _locate_setuppy_plain_source(project_name)
-
-    if setuppy is None and project_name is None:
-        setuppy = _locate_plain_setuppy_on_fs(stack=2)
-
-    if tarpkg and setuppy:
-        logger.warn("Found installed package at %s and raw 'setup.py' at %s, prefer 'setup.py")
-        tarpkg = None
-
-    if setuppy:
-        logger.info("Found 'setup.py' at %s", setuppy)
+    if pkg.is_dir():
+        setuppy = pkg / "setup.py"
+        _ensure_setuppy_exists(setuppy)
         return setuppy
-
-    elif tarpkg:
-        logger.info("Unpack %s to %s", tarpkg, tempdir)
-        tarfile.open(tarpkg).extractall(tempdir)
+    else:
+        tempdir = tempdir or tempfile.mkdtemp()
+        logger.info("Unpack %s to %s", pkg, tempdir)
+        tarfile.open(pkg).extractall(tempdir)
         pkgdir = _expect_single_file(tempdir, "*")
         setuppy = pkgdir / "setup.py"
-        if not setuppy.exists():
-            raise FileNotFoundError("not found 'setup.py' inside project sdist package")
+        _ensure_setuppy_exists(setuppy)
         return setuppy
-
-    else:
-        raise FileNotFoundError("Unable to find 'setup.py'")
 
 
 def _build_dist_package(
@@ -199,9 +240,6 @@ def _build_dist_package(
     exargs: List[str],
 ):
     """Locates and runs 'bdist_*' command on 'setup.py'"""
-
-    if project_name is None:
-        project_name = infer_project_name(stack=3)
 
     with tempfile.TemporaryDirectory() as workdir:
 
@@ -246,3 +284,5 @@ def build_wheel(project_name=None) -> Path:
 def build_egg(project_name=None) -> Path:
     """Build project 'egg' package"""
     return _build_dist_package(project_name, ".egg", "bdist_egg", [])
+
+# %%

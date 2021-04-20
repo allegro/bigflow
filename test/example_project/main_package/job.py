@@ -9,18 +9,3 @@ class ExampleJob(bigflow.Job):
 
     def execute(self, context: bigflow.JobContext):
         pass
-
-
-def some_callable(context):
-    pass
-
-
-def create_pyspark_job():
-    import bigflow.dataproc
-    return bigflow.dataproc.PySparkJob(
-        'pyspark_job',
-        some_callable,
-        bucket_id="test-bucket",
-        gcp_project_id="test-project",
-        gcp_region="us-west1",
-    )

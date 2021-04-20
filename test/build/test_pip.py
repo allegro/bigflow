@@ -28,6 +28,24 @@ class PipToolsTestCase(
         self.assertIn("pandas==", reqs)
         self.assertIn("", reqs)
 
+    def test_should_ignore_pip_flags(self):
+        # given
+        req_in = self.cwd / "req.in"
+        req_txt = self.cwd / "req.txt"
+
+        req_in.write_text("""
+        --extra-index-url https://example.org/python/repo
+        pandas
+        """)
+
+        # when
+        bf_pip.pip_compile(req_in)
+
+        # then
+        reqs = req_txt.read_text()
+        self.assertIn("pandas==", reqs)
+        self.assertIn("", reqs)
+
     def test_detect_when_requirements_was_changed(self):
 
         # given

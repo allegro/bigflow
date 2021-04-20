@@ -53,11 +53,11 @@ class DataflowDepsCheckTestCase(
             dc.check_beam_worker_dependencies_conflict(self.req_in)
 
     @mock.patch('bigflow.build.dataflow.dependency_checker.detect_py_version')
-    @mock.patch('bigflow.build.dev.read_setuppy_args')
-    def test_generate_dataflow_pinfile(self, read_setuppy_args, detect_py_version):
+    @mock.patch('bigflow.build.spec.get_project_spec')
+    def test_generate_dataflow_pinfile(self, get_project_spec, detect_py_version):
         # given
         detect_py_version.return_value = "3.7"
-        read_setuppy_args.return_value = {'project_requirements_file': str(self.req_txt)}
+        get_project_spec.return_value.project_requirements_file = str(self.req_txt)
         self.req_in.write_text("""
             # see `beam2.25_py3.7.txt`
             fastavro==0.24.2

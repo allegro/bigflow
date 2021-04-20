@@ -1,5 +1,11 @@
 # BigFlow changelog
 
+## Version 1.3
+
+### Changed
+
+* Changes in building toolchain - optimizes, better logging, optional setup.py
+
 ## Version 1.2
 
 ### Added
