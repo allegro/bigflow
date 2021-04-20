@@ -4,22 +4,19 @@ import datetime
 import subprocess
 
 from datetime import timedelta
-
 from pathlib import Path
 from unittest import TestCase, mock
 
-import bigflow.build.spec as spec
+from test import mixins
 
+import bigflow.build.spec as spec
+from bigflow.commons import run_process
 from bigflow.cli import walk_module_files
 from bigflow.build.dist import SETUP_VALIDATION_MESSAGE
 
 from bigflow.commons import (
     get_docker_image_id,
     build_docker_image_tag,
-)
-from bigflow.build import (
-    auto_configuration,
-    project_setup,
 )
 from bigflow.build.operate import (
     clear_image_leftovers,
@@ -28,23 +25,9 @@ from bigflow.build.operate import (
     build_image,
 )
 
-
 PROJECT_NAME = 'main_package'
 DOCKER_REPOSITORY = 'test_docker_repository'
-
-TEST_PROJECT_PATH = Path(__file__).parent.parent / 'example_project'
-IMAGE_DIR_PATH = TEST_PROJECT_PATH / '.image'
-DAGS_DIR_PATH = TEST_PROJECT_PATH / '.dags'
-DIST_DIR_PATH = TEST_PROJECT_PATH / 'dist'
-EGGS_DIR_PATH = TEST_PROJECT_PATH / f'{PROJECT_NAME}.egg-info'
-BUILD_PATH = TEST_PROJECT_PATH / 'build'
-
-
-class TestProject:
-    def run_build(self, cmd: str):
-        output = subprocess.getoutput(f'cd {TEST_PROJECT_PATH};{cmd}')
-        print(output)
-        return output
+TEST_PROJECT_PATH = None
 
 
 def mkdir(dir_path: Path):
@@ -57,14 +40,18 @@ def rmdir(dir_path: Path):
         shutil.rmtree(dir_path)
 
 
-def create_image_leftovers(test_project_dir_path: Path = TEST_PROJECT_PATH):
+def create_image_leftovers(test_project_dir_path=None):
+    test_project_dir_path = test_project_dir_path or TEST_PROJECT_PATH
+
     mkdir(test_project_dir_path / '.image')
     (test_project_dir_path / '.image' / 'leftover').touch()
 
 
 def create_package_leftovers(
-        test_project_dir_path: Path = TEST_PROJECT_PATH,
+        test_project_dir_path=None,
         project_name: str = PROJECT_NAME):
+
+    test_project_dir_path = test_project_dir_path or TEST_PROJECT_PATH
     mkdir(test_project_dir_path / 'build')
     (test_project_dir_path / 'build' / 'leftover').touch()
     mkdir(test_project_dir_path / 'dist')
@@ -73,24 +60,28 @@ def create_package_leftovers(
     (test_project_dir_path / f'{project_name}.egg-info' / 'leftover').touch()
 
 
-def create_dags_leftovers(test_project_dir_path: Path = TEST_PROJECT_PATH):
+def create_dags_leftovers(test_project_dir_path=None):
+    test_project_dir_path = test_project_dir_path or TEST_PROJECT_PATH
     mkdir(test_project_dir_path / '.dags')
     (test_project_dir_path / '.dags' / 'leftover').touch()
 
 
-def dags_leftovers_exist(test_project_dir_path: Path = TEST_PROJECT_PATH):
+def dags_leftovers_exist(test_project_dir_path=None):
+    test_project_dir_path = test_project_dir_path or TEST_PROJECT_PATH
     return os.path.exists(test_project_dir_path / '.dags' / 'leftover')
 
 
 def package_leftovers_exist(
-        test_project_dir_path: Path = TEST_PROJECT_PATH,
+        test_project_dir_path=None,
         project_name: str = PROJECT_NAME):
+    test_project_dir_path = test_project_dir_path or TEST_PROJECT_PATH
     return os.path.exists(test_project_dir_path / 'build' / 'leftover') and\
            os.path.exists(test_project_dir_path / 'dist' / 'leftover') and\
            os.path.exists(test_project_dir_path / f'{project_name}.egg-info' / 'leftover')
 
 
-def image_leftovers_exist(test_project_dir_path: Path = TEST_PROJECT_PATH):
+def image_leftovers_exist(test_project_dir_path=None):
+    test_project_dir_path = test_project_dir_path or TEST_PROJECT_PATH
     return os.path.exists(test_project_dir_path / '.image' / 'leftover')
 
 
@@ -98,15 +89,18 @@ def dir_not_empty(dir_path: Path):
     return len(os.listdir(dir_path)) != 0
 
 
-def deployment_config_copied(test_project_dir_path: Path = TEST_PROJECT_PATH):
+def deployment_config_copied(test_project_dir_path=None):
+    test_project_dir_path = test_project_dir_path or TEST_PROJECT_PATH
     return (test_project_dir_path / '.image' / 'deployment_config.py').exists()
 
 
-def python_package_built(test_project_dir_path: Path = TEST_PROJECT_PATH):
+def python_package_built(test_project_dir_path=None):
+    test_project_dir_path = test_project_dir_path or TEST_PROJECT_PATH
     return (test_project_dir_path / 'dist' / 'main_package-0.1.0-py3-none-any.whl').exists()
 
 
-def test_run(test_project_dir_path: Path = TEST_PROJECT_PATH):
+def is_test_run(test_project_dir_path=None):
+    test_project_dir_path = test_project_dir_path or TEST_PROJECT_PATH
     return (test_project_dir_path / 'build' / 'junit-reports').exists()
 
 
@@ -125,7 +119,8 @@ def dags_built(test_project_dir_path: Path, expected_workflow_count: int):
     return workflows_count == expected_workflow_count
 
 
-def docker_image_as_file_built(test_project_dir_path: Path = TEST_PROJECT_PATH):
+def docker_image_as_file_built(test_project_dir_path=None):
+    test_project_dir_path = test_project_dir_path or TEST_PROJECT_PATH
     return (test_project_dir_path / '.image' / 'image-0.1.0.tar').exists()
 
 
@@ -142,15 +137,27 @@ def dags_contain(test_project_dir_path: Path, substring: str):
     return True
 
 
-class SetupTestCase(TestCase):
+class SetupTestCase(
+    mixins.PrototypedDirMixin,
+    mixins.SubprocessMixin,
+    TestCase,
+):
+    proto_dir = "bf-projects/example_project"
+
     def setUp(self) -> None:
-        self.test_project = TestProject()
+        super().setUp()
         self.prj = spec.parse_project_spec(
             name=PROJECT_NAME,
-            project_dir=TEST_PROJECT_PATH,
+            project_dir=self.cwd,
             docker_repository=DOCKER_REPOSITORY,
             requries=[],
         )
+
+        global TEST_PROJECT_PATH
+        TEST_PROJECT_PATH = self.cwd
+
+    def run_build(self, cmd):
+        return self.subprocess_run(cmd, text=True).stdout
 
 
 class BuildProjectE2E(SetupTestCase):
@@ -160,11 +167,11 @@ class BuildProjectE2E(SetupTestCase):
         create_package_leftovers()
         create_image_leftovers()
         create_dags_leftovers()
-        self.test_project.run_build('python setup.py build_project')
+        self.run_build('python setup.py build_project')
 
         # then
         self.assertTrue(python_package_built())
-        self.assertTrue(test_run())
+        self.assertTrue(is_test_run())
         self.assertTrue(dags_built(TEST_PROJECT_PATH, 2))
 
         self.assertTrue(docker_image_as_file_built())
@@ -179,10 +186,10 @@ class BuildProjectE2E(SetupTestCase):
 
     def test_should_validate_project_setup(self):
         # expected
-        self.assertTrue(SETUP_VALIDATION_MESSAGE in self.test_project.run_build('python setup.py build_project --validate-project-setup'))
-        self.assertTrue(SETUP_VALIDATION_MESSAGE in self.test_project.run_build('python setup.py build_project --build-dags --validate-project-setup'))
-        self.assertTrue(SETUP_VALIDATION_MESSAGE in self.test_project.run_build('python setup.py build_project --build-image --validate-project-setup'))
-        self.assertTrue(SETUP_VALIDATION_MESSAGE in self.test_project.run_build('python setup.py build_project --build-package --validate-project-setup'))
+        self.assertTrue(SETUP_VALIDATION_MESSAGE in self.run_build('python setup.py build_project --validate-project-setup'))
+        self.assertTrue(SETUP_VALIDATION_MESSAGE in self.run_build('python setup.py build_project --build-dags --validate-project-setup'))
+        self.assertTrue(SETUP_VALIDATION_MESSAGE in self.run_build('python setup.py build_project --build-image --validate-project-setup'))
+        self.assertTrue(SETUP_VALIDATION_MESSAGE in self.run_build('python setup.py build_project --build-package --validate-project-setup'))
 
 
 class BuildPackageCommandE2E(SetupTestCase):
@@ -193,11 +200,11 @@ class BuildPackageCommandE2E(SetupTestCase):
         clear_dags_leftovers(self.prj)
 
         # when
-        self.test_project.run_build('python setup.py build_project --build-package')
+        self.run_build('python setup.py build_project --build-package')
 
         # then
         self.assertTrue(python_package_built())
-        self.assertTrue(test_run())
+        self.assertTrue(is_test_run())
         self.assertFalse(package_leftovers_exist())
 
 
@@ -211,7 +218,7 @@ class BuildDagsCommandE2E(SetupTestCase):
         clear_package_leftovers(self.prj)
 
         # when
-        self.test_project.run_build('python setup.py build_project --build-dags')
+        self.run_build('python setup.py build_project --build-dags')
 
         # then
        # self.assertTrue(dags_built(TEST_PROJECT_PATH, 2))
@@ -219,13 +226,13 @@ class BuildDagsCommandE2E(SetupTestCase):
         self.assertTrue(dags_contain(TEST_PROJECT_PATH, repr(datetime.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(hours=24))))
 
         # when
-        self.test_project.run_build("python setup.py build_project --build-dags --start-time '2020-01-02 00:00:00'")
+        self.run_build(["python", "setup.py", "build_project", "--build-dags", "--start-time", "2020-01-02 00:00:00"])
 
         # then
         self.assertTrue(dags_contain(TEST_PROJECT_PATH, 'datetime.datetime(2020, 1, 1, 0, 0)'))
 
         # when
-        self.test_project.run_build('python setup.py build_project --build-dags --workflow workflow1')
+        self.run_build('python setup.py build_project --build-dags --workflow workflow1')
 
         # then
         self.assertTrue(self.single_dag_for_workflow_exists('workflow1'))
@@ -248,10 +255,10 @@ class BuildImageCommandE2E(SetupTestCase):
         clear_dags_leftovers(self.prj)
         clear_package_leftovers(self.prj)
 
-        self.test_project.run_build('python setup.py build_project --build-package')
+        self.run_build('python setup.py build_project --build-package')
 
         # when
-        self.test_project.run_build('python setup.py build_project --build-image')
+        self.run_build('python setup.py build_project --build-image')
 
         # then
         self.assertFalse(image_leftovers_exist())

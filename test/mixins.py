@@ -51,12 +51,11 @@ class TempCwdMixin(Mixin):
 
     def setUp(self):
         super().setUp()
-        self.__cwd = os.getcwd()
+        try:
+            self.__cwd = os.getcwd()
+        except FileNotFoundError:
+            self.__cwd = "/"
         self.chdir_new_temp()
-
-    def tearDown(self):
-        os.chdir(self.__cwd)
-        super().tearDown()
 
     def chdir_new_temp(self):
         """Drop 'cwd' completely, chdir into new temporary directory"""
@@ -64,6 +63,7 @@ class TempCwdMixin(Mixin):
             shutil.rmtree(self.cwd)
         self.cwd = Path(tempfile.mkdtemp())
         self.chdir(self.cwd)
+        self.addCleanup(self.chdir, self.__cwd)
 
     def chdir(self, cwd, create=True):
         cwd = Path(cwd)
@@ -82,7 +82,7 @@ class PrototypedDirMixin(TempCwdMixin, FileUtilsMixin):
         assert self.cwd.is_absolute()
 
         proto_path = Path(__file__).parent / self.proto_dir
-        assert proto_path.is_dir()
+        assert proto_path.is_dir(), f"{proto_path!r} is not a directory"
 
         for f in proto_path.glob("*"):
             copyf = shutil.copytree if f.is_dir() else shutil.copyfile

@@ -9,17 +9,21 @@ import freezegun
 
 from bigflow.cli import *
 
+from test import mixins
+
 TESTS_DIR = Path(__file__).parent
-EXAMPLE_PROJECT_PATH = TESTS_DIR / "example_project"
-EXAMPLE_PROJECT_SETUPPY = EXAMPLE_PROJECT_PATH / "setup.py"
 
 
-class CliTestCase(TestCase):
+class CliTestCase(
+    mixins.PrototypedDirMixin,
+    TestCase,
+):
+    proto_dir = "bf-projects/example_project"
 
     def setUp(self) -> None:
-        cwd = os.getcwd()
-        self.addCleanup(os.chdir, cwd)
-        os.chdir(EXAMPLE_PROJECT_PATH)
+        super().setUp()
+
+        self.project_setuppy = self.cwd / "setup.py"
 
         global TEST_MODULE_PATH
         TEST_MODULE_PATH = Path(__file__).parent / 'test_module'
@@ -46,7 +50,7 @@ class CliTestCase(TestCase):
         # and at the first position there are absolute paths
         for (path, name) in res_as_list:
             self.assertEqual('/', path[0], "Path should be absolute and start with /")
-            expected_ending = 'bigflow/test/test_module'
+            expected_ending = 'bigflow/test/cli/test_module'
             self.assertEqual(expected_ending, path[-len(expected_ending):])
 
     def test_should_walk_through_all_module_paths_inside_package_tree(self):
@@ -68,7 +72,7 @@ class CliTestCase(TestCase):
         res = build_module_path(root_path, file_path, module_file)
 
         # then
-        self.assertEqual("test.test_module.py_unused1", res)
+        self.assertEqual("cli.test_module.py_unused1", res)
 
     def test_should_walk_through_all_modules_inside_package_tree(self):
         # when
@@ -132,7 +136,7 @@ class CliTestCase(TestCase):
         # then
         exception_message = cm.exception.args[0]
         expected_prefix = "Workflow with id NOT_EXISTING_ID not found in package "
-        expected_suffix = "bigflow/test/test_module"
+        expected_suffix = "bigflow/test/cli/test_module"
         self.assertEqual(exception_message[:len(expected_prefix)], expected_prefix)
         self.assertEqual(exception_message[-len(expected_suffix):], expected_suffix)
 
@@ -487,7 +491,8 @@ deployment_config = Config(name='dev',
     @mock.patch('bigflow.cli.deploy_docker_image')
     def test_should_find_tar_in_image_directory(self, deploy_docker_image_mock):
         # given
-        shutil.rmtree(Path.cwd() / ".image")
+
+        shutil.rmtree(Path.cwd() / ".image", ignore_errors=True)
         self._touch_file('image-123.tar', '', '.image')
 
         # when

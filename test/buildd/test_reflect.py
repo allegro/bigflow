@@ -31,7 +31,7 @@ class _BaseBuildReflectTest(
     mixins.PrototypedDirMixin,
     unittest.TestCase,
 ):
-    proto_dir = "build/bf-projects/bf_selfbuild_project"
+    proto_dir = "buildd/bf-projects/bf_selfbuild_project"
 
     def runpy_n_dump(self, func_name: str):
         mod, _ = func_name.rsplit(".", 1)

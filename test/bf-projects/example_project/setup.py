@@ -7,16 +7,6 @@ from pathlib import Path
 from setuptools import setup
 
 
-
-def add_bigflow_to_path():
-    # For Travis
-    bf_path_index = str(Path(__file__).absolute()).split(os.sep).index('bigflow')
-    bf_path_parts = str(Path(__file__).absolute()).split(os.sep)[:bf_path_index + 1]
-    bf_package = os.path.join(os.sep, *bf_path_parts)
-    #print(f'Adding to path: {bf_package}')
-    sys.path.insert(0, bf_package)
-
-
 PROJECT_DIR = Path(__file__).parent
 PROJECT_NAME = 'main_package'
 BUILD_PATH = Path(__file__).parent / 'build'
@@ -32,7 +22,6 @@ REQUIREMENTS_PATH = Path(__file__).parent / 'resources' / 'requirements.txt'
 RESOURCES_PATH = Path(__file__).parent / 'resources'
 
 if __name__ == '__main__':
-    add_bigflow_to_path()
     from bigflow import build
 
     setup(**build.project_setup(
