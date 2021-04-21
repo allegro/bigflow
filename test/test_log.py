@@ -132,10 +132,12 @@ class LoggerTestCase(TestCase):
 
     @mock.patch.dict('os.environ')
     @mock.patch.dict('sys.modules')
-    @mock.patch('bigflow.log.init_logging')
+    @mock.patch('google.cloud.logging.Client')
+    @mock.patch('google.cloud.logging.handlers.CloudLoggingHandler')
     def test_logging_should_autoinitialize_via_env_variables(
         self,
-        init_logging_mock,
+        client_mock,
+        cloud_logging_handler_mock
     ):
         # given
         for m in list(sys.modules):
