@@ -49,6 +49,10 @@ class CountWordsDriver:
         self.pipeline = pipeline
         self.context = context
 
+    def nope_driverargs(self, pipeline, context, driver_arguments: dict):
+        self.pipeline = pipeline
+        self.context = context
+
 
 @mock.patch('sys.argv', ["python"])  # Beam tries to parse cmdargs eagerly - it breaks external test launchers
 @mock.patch('bigflow.build.reflect.locate_project_path')
@@ -127,8 +131,26 @@ class BeamJobTestCase(TestCase):
             driver.pipeline._options.get_all_options()['labels'],
             ['workflow_id=count_words'])
 
-        # and sets default value for execution_timeout_sec
-        self.assertEqual(job.execution_timeout_sec, DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS)
+    @patch.object(RunnerResult, 'state', new_callable=mock.PropertyMock)
+    def test_should_run_old_entry_point_withoutargs(
+        self,
+        state_mock,
+        locate_project_mock,
+    ):
+        # given
+        state_mock.return_value = "DONE"
+
+        driver = CountWordsDriver()
+        job = BeamJob(
+            id='count_words',
+            entry_point=driver.nope_driverargs,
+            test_pipeline=self._test_pipeline_with_label('count_words'))
+
+        # when
+        job.execute(JobContext.make())
+
+        # then
+        self.assertTrue(driver.context, "Driver was called")
 
     @patch.object(RunnerResult, 'state', new_callable=mock.PropertyMock)
     @patch.object(RunnerResult, 'cancel')

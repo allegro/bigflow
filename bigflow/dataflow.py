@@ -1,6 +1,7 @@
 import typing
 import logging
 import uuid
+import inspect
 
 from apache_beam import Pipeline
 from apache_beam.options.pipeline_options import PipelineOptions
@@ -68,7 +69,7 @@ class BeamJob(Job):
             self,
             id: str = None,
 
-            entry_point: typing.Callable[[Pipeline, JobContext, dict], None] = None,
+            entry_point: typing.Callable = None,
             entry_point_args: Optional[Tuple] = None,
             entry_point_kwargs: Optional[Dict] = None,
             entry_point_arguments: typing.Optional[dict] = None,
@@ -109,6 +110,17 @@ class BeamJob(Job):
         self.use_docker_image = use_docker_image
         self.entry_point = entry_point
 
+        self._project_path = bigflow.build.reflect.locate_project_path(project_name)
+
+        if (entry_point_arguments is None
+            and entry_point_args is None
+            and entry_point_kwargs is None
+            and len(inspect.signature(entry_point).parameters) == 3
+        ):
+            # no params at all - check if `entry_point` has `entry_point_arguments` parameter
+            logger.warning("Passing empty {} as `entry_point_arguments` %s - you can drop this unused argumnent", entry_point)
+            entry_point_arguments = {}
+
         if entry_point_arguments is None:
             # threading-like - tuple/dict for args/kwargs
             self.entry_point_args = entry_point_args or ()
@@ -116,13 +128,12 @@ class BeamJob(Job):
             self.entry_point_arguments = None
         else:
             # old style - single positional argument with type 'dict'
+            logger.warning("Please use `entry_point_kwargs` instead of `entry_point_arguments`")
             assert entry_point_args is None, "Mixins of `entry_point_args` and `entry_point_arguments` is not allowed"
             assert entry_point_kwargs is None, "Mixins of `entry_point_kwargs` and `entry_point_arguments` is not allowed"
             self.entry_point_args = (entry_point_arguments,)
             self.entry_point_kwargs = {}
             self.entry_point_arguments = entry_point_arguments
-
-        self._project_path = bigflow.build.reflect.locate_project_path(project_name)
 
     def execute(self, context: JobContext):
         pipeline = self.test_pipeline or self.new_pipeline(context)
