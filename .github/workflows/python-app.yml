@@ -31,6 +31,7 @@ jobs:
         sudo apt install docker
     - name: Setup github username
       run: |
+        sudo apt install docker
         docker
         git config --global user.email "fake@example.com"
         git config --global user.name "fake name"
