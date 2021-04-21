@@ -31,7 +31,10 @@ jobs:
         sudo apt install docker
     - name: Setup github username
       run: |
-        sudo apt install docker
-        docker
         git config --global user.email "fake@example.com"
         git config --global user.name "fake name"
+    - name: Tests
+      run: |
+        python -m unittest discover -s bigflow -t . -p '*.py'
+        python -m unittest discover -s test -p '*.py'
+
