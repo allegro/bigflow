@@ -31,9 +31,6 @@ jobs:
         sudo apt install docker
     - name: Setup github username
       run: |
+        docker
         git config --global user.email "fake@example.com"
         git config --global user.name "fake name"
-    - name: Tests
-      run: |
-        python -m unittest test_dist.BuildProjectE2E.test_should_validate_project_setup
-
