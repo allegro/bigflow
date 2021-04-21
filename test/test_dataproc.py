@@ -1,6 +1,5 @@
 import datetime
 import unittest
-import pathlib
 import os
 import json
 
@@ -163,8 +162,12 @@ class PySparkJobTest(unittest.TestCase):
     @mock.patch('google.cloud.storage.Client')
     @mock.patch('google.cloud.dataproc_v1.ClusterControllerClient')
     @mock.patch('google.cloud.dataproc_v1.JobControllerClient')
+    @mock.patch('bigflow.build.reflect.build_egg')
+    @mock.patch('bigflow.build.reflect.locate_project_path')
     def test_run_pyspark_job(
         self,
+        locate_project_path: mock.Mock,
+        build_egg_mock: mock.Mock,
         job_controller_client_cls,
         cluster_controller_client_cls,
         storage_client_cls,
@@ -175,8 +178,13 @@ class PySparkJobTest(unittest.TestCase):
             runtime="2020-02-02",
         )
 
-        from test.example_project.main_package.job import create_pyspark_job
-        pyspark_job = create_pyspark_job()
+        pyspark_job = bigflow.dataproc.PySparkJob(
+            'pyspark_job',
+            _some_global_func,
+            bucket_id="test-bucket",
+            gcp_project_id="test-project",
+            gcp_region="us-west1",
+        )
 
         cluster_controller = cluster_controller_client_cls.return_value
         job_controller = job_controller_client_cls.return_value
@@ -195,6 +203,8 @@ class PySparkJobTest(unittest.TestCase):
             pyspark_job.execute(context)
 
         # then
+        build_egg_mock.assert_called_once_with(locate_project_path.return_value)
+
         cluster_controller.create_cluster.assert_called_once()
         cluster_controller.delete_cluster.assert_called_once()
 
@@ -229,6 +239,7 @@ class PySparkJobTest(unittest.TestCase):
             bucket_id="no-bucket",
             gcp_project_id="no-project",
             gcp_region="no-region",
+            project_name="test",
         )
 
         # when
@@ -262,6 +273,7 @@ class PySparkJobTest(unittest.TestCase):
             bucket_id="no-bucket",
             gcp_project_id="no-project",
             gcp_region="no-region",
+            project_name="test",
         )
 
         # when
@@ -308,6 +320,7 @@ class PySparkJobTest(unittest.TestCase):
             bucket_id="no-bucket",
             gcp_project_id="no-project",
             gcp_region="no-region",
+            project_name="test",
         )
 
         # then
@@ -322,6 +335,7 @@ class PySparkJobTest(unittest.TestCase):
             gcp_project_id="no-project",
             gcp_region="no-region",
             execution_timeout_sec=1,
+            project_name="test",
         )
 
         # then
