@@ -140,6 +140,7 @@ def dags_contain(test_project_dir_path: Path, substring: str):
 class SetupTestCase(
     mixins.PrototypedDirMixin,
     mixins.SubprocessMixin,
+    mixins.BigflowInPythonPathMixin,
     TestCase,
 ):
     proto_dir = "bf-projects/example_project"
