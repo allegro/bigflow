@@ -1,3 +1,4 @@
+from typing import Union
 import venv
 import unittest
 import subprocess
@@ -6,11 +7,12 @@ import tempfile
 import textwrap
 import os
 import inspect
-import sys
 import pexpect
-import glob
+import logging
 
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 class Mixin(unittest.TestCase):
@@ -91,6 +93,13 @@ class PrototypedDirMixin(TempCwdMixin, FileUtilsMixin):
         self.addCleanup(shutil.rmtree, self.cwd, ignore_errors=True)
 
 
+def _as_str(x: Union[str, bytes]):
+    if isinstance(x, bytes):
+        return x.decode(errors='replace')
+    else:
+        return x
+
+
 class SubprocessMixin(Mixin):
     """Provides methods to run/interact with subprocesses"""
 
@@ -103,12 +112,22 @@ class SubprocessMixin(Mixin):
         p.read()
         p.wait()
 
-    def subprocess_run(self, cmd, **kwargs):
+    def subprocess_run(self, cmd, check=True, **kwargs):
         """Run subprocess. Should be used for non-interactive programms"""
-        kwargs.setdefault('check', True)
+
         kwargs.setdefault('capture_output', True)
         cmd = self.preprocess_cmdline(cmd)
-        return subprocess.run(cmd, **kwargs)
+        p = subprocess.run(cmd, **kwargs)
+
+        failed = check and p.returncode
+
+        log = logger.warning if failed else logger.debug
+        log("Command %s, stdout >>>\n%s\n<<<", cmd, _as_str(p.stdout))
+        log("Command %s, stderr >>>\n%s\n<<<", cmd, _as_str(p.stderr))
+
+        if failed:
+            self.fail(f"Command {cmd!r} terminatd with {p.returncode}")
+        return p
 
     def subprocess_spawn(self, cmd, **kwargs):
         """Run subprocess. Intended to be used with interactive programms"""
