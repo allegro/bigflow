@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 import apache_beam as beam
 from apache_beam import Pipeline
-from apache_beam.options.pipeline_options import PipelineOptions, GoogleCloudOptions
+from apache_beam.options.pipeline_options import PipelineOptions, GoogleCloudOptions, SetupOptions, StandardOptions, WorkerOptions
 from apache_beam.runners.portability.fn_api_runner.fn_runner import RunnerResult
 from apache_beam.testing.test_pipeline import TestPipeline
 from collections import defaultdict, Counter
@@ -212,7 +212,20 @@ class BeamJobTestCase(TestCase):
         _create_pipeline_mock.return_value.run.return_value = RunnerResult('DONE', None)
 
         driver = CountWordsDriver()
+
         options = PipelineOptions()
+        options.view_as(StandardOptions).runner = 'DataflowRunner'
+        options.view_as(GoogleCloudOptions).project = 'gcp_project_id'
+        options.view_as(GoogleCloudOptions).job_name = 'beam-wordcount-uuid'
+        options.view_as(GoogleCloudOptions).staging_location = "gs://staging_location"
+        options.view_as(GoogleCloudOptions).temp_location = "gs://temp_location"
+        options.view_as(GoogleCloudOptions).region = 'region'
+        options.view_as(GoogleCloudOptions).service_account_email = 'service-account'
+        options.view_as(WorkerOptions).machine_type = 'n2-standard-8'
+        options.view_as(WorkerOptions).max_num_workers = 2
+        options.view_as(WorkerOptions).autoscaling_algorithm = 'THROUGHPUT_BASED'
+        options.view_as(SetupOptions).setup_file = "/path/to/setup.py"
+
         job = BeamJob(
             id='count_words',
             entry_point=driver.nope,
@@ -293,6 +306,7 @@ class BeamJobTestCase(TestCase):
         options2 = _create_pipeline_mock.call_args[1]['options'].get_all_options(drop_default=True)
 
         self.assertTrue(options2.pop('setup_file'))
+        self.assertEqual(options2.pop('runner'), 'DataflowRunner')
         self.assertDictEqual(options, options2)
 
     @mock.patch('bigflow.dataflow.Pipeline')

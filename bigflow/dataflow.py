@@ -91,14 +91,16 @@ class BeamJob(Job):
         super().__init__(
             id=id,
             execution_timeout_sec=execution_timeout_sec,
+            **kwargs,
         )
 
         if isinstance(pipeline_options, PipelineOptions):
-            logger.warning("Pipeline options should be passed as a dict")
-            pipeline_options = pipeline_options.get_all_options(drop_default=True)
-            self.no_default_pipeline_options = False
-        else:
-            self.no_default_pipeline_options = True
+            logger.info("Convert PipelineOptions to dict")
+            pipeline_options = pipeline_options.get_all_options(
+                drop_default=True,
+                retain_unknown_options=True,
+            )
+
         self.pipeline_options = dict(pipeline_options or {})
         assert PipelineOptions.from_dictionary(self.pipeline_options)
 
@@ -163,10 +165,9 @@ class BeamJob(Job):
         return PipelineOptions.from_dictionary(options)
 
     def set_default_pipeline_options(self, context: JobContext, options: PipelineOptionsDict):
-        if not self.no_default_pipeline_options:
-            return
 
         logger.debug("Add defaults to pipeline options")
+        options.setdefault('runner', 'DataflowRunner')
 
         if 'job_name' not in options:
             slug = self.id.replace("_", "-")
@@ -198,7 +199,9 @@ class BeamJob(Job):
             logger.info("Use docker image %s for beam workers", imgid)
 
             options['worker_harness_container_image'] = imgid
-            experiments = options.setdefault('experiments', [])
+
+            experiments = list(options.get('experiments', []))
             if 'use_runner_v2' not in experiments:
                 logger.info("Enable beam experiment 'use_runner_v2'")
                 experiments.append('use_runner_v2')
+            options['experiments'] = experiments
