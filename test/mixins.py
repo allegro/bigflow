@@ -108,7 +108,13 @@ class SubprocessMixin(Mixin):
         kwargs.setdefault('check', True)
         kwargs.setdefault('capture_output', True)
         cmd = self.preprocess_cmdline(cmd)
-        return subprocess.run(cmd, **kwargs)
+        try:
+            return subprocess.run(cmd, **kwargs)
+        except subprocess.CalledProcessError as e:
+            print(e.returncode)
+            print(e.output)
+            print("xxxxx fail")
+
 
     def subprocess_spawn(self, cmd, **kwargs):
         """Run subprocess. Intended to be used with interactive programms"""
