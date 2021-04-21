@@ -1,8 +1,3 @@
-import os
-import sys
-print("VEERSION", sys.version)
-
-
 from pathlib import Path
 from setuptools import setup
 

@@ -35,6 +35,5 @@ jobs:
         git config --global user.name "fake name"
     - name: Tests
       run: |
-        python -m unittest discover -s bigflow -t . -p '*.py'
-        python -m unittest discover -s test -p '*.py'
+        python -m unittest test_dist.BuildProjectE2E.test_should_validate_project_setup
 
