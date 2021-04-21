@@ -101,6 +101,9 @@ class BeamJob(Job):
                 drop_default=True,
                 retain_unknown_options=True,
             )
+            pipeline_options2 = PipelineOptions.from_dictionary(pipeline_options).get_all_options(
+                drop_default=True, retain_unknown_options=True)
+            assert pipeline_options == pipeline_options2, "During convertsion PipelineOptions<>dict some parameters was gone"
 
         self.pipeline_options = dict(pipeline_options or {})
         assert PipelineOptions.from_dictionary(self.pipeline_options)
