@@ -7,7 +7,9 @@ pip-tools>=5.3,<7
 deprecated>=1.2.10,<2
 toml>=0.10
 tblib>=1.7,<2
+
 typing-extensions~=3.7;python_version<="3.7"
+backports.cached-property;python_version<="3.7"
 
 wheel>=0.35
 setuptools>=45
