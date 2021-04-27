@@ -97,16 +97,15 @@ class BeamJob(Job):
 
         if isinstance(pipeline_options, PipelineOptions):
             logger.info("Convert PipelineOptions to dict")
+            orig = pipeline_options
             pipeline_options = pipeline_options.get_all_options(
                 drop_default=True,
                 retain_unknown_options=True,
             )
-            pipeline_options2 = PipelineOptions.from_dictionary(pipeline_options).get_all_options(
-                drop_default=True, retain_unknown_options=True)
-            assert pipeline_options == pipeline_options2, "During convertsion PipelineOptions<>dict some parameters was gone"
+            new = PipelineOptions(flags=[], **pipeline_options)
+            assert orig.get_all_options() == new.get_all_options(), "During convertsion PipelineOptions<>dict some parameters was gone"
 
         self.pipeline_options = dict(pipeline_options or {})
-        assert PipelineOptions.from_dictionary(self.pipeline_options)
 
         self.wait_until_finish = wait_until_finish
         self.test_pipeline = test_pipeline
@@ -176,7 +175,7 @@ class BeamJob(Job):
         options = dict(self.pipeline_options)
         self.set_default_pipeline_options(context, options)
         logger.debug("Pipeline options from dict %s", options)
-        return PipelineOptions.from_dictionary(options)
+        return PipelineOptions(flags=[], **options)
 
     def set_default_pipeline_options(self, context: JobContext, options: PipelineOptionsDict):
 
@@ -190,7 +189,7 @@ class BeamJob(Job):
             options['job_name'] = job_name
 
         if 'setup_file' not in options:
-            setuppy = bigflow.build.reflect.materialize_setuppy(self._project_path)
+            setuppy = str(bigflow.build.reflect.materialize_setuppy(self._project_path))
             logging.debug("Add setup.py %s to pipeline options", setuppy)
             options['setup_file'] = setuppy
         else:
