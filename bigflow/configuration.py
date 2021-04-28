@@ -8,6 +8,7 @@ import os
 import pprint
 import pprint
 import re
+import lazy_object_proxy
 import typing as T
 
 try:
@@ -225,10 +226,21 @@ K = T.TypeVar('K', bound=Konfig)
 
 def resolve_konfig(
     konfigs: T.Union[T.Dict[str, T.Type[K]], T.List[T.Type[K]]],
-    name=None,
-    default=None,
-    **kwargs,
+    name: T.Optional[str] = None,
+    default: T.Optional[str] = None,
+    lazy: bool = True,
+    kwargs: T.Optional[T.Dict[str, T.Any]] = None,
 ) -> K:
+
+    """Creates instance of config.
+
+    Konfigs may be passed as list (in such case Class.name is used as a konfig name)
+    or as a plain dictionary {name -> konfig_class}.
+
+    Konfig name may be provided explicitly with `name` argument or passed via `bigflow` cli tool.
+    Default konfig config name may be passed as a fallback.
+    """
+
     logger.debug("Resolve konfig %s from %s", name or "*", konfigs)
     if name is None:
         env_name = os.environ.get(kwargs.get('env_prefix', "bf_"))
@@ -246,33 +258,59 @@ def resolve_konfig(
         }
 
     try:
-        c = konfigs[name]
+        konfig_cls = konfigs[name]
     except KeyError:
-        raise ValueError(f"Unable to fing konfig {name!r}")
+        raise ValueError(f"Unable to find konfig with name{name!r}, candidates {list(konfigs.keys())}")
+
+    kwargs = dict(kwargs or {})
+
+    def create_konfig():
+        logger.info("Create instance of konfig %s", konfig_cls)
+        return konfig_cls(**kwargs)
+
+    if lazy:
+        logger.debug("Return lazy proxy for konfig %s", konfig_cls)
+        return lazy_object_proxy.Proxy(create_konfig)
     else:
-        logger.info("Create instance of konfig %s", c)
-        return c(**kwargs)
+        logger.debug("Create eagerly instance of konfig %s", konfig_cls)
+        return create_konfig()
 
 
-def fromenv(key: str, type: T.Type = str):
+def fromenv(key: str, default=None, type: T.Type = str):
+
     def __get__(self):
         prefix = getattr(self, 'environment_variables_prefix', 'bf_')
         fullname = prefix + key
-        raw = os.environ[fullname]
-        return type(raw)
+        try:
+            raw = os.environ[fullname]
+        except KeyError:
+            if default is None:
+                raise ValueError(f"No environment variable {fullname}")
+            else:
+                return type(default)
+        else:
+            return type(raw)
+
     return dynamic(__get__)
 
 
 def expand(value: str):
-    def __get__(self) -> str:
+
+    def __get__(self):
         return _resolve_placeholders(
             value,
             lambda k: str(getattr(self, k))
         )
+
     return dynamic(__get__)
 
 
 def dynamic(get: T.Callable[[Konfig], T.Any]):
+
+    def __get__(self: Konfig):
+        assert isinstance(self, Konfig), f"object {self} must be subclass of `Konfig` class"
+        return get(self)
+
     return cached_property(get)
 
 
