@@ -22,6 +22,9 @@ import bigflow.build.reflect
 
 logger = logging.getLogger(__file__)
 
+# PipelineOptions may dump unknown arguments to log which may cause passwords/secrets leakage.
+logging.getLogger("apache_beam.options.pipeline_options").setLevel(logging.ERROR)
+
 
 class PipelineOptionsDict(TypedDict, total=False):
     """Standard dataflow pipeline options.
