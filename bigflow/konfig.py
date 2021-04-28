@@ -99,7 +99,7 @@ def resolve_konfig(
     name: T.Optional[str] = None,
     default: T.Optional[str] = None,
     lazy: bool = True,
-    kwargs: T.Optional[T.Dict[str, T.Any]] = None,
+    extra: T.Optional[T.Dict[str, T.Any]] = None,
 ) -> K:
 
     """Creates instance of config.
@@ -112,16 +112,13 @@ def resolve_konfig(
     """
 
     logger.debug("Resolve konfig %s from %s", name or "*", konfigs)
-    if name is None:
-        env_name = os.environ.get(kwargs.get('env_prefix', "bf_"))
-        name = env_name or default
 
-    assert name, "Konfig name should not be empty"
+    name = name or current_env() or default
+    if not name:
+        raise ValueError("Konfig name should not be empty")
     logger.debug("Konfig name is %s", name)
 
-    if isinstance(konfigs, T.Dict):
-        konfigs = konfigs
-    else:
+    if not isinstance(konfigs, T.Dict):
         konfigs = {
             getattr(c, 'name', None) or c.__name__: c
             for c in konfigs
@@ -132,7 +129,7 @@ def resolve_konfig(
     except KeyError:
         raise ValueError(f"Unable to find konfig with name{name!r}, candidates {list(konfigs.keys())}")
 
-    kwargs = dict(kwargs or {})
+    kwargs = dict(extra or {})
 
     def create_konfig():
         logger.info("Create instance of konfig %s", konfig_cls)
