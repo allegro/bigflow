@@ -8,6 +8,7 @@ import re
 import lazy_object_proxy
 import typing as T
 
+
 try:
     from functools import cached_property
 except ImportError:
@@ -15,7 +16,6 @@ except ImportError:
 
 
 logger = logging.getLogger(__name__)
-
 
 
 def current_env():
@@ -73,13 +73,17 @@ class Konfig(collections.abc.Mapping, metaclass=KonfigMeta):
             if not k.startswith("_"):
                 getattr(self, k)
 
+    @cached_property
+    def name(self):
+        return type(self).__name__
+
     def __setattr__(self, name, value):
         if getattr(self, '__frozen__', False) and name != '__frozen__':
             raise RuntimeError("Attempt to modify frozen Konfig")
         object.__setattr__(self, name, value)
 
     def __repr__(self):
-        return "<Config %s>" % pprint.pformat(vars(self))
+        return "<Config\n%s>" % pprint.pformat(vars(self))
 
     # adapt to `collections.abc.Mapping`
     def __getitem__(self, k):
@@ -133,7 +137,7 @@ def resolve_konfig(
 
     def create_konfig():
         logger.info("Create instance of konfig %s", konfig_cls)
-        return konfig_cls(**kwargs)
+        return konfig_cls(_all_konfigs=konfigs, **kwargs)
 
     if lazy:
         logger.debug("Return lazy proxy for konfig %s", konfig_cls)
@@ -143,7 +147,12 @@ def resolve_konfig(
         return create_konfig()
 
 
-def fromenv(key: str, default=None, type: T.Type = str):
+class secretstr(str):
+    def __repr__(self):
+        return f"<secret {'*' * len(self)}>"
+
+
+def fromenv(key: str, default=None, type: T.Type = secretstr):
     """Reads config value from os environment, prepends `bf_` to variable name"""
 
     def __get__(self):
