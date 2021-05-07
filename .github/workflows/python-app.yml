@@ -45,6 +45,4 @@ jobs:
 
     - name: Tests
       run: |
-        python -m unittest discover -s bigflow -t . -p '*.py'
-        python -m unittest discover -s test -p '*.py'
-
+        pytest
