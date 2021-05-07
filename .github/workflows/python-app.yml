@@ -24,24 +24,19 @@ jobs:
       run: |
         git config --global user.email "fake@example.com"
         git config --global user.name "fake name"
+
     - name: Setup docker
       run: |
         sudo apt install apt-transport-https ca-certificates curl software-properties-common
         curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
         sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic test"
         sudo apt update
-        sudo apt install docker-ce
+        sudo apt install docker-ce docker
         docker -v
 
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install bs4
-        pip install pytest
-        pip install bigflow
         pip install -r requirements.txt
-        pip install -r test/requirements.txt
-        sudo apt install docker
 
     - name: Tests
       run: |
