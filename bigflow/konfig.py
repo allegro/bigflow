@@ -3,10 +3,11 @@ import collections
 import collections.abc
 import logging
 import os
-import pprint
 import re
 import lazy_object_proxy
-import typing as T
+import dataclasses
+import copy
+import typing as tp
 
 
 try:
@@ -26,64 +27,58 @@ def current_env():
 class KonfigMeta(abc.ABCMeta):
 
     @staticmethod
-    def _copy_classvars_to_obj(klass, obj):
-        for k, v in klass.__dict__.items():
+    def prepare_dict(dct: tp.Dict):
+
+        anns = dct.setdefault('__annotations__', {})
+        for k, v in list(dct.items()):
+
             if k.startswith("_"):
-                # ignore private attributes
                 continue
-            elif hasattr(v, '__get__'):
-                # descriptor, pop out attribute from obj
-                obj.__dict__.pop(k, None)
+            elif isinstance(v, cached_property):
+                pass
+            elif hasattr(v, '__get__') or hasattr(v, '__set__') or hasattr(v, '__delete__'):
+                continue
+
+            if k in anns:
+                pass
+            elif isinstance(v, cached_property):
+                anns[k] = tp.Any
             else:
-                # normal value, put into obj
-                obj.__dict__[k] = v
+                anns[k] = type(v)
+
+            # it is not allowed to use a mutable as a default value
+            if not isinstance(v, (tp.Hashable, cached_property)):
+                dct[k] = dataclasses.field(default_factory=lambda v=v: copy.deepcopy(v))
 
     def __new__(self, name, bases, dct):
-
-        def __init__(obj, *args, **kwargs):
-            super(fake_cls, obj).__init__(*args, **kwargs)
-            self._copy_classvars_to_obj(real_cls, obj)
-
-        fake_cls = type.__new__(self, f"_{name}__konfig", bases, {'__init__': __init__})
-        real_cls = type.__new__(self, name, (fake_cls,), dct)
-        return real_cls
-
-    def __call__(self, **kwargs):
-        obj = super().__call__(**kwargs)
-        obj.__post_init__(**kwargs)
-        obj.__frozen__ = True
-        return obj
+        self.prepare_dict(dct)
+        cls = type.__new__(self, name, bases, dct)
+        cls = dataclasses.dataclass(frozen=True)(cls)
+        return cls
 
 
 class Konfig(collections.abc.Mapping, metaclass=KonfigMeta):
     """Base class for configs.
 
-    Automatically copies all class-level attributes into `self` in class definition order.
-    Protects constructed object from mutation (see `__frozen__` attribute).
+    Autowraps class with `dataclasses.dataclass`.
+    Add type hints for all public class-level variables.
+    Turns properties into memoized fields.
     """
 
-    __slots__ = ('__frozen__',)
-
-    def __init__(self, **kwargs):
-        self.__dict__.update(**kwargs)
-
-    def __post_init__(self, **kwargs):
-        # "materialize" all 'cached_property's
-        for k in dir(self):
-            if not k.startswith("_"):
-                getattr(self, k)
-
-    @cached_property
-    def name(self):
-        return type(self).__name__
-
-    def __setattr__(self, name, value):
-        if getattr(self, '__frozen__', False) and name != '__frozen__':
-            raise RuntimeError("Attempt to modify frozen Konfig")
-        object.__setattr__(self, name, value)
-
-    def __repr__(self):
-        return "<Config\n%s>" % pprint.pformat(vars(self))
+    def __getattribute__(self, name: str):
+        v = object.__getattribute__(self, name)
+        if (
+            not name.startswith("_")
+            and isinstance(v, cached_property)
+            and name in self.__dict__
+        ):
+            # there is an unresolved instance of `cached_property`
+            # remove it from `self` so next time
+            # it will be resolved via `type(self).{name}.__get__`
+            self.__dict__.pop(name, None)
+            return getattr(self, name)
+        else:
+            return v
 
     # adapt to `collections.abc.Mapping`
     def __getitem__(self, k):
@@ -96,14 +91,14 @@ class Konfig(collections.abc.Mapping, metaclass=KonfigMeta):
         return len(vars(self))
 
 
-K = T.TypeVar('K', bound=Konfig)
+K = tp.TypeVar('K', bound=Konfig)
 
 def resolve_konfig(
-    konfigs: T.Union[T.Dict[str, T.Type[K]], T.List[T.Type[K]]],
-    name: T.Optional[str] = None,
-    default: T.Optional[str] = None,
+    konfigs: tp.Union[tp.Dict[str, tp.Type[K]], tp.List[tp.Type[K]]],
+    name: tp.Optional[str] = None,
+    default: tp.Optional[str] = None,
     lazy: bool = True,
-    extra: T.Optional[T.Dict[str, T.Any]] = None,
+    extra: tp.Optional[tp.Dict[str, tp.Any]] = None,
 ) -> K:
 
     """Creates instance of config.
@@ -122,7 +117,7 @@ def resolve_konfig(
         raise ValueError("Konfig name should not be empty")
     logger.debug("Konfig name is %s", name)
 
-    if not isinstance(konfigs, T.Dict):
+    if not isinstance(konfigs, tp.Dict):
         konfigs = {
             getattr(c, 'name', None) or c.__name__: c
             for c in konfigs
@@ -137,7 +132,7 @@ def resolve_konfig(
 
     def create_konfig():
         logger.info("Create instance of konfig %s", konfig_cls)
-        return konfig_cls(_all_konfigs=konfigs, **kwargs)
+        return konfig_cls(**kwargs)
 
     if lazy:
         logger.debug("Return lazy proxy for konfig %s", konfig_cls)
@@ -152,7 +147,7 @@ class secretstr(str):
         return f"<secret {'*' * len(self)}>"
 
 
-def fromenv(key: str, default=None, type: T.Type = secretstr):
+def fromenv(key: str, default=None, type: tp.Type = secretstr):
     """Reads config value from os environment, prepends `bf_` to variable name"""
 
     def __get__(self):
@@ -183,7 +178,7 @@ def expand(value: str):
     return dynamic(__get__)
 
 
-def dynamic(get: T.Callable[[Konfig], T.Any]):
+def dynamic(get: tp.Callable[[Konfig], tp.Any]):
 
     def __get__(self: Konfig):
         assert isinstance(self, Konfig), f"object {self} must be subclass of `Konfig` class"
