@@ -6,7 +6,7 @@ import os
 import pprint
 import re
 import lazy_object_proxy
-import typing as T
+import typing as tp
 
 
 try:
@@ -38,15 +38,21 @@ class KonfigMeta(abc.ABCMeta):
                 # normal value, put into obj
                 obj.__dict__[k] = v
 
-    def __new__(self, name, bases, dct):
+    def __new__(mcls, name, bases, dct):
 
-        def __init__(obj, *args, **kwargs):
-            super(fake_cls, obj).__init__(*args, **kwargs)
-            self._copy_classvars_to_obj(real_cls, obj)
+        if not any(isinstance(b, mcls) for b in bases):
+            # no Konfig's in bases - create root type
+            return type.__new__(mcls, name, bases, dct)
 
-        fake_cls = type.__new__(self, f"_{name}__konfig", bases, {'__init__': __init__})
-        real_cls = type.__new__(self, name, (fake_cls,), dct)
-        return real_cls
+        if '__init__' in dct:
+            raise ValueError("Konfig classes doesn't support custom '__init__'")
+
+        def __init__(self, **kwargs):
+            super(cls, self).__init__(**kwargs)
+            mcls._copy_classvars_to_obj(cls, self)
+
+        cls = type.__new__(mcls, name, bases, {'__init__': __init__, **dct})
+        return cls
 
     def __call__(self, **kwargs):
         obj = super().__call__(**kwargs)
@@ -73,10 +79,6 @@ class Konfig(collections.abc.Mapping, metaclass=KonfigMeta):
             if not k.startswith("_"):
                 getattr(self, k)
 
-    @cached_property
-    def name(self):
-        return type(self).__name__
-
     def __setattr__(self, name, value):
         if getattr(self, '__frozen__', False) and name != '__frozen__':
             raise RuntimeError("Attempt to modify frozen Konfig")
@@ -96,14 +98,14 @@ class Konfig(collections.abc.Mapping, metaclass=KonfigMeta):
         return len(vars(self))
 
 
-K = T.TypeVar('K', bound=Konfig)
+K = tp.TypeVar('K', bound=Konfig)
 
 def resolve_konfig(
-    konfigs: T.Union[T.Dict[str, T.Type[K]], T.List[T.Type[K]]],
-    name: T.Optional[str] = None,
-    default: T.Optional[str] = None,
+    konfigs: tp.Union[tp.Dict[str, tp.Type[K]], tp.List[tp.Type[K]]],
+    name: tp.Optional[str] = None,
+    default: tp.Optional[str] = None,
     lazy: bool = True,
-    extra: T.Optional[T.Dict[str, T.Any]] = None,
+    extra: tp.Optional[tp.Dict[str, tp.Any]] = None,
 ) -> K:
 
     """Creates instance of config.
@@ -115,36 +117,31 @@ def resolve_konfig(
     Default konfig config name may be passed as a fallback.
     """
 
-    logger.debug("Resolve konfig %s from %s", name or "*", konfigs)
+    if not isinstance(konfigs, tp.Dict):
+        konfigs = {getattr(k, 'name', k.__name__): k for k in konfigs}
+    else:
+        konfigs = dict(konfigs)
+    extra = dict(extra or {})
 
+    if lazy:
+        return lazy_object_proxy.Proxy(
+            lambda: resolve_konfig(konfigs=konfigs, name=name, default=default, extra=extra, lazy=False)
+        )
+
+    logger.debug("Resolve konfig %s from %s", name or "*", konfigs)
     name = name or current_env() or default
+
     if not name:
         raise ValueError("Konfig name should not be empty")
     logger.debug("Konfig name is %s", name)
-
-    if not isinstance(konfigs, T.Dict):
-        konfigs = {
-            getattr(c, 'name', None) or c.__name__: c
-            for c in konfigs
-        }
 
     try:
         konfig_cls = konfigs[name]
     except KeyError:
         raise ValueError(f"Unable to find konfig with name{name!r}, candidates {list(konfigs.keys())}")
 
-    kwargs = dict(extra or {})
-
-    def create_konfig():
-        logger.info("Create instance of konfig %s", konfig_cls)
-        return konfig_cls(_all_konfigs=konfigs, **kwargs)
-
-    if lazy:
-        logger.debug("Return lazy proxy for konfig %s", konfig_cls)
-        return lazy_object_proxy.Proxy(create_konfig)
-    else:
-        logger.debug("Create eagerly instance of konfig %s", konfig_cls)
-        return create_konfig()
+    logger.info("Create instance of konfig %s", konfig_cls)
+    return konfig_cls(**extra)
 
 
 class secretstr(str):
@@ -152,7 +149,7 @@ class secretstr(str):
         return f"<secret {'*' * len(self)}>"
 
 
-def fromenv(key: str, default=None, type: T.Type = secretstr):
+def fromenv(key: str, default=None, type: tp.Type = secretstr):
     """Reads config value from os environment, prepends `bf_` to variable name"""
 
     def __get__(self):
@@ -183,7 +180,7 @@ def expand(value: str):
     return dynamic(__get__)
 
 
-def dynamic(get: T.Callable[[Konfig], T.Any]):
+def dynamic(get: tp.Callable[[Konfig], tp.Any]):
 
     def __get__(self: Konfig):
         assert isinstance(self, Konfig), f"object {self} must be subclass of `Konfig` class"
