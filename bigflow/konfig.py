@@ -29,26 +29,30 @@ class KonfigMeta(abc.ABCMeta):
     @staticmethod
     def prepare_dict(dct: tp.Dict):
 
-        anns = dct.setdefault('__annotations__', {})
-        for k, v in list(dct.items()):
+        annotations = dct.setdefault('__annotations__', {})
+        for attr_name, attr in list(dct.items()):
 
-            if k.startswith("_"):
-                continue
-            elif isinstance(v, cached_property):
-                pass
-            elif hasattr(v, '__get__') or hasattr(v, '__set__') or hasattr(v, '__delete__'):
+            is_cached_property = isinstance(attr, cached_property)
+            is_descriptor = any(
+                hasattr(attr, f) for
+                f in ['__get__', '__set__', '__delete__']
+            )
+
+            if (
+                attr_name.startswith("_")
+                or (is_descriptor and not is_cached_property)
+            ):
                 continue
 
-            if k in anns:
-                pass
-            elif isinstance(v, cached_property):
-                anns[k] = tp.Any
-            else:
-                anns[k] = type(v)
+            if attr_name not in annotations:
+                if isinstance(attr, cached_property):
+                    annotations[attr_name] = tp.Any
+                else:
+                    annotations[attr_name] = type(v)
 
             # it is not allowed to use a mutable as a default value
-            if not isinstance(v, (tp.Hashable, cached_property)):
-                dct[k] = dataclasses.field(default_factory=lambda v=v: copy.deepcopy(v))
+            if not isinstance(attr, (tp.Hashable, cached_property)):
+                dct[attr_name] = dataclasses.field(default_factory=lambda v=attr: copy.deepcopy(v))
 
     def __new__(self, name, bases, dct):
         self.prepare_dict(dct)
@@ -110,36 +114,31 @@ def resolve_konfig(
     Default konfig config name may be passed as a fallback.
     """
 
-    logger.debug("Resolve konfig %s from %s", name or "*", konfigs)
+    if not isinstance(konfigs, tp.Dict):
+        konfigs = {getattr(k, 'name', k.__name__): k for k in konfigs}
+    else:
+        konfigs = dict(konfigs)
+    extra = dict(extra or {})
 
+    if lazy:
+        return lazy_object_proxy.Proxy(
+            lambda: resolve_konfig(konfigs=konfigs, name=name, default=default, extra=extra, lazy=False)
+        )
+
+    logger.debug("Resolve konfig %s from %s", name or "*", konfigs)
     name = name or current_env() or default
+
     if not name:
         raise ValueError("Konfig name should not be empty")
     logger.debug("Konfig name is %s", name)
-
-    if not isinstance(konfigs, tp.Dict):
-        konfigs = {
-            getattr(c, 'name', None) or c.__name__: c
-            for c in konfigs
-        }
 
     try:
         konfig_cls = konfigs[name]
     except KeyError:
         raise ValueError(f"Unable to find konfig with name{name!r}, candidates {list(konfigs.keys())}")
 
-    kwargs = dict(extra or {})
-
-    def create_konfig():
-        logger.info("Create instance of konfig %s", konfig_cls)
-        return konfig_cls(**kwargs)
-
-    if lazy:
-        logger.debug("Return lazy proxy for konfig %s", konfig_cls)
-        return lazy_object_proxy.Proxy(create_konfig)
-    else:
-        logger.debug("Create eagerly instance of konfig %s", konfig_cls)
-        return create_konfig()
+    logger.info("Create instance of konfig %s", konfig_cls)
+    return konfig_cls(**extra)
 
 
 class secretstr(str):
