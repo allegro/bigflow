@@ -11,15 +11,18 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python 3.7
+
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Setup Python
       uses: actions/setup-python@v2
       with:
         python-version: 3.7
+
     - name: Setup github username
       run: |
         git config --global user.email "fake@example.com"
@@ -31,13 +34,20 @@ jobs:
         curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
         sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic test"
         sudo apt update
-        sudo apt install docker-ce docker
+        sudo apt install docker-ce
         docker -v
 
     - name: Install dependencies
       run: |
         pip install -r requirements.txt
 
-    - name: Tests
+    - name: Run unit tests
       run: |
-        pytest
+        pytest --html=build/test-report.html --self-contained-html
+
+    - name: Upload test report
+      if: always()
+      uses: actions/upload-artifact@v2
+      with:
+        name: test-report
+        path: build/test-report.html

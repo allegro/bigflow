@@ -4,9 +4,13 @@
 -r requirements/log_extras.txt
 -r requirements/dataproc_extras.txt
 -r requirements/dataflow_extras.txt
-pytest
 twine
 freezegun
 pexpect
 responses
 bs4
+
+pytest
+pytest-html
+pytest-cov
+pytest-github-actions-annotate-failures
