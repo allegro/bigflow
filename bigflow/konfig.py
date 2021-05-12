@@ -30,6 +30,12 @@ class KonfigMeta(abc.ABCMeta):
     def prepare_dict(dct: tp.Dict):
 
         annotations = dct.setdefault('__annotations__', {})
+
+        for ann_name, ann in annotations.items():
+            if ann_name not in dct:
+                # use 'MISSING' as default value when no default is provided
+                dct[ann_name] = dataclasses.field(default=dataclasses.MISSING)
+
         for attr_name, attr in list(dct.items()):
 
             is_cached_property = isinstance(attr, cached_property)
@@ -48,7 +54,7 @@ class KonfigMeta(abc.ABCMeta):
                 if isinstance(attr, cached_property):
                     annotations[attr_name] = tp.Any
                 else:
-                    annotations[attr_name] = type(v)
+                    annotations[attr_name] = type(attr)
 
             # it is not allowed to use a mutable as a default value
             if not isinstance(attr, (tp.Hashable, cached_property)):
@@ -68,6 +74,11 @@ class Konfig(collections.abc.Mapping, metaclass=KonfigMeta):
     Add type hints for all public class-level variables.
     Turns properties into memoized fields.
     """
+
+    def __post_init__(self, *args, **kwargs):
+        # pre-warm all cached properties
+        for f in dataclasses.fields(self):
+            getattr(self, f.name)
 
     def __getattribute__(self, name: str):
         v = object.__getattribute__(self, name)
@@ -107,9 +118,8 @@ def resolve_konfig(
 
     """Creates instance of config.
 
-    Konfigs may be passed as list (in such case Class.name is used as a konfig name)
-    or as a plain dictionary {name -> konfig_class}.
-
+    Konfigs may be passed as dictionary {name -> konfig_class} or as a list of classes.
+    In second case class name is used a konfig name.
     Konfig name may be provided explicitly with `name` argument or passed via `bigflow` cli tool.
     Default konfig config name may be passed as a fallback.
     """
