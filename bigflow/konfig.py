@@ -38,56 +38,72 @@ class KonfigMeta(abc.ABCMeta):
                 # normal value, put into obj
                 obj.__dict__[k] = v
 
-    def __new__(mcls, name, bases, dct):
+    def __new__(metacls, clsname, bases, dct, name=None):
 
-        if not any(isinstance(b, mcls) for b in bases):
+        if not any(isinstance(b, metacls) for b in bases):
             # no Konfig's in bases - create root type
-            return type.__new__(mcls, name, bases, dct)
+            return type.__new__(metacls, clsname, bases, dct)
 
         if '__init__' in dct:
             raise ValueError("Konfig classes doesn't support custom '__init__'")
 
         def __init__(self, **kwargs):
             super(cls, self).__init__(**kwargs)
-            mcls._copy_classvars_to_obj(cls, self)
+            metacls._copy_classvars_to_obj(cls, self)
 
-        cls = type.__new__(mcls, name, bases, {'__init__': __init__, **dct})
+        cls = type.__new__(metacls, clsname, bases, {'__init__': __init__, **dct})
         return cls
+
+    def __init__(cls, clsname, bases, dct, name=None):
+        if 'name' in cls.__dict__:
+            assert name is None, "Konfig 'name' can't be specified as class attribute and class parameter at the same time"
+        else:
+            cls._name = name
+
+        super().__init__(clsname, bases, dct)
 
     def __call__(self, **kwargs):
         obj = super().__call__(**kwargs)
+        obj.__dict__.update(**kwargs)
         obj.__post_init__(**kwargs)
-        obj.__frozen__ = True
+        obj._frozen = True
         return obj
+
+
+K = tp.TypeVar('K', bound=tp.ForwardRef('Konfig'))
 
 
 class Konfig(collections.abc.Mapping, metaclass=KonfigMeta):
     """Base class for configs.
 
     Automatically copies all class-level attributes into `self` in class definition order.
-    Protects constructed object from mutation (see `__frozen__` attribute).
+    Protects constructed object from mutation (see `_frozen` attribute).
     """
 
-    __slots__ = ('__frozen__',)
+    _name = None
+    __slots__ = ('__dict__', '_frozen', '_init_kwargs')
 
     def __init__(self, **kwargs):
-        self.__dict__.update(**kwargs)
+        self._init_kwargs = kwargs
 
     def __post_init__(self, **kwargs):
-        # "materialize" all 'cached_property's
         for k in dir(self):
             if not k.startswith("_"):
+                # "materialize" all 'cached_property's
                 getattr(self, k)
 
     def __setattr__(self, name, value):
-        if getattr(self, '__frozen__', False) and name != '__frozen__':
+        if getattr(self, '_frozen', False) and name != '_frozen':
             raise RuntimeError("Attempt to modify frozen Konfig")
         object.__setattr__(self, name, value)
 
     def __repr__(self):
-        return "<Config\n%s>" % pprint.pformat(vars(self))
+        cls = type(self)
+        kvpairs_list = ", ".join(f"{k}={v!r}" for k, v in self.items())
+        return f"{cls.__module__}.{cls.__qualname__}({kvpairs_list})"
 
     # adapt to `collections.abc.Mapping`
+
     def __getitem__(self, k):
         return getattr(self, k)
 
@@ -97,11 +113,54 @@ class Konfig(collections.abc.Mapping, metaclass=KonfigMeta):
     def __len__(self):
         return len(vars(self))
 
+    # helpers & utils
 
-K = tp.TypeVar('K', bound=Konfig)
+    @property
+    def name(self):
+        return type(self)._name
+
+    def replace(self, **kwargs):
+        """Return a new instance of the konfig replacing specified fields"""
+        cls = type(self)
+        return cls(**{**self._init_kwargs, **kwargs})
+
+    @classmethod
+    def resolve(
+        cls: tp.Type[K],
+        name: tp.Optional[str] = None,
+        default: tp.Optional[str] = None,
+        lazy: bool = True,
+        extra: tp.Optional[tp.Dict[str, tp.Any]] = None,
+    ) -> K:
+        return resolve_konfig(
+            [k for k in _all_subclasses(cls) if k._name],
+            name=name,
+            default=default,
+            lazy=lazy,
+            extra=extra,
+        )
+
+
+def _all_subclasses(cls: type):
+    yield cls
+    for sc in cls.__subclasses__():
+        yield from _all_subclasses(sc)
+
+
+class _LazyKonfig(lazy_object_proxy.Proxy):
+
+    def __init__(self, **kwargs):
+        super().__init__(lambda: resolve_konfig(**kwargs))
+
+    def __repr__(self):
+        return str(self)
+
 
 def resolve_konfig(
-    konfigs: tp.Union[tp.Dict[str, tp.Type[K]], tp.List[tp.Type[K]]],
+    konfigs: tp.Union[
+        tp.Dict[str, tp.Type[K]],
+        tp.List[tp.Type[K]],
+    ],
     name: tp.Optional[str] = None,
     default: tp.Optional[str] = None,
     lazy: bool = True,
@@ -118,15 +177,16 @@ def resolve_konfig(
     """
 
     if not isinstance(konfigs, tp.Dict):
-        konfigs = {getattr(k, 'name', k.__name__): k for k in konfigs}
+        for k in konfigs:
+            if not k._name:
+                raise ValueError(f"Konfig {k!r} does not have a name")
+        konfigs = {k._name: k for k in konfigs if k._name}
     else:
         konfigs = dict(konfigs)
     extra = dict(extra or {})
 
     if lazy:
-        return lazy_object_proxy.Proxy(
-            lambda: resolve_konfig(konfigs=konfigs, name=name, default=default, extra=extra, lazy=False)
-        )
+        return _LazyKonfig(konfigs=konfigs, name=name, default=default, extra=extra, lazy=False)
 
     logger.debug("Resolve konfig %s from %s", name or "*", konfigs)
     name = name or current_env() or default
@@ -146,7 +206,7 @@ def resolve_konfig(
 
 class secretstr(str):
     def __repr__(self):
-        return f"<secret {'*' * len(self)}>"
+        return f"<secretstr {'*' * len(self)}>"
 
 
 def fromenv(key: str, default=None, type: tp.Type = secretstr):
@@ -196,12 +256,15 @@ _placeholder_re = re.compile(r"""
 """, re.VERBOSE)
 
 def _resolve_placeholders(value, resolve):
+
     def valueof(m: re.Match):
-        k = m.group(1)
-        if m.string == "{{":
+        s = m.group(0)
+        if s == "{{":
             return "{"
-        if m.string == "}}":
+        if s == "}}":
             return "}"
         else:
+            k = m.group(1)
             return resolve(k)
+
     return _placeholder_re.sub(valueof, value)
