@@ -15,6 +15,10 @@ def clear_dags_output_dir(workdir: str):
     shutil.rmtree(str(dags_dir_path.resolve()))
 
 
+def secret_template(secret: str) -> str:
+    return f"secret.Secret(deploy_type='env', deploy_target='{secret}', secret='{secret}', key='{secret}')"
+
+
 def generate_dag_file(workdir: str,
                       docker_repository: str,
                       workflow,
@@ -39,6 +43,7 @@ def generate_dag_file(workdir: str,
 import datetime
 from airflow import DAG
 from airflow.contrib.operators import kubernetes_pod_operator
+from airflow.contrib.kubernetes import secret
 
 default_args = {{
             'owner': 'airflow',
@@ -67,7 +72,7 @@ dag = DAG(
     def build_dag_operator(workflow_job, dependencies):
         job = get_job(workflow_job)
         job_var = "t" + str(job.id)
-        task_id = job.id.replace("_","-")
+        task_id = job.id.replace("_", "-")
 
         execution_timeout_sec = commons.as_timedelta(
             getattr(job, 'execution_timeout_sec', None)
@@ -85,6 +90,7 @@ dag = DAG(
     retries={retries},
     retry_delay=datetime.timedelta(seconds={retry_delay}),
     dag=dag,
+    secrets={secrets_definition},
     execution_timeout={execution_timeout_sec!r})
 """.format(job_var=job_var,
           task_id=task_id,
@@ -93,6 +99,7 @@ dag = DAG(
           root_folder=root_package_name,
           retries=job.retry_count if hasattr(job, 'retry_count') else 3,
           retry_delay=job.retry_pause_sec if hasattr(job, 'retry_pause_sec') else 60,
+          secrets_definition=f'[{", ".join([secret_template(secret) for secret in workflow.secrets])}]',
           execution_timeout_sec=execution_timeout_sec,
           ))
 
