@@ -3,6 +3,9 @@ import contextlib
 import unittest
 import unittest.mock
 
+import pickle
+import dill
+
 from bigflow.konfig import Konfig, resolve_konfig, dynamic, expand, fromenv
 
 
@@ -263,4 +266,29 @@ class TestKonfig(unittest.TestCase):
         # then
         self.assertEqual(config.bb, 1)
         self.assertEqual(config.name, 'prod')
+
+    class serialization_A(Konfig):
+        a = "1"
+        b = "2"
+        x = fromenv('x')
+
+    class serialization_B(serialization_A):
+            a = "3"
+            y = expand("{x}")
+
+    def test_serialization(self):
+        # given
+        os.environ['bf_x'] = "1"
+        config = self.serialization_B(z="ok")
+
+        # when
+        s = pickle.dumps(config)
+        config2 = pickle.loads(s)
+
+        s = dill.dumps(config)
+        config3 = dill.loads(s)
+
+        # then
+        self.assertEqual(dict(config), dict(config2))
+        self.assertEqual(dict(config), dict(config3))
 

@@ -102,6 +102,16 @@ class Konfig(collections.abc.Mapping, metaclass=KonfigMeta):
         kvpairs_list = ", ".join(f"{k}={v!r}" for k, v in self.items())
         return f"{cls.__module__}.{cls.__qualname__}({kvpairs_list})"
 
+    @classmethod
+    def _make(cls: tp.Type[K], kvpairs: tp.List[tp.Tuple[str, tp.Any]]) -> K:
+        return cls(**dict(kvpairs))
+
+    def __reduce__(self):
+        return (
+            self._make,
+            (list(self.__dict__.items()),),
+        )
+
     # adapt to `collections.abc.Mapping`
 
     def __getitem__(self, k):
