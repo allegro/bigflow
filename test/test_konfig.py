@@ -256,9 +256,12 @@ class TestKonfig(unittest.TestCase):
 
     def test_resolve_config_to_default(self):
         # given
-        class C(Konfig): pass
-        class _(C, name="prod"): bb = 1
-        class _(C, name="dev"): bb = 2
+        class C(Konfig):
+            pass
+        class _(C, name="prod"):
+            bb = 1
+        class _(C, name="dev"):
+            bb = 2
 
         # when
         config = C.resolve(default='prod')
@@ -266,6 +269,38 @@ class TestKonfig(unittest.TestCase):
         # then
         self.assertEqual(config.bb, 1)
         self.assertEqual(config.name, 'prod')
+
+    def test_resolve_config_explicit_names(self):
+        # given
+        class A(Konfig):
+            x = "a"
+        class B(A, name="bad"):
+            x = "b"
+
+        # when
+        a = resolve_konfig({'A': A, 'B': B}, name='A')
+        b = resolve_konfig({'A': A, 'B': B}, name='B')
+
+        # then
+        self.assertEqual(a.x, 'a')
+        self.assertEqual(b.x, 'b')
+
+    def test_resolve_returns_lazy(self):
+        # given
+        getit = unittest.mock.Mock()
+
+        class A(Konfig, name="a"):
+            x = dynamic(getit)
+
+        # when
+        a = A.resolve("a")
+
+        # then
+        getit.assert_not_called()
+        getit.return_value = 123
+
+        self.assertEqual(a.x, 123)
+        getit.assert_called_once_with(a)
 
     class serialization_A(Konfig):
         a = "1"
@@ -292,3 +327,16 @@ class TestKonfig(unittest.TestCase):
         self.assertEqual(dict(config), dict(config2))
         self.assertEqual(dict(config), dict(config3))
 
+    def test_replace(self):
+
+        # given
+        class C(Konfig):
+            a = 1
+            b = '2'
+
+        # when
+        config = C().replace(a=123)
+
+        # then
+        self.assertEqual(config.a, 123)
+        self.assertEqual(config.b, '2')
