@@ -16,7 +16,7 @@ def clear_dags_output_dir(workdir: str):
 
 
 def secret_template(secret: str) -> str:
-    return f"secret.Secret(deploy_type='env', deploy_target='{secret}', secret='{secret}', key='{secret}')"
+    return f"secret.Secret(deploy_type='env', deploy_target='{secret}', secret='{secret.replace('_', '-')}', key='{secret}')"
 
 
 def generate_dag_file(workdir: str,
