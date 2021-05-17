@@ -5,7 +5,7 @@ from pathlib import Path
 import mock
 from unittest import TestCase
 from bigflow.bigquery.job import Job
-from bigflow.dagbuilder import get_dags_output_dir, clear_dags_output_dir, generate_dag_file
+from bigflow.dagbuilder import get_dags_output_dir, clear_dags_output_dir, generate_dag_file, secret_template
 from bigflow.workflow import WorkflowJob, Workflow, Definition, get_timezone_offset_seconds, hourly_start_time
 
 
@@ -84,6 +84,7 @@ class DagBuilderTestCase(TestCase):
 import datetime
 from airflow import DAG
 from airflow.contrib.operators import kubernetes_pod_operator
+from airflow.contrib.kubernetes import secret
 
 default_args = {
             'owner': 'airflow',
@@ -113,6 +114,7 @@ tjob1 = kubernetes_pod_operator.KubernetesPodOperator(
     retries=10,
     retry_delay=datetime.timedelta(seconds=20),
     dag=dag,
+    secrets=[],
     execution_timeout=datetime.timedelta(seconds=10800))
 
 
@@ -127,6 +129,7 @@ tjob2 = kubernetes_pod_operator.KubernetesPodOperator(
     retries=100,
     retry_delay=datetime.timedelta(seconds=200),
     dag=dag,
+    secrets=[],
     execution_timeout=datetime.timedelta(seconds=10800))
 
 tjob2.set_upstream(tjob1)
@@ -142,6 +145,7 @@ tjob3 = kubernetes_pod_operator.KubernetesPodOperator(
     retries=100,
     retry_delay=datetime.timedelta(seconds=200),
     dag=dag,
+    secrets=[],
     execution_timeout=datetime.timedelta(seconds=10800))
 
 tjob3.set_upstream(tjob2)
@@ -170,7 +174,8 @@ tjob3.set_upstream(tjob1)
             workflow_id='my_daily_workflow',
             definition=Definition(graph),
             depends_on_past=False,
-            schedule_interval='@daily')
+            schedule_interval='@daily',
+            secrets=['bf_secret_password', 'bf_secret_token'])
 
         # when
         dag_file_path = generate_dag_file(workdir, docker_repository, workflow, '2020-07-02', '0.3.0', 'ca')
@@ -183,6 +188,7 @@ tjob3.set_upstream(tjob1)
 import datetime
 from airflow import DAG
 from airflow.contrib.operators import kubernetes_pod_operator
+from airflow.contrib.kubernetes import secret
 
 default_args = {
             'owner': 'airflow',
@@ -212,6 +218,7 @@ tjob1 = kubernetes_pod_operator.KubernetesPodOperator(
     retries=10,
     retry_delay=datetime.timedelta(seconds=20),
     dag=dag,
+    secrets=[secret.Secret(deploy_type='env', deploy_target='bf_secret_password', secret='bf-secret-password', key='bf_secret_password'), secret.Secret(deploy_type='env', deploy_target='bf_secret_token', secret='bf-secret-token', key='bf_secret_token')],
     execution_timeout=datetime.timedelta(seconds=10800))
 
 '''
@@ -249,6 +256,7 @@ tjob1 = kubernetes_pod_operator.KubernetesPodOperator(
 import datetime
 from airflow import DAG
 from airflow.contrib.operators import kubernetes_pod_operator
+from airflow.contrib.kubernetes import secret
 
 default_args = {
             'owner': 'airflow',
@@ -278,6 +286,7 @@ tjob1 = kubernetes_pod_operator.KubernetesPodOperator(
     retries=10,
     retry_delay=datetime.timedelta(seconds=20),
     dag=dag,
+    secrets=[],
     execution_timeout=datetime.timedelta(seconds=10800))
 
 '''
