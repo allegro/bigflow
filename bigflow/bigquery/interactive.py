@@ -177,9 +177,7 @@ class InteractiveDatasetManager(Dataset):
             operation_name=DEFAULT_OPERATION_NAME)
 
     def _tmp_interactive_component_factory(self, component_name, method, *args, **kwargs):
-        logger.info(
-            "Build tmp interactive component, name=%s, method=%s, arguments (*%r, **%r)",
-            component_name, method, args, kwargs)
+        logger.debug("Build tmp interactive component, name=%s, method=%s", component_name, method)
 
         @interactive_component(_inline_component_dataset=self)
         def tmp_component(_inline_component_dataset):
