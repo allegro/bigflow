@@ -54,15 +54,23 @@ class CountWordsDriver:
         self.context = context
 
 
-@mock.patch('sys.argv', ["python"])  # Beam tries to parse cmdargs eagerly - it breaks external test launchers
-@mock.patch('bigflow.build.reflect.locate_project_path')
 class BeamJobTestCase(TestCase):
+
+    def addMock(self, m):
+        self.addCleanup(m.stop)
+        return m.start()
+
+    def setUp(self):
+        super().setUp()
+
+        # Beam tries to parse cmdargs eagerly - it breaks external test launchers
+        self.addMock(mock.patch('sys.argv', ["python"]))
+        self.addMock(mock.patch('bigflow.build.reflect.locate_project_path'))
 
     @patch.object(RunnerResult, 'state', new_callable=mock.PropertyMock)
     def test_should_run_beam_job(
         self,
         state_mock,
-        locate_project_mock,
     ):
         # given
         state_mock.return_value = "DONE"
@@ -99,7 +107,6 @@ class BeamJobTestCase(TestCase):
     def test_should_run_new_entry_point(
         self,
         state_mock,
-        locate_project_mock,
     ):
         # given
         state_mock.return_value = "DONE"
@@ -135,7 +142,6 @@ class BeamJobTestCase(TestCase):
     def test_should_run_old_entry_point_withoutargs(
         self,
         state_mock,
-        locate_project_mock,
     ):
         # given
         state_mock.return_value = "DONE"
@@ -160,7 +166,6 @@ class BeamJobTestCase(TestCase):
         wait_until_finish_mock,
         cancel_mock,
         state_mock,
-        locate_project_mock,
     ):
         # given
         wait_until_finish_mock.return_value = 'DONE'
@@ -190,7 +195,6 @@ class BeamJobTestCase(TestCase):
         wait_until_finish_mock,
         cancel_mock,
         state_mock,
-        locate_project_mock,
     ):
         # given
         wait_until_finish_mock.return_value = 'DONE'
@@ -212,7 +216,6 @@ class BeamJobTestCase(TestCase):
 
     def test_should_throw_if_wait_until_finish_set_to_false_and_execution_timeout_passed(
         self,
-        locate_project_mock,
     ):
         # given
         with self.assertRaises(ValueError):
@@ -228,7 +231,6 @@ class BeamJobTestCase(TestCase):
     def test_should_create_pipeline_from_pipeline_options(
         self,
         _create_pipeline_mock: mock.Mock,
-        locate_project_mock,
     ):
         # given
         _create_pipeline_mock.return_value.run.return_value = RunnerResult('DONE', None)
@@ -267,7 +269,6 @@ class BeamJobTestCase(TestCase):
 
     def test_should_throw_if_pipeline_options_and_pipeline_both_not_provided(
         self,
-        locate_project_mock,
     ):
         with self.assertRaises(ValueError):
             driver = CountWordsDriver()
@@ -278,7 +279,6 @@ class BeamJobTestCase(TestCase):
 
     def test_should_throw_if_pipeline_options_and_pipeline_both_provided(
         self,
-        locate_project_mock,
     ):
         with self.assertRaises(ValueError):
             driver = CountWordsDriver()
@@ -300,7 +300,6 @@ class BeamJobTestCase(TestCase):
     def test_create_pipeline_dict_options(
         self,
         _create_pipeline_mock: mock.Mock,
-        locate_project_mock,
     ):
         # given
         _create_pipeline_mock.return_value.run.return_value = RunnerResult('DONE', None)
@@ -337,7 +336,6 @@ class BeamJobTestCase(TestCase):
         self,
         get_project_spec_mock: mock.Mock,
         _create_pipeline_mock: mock.Mock,
-        locate_project_mock,
     ):
         # given
         _create_pipeline_mock.return_value.run.return_value = RunnerResult('DONE', None)
@@ -361,3 +359,31 @@ class BeamJobTestCase(TestCase):
         self.assertIn('job_name', options2)
         self.assertEqual('my_repo:1.2.3', options2['worker_harness_container_image'])
         self.assertIn('use_runner_v2', options2['experiments'])
+
+    @patch('bigflow.dataflow.Pipeline')
+    def test_add_setuppy_onle_for_dataflow_runner(
+        self,
+        _create_pipeline_mock: mock.Mock,
+    ):
+        # given
+        _create_pipeline_mock.return_value.run.return_value = RunnerResult('DONE', None)
+
+        driver = CountWordsDriver()
+        options = {
+            'job_name': "custom-my-job",
+            'runner': 'DirectRunner',
+        }
+
+        job = BeamJob(
+            id='count_words',
+            entry_point=driver.nope,
+            pipeline_options=options,
+        )
+
+        # when
+        job.execute(JobContext.make())
+
+        # then
+        options2 = _create_pipeline_mock.call_args[1]['options'].get_all_options(drop_default=True)
+
+        self.assertNotIn('setup_file', options2)
