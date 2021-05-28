@@ -78,6 +78,7 @@ class BeamJob(Job):
             entry_point_arguments: typing.Optional[dict] = None,
 
             pipeline_options: Union[PipelineOptionsDict, PipelineOptions, None] = None,
+            pipeline_options_no_bigflow_defaults: bool = False,
 
             wait_until_finish: bool = True,
             test_pipeline: Pipeline = None,
@@ -108,34 +109,42 @@ class BeamJob(Job):
             new = PipelineOptions(flags=[], **pipeline_options)
             assert orig.get_all_options() == new.get_all_options(), "During convertsion PipelineOptions<>dict some parameters was gone"
 
+        assert not (pipeline_options_no_bigflow_defaults and use_docker_image), \
+            "Option `use_docker_image` implies adding custom option, however `pipeline_options_no_bigflow_defaults` is specified"
+
         self.pipeline_options = dict(pipeline_options or {})
 
         self.wait_until_finish = wait_until_finish
         self.test_pipeline = test_pipeline
         self.use_docker_image = use_docker_image
         self.entry_point = entry_point
+        self.pipeline_options_no_bigflow_defaults = pipeline_options_no_bigflow_defaults
 
         self._project_path = bigflow.build.reflect.locate_project_path(project_name)
 
         if (entry_point_arguments is None
             and entry_point_args is None
             and entry_point_kwargs is None
-            and len(inspect.signature(entry_point).parameters) == 3
         ):
-            # no params at all - check if `entry_point` has `entry_point_arguments` parameter
-            logger.warning("Passing empty {} as `entry_point_arguments` %s - you can drop this unused argumnent", entry_point)
-            entry_point_arguments = {}
+            try:
+                inspect.signature(entry_point).bind(None, None, None)
+            except TypeError:
+                pass
+            else:
+                logger.warning("Passing empty {} as `entry_point_arguments` %s - you can drop this unused argumnent", entry_point)
+                entry_point_arguments = {}
 
         if entry_point_arguments is None:
             # threading-like - tuple/dict for args/kwargs
             self.entry_point_args = entry_point_args or ()
             self.entry_point_kwargs = entry_point_kwargs or {}
             self.entry_point_arguments = None
+
         else:
             # old style - single positional argument with type 'dict'
             logger.warning("Please use `entry_point_kwargs` instead of `entry_point_arguments`")
-            assert entry_point_args is None, "Mixins of `entry_point_args` and `entry_point_arguments` is not allowed"
-            assert entry_point_kwargs is None, "Mixins of `entry_point_kwargs` and `entry_point_arguments` is not allowed"
+            assert entry_point_args is None, "Mixing `entry_point_args` and `entry_point_arguments` is not allowed"
+            assert entry_point_kwargs is None, "Mixing `entry_point_kwargs` and `entry_point_arguments` is not allowed"
             self.entry_point_args = (entry_point_arguments,)
             self.entry_point_kwargs = {}
             self.entry_point_arguments = entry_point_arguments
@@ -176,22 +185,30 @@ class BeamJob(Job):
 
     def create_pipeline_options(self, context: JobContext) -> PipelineOptions:
         options = dict(self.pipeline_options)
-        self.set_default_pipeline_options(context, options)
+        if not self.pipeline_options_no_bigflow_defaults:
+            self.set_default_pipeline_options(context, options)
+        else:
+            logger.debug("Don't any any defaults to pipeline options")
+
         logger.debug("Pipeline options from dict %s", options)
         return PipelineOptions(flags=[], **options)
 
     def set_default_pipeline_options(self, context: JobContext, options: PipelineOptionsDict):
 
-        logger.debug("Add defaults to pipeline options")
+        logger.info("Add defaults to pipeline options")
         options.setdefault('runner', 'DataflowRunner')
 
         if 'job_name' not in options:
             slug = self.id.replace("_", "-")
             job_name = f"{slug}-{uuid.uuid4().hex}"
-            logger.info("Set job name to deafult %s", job_name)
+            logger.info("Use default job name %r", job_name)
             options['job_name'] = job_name
+        else:
+            logger.info("Keep provided job name %r", options['job_name'])
 
-        if 'setup_file' not in options:
+        if options['runner'].upper() != 'DATAFLOWRUNNER':
+            logger.debug("Don't add default setup.py for runner %r", options['runner'])
+        elif 'setup_file' not in options:
             setuppy = str(bigflow.build.reflect.materialize_setuppy(self._project_path))
             logging.debug("Add setup.py %s to pipeline options", setuppy)
             options['setup_file'] = setuppy
@@ -215,7 +232,6 @@ class BeamJob(Job):
             logger.info("Use docker image %s for beam workers", imgid)
 
             options['worker_harness_container_image'] = imgid
-
             experiments = list(options.get('experiments', []))
             if 'use_runner_v2' not in experiments:
                 logger.info("Enable beam experiment 'use_runner_v2'")
