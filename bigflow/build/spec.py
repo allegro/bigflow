@@ -88,10 +88,10 @@ def parse_project_spec(
     logger.info("Prepare bigflow project spec...")
     name = name.replace("_", "-")  # PEP8 compliant package names
 
-    docker_repository = docker_repository or get_docker_repository_from_deployment_config(deployment_config_file)
+    docker_repository = docker_repository or get_docker_repository_from_deployment_config(project_dir / deployment_config_file)
     version = version or secure_get_version()
     packages = packages if packages is not None else discover_project_packages(project_dir)
-    requries = requries if requries is not None else read_project_requirements(project_requirements_file)
+    requries = requries if requries is not None else read_project_requirements(project_dir / project_requirements_file)
     metainfo = {k: kwargs.pop(k) for k in _PROJECT_METAINFO_KEYS if k in kwargs}
 
     setuptools = kwargs  # all unknown arguments
@@ -197,12 +197,12 @@ def read_project_spec(dir: Path) -> BigflowProjectSpec:
 
     try:
         return read_project_spec_nosetuppy(dir, **setuppy_kwargs)
-    except Exception:
+    except Exception as e:
         raise ValueError(
             "The project configuration is invalid. "
             "Check the documentation how to create a valid `setup.py`: "
             "https://github.com/allegro/bigflow/blob/master/docs/build.md"
-        )
+        ) from e
 
 
 # Provide defaults for project-spec
@@ -237,8 +237,8 @@ def get_docker_repository_from_deployment_config(deployment_config_file: Path) -
     import bigflow.cli   # TODO: refactor, remove this import
     try:
         config = bigflow.cli.import_deployment_config(str(deployment_config_file), 'docker_repository')
-    except ValueError:
-        raise ValueError(f"Can't find the specified deployment configuration: {deployment_config_file}")
+    except ValueError as e:
+        raise ValueError(f"Can't find the specified deployment configuration: {deployment_config_file}") from e
 
     if isinstance(config, bigflow.Config):
         config = config.resolve()
