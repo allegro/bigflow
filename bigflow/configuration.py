@@ -1,17 +1,19 @@
-import os
 import io
+import os
+import logging
 import pprint
-import typing
+import typing as T
 
 from bigflow.commons import public
 
 
-DEFAULT_CONFIG_ENV_VAR_PREFIX = 'bf_'
+logger = logging.getLogger(__name__)
+
 
 
 def current_env():
     """Returns current env name (specified via 'bigflow --config' option)"""
-    return os.environ.get(f'{DEFAULT_CONFIG_ENV_VAR_PREFIX}env')
+    return os.environ.get('bf_env')
 
 
 @public()
@@ -19,14 +21,14 @@ class Config:
 
     def __init__(self,
         name: str,
-        properties: typing.Dict[str, str],
+        properties: T.Dict[str, str],
         is_master: bool = True,
         is_default: bool = True,
     ):
         self.master_properties = properties if is_master else {}
         self.default_env_name = None
         self.configs = {}
-        self.environment_variables_prefix = DEFAULT_CONFIG_ENV_VAR_PREFIX
+        self.environment_variables_prefix = 'bf_'
 
         self.add_configuration(name, properties, is_default)
 
@@ -99,7 +101,7 @@ class Config:
             raise ValueError(f"default env is already set to '{self.default_env_name}', you can set only one default env")
         self.default_env_name = name
 
-    def _get_env_config(self, name: str) -> typing.Tuple[dict, str]:
+    def _get_env_config(self, name: str) -> T.Tuple[dict, str]:
         explicit_env_name = name or os.environ.get(f'{self.environment_variables_prefix}env')
         if not explicit_env_name:
             if not self.default_env_name:
@@ -134,4 +136,4 @@ class DeploymentConfig(Config):
             name=name,
             properties=properties,
             is_master=is_master, is_default=is_default)
-        self.environment_variables_prefix = environment_variables_prefix or DEFAULT_CONFIG_ENV_VAR_PREFIX
+        self.environment_variables_prefix = environment_variables_prefix or 'bf_'
