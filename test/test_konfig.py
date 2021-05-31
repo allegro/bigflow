@@ -4,7 +4,7 @@ import unittest
 import unittest.mock
 import pickle
 
-import dill    # type: ignore
+import dill  # type: ignore
 
 from bigflow.konfig import Konfig, resolve_konfig, dynamic, expand, fromenv
 

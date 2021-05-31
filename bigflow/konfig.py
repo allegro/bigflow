@@ -5,26 +5,37 @@ import logging
 import os
 import re
 import typing
+import sys
 
 import lazy_object_proxy  # type: ignore
 
-from backports.cached_property import cached_property
+
 from typing import (
     Any,
     Callable,
-    Iterable,
+    Generic,
     List,
     Optional,
     Tuple,
-    Union,
     Dict,
     Type,
+    Union,
 )
 
 
 logger = logging.getLogger(__name__)
 K = typing.TypeVar('K', bound='Konfig')
-T = typing.TypeVar('T')
+T_co = typing.TypeVar('T_co', covariant=True)
+
+
+if sys.version_info >= (3, 9):
+    from functools import cached_property
+else:
+    # python 3.8 has 'cached_property', but it is not subscriptable
+    from backports.cached_property import cached_property as _cached_property
+    class cached_property(Generic[T_co], _cached_property):
+        def __get__(self, instance: Any, owner: Optional[Type]) -> T_co:   # type: ignore
+            return super().__get__(instance, owner)
 
 
 def current_env() -> Optional[str]:
@@ -182,7 +193,8 @@ def fromenv(
     key: str,
     default: Optional[str] = None,
     type: Type = secretstr,
-):
+) -> cached_property[str]:
+
     """Reads config value from os environment, prepends `bf_` to variable name"""
 
     def __get__(self):
@@ -199,7 +211,7 @@ def fromenv(
     return dynamic(__get__)
 
 
-def expand(value: str):
+def expand(value: str) -> cached_property[str]:
     """Expands placeholders ('{key_name}' is replaced with value of `konfig.key_name`)"""
 
     def __get__(self):
@@ -211,9 +223,9 @@ def expand(value: str):
     return dynamic(__get__)
 
 
-def dynamic(get: Callable[[Konfig], T]) -> cached_property:
+def dynamic(get: Callable[[K], T_co]) -> cached_property[T_co]:
 
-    def __get__(self: Konfig) -> T:
+    def __get__(self: K) -> T_co:
         assert isinstance(self, Konfig), f"object {self} must be subclass of `Konfig` class"
         return get(self)
 
