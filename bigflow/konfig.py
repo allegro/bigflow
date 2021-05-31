@@ -3,22 +3,31 @@ import collections
 import collections.abc
 import logging
 import os
-import pprint
 import re
-import lazy_object_proxy
-import typing as tp
+import typing
 
+import lazy_object_proxy  # type: ignore
 
-try:
-    from functools import cached_property
-except ImportError:
-    from backports.cached_property import cached_property
+from backports.cached_property import cached_property
+from typing import (
+    Any,
+    Callable,
+    Iterable,
+    List,
+    Optional,
+    Tuple,
+    Union,
+    Dict,
+    Type,
+)
 
 
 logger = logging.getLogger(__name__)
+K = typing.TypeVar('K', bound='Konfig')
+T = typing.TypeVar('T')
 
 
-def current_env():
+def current_env() -> Optional[str]:
     """Returns current env name (specified via 'bigflow --config' option)"""
     return os.environ.get('bf_env')
 
@@ -38,7 +47,7 @@ class KonfigMeta(abc.ABCMeta):
                 # normal value, put into obj
                 obj.__dict__[k] = v
 
-    def __new__(metacls, clsname, bases, dct, name=None):
+    def __new__(metacls, clsname, bases, dct):
 
         if not any(isinstance(b, metacls) for b in bases):
             # no Konfig's in bases - create root type
@@ -54,23 +63,12 @@ class KonfigMeta(abc.ABCMeta):
         cls = type.__new__(metacls, clsname, bases, {'__init__': __init__, **dct})
         return cls
 
-    def __init__(cls, clsname, bases, dct, name=None):
-        if 'name' in cls.__dict__:
-            assert name is None, "Konfig 'name' can't be specified as class attribute and class parameter at the same time"
-        else:
-            cls._name = name
-
-        super().__init__(clsname, bases, dct)
-
     def __call__(self, **kwargs):
         obj = super().__call__(**kwargs)
         obj.__dict__.update(**kwargs)
         obj.__post_init__(**kwargs)
         obj._frozen = True
         return obj
-
-
-K = tp.TypeVar('K', bound=tp.ForwardRef('Konfig'))
 
 
 class Konfig(collections.abc.Mapping, metaclass=KonfigMeta):
@@ -80,7 +78,6 @@ class Konfig(collections.abc.Mapping, metaclass=KonfigMeta):
     Protects constructed object from mutation (see `_frozen` attribute).
     """
 
-    _name = None
     __slots__ = ('__dict__', '_frozen', '_init_kwargs')
 
     def __init__(self, **kwargs):
@@ -103,7 +100,7 @@ class Konfig(collections.abc.Mapping, metaclass=KonfigMeta):
         return f"{cls.__module__}.{cls.__qualname__}({kvpairs_list})"
 
     @classmethod
-    def _make(cls: tp.Type[K], kvpairs: tp.List[tp.Tuple[str, tp.Any]]) -> K:
+    def _make(cls: Type[K], kvpairs: List[Tuple[str, Any]]) -> K:
         return cls(**dict(kvpairs))
 
     def __reduce__(self):
@@ -111,6 +108,11 @@ class Konfig(collections.abc.Mapping, metaclass=KonfigMeta):
             self._make,
             (list(self.__dict__.items()),),
         )
+
+    def replace(self: K, **kwargs) -> K:
+        """Return a new instance of the konfig replacing specified fields"""
+        cls = type(self)
+        return cls(**{**self._init_kwargs, **kwargs})
 
     # adapt to `collections.abc.Mapping`
 
@@ -123,39 +125,6 @@ class Konfig(collections.abc.Mapping, metaclass=KonfigMeta):
     def __len__(self):
         return len(vars(self))
 
-    # helpers & utils
-
-    @property
-    def name(self):
-        return type(self)._name
-
-    def replace(self, **kwargs):
-        """Return a new instance of the konfig replacing specified fields"""
-        cls = type(self)
-        return cls(**{**self._init_kwargs, **kwargs})
-
-    @classmethod
-    def resolve(
-        cls: tp.Type[K],
-        name: tp.Optional[str] = None,
-        default: tp.Optional[str] = None,
-        lazy: bool = True,
-        extra: tp.Optional[tp.Dict[str, tp.Any]] = None,
-    ) -> K:
-        return resolve_konfig(
-            [k for k in _all_subclasses(cls) if k._name],
-            name=name,
-            default=default,
-            lazy=lazy,
-            extra=extra,
-        )
-
-
-def _all_subclasses(cls: type):
-    yield cls
-    for sc in cls.__subclasses__():
-        yield from _all_subclasses(sc)
-
 
 class _LazyKonfig(lazy_object_proxy.Proxy):
 
@@ -167,32 +136,22 @@ class _LazyKonfig(lazy_object_proxy.Proxy):
 
 
 def resolve_konfig(
-    konfigs: tp.Union[
-        tp.Dict[str, tp.Type[K]],
-        tp.List[tp.Type[K]],
-    ],
-    name: tp.Optional[str] = None,
-    default: tp.Optional[str] = None,
+    konfigs: Dict[str, Type[K]],
+    name: Optional[str] = None,
+    default: Optional[str] = None,
+    extra: Optional[Dict[str, Any]] = None,
     lazy: bool = True,
-    extra: tp.Optional[tp.Dict[str, tp.Any]] = None,
 ) -> K:
 
     """Creates instance of config.
 
-    Konfigs may be passed as list (in such case Class.name is used as a konfig name)
-    or as a plain dictionary {name -> konfig_class}.
+    Konfigs are passed as a dictionary {name -> konfig_class}.
 
     Konfig name may be provided explicitly with `name` argument or passed via `bigflow` cli tool.
     Default konfig config name may be passed as a fallback.
     """
 
-    if not isinstance(konfigs, tp.Dict):
-        for k in konfigs:
-            if not k._name:
-                raise ValueError(f"Konfig {k!r} does not have a name")
-        konfigs = {k._name: k for k in konfigs if k._name}
-    else:
-        konfigs = dict(konfigs)
+    konfigs = dict(konfigs)
     extra = dict(extra or {})
 
     if lazy:
@@ -219,17 +178,19 @@ class secretstr(str):
         return f"<secretstr {'*' * len(self)}>"
 
 
-def fromenv(key: str, default=None, type: tp.Type = secretstr):
+def fromenv(
+    key: str,
+    default: Optional[str] = None,
+    type: Type = secretstr,
+):
     """Reads config value from os environment, prepends `bf_` to variable name"""
 
     def __get__(self):
-        prefix = getattr(self, 'env_prefix', 'bf_')
-        fullname = prefix + key
         try:
-            raw = os.environ[fullname]
+            raw = os.environ[key]
         except KeyError:
             if default is None:
-                raise ValueError(f"No environment variable {fullname}")
+                raise ValueError(f"No environment variable {key}")
             else:
                 return type(default)
         else:
@@ -250,9 +211,9 @@ def expand(value: str):
     return dynamic(__get__)
 
 
-def dynamic(get: tp.Callable[[Konfig], tp.Any]):
+def dynamic(get: Callable[[Konfig], T]) -> cached_property:
 
-    def __get__(self: Konfig):
+    def __get__(self: Konfig) -> T:
         assert isinstance(self, Konfig), f"object {self} must be subclass of `Konfig` class"
         return get(self)
 
@@ -265,9 +226,13 @@ _placeholder_re = re.compile(r"""
     | \{\{        # literal `}}`
 """, re.VERBOSE)
 
-def _resolve_placeholders(value, resolve):
 
-    def valueof(m: re.Match):
+def _resolve_placeholders(
+    value: str,
+    resolve: Callable[[str], Any],
+) -> str:
+
+    def valueof(m: re.Match) -> str:
         s = m.group(0)
         if s == "{{":
             return "{"
@@ -275,6 +240,6 @@ def _resolve_placeholders(value, resolve):
             return "}"
         else:
             k = m.group(1)
-            return resolve(k)
+            return str(resolve(k))
 
     return _placeholder_re.sub(valueof, value)

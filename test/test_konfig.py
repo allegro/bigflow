@@ -2,9 +2,9 @@ import os
 import contextlib
 import unittest
 import unittest.mock
-
 import pickle
-import dill
+
+import dill    # type: ignore
 
 from bigflow.konfig import Konfig, resolve_konfig, dynamic, expand, fromenv
 
@@ -59,20 +59,6 @@ class TestKonfig(unittest.TestCase):
         self.assertEqual(config.a, 1)
         self.assertEqual(config.b, '2')
         self.assertEqual(dict(config), {'a': 1, 'b': '2'})
-
-    def test_simple_config_named(self):
-
-        # given
-        class C(Konfig, name="the-config"):
-            a = 1
-
-        # when
-        config = C()
-
-        # then
-        self.assertEqual(config.a, 1)
-        self.assertEqual(config.name, "the-config")
-        self.assertEqual(dict(config), dict(a=1))
 
     def test_inheritance(self):
 
@@ -129,10 +115,10 @@ class TestKonfig(unittest.TestCase):
     def test_osenv_variables(self):
         # given
         os.environ.update(
-            bf_b='x',
-            bf_c='x',
-            # bf_d - miss
-            bf_e='1',
+            b='x',
+            c='x',
+            # d - miss
+            e='1',
         )
 
         class C(Konfig):
@@ -161,12 +147,12 @@ class TestKonfig(unittest.TestCase):
 
     def test_placeholder_expansion(self):
         # given
-        class C(Konfig, name="A"):
+        class C(Konfig):
             a = expand("{e}")
             b = expand("pre{a}post")
             c = expand("{a}-{a}")
             d = expand("pre{{a}}post")
-            e = expand("{name}")
+            e = expand("A")
 
         # when
         config = C()
@@ -185,20 +171,23 @@ class TestKonfig(unittest.TestCase):
     def test_placeholder_expansion_inheritance(self):
 
         # given
-        class A(Konfig, name="A"):
+        class A(Konfig):
+            n = "A"
             a = "0"
             b = "2"
             c = "3"
             x = expand("{a}{b}{c}")
             y = expand("{x}{x}")
-            z = expand("{y}{name}")
+            z = expand("{y}")
             k = expand("{z}")
 
-        class B(A, name="B"):
+        class B(A):
+            n = "B"
             a = "1"
 
-        class C(B, name="C"):
-            z = expand("{a}/{b}/{name}")
+        class C(B):
+            n = "C"
+            z = expand("{a}/{b}/{n}")
 
         # when
         config = C()
@@ -207,6 +196,7 @@ class TestKonfig(unittest.TestCase):
         self.assertEqual(
             dict(config),
             dict(
+                n="C",
                 a="1",
                 b="2",
                 c="3",
@@ -219,81 +209,63 @@ class TestKonfig(unittest.TestCase):
     def test_resolve_configs(self):
 
         # given
-        class A(Konfig, name="a"): pass
-        class B(A, name="b"): pass
-        class C(B, name="c"): pass
+        class A(Konfig): pass
+        class B(A): pass
+        class C(B): pass
+        cm = {'a': A, 'b': B, 'c': C}
 
         # expect
-        self.assertIs(A.resolve("a").__class__, A)
-        self.assertIs(A.resolve("b").__class__, B)
-        self.assertIs(A.resolve("c").__class__, C)
+        self.assertIs(resolve_konfig(cm, "a").__class__, A)
+        self.assertIs(resolve_konfig(cm, "b").__class__, B)
+        self.assertIs(resolve_konfig(cm, "c").__class__, C)
 
     def test_resolve_configs_fail(self):
         # given
         class A(Konfig): pass
-        class B(A, name="B"): pass
+        class B(A): pass
 
         # expect
         with self.assertRaises(ValueError):
-            A.resolve('A').name
-        with self.assertRaises(ValueError):
-            A.resolve('C').name
+            resolve_konfig({'b': B}, "A", lazy=False)
 
     def test_resolve_config_by_osenv(self):
         # given
         os.environ['bf_env'] = 'dev'
 
         class C(Konfig): pass
-        class _(C, name="prod"): bb = 1
-        class _(C, name="dev"): bb = 2
+        class P(C): bb = 1
+        class D(C): bb = 2
 
         # when
-        config = C.resolve()
+        config = resolve_konfig({'prod': P, 'dev': D})
 
         # then
         self.assertEqual(config.bb, 2)
-        self.assertEqual(config.name, 'dev')
 
     def test_resolve_config_to_default(self):
         # given
         class C(Konfig):
             pass
-        class _(C, name="prod"):
+        class A(C):
             bb = 1
-        class _(C, name="dev"):
+        class B(C):
             bb = 2
 
         # when
-        config = C.resolve(default='prod')
+        config = resolve_konfig(dict(prod=A, dev=B), default='prod')
 
         # then
         self.assertEqual(config.bb, 1)
-        self.assertEqual(config.name, 'prod')
-
-    def test_resolve_config_explicit_names(self):
-        # given
-        class A(Konfig):
-            x = "a"
-        class B(A, name="bad"):
-            x = "b"
-
-        # when
-        a = resolve_konfig({'A': A, 'B': B}, name='A')
-        b = resolve_konfig({'A': A, 'B': B}, name='B')
-
-        # then
-        self.assertEqual(a.x, 'a')
-        self.assertEqual(b.x, 'b')
 
     def test_resolve_returns_lazy(self):
         # given
         getit = unittest.mock.Mock()
 
-        class A(Konfig, name="a"):
+        class A(Konfig):
             x = dynamic(getit)
 
         # when
-        a = A.resolve("a")
+        a = resolve_konfig({'a': A}, 'a')
 
         # then
         getit.assert_not_called()
@@ -313,7 +285,7 @@ class TestKonfig(unittest.TestCase):
 
     def test_serialization(self):
         # given
-        os.environ['bf_x'] = "1"
+        os.environ['x'] = "1"
         config = self.serialization_B(z="ok")
 
         # when
