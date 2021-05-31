@@ -29,14 +29,11 @@ import bigflow.build.spec
 from bigflow.build.spec import BigflowProjectSpec
 from bigflow.commons import public
 
+
 logger = logging.getLogger(__name__)
 
 
-def _memoize(f):
-    return functools.lru_cache(maxsize=None)(f)
-
-
-@_memoize
+@functools.lru_cache(maxsize=None)
 def _iter_dist_toplevel_packages(distname) -> List[str]:
     try:
         dist = pkg_resources.get_distribution(distname)
@@ -51,7 +48,7 @@ def _iter_dist_toplevel_packages(distname) -> List[str]:
         return []
 
 
-@_memoize
+@functools.lru_cache(maxsize=None)
 def _get_topmodule_to_dist_mapping():
     all_dist_names = list(pkg_resources.Environment())
     return {
@@ -81,27 +78,18 @@ def _infer_project_name_by_distribution(module: types.ModuleType) -> Optional[st
         return dist.project_name
 
 
-def _locate_dev_project_directory_by_module(module: types.ModuleType) -> Optional[str]:
+def _locate_dev_project_directory_by_module(module: types.ModuleType) -> Optional[Path]:
     """Tries to locate setup.py/pyproject.toml near the module enclosing folder"""
 
     top_name = module.__name__.split(".", 2)[0]
     top_module = importlib.import_module(top_name)
-    d = _module_to_enclosing_directory(top_module).parent
-
-    setuppy = d / "setup.py"
-    ppt = d / "pyproject.toml"
-
-    if not setuppy.exists() and not ppt.exists():
-        logger.debug("Not found files %s / %s", setuppy, ppt)
-        return None
+    d = _module_to_enclosing_directory(top_module)
+    d = d.resolve()
 
     try:
-        bigflow.build.spec.read_project_spec(d)
-    except Exception:
-        logger.debug("Invalid bigflow project spec: ", exc_info=True)
-        return None
-
-    return d
+        return bigflow.build.dev.find_project_dir(d)
+    except FileNotFoundError:
+        return False
 
 
 @public()
@@ -284,5 +272,3 @@ def build_wheel(project_name=None) -> Path:
 def build_egg(project_name=None) -> Path:
     """Build project 'egg' package"""
     return _build_dist_package(project_name, ".egg", "bdist_egg", [])
-
-# %%

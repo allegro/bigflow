@@ -5,8 +5,6 @@ import pickle
 
 from test import mixins
 
-import bigflow.build.reflect
-
 
 class SelfBuildOldProjectTestCase(
     mixins.SubprocessMixin,
@@ -44,6 +42,7 @@ class _BaseBuildReflectTest(
         # then - check reading of project spec
         self.assertEqual("bf-selfbuild-project", self.runpy_n_dump('bf_selfbuild_project.buildme.project_spec').name)
         self.assertEqual("bf-selfbuild-project", self.runpy_n_dump('bf_selfbuild_other_package.buildme.project_spec').name)
+        #self.assertEqual("bf-selfbuild-project", self.runpy_n_dump('bf_selfbuild_module.project_spec').name)
 
         # then - self-build sdist/wheel/egg pacakges
         sdist_pkg = self.runpy_n_dump('bf_selfbuild_project.buildme.build_sdist')
@@ -96,3 +95,9 @@ class SelfBuildProjectFromSourcesTestCase(
     def test_reflected_build_from_sources(self):
         # then
         self.check_build_reflect()
+
+        # and - test pass (check if spec is available from tests)
+        self.subprocess_run(["python", "test/test_readspec.py"])
+
+        # and - project spec is available from scripts
+        self.subprocess_run(["python", "scripts/subdir/infer_project_name.py"])
