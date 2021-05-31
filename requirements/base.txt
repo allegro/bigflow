@@ -9,7 +9,7 @@ toml>=0.10
 tblib>=1.7,<2
 
 typing-extensions~=3.7;python_version<="3.7"
-backports.cached-property;python_version<="3.7"
+backports.cached-property;python_version<="3.8"
 lazy-object-proxy>=1,<2
 
 wheel>=0.35
