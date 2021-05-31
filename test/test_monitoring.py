@@ -206,7 +206,7 @@ class FailingJob(object):
         self.id = id
 
     def execute(self, context):
-        raise Exception('Panic!')
+        raise Exception("Fail the job")
 
 
 class MeterJobRunFailuresTestCase(TestCase):

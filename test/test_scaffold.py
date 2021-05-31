@@ -369,7 +369,7 @@ class CloudComposerCreatorTestCase(unittest.TestCase):
     def test_should_destroy_leftovers_when_error_occurs_during_creation(self, composer_create_command_mock, run_process_mock):
         # given
         def raise_error(*args):
-            raise ValueError('panic!')
+            raise ValueError("Fail creation of composer command")
 
         gcp_project_id, bigflow_project_name, environment_name, region, zone = self.infrastructure_parameters
         composer_create_command_mock.side_effect = raise_error
