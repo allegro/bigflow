@@ -43,24 +43,33 @@ def deploy_docker_image(
         remove_docker_image_from_local_registry(build_docker_image_tag(docker_repository, build_ver))
 
 
-def _deploy_image_loaded_to_local_registry(build_ver, docker_repository, image_id, auth_method, vault_endpoint,
-                                           vault_secret):
+def _deploy_image_loaded_to_local_registry(
+    build_ver,
+    docker_repository,
+    image_id,
+    auth_method,
+    vault_endpoint,
+    vault_secret,
+):
     tag_image(image_id, docker_repository, build_ver)
+
     docker_image = docker_repository + ":" + build_ver
-    print(f"Deploying docker image tag={docker_image} auth_method={auth_method}")
+    docker_image_latest = docker_repository + ":latest"
+
+    logger.info("Deploying docker image tag=%s auth_method=%s", docker_image, auth_method)
+
     if auth_method == 'local_account':
         bf_commons.run_process(['gcloud', 'auth', 'configure-docker'])
-
     elif auth_method == 'vault':
         oauthtoken = get_vault_token(vault_endpoint, vault_secret)
         bf_commons.run_process(
             ['docker', 'login', '-u', 'oauth2accesstoken', '--password-stdin', 'https://eu.gcr.io'],
             input=oauthtoken,
         )
-
     else:
         raise ValueError('unsupported auth_method: ' + auth_method)
-    bf_commons.run_process(['docker', 'push', docker_image])
+
+    bf_commons.run_process(['docker', 'push', docker_image, docker_image_latest])
 
     return docker_image
 
