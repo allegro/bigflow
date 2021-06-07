@@ -1,5 +1,3 @@
-from logging import shutdown
-from mock.mock import _set_return_value
 from bigflow.build.operate import build_project
 from unittest import TestCase
 import itertools
@@ -7,6 +5,7 @@ import mock
 import shutil
 import freezegun
 
+from bigflow.testing.isolate import ForkIsolateMixin
 from bigflow.cli import *
 
 from test import mixins
@@ -16,12 +15,14 @@ TESTS_DIR = Path(__file__).parent
 
 class CliTestCase(
     mixins.PrototypedDirMixin,
+    ForkIsolateMixin,
     TestCase,
 ):
     proto_dir = "bf-projects/example_project"
 
     def setUp(self) -> None:
         super().setUp()
+        sys.path.append(str(Path(__file__).parent))
 
         self.project_setuppy = self.cwd / "setup.py"
 
@@ -29,12 +30,6 @@ class CliTestCase(
         TEST_MODULE_PATH = Path(__file__).parent / 'test_module'
 
         bigflow.build.spec.get_project_spec.cache_clear()
-
-    def tearDown(self):
-        try:
-            import_module("test_module.Unused1").started_jobs.clear()
-        except ImportError:
-            pass
 
     def test_should_walk_through_all_files_inside_package_tree(self):
         # when
