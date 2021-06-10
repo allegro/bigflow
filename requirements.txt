@@ -8,3 +8,9 @@ twine
 freezegun
 pexpect
 responses
+bs4
+
+pytest
+pytest-html
+pytest-cov
+pytest-github-actions-annotate-failures
