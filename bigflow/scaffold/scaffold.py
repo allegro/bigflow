@@ -37,13 +37,3 @@ def start_project(
 
     import bigflow.build.pip as bf_pip
     bf_pip.pip_compile(project_path / "resources" / "requirements.txt")
-
-
-def migrate_project_from_10(
-    project_path: Path,
-    project_name,
-):
-    render_builtin_templates(project_path, 'migrate-11', variables={
-        'project_name': project_name,
-        'bigflow_version': bigflow.__version__,
-    })

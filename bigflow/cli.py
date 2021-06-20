@@ -20,12 +20,10 @@ from glob import glob1
 import bigflow as bf
 import bigflow.build.pip
 import bigflow.resources
-import bigflow.commons as bf_commons
 import bigflow.build.dist
 import bigflow.build.dev
 import bigflow.build.operate
 import bigflow.build.spec
-import bigflow.migrate
 
 from bigflow import Config
 from bigflow.deploy import deploy_dags_folder, deploy_docker_image
@@ -751,7 +749,6 @@ def _is_log_module_installed():
 
 def cli(raw_args) -> None:
     bigflow.build.dev.install_syspath()
-    bigflow.migrate.check_migrate()
 
     project_name = read_project_name_from_setup()
     parsed_args = _parse_args(project_name, raw_args)
