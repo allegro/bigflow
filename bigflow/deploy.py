@@ -1,5 +1,9 @@
 import logging
 import typing as T
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
 from pathlib import Path
 
 import requests
@@ -29,7 +33,7 @@ def tag_image(image_id: str, repository: str, tag: str) -> str:
 def deploy_docker_image(
         image_tar_path: str,
         docker_repository: str,
-        auth_method: T.Literal['local_account', 'vault'] = 'local_account',
+        auth_method: Literal['local_account', 'vault'] = 'local_account',
         vault_endpoint: T.Optional[str] = None,
         vault_secret: T.Optional[str] = None,
 ) -> str:
@@ -47,7 +51,7 @@ def _deploy_image_loaded_to_local_registry(
     build_ver: str,
     docker_repository: str,
     image_id: str,
-    auth_method: T.Literal['local_account', 'vault'],
+    auth_method: Literal['local_account', 'vault'],
     vault_endpoint: str,
     vault_secret: str,
 ) -> str:
