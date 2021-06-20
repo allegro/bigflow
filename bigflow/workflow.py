@@ -245,7 +245,7 @@ class WorkflowJob(Job):
 class Definition:
     def __init__(
             self,
-            jobs: T.Union[T.Dict[Job: T.List[Job]], T.List[Job]]
+            jobs: T.Union[T.Dict[Job, T.List[Job]], T.List[Job]]
     ):
         self.job_graph = self._build_graph(jobs)
         self.job_order_resolver = JobOrderResolver(self.job_graph)
@@ -256,7 +256,7 @@ class Definition:
     def _call_on_graph_nodes(self, consumer: T.Callable[[Job, T.Any], None]) -> None:
         self.job_order_resolver._call_on_graph_nodes(consumer)
 
-    def _build_graph(self, jobs: T.Dict[Job: T.List[Job]]) -> T.OrderedDict[Job, T.List[Job]]:
+    def _build_graph(self, jobs: T.Dict[Job, T.List[Job]]) -> T.OrderedDict[Job, T.List[Job]]:
         if isinstance(jobs, list):
             job_graph = self._convert_list_to_graph(jobs)
         elif isinstance(jobs, dict):
