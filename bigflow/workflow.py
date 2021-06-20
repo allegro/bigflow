@@ -323,7 +323,7 @@ class JobGraphValidator:
 
 
 class JobOrderResolver:
-    def __init__(self, job_graph: T.Dict[Job: Job]):
+    def __init__(self, job_graph: T.Dict[Job, Job]):
         self.job_graph = job_graph
         self.parental_map: T.OrderedDict[Job, T.List[Job]] = self._build_parental_map()
 
