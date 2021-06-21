@@ -314,7 +314,7 @@ dev config:
 
 `DeploymentConfig` is a subclass of the `Config` class with one additional, optional argument – `environment_variables_prefix`.
 Contrary to the `Config` class, the `DeploymentConfig` allows you to set a custom environment variables name prefix (overriding the default `bf_` value).
-It's useful in CI/CD servers. Bamboo is a good example because it adds the `bamboo_` prefix for each environmental variable. 
+It's useful in CI/CD servers. Bamboo is a good example because it adds the `bamboo_` prefix for each environmental variable.
 
 ```python
 from bigflow.configuration import DeploymentConfig
@@ -326,4 +326,209 @@ deployment_config = DeploymentConfig(
        'docker_repository': 'your_repository',
        'gcp_project_id': '{project_id}',
        'dags_bucket': '{dags_bucket}'}})
+```
+
+
+# Class-based configuration [experimental]
+
+Bigflow 1.3 introduces new class-based approach for keeping configurations.
+New API is optional and there is no need to migrate existing code from
+`biglfow.Configuration`. However it betters plays with typehinting, enables
+autocompletion in IDEs and gives more flexibility.
+
+Each configuration is declared as a subclass of `bigflow.konfig.Konfig`.
+Properties are declared as attributes, optionally with type hints.
+Classes may inherit from each other and share common properties.  Standard
+python inheritance rules are used to resolve overriden properties.
+Custom methods may be added to classes, however it is not recommended.
+
+```python
+import bigflow.konfig
+
+class CommonConf(bigflow.konfig.Konfig):
+    project: str                    # type hint
+    region: str = 'europe-west1'    # type hint + default value
+    machine_type = 'n2-standard-4'  # only value (type is `typing.Any`)
+    num_workers = 4                 # not only strings are allowed
+
+class DevConf(CommonConf):
+    project = "dev-project"
+
+class ProdConf(CommonConf):
+    project = "prod-project"
+    num_workers = 20
+```
+
+Config which corresponds to the current environment may be created by function `resolve_konfig`.
+It takes dictionary in form of {"environment" -> "config class"} and returns instance of the config.
+
+```python
+config = bigflow.konfig.resolve_konfig(
+    {  # mapping of all configs
+        'dev': DevConf,
+        'prod': ProdConf,
+    },
+    default="dev",  # when no environment is porvided via CLI
+)
+print(config.project)      # => "dev-project"
+print(config.num_workers)  # => 4
+```
+
+Config instance may be used as a dict:
+
+```python
+print(config['project'])
+print(config.keys())
+print(dict(config))
+```
+
+Also config may be created manullay in tests or interactive shell:
+
+```python
+dev_config = DevConf()
+print(dev_config.num_workers)
+```
+
+Attributes may be overwritten by passing parameters to the class:
+
+```python
+patched_dev_config = DevConf(num_instances=10)
+```
+
+### String interpolation
+
+By default string properties are *not* interpolated (it differs from `bigflow.Configuration`).
+You need to be explicitly wrap interpolation pattern with function `bigflow.konfig.expand()`:
+
+```python
+from bigflow.konfig import expand
+
+class MyConfig(bigflow.konfig.Konfig):
+
+    docker_repository_project = "my-shared-docker-project-id"
+
+    # no 'expand()' function - string is *not* inerpolcatied
+    docker_repository_raw = "eu.gcr.io/{docker_repository_project}/my-analytics"
+
+    # interpolation is enabled
+    docker_repository = expand("eu.gcr.io/{docker_repository_project}/my-analytics")
+
+
+config = MyConfig()
+print(config.docker_repository_raw)  # => eu.gcr.io/{docker_repository_project}/my-analytics
+print(config.docker_repository)      # => eu.gcr.io/my-shared-docker-project-id/my-analytics
+```
+
+### Reading from environment variables
+
+Class-based configs system does not automatically read properties from OS environment.
+You must explicitly declare them with `bigflow.konfig.fromenv` function. Note, that full variable
+name must be used, prefix `bf_` is not prepended automatically.
+
+```python
+from bigflow.konfig import fromenv
+
+import os
+os.environ['bf_my_secret'] = '123456'
+
+class MyConfig(bigflow.konfig.Konfig):
+
+    # full variable name "bf_my_secret" is used!
+    my_secret = fromenv('bf_my_secret')
+
+
+config = MyConfig()
+print('my_secret:', config.my_secret)
+```
+
+### Inheritance
+
+Class-based configs allows to define as many common classes as needed.
+There is no single "master config". However it is _recommended_ to create
+common base class and put typehints for all "public" parameters.
+
+```python
+class Conf(bigflow.konfig.Konfig):
+    """Defines configuration properties and their types"""
+    project: str
+    region: str
+    machine_type: str
+    num_machines: int
+    dataset: str
+
+class Common(Conf):
+    """Shared across all configs"""
+    env: str
+    project = expand("my-project-{env}")
+    region = "europe-west1"
+    machine_type = "n2-standard-2"
+    num_machines = 10
+
+class Dev(Common):
+    """Development environment"""
+    env = "dev"
+    dataset = "dataset-one"
+    num_machines = 2
+
+class DevBench(Dev):
+    """Similar to dev, suitable for benchmarks"""
+    dataset = "dataset-benchmark"
+    num_machines = 15
+
+class Prod(Common):
+    """Production environment"""
+    env = "prod"
+    dataset = "dataset-one"
+    num_machines = 15
+
+config = bigflow.konfig.resolve_konfig(
+    {
+        'prod': Prod,
+        'dev': Dev,
+        'dev-bench': DevBench,
+    },
+)
+
+# IDE should be able to autocomplete after `config.`
+print(config.num_machines)
+```
+
+### Dynamic properties
+
+Configuration properties may be declared as results of some expression:
+
+```python
+from bigflow.konfig import expand, dynamic
+
+class MyConfig(bigflow.konfig.Konfig):
+    num_machines = 10
+    num_cores = 4
+    machine_type = expand("n2-standard-{num_cores}")  # internally `epxand` also uses `dynamic`
+    total_cores = dynamic(lambda self: self.num_machines * self.num_cores)
+
+print(dict(MyConfig())
+# => {'num_machines': 10, 'num_cores': 4, 'machine_type': 'n2-standard-4', 'total_cores': 40}
+
+print(dict(MyConfig(num_cores=8))
+# => {'num_machines': 10, 'num_cores': 8, 'machine_type': 'n2-standard-8', 'total_cores': 80}
+```
+
+### Mutate configs
+
+Instances of `bigflow.konfig.Konfig` are immutable after instantiation.
+New "changed" instance may be created when only some properties needs to be changed:
+
+```python
+from bigflow.konfig import dynamic
+
+class MyConfig(bigflow.konfig.Konfig):
+    one = 1
+    two = dynamic(lambda self: self.one + 1)
+
+config = MyConfig()
+print(config.two)  # => 2
+
+config2 = config.replace(one=101)
+print(config.two)  # => 2
+print(config2.two) # => 102
 ```
