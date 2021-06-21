@@ -1,20 +1,29 @@
 import logging
 
 from apache_beam import Pipeline
-import bigflow
 from apache_beam.io import WriteToText
 from bigflow.dataflow import BeamJob
+
+import bigflow
 
 from .pipeline import dataflow_pipeline_options, workflow_config
 from .processing import count_words
 
 
+
 logger = logging.getLogger(__name__)
 
 
-def wordcount_entry_point(pipeline: Pipeline, context: bigflow.JobContext, entry_point_arguments: dict):
+def wordcount_entry_point(
+    pipeline: Pipeline,
+    context: bigflow.JobContext,
+    temp_location: str,
+):
     logger.info(f'Running wordcount at {context.runtime_str}')
-    count_words(pipeline, WriteToText("gs://{}/beam_wordcount".format(entry_point_arguments['temp_location'])))
+    (pipeline
+        "Count words" >> count_words()
+        "Save" >> WriteToText(f"gs://{temp_location}/beam_wordcount")
+    )
 
 
 wordcount_workflow = bigflow.Workflow(
@@ -25,7 +34,9 @@ wordcount_workflow = bigflow.Workflow(
     },
     definition=[BeamJob(
         id='wordcount_job',
+        pipeline_options=dataflow_pipeline_options,
         entry_point=wordcount_entry_point,
-        pipeline_options=dataflow_pipeline_options(),
-        entry_point_arguments={'temp_location': workflow_config['temp_location']}
+        entry_point_kwargs={
+            'temp_location': workflow_config['temp_location'],
+        },
     )])
