@@ -36,7 +36,6 @@ setuptools.setup(
     ],
     install_requires=read_requirements("base.txt"),
     extras_require={
-        'monitoring': read_requirements("monitoring_extras.txt"),
         'bigquery': read_requirements("bigquery_extras.txt"),
         'log': read_requirements("log_extras.txt"),
         'dataproc': read_requirements("dataproc_extras.txt"),
