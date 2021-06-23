@@ -27,48 +27,28 @@ It happens, that Apache Beam supports [running jobs as a Python package](https:/
 Thanks to that, running Beam jobs requires almost no support.
 
 The BigFlow project starter provides an example Beam workflow called `wordcount`.
-The first interesting part of this example is the `wordcount.pipeline` module:
+The file `pipeline.py` contains function :
 
 ```python
 def dataflow_pipeline_options():
-    options = PipelineOptions()
-
-    google_cloud_options = options.view_as(GoogleCloudOptions)
-    google_cloud_options.project = workflow_config['gcp_project_id']
-    google_cloud_options.job_name = f'beam-wordcount-{uuid.uuid4()}'
-    google_cloud_options.staging_location = f"gs://{workflow_config['staging_location']}"
-    google_cloud_options.temp_location = f"gs://{workflow_config['temp_location']}"
-    google_cloud_options.region = workflow_config['region']
-
-    options.view_as(WorkerOptions).machine_type = workflow_config['machine_type']
-    options.view_as(WorkerOptions).max_num_workers = 2
-    options.view_as(WorkerOptions).autoscaling_algorithm = 'THROUGHPUT_BASED'
-    options.view_as(StandardOptions).runner = 'DataflowRunner'
-
-    options.view_as(SetupOptions).setup_file = str(materialize_setuppy().absolute())
-
-    logger.info(f"Run beam pipeline with options {str(options)}")
-    return options
+    return dict(
+        project=workflow_config['gcp_project_id'],
+        staging_location=f"gs://{workflow_config['staging_location']}",
+        temp_location=f"gs://{workflow_config['temp_location']}",
+        region=workflow_config['region'],
+        machine_type=workflow_config['machine_type'],
+        max_num_workers=2,
+        autoscaling_algorithm='THROUGHPUT_BASED',
+        runner='DataflowRunner',
+        service_account_email='your-service-account',
+    )
 ```
 
-The `dataflow_pipeline_options` function creates a [Beam pipeline options](https://cloud.google.com/dataflow/docs/guides/specifying-exec-params#setting-other-cloud-dataflow-pipeline-options).
-The following line is the key:
-
-```python
-options.view_as(SetupOptions).setup_file = str(materialize_setuppy().absolute())
-```
+This function returns a dictionary with [pipeline options](https://cloud.google.com/dataflow/docs/guides/specifying-exec-params#setting-other-cloud-dataflow-pipeline-options).
 
 The pipeline configuration contains `staging_location` and `temp_location` directories.
 These directories are placed in a Cloud Storage Bucket.
 Beam uses these directories during processing to store temp files. The specified bucket and directories are not created automatically.
-Below is an example configuration of `staging_location` and `temp_location`.
-
-```python
-staging_location= 'my-bucket/staging'
-temp_location = 'my-bucket/temp'
-google_cloud_options.staging_location = f"gs://{staging_location}"
-google_cloud_options.temp_location = f"gs://{temp_location}"
-```
 
 The second important part of the `wordcount` example is the `workflow.py` module:
 
@@ -87,9 +67,16 @@ from .processing import count_words
 logger = logging.getLogger(__name__)
 
 
-def wordcount_entry_point(pipeline: beam.Pipeline, context: bigflow.JobContext, entry_point_arguments: dict):
+def wordcount_entry_point(
+    pipeline: Pipeline,
+    context: bigflow.JobContext,
+    temp_location: str,
+):
     logger.info(f'Running wordcount at {context.runtime_str}')
-    count_words(pipeline, WriteToText("gs://{}/beam_wordcount".format(entry_point_arguments['temp_location'])))
+    (pipeline
+        "Count words" >> count_words()
+        "Save" >> WriteToText(f"gs://{temp_location}/beam_wordcount")
+    )
 
 
 wordcount_workflow = bigflow.Workflow(
@@ -100,25 +87,58 @@ wordcount_workflow = bigflow.Workflow(
     },
     definition=[BeamJob(
         id='wordcount_job',
+        pipeline_options=dataflow_pipeline_options,
         entry_point=wordcount_entry_point,
-        pipeline_options=dataflow_pipeline_options(),
-        entry_point_arguments={'temp_location': workflow_config['temp_location']}
+        entry_point_kwargs={
+            'temp_location': workflow_config['temp_location'],
+        },
     )])
 ```
 
 The `BeamJob` class is a recommended way of running Beam jobs in BigFlow. It takes the following arguments:
 
 * The `id` parameter, which is part of the standard [job interface](workflow-and-job.md#job).
-* The `entry_point` parameter, which should be a callable (for example a function). A entry point executes a user job,
-given a pipeline, job context, and additional arguments (`entry_point_arguments`).
-* The `pipeline_options` parameter should be a `beam.PipelineOptions` object, based on which, the `BeamJob` class produces
-a pipeline for a driver. One of the`pipeline_options`, `test_pipeline` must be provided.
-* The `entry_point_arguments` parameter should be a dictionary. It can be used in a entry point as a configuration holder.
+* The `entry_point` parameter, which should be a callable (function). A entry point executes a user job,
+given a pipeline, job context, and additional arguments (see `entry_point_kwargs` and `entry_point_args`).
+* The `pipeline_options` parameter should be a python dictionary or instance of `apache_beam.PipelineOptions`, based on which, the `BeamJob` class produces
+a pipeline for a driver. One of the `pipeline_options`, `test_pipeline` must be provided.
+* The `entry_point_kwargs` is an optional dictionary. It is passed as `**kwargs` parameter to `entry_point`.
+* The `entry_point_args` is an optional tuple. It is passed as `*args` parameter to `entry_point`.
 * The `wait_until_finish` parameter of bool type, by default set to True. It allows to timeout Beam job.
 * The `execution_timeout` parameter of int type. If `wait_until_finish` parameter is set to True it provides an interval after
 which the Beam job will be considered as timed out. The default value is set to 3 hours.
 * The `test_pipeline` parameter should be of `beam.Pipeline` type. The default value is None. The main purpose of this parameter
 is to allow providing `TestPipeline` in testing. One of the parameters, `pipeline_options` or `test_pipeline`, must be provided.
+* The `use_docker_image` parameter indicates that custom docker image should be used to run workflow on Dataflow workers.
+
+### Custom docker image
+
+When Dataflow launches worker VMs, it uses Docker container images. You can specify a custom container image instead of using the default one.  It gives ability to install any non-python software, preinstall python dependencies, install GPU drivers etc, customize execution environment.
+
+The simplest way to create custom image is to use deafult beam SDK image as a base.  Your `Dockerfile` migh look like:
+
+```dockerfile
+# Inherit from default image.
+FROM apache/beam_python3.8_sdk:2.28.0
+
+# Put all custom files to `/app`
+WORKDIR /app
+
+# Preinstall python packages (improve docker layer caching).
+# This step is optional, but may improve docker image building time.
+COPY ./resources/requirements.txt requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Install bigflow project 'whl' package.
+COPY ./dist dist
+RUN pip install dist/*.whl
+```
+
+Then you need to enable custom image by passing `use_docker_image=True` to instance of `BeamJob`.
+Value `True` means that the same docker image need to be used to run project workflows and
+run beam pipelines.  You migh also specify different image by passing its full id instead of `True`.
+
+Please refer to [Dataflow documentation](https://cloud.google.com/dataflow/docs/guides/using-custom-containers) for more details about how to build a custom image.
 
 ## BigQuery
 
