@@ -107,7 +107,8 @@ class CliTestCase(
         res = walk_workflows(TEST_MODULE_PATH)
 
         # then
-        res = list(res)
+        res = sorted(res, key=lambda r: r.workflow_id)
+
         self.assertEqual(5, len(res))
         self.assertEqual('ID_1', res[0].workflow_id)
         self.assertEqual('@once', res[0].schedule_interval)
