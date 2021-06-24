@@ -9,7 +9,7 @@ class DatasetConfig:
     def __init__(self,
                  env: str,
                  project_id: str,
-                 dataset_name: str = 'default_bigflow_dataset',
+                 dataset_name: str = 'None',
                  internal_tables: T.Optional[T.List[str]] = None,
                  external_tables: T.Optional[T.Dict[str, str]] = None,
                  properties: T.Optional[T.Dict[str, str]] = None,
