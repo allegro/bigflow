@@ -66,10 +66,10 @@ prod config:
     'vault_endpoint': 'https://example.com/vault'}
 ```
 
-You can get config for particular environment by calling `resolve(env)` method.
-It return instance of `dict`, which contains all resolved options for specified environment.
-Environment may be ommited, in such case `bigflow` will try to resolve current environment name
-by inspecting command line arguments and/or os envionment (looking for `bf_env` variable).
+You can get config for a particular environment by calling `resolve(env)` method.
+It returns an instance of `dict`, which contains all resolved options for a specified environment.
+The environment may be omitted, in such case, `bigflow` will try to resolve the current environment name
+by inspecting command-line arguments and/or os environment (looking for `bf_env` variable).
 
 ```python
 config = deployment_config.resolve()
@@ -331,16 +331,16 @@ deployment_config = DeploymentConfig(
 
 # Class-based configuration [experimental]
 
-Bigflow 1.3 introduces new class-based approach for keeping configurations.
+Bigflow 1.3 introduces a new class-based approach for keeping configurations.
 New API is optional and there is no need to migrate existing code from
-`biglfow.Configuration`. However it betters plays with typehinting, enables
-autocompletion in IDEs and gives more flexibility.
+`biglfow.Configuration`. However, it allows you to use type hints, which enables
+autocompletion in IDEs and gives you more flexibility.
 
 Each configuration is declared as a subclass of `bigflow.konfig.Konfig`.
 Properties are declared as attributes, optionally with type hints.
 Classes may inherit from each other and share common properties.  Standard
-python inheritance rules are used to resolve overriden properties.
-Custom methods may be added to classes, however it is not recommended.
+python inheritance rules are used to resolve overridden properties.
+Custom methods may be added to classes, however, it is not recommended.
 
 ```python
 import bigflow.konfig
@@ -361,6 +361,8 @@ class ProdConf(CommonConf):
 
 Config which corresponds to the current environment may be created by function `resolve_konfig`.
 It takes dictionary in form of {"environment" -> "config class"} and returns instance of the config.
+The `resolve_konfig` function, resolves the configuration based on the `bf_env` environment variable,
+same as the "classic" BigFlow configuration tool.
 
 ```python
 config = bigflow.konfig.resolve_konfig(
@@ -368,7 +370,7 @@ config = bigflow.konfig.resolve_konfig(
         'dev': DevConf,
         'prod': ProdConf,
     },
-    default="dev",  # when no environment is porvided via CLI
+    default="dev",  # when no environment is provided via CLI
 )
 print(config.project)      # => "dev-project"
 print(config.num_workers)  # => 4
@@ -401,13 +403,14 @@ By default string properties are *not* interpolated (it differs from `bigflow.Co
 You need to be explicitly wrap interpolation pattern with function `bigflow.konfig.expand()`:
 
 ```python
+import bigflow.konfig
 from bigflow.konfig import expand
 
 class MyConfig(bigflow.konfig.Konfig):
 
     docker_repository_project = "my-shared-docker-project-id"
 
-    # no 'expand()' function - string is *not* inerpolcatied
+    # no 'expand()' function - string is *not* interpolated
     docker_repository_raw = "eu.gcr.io/{docker_repository_project}/my-analytics"
 
     # interpolation is enabled
@@ -422,10 +425,11 @@ print(config.docker_repository)      # => eu.gcr.io/my-shared-docker-project-id/
 ### Reading from environment variables
 
 Class-based configs system does not automatically read properties from OS environment.
-You must explicitly declare them with `bigflow.konfig.fromenv` function. Note, that full variable
-name must be used, prefix `bf_` is not prepended automatically.
+You must explicitly declare them with `bigflow.konfig.fromenv` function. Note, that the full variable
+name must be used, the prefix `bf_` is not prepended automatically.
 
 ```python
+import bigflow.konfig
 from bigflow.konfig import fromenv
 
 import os
@@ -443,11 +447,14 @@ print('my_secret:', config.my_secret)
 
 ### Inheritance
 
-Class-based configs allows to define as many common classes as needed.
-There is no single "master config". However it is _recommended_ to create
-common base class and put typehints for all "public" parameters.
+Class-based configs allow defining as many common classes as needed.
+There is no single "master config". However, it is _recommended_ to create
+a common base class and put type hints for all "public" parameters.
 
 ```python
+import bigflow.konfig
+from bigflow.konfig import expand
+
 class Conf(bigflow.konfig.Konfig):
     """Defines configuration properties and their types"""
     project: str
@@ -498,6 +505,7 @@ print(config.num_machines)
 Configuration properties may be declared as results of some expression:
 
 ```python
+import bigflow.konfig
 from bigflow.konfig import expand, dynamic
 
 class MyConfig(bigflow.konfig.Konfig):
@@ -506,19 +514,20 @@ class MyConfig(bigflow.konfig.Konfig):
     machine_type = expand("n2-standard-{num_cores}")  # internally `epxand` also uses `dynamic`
     total_cores = dynamic(lambda self: self.num_machines * self.num_cores)
 
-print(dict(MyConfig())
+print(dict(MyConfig()))
 # => {'num_machines': 10, 'num_cores': 4, 'machine_type': 'n2-standard-4', 'total_cores': 40}
 
-print(dict(MyConfig(num_cores=8))
+print(dict(MyConfig(num_cores=8)))
 # => {'num_machines': 10, 'num_cores': 8, 'machine_type': 'n2-standard-8', 'total_cores': 80}
 ```
 
 ### Mutate configs
 
 Instances of `bigflow.konfig.Konfig` are immutable after instantiation.
-New "changed" instance may be created when only some properties needs to be changed:
+A new "changed" instance may be created when only some properties need to be changed:
 
 ```python
+import bigflow.konfig
 from bigflow.konfig import dynamic
 
 class MyConfig(bigflow.konfig.Konfig):
