@@ -12,14 +12,14 @@ from bigflow.cli import cli
 from bigflow.scaffold import templating as tt
 from bigflow.scaffold import infra
 
-
-class ProjectScaffoldE2ETestCase(TestCase):
-    def tearDown(self):
-        clear_project_leftovers(Path('my_project_project'))
+from test import mixins
 
 
-class ProjectScaffoldE2E(ProjectScaffoldE2ETestCase):
-
+class ProjectScaffoldE2E(
+    mixins.FileUtilsMixin,
+    mixins.TempCwdMixin,
+    unittest.TestCase,
+):
     maxDiff = 5000
 
     @mock.patch('bigflow.cli.gcloud_project_list')
@@ -48,7 +48,7 @@ class ProjectScaffoldE2E(ProjectScaffoldE2ETestCase):
         cli(['start-project'])
 
         # then
-        self.scaffolded_basic_project_should_have_one_environment()
+        self.check_scaffolded_basic_project()
 
         # and
         self.scaffolded_project_tests_should_work()
@@ -85,56 +85,12 @@ class ProjectScaffoldE2E(ProjectScaffoldE2ETestCase):
         res = subprocess.run("python -m unittest discover -s test -p '*.py'", cwd=cwd, check=True, capture_output=True, shell=True)
         self.assertRegexpMatches(res.stderr.decode(), r"OK$")
 
-    def scaffolded_basic_project_should_have_one_environment(self):
-        self.check_file_content(Path('my_project_project') / 'deployment_config.py', '''from bigflow.configuration import DeploymentConfig
+    def check_scaffolded_basic_project(self):
 
-deployment_config = DeploymentConfig(
-    name='dev',
-    properties={
-       'docker_repository': 'test_repository',
-       'gcp_project_id': 'my_gcp_project',
-       'dags_bucket': 'my_gcp_bucket'})
-''')
-        self.check_file_content(Path('my_project_project') / 'my_project' / 'wordcount' / 'pipeline.py', '''import uuid
-import logging
-
-from bigflow.configuration import Config
-from bigflow.build.reflect import materialize_setuppy
-from apache_beam.options.pipeline_options import SetupOptions, StandardOptions, WorkerOptions, GoogleCloudOptions, \
-    PipelineOptions
-
-logger = logging.getLogger(__name__)
-
-workflow_config = Config(
-    name='dev',
-    properties={
-        'gcp_project_id': 'my_gcp_project',
-        'staging_location': 'my_project/beam_runner/staging',
-        'temp_location': 'my_project/beam_runner/temp',
-        'region': 'europe-west1',
-        'machine_type': 'n1-standard-1'}).resolve()
-
-
-def dataflow_pipeline_options():
-    options = PipelineOptions()
-
-    google_cloud_options = options.view_as(GoogleCloudOptions)
-    google_cloud_options.project = workflow_config['gcp_project_id']
-    google_cloud_options.job_name = f'beam-wordcount-{uuid.uuid4()}'
-    google_cloud_options.staging_location = f"gs://{workflow_config['staging_location']}"
-    google_cloud_options.temp_location = f"gs://{workflow_config['temp_location']}"
-    google_cloud_options.region = workflow_config['region']
-    # google_cloud_options.service_account_email = 'your-service-account'
-
-    options.view_as(WorkerOptions).machine_type = workflow_config['machine_type']
-    options.view_as(WorkerOptions).max_num_workers = 2
-    options.view_as(WorkerOptions).autoscaling_algorithm = 'THROUGHPUT_BASED'
-    options.view_as(StandardOptions).runner = 'DataflowRunner'
-
-    options.view_as(SetupOptions).setup_file = str(materialize_setuppy().absolute())
-
-    logger.info(f"Run beam pipeline with options {str(options)}")
-    return options''')
+        self.assertFileExists("my_project_project/my_project/wordcount/pipeline.py")
+        self.assertFileContentRegex(
+            "my_project_project/deployment_config.py",
+            r"""deployment_config = DeploymentConfig\(""")
 
     def scaffolded_advanced_project_should_have_three_environments(self):
         self.check_file_content(Path('my_project_project') / 'deployment_config.py', '''from bigflow.configuration import Config
@@ -211,10 +167,6 @@ internationalports_workflow = Workflow(
     def check_file_content(self, path, template):
         with open(path.resolve(), 'r') as f:
             self.assertEqual(f.read(), template)
-
-
-def clear_project_leftovers(image_dir: Path):
-    shutil.rmtree(image_dir, ignore_errors=True)
 
 
 class TemplatingTestCase(unittest.TestCase):
@@ -305,6 +257,7 @@ class TemplatingTestCase(unittest.TestCase):
 
 
 class CloudComposerCreatorTestCase(unittest.TestCase):
+
     infrastructure_parameters = (
         'fake-gcp-project',
         'fake-bigflow-project',
