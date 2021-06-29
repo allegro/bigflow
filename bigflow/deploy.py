@@ -83,12 +83,12 @@ def deploy_dags_folder(
         dags_bucket: str,
         project_id: str,
         clear_dags_folder: bool = False,
-        auth_method: str = 'local_account',
+        auth_method: Literal['local_account', 'vault'] = 'local_account',
         vault_endpoint: T.Optional[str] = None,
         vault_secret: T.Optional[str] = None,
         gs_client: T.Optional[storage.Client] = None,
 ) -> str:
-    logger.info(f"Deploying DAGs folder, auth_method={auth_method}, clear_dags_folder={clear_dags_folder}, dags_dir={dags_dir}")
+    logger.info("Deploying DAGs folder, auth_method=%s, clear_dags_folder=%s, dags_dir=%s", auth_method, clear_dags_folder, dags_dir)
 
     client = gs_client or create_storage_client(auth_method, project_id, vault_endpoint, vault_secret)
     bucket = client.bucket(dags_bucket)
@@ -104,11 +104,11 @@ def clear_remote_dags_bucket(bucket: Bucket) -> None:
     i = 0
     for blob in bucket.list_blobs(prefix='dags'):
         if not blob.name in ['dags/', 'dags/airflow_monitoring.py']:
-            logger.info(f"deleting file {_blob_uri(blob)}")
+            logger.info("deleting file %s", _blob_uri(blob))
             blob.delete()
             i += 1
 
-    logger.info(f"{i} files deleted")
+    logger.info("%s files deleted", i)
 
 
 def _blob_uri(blob: storage.Blob) -> str:
@@ -121,13 +121,13 @@ def upload_dags_folder(dags_dir: str, bucket: Bucket) -> None:
     def upload_file(local_file_path, target_file_name):
         blob = bucket.blob(target_file_name)
         blob.upload_from_filename(local_file_path, content_type='application/octet-stream')
-        logger.info(f"uploading file {local_file_path} to {_blob_uri(blob)}")
+        logger.info("uploading file %s to %s", local_file_path, _blob_uri(blob))
 
     files = list(filter(Path.is_file, dags_dir_path.iterdir()))
     for f in files:
         upload_file(f.as_posix(), 'dags/' + f.name)
 
-    logger.info(f"{len(files)} files uploaded")
+    logger.info("%s files uploaded", len(files))
 
 
 def create_storage_client(
@@ -160,5 +160,5 @@ def get_vault_token(vault_endpoint: str, vault_secret: str) -> str:
             'Could not get vault token, response code: {}'.format(
                 response.status_code))
 
-    logger.info(f"get oauth token from {vault_endpoint} status_code={response.status_code}")
+    logger.info("get oauth token from %s status_code=%s", vault_endpoint, response.status_code)
     return response.json()['data']['token']
