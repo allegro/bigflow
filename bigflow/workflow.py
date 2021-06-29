@@ -1,6 +1,16 @@
 import abc
 import collections
-import typing as T
+from typing import (
+    Dict,
+    List,
+    NamedTuple,
+    Optional,
+    Callable,
+    Union,
+    Any,
+    OrderedDict,
+    Set,
+)
 import warnings
 import datetime as dt
 import logging
@@ -40,26 +50,26 @@ def daily_start_time(start_time: dt.datetime) -> dt.datetime:
 
 
 @public()
-class JobContext(T.NamedTuple):
+class JobContext(NamedTuple):
 
-    runtime: T.Optional[dt.datetime]
-    runtime_str: T.Optional[str]
+    runtime: Optional[dt.datetime]
+    runtime_str: Optional[str]
 
-    workflow: T.Optional['Workflow']
-    workflow_id: T.Optional[str]
+    workflow: Optional['Workflow']
+    workflow_id: Optional[str]
 
-    env: T.Optional[str]
+    env: Optional[str]
     # TODO: add unique 'workflow execution id' (for tracing/logging)
 
     @classmethod
     def make(
         cls,
         *,
-        runtime: T.Union[str, dt.datetime, None] = None,
-        runtime_str: T.Optional[str] = None,
-        workflow: T.Optional['Workflow'] = None,
-        workflow_id: T.Optional[str] = None,
-        env: T.Optional[str] = None,
+        runtime: Union[str, dt.datetime, None] = None,
+        runtime_str: Optional[str] = None,
+        workflow: Optional['Workflow'] = None,
+        workflow_id: Optional[str] = None,
+        env: Optional[str] = None,
     ) -> 'JobContext':
         logger.debug("Build new JobContext...")
 
@@ -117,10 +127,10 @@ class Job(abc.ABC):
 
     def __init__(
         self,
-        id: T.Optional[str] = None,
-        execution_timeout_sec: T.Optional[int] = None,
-        retry_count: T.Optional[int] = None,
-        retry_pause_sec: T.Optional[int] = None,
+        id: Optional[str] = None,
+        execution_timeout_sec: Optional[int] = None,
+        retry_count: Optional[int] = None,
+        retry_pause_sec: Optional[int] = None,
     ):
         if id is not None:
             self.id = id
@@ -135,11 +145,11 @@ class Job(abc.ABC):
             self.retry_pause_sec = retry_pause_sec
 
     @abc.abstractmethod
-    def execute(self, context: JobContext) -> T.Any:
+    def execute(self, context: JobContext) -> Optional[Any]:
         raise NotImplementedError
 
     @public(deprecate_reason="Method `Job.run` is deprecated, use `Job.execute()` instead")
-    def run(self, runtime: T.Union[str, dt.datetime, None]) -> T.Any:
+    def run(self, runtime: Union[str, dt.datetime, None]) -> Any:
         context = JobContext.make(runtime=runtime)
         return self.execute(context)
 
@@ -150,10 +160,10 @@ class Workflow(object):
     def __init__(
         self,
         workflow_id: str,
-        definition: T.Union['Definition', T.List['WorkflowJob']],
+        definition: Union['Definition', List['Job']],
         schedule_interval: str = DEFAULT_SCHEDULE_INTERVAL,
-        start_time_factory: T.Callable[[dt.datetime], dt.datetime] = daily_start_time,
-        log_config: T.Optional['bigflow.log.LogConfigDict'] = None,
+        start_time_factory: Callable[[dt.datetime], dt.datetime] = daily_start_time,
+        log_config: Optional['bigflow.log.LogConfigDict'] = None,
         depends_on_past: bool = True
     ):
         self.definition = self._parse_definition(definition)
@@ -174,10 +184,10 @@ class Workflow(object):
             warnings.warn("Old bigflow.Job api is used, please implement method `execute` (see bigflow.Job)")
             job.run(context.runtime_str)
 
-    def _make_job_context(self, runtime: T.Union[dt.date, str, None]) -> JobContext:
+    def _make_job_context(self, runtime: Union[dt.date, str, None]) -> JobContext:
         return JobContext.make(workflow=self, runtime=runtime)
 
-    def run(self, runtime: T.Union[dt.date, str, None] = None) -> None:
+    def run(self, runtime: Union[dt.date, str, None] = None) -> None:
         context = self._make_job_context(runtime)
         for job in self._build_sequential_order():
             self._execute_job(job, context)
@@ -188,17 +198,17 @@ class Workflow(object):
                 return job_wrapper.job
         raise ValueError(f'Job {job_id} not found.')
 
-    def run_job(self, job_id: str, runtime: T.Union[dt.date, str, None] = None) -> None:
+    def run_job(self, job_id: str, runtime: Union[dt.date, str, None] = None) -> None:
         context = self._make_job_context(runtime)
         self._execute_job(self.find_job(job_id), context)
 
-    def _build_sequential_order(self) -> T.List[Job]:
+    def _build_sequential_order(self) -> List['WorkflowJob']:
         return self.definition._sequential_order()
 
-    def _call_on_graph_nodes(self, consumer: T.Callable[[Job, T.Any], None]) -> None:
+    def _call_on_graph_nodes(self, consumer: Callable[[Job, Any], None]) -> None:
         self.definition._call_on_graph_nodes(consumer)
 
-    def _parse_definition(self, definition: T.Union[T.List['Job'], 'Definition']) -> 'Definition':
+    def _parse_definition(self, definition: Union[List['Job'], 'Definition']) -> 'Definition':
         if isinstance(definition, list):
             return Definition(self._map_to_workflow_jobs(definition))
         if isinstance(definition, Definition):
@@ -206,13 +216,13 @@ class Workflow(object):
         raise ValueError("Invalid argument %s" % definition)
 
     @staticmethod
-    def _map_to_workflow_jobs(job_list: T.List[Job]) -> T.List['WorkflowJob']:
+    def _map_to_workflow_jobs(job_list: List[Job]) -> List['WorkflowJob']:
         return [WorkflowJob(job, i) for i, job in enumerate(job_list)]
 
 
 class WorkflowJob(Job):
 
-    def __init__(self, job: Job, name: T.Union[str, int]):
+    def __init__(self, job: Job, name: Union[str, int]):
         self.job = job
         self.name = name
 
@@ -245,18 +255,21 @@ class WorkflowJob(Job):
 class Definition:
     def __init__(
             self,
-            jobs: T.Union[T.Dict[Job, T.List[Job]], T.List[Job]]
+            jobs: Union[Dict[Job, List[Job]], List[WorkflowJob]]
     ):
         self.job_graph = self._build_graph(jobs)
         self.job_order_resolver = JobOrderResolver(self.job_graph)
 
-    def _sequential_order(self) -> T.List[Job]:
+    def _sequential_order(self) -> List['WorkflowJob']:
         return self.job_order_resolver.find_sequential_run_order()
 
-    def _call_on_graph_nodes(self, consumer: T.Callable[[Job, T.Any], None]) -> None:
+    def _call_on_graph_nodes(self, consumer: Callable[[Job, Any], None]) -> None:
         self.job_order_resolver._call_on_graph_nodes(consumer)
 
-    def _build_graph(self, jobs: T.Dict[Job, T.List[Job]]) -> T.OrderedDict[Job, T.List[Job]]:
+    def _build_graph(
+            self,
+            jobs: Union[Dict[Job, List[Job]], List[WorkflowJob]]
+    ) -> Dict[WorkflowJob, List[WorkflowJob]]:
         if isinstance(jobs, list):
             job_graph = self._convert_list_to_graph(jobs)
         elif isinstance(jobs, dict):
@@ -270,13 +283,15 @@ class Definition:
         JobGraphValidator(job_graph).validate()
         return job_graph
 
-    def _map_to_workflow_job(self, job: Job) -> WorkflowJob:
+    def _map_to_workflow_job(self, job: Union[Job, WorkflowJob]) -> WorkflowJob:
         if not isinstance(job, WorkflowJob):
             job = WorkflowJob(job, job.id)
         return job
 
     @staticmethod
-    def _convert_list_to_graph(job_list) -> T.OrderedDict[Job, T.List[Job]]:
+    def _convert_list_to_graph(
+            job_list: List[WorkflowJob]
+    ) -> OrderedDict[WorkflowJob, List[WorkflowJob]]:
         graph_as_dict = collections.OrderedDict()
         if len(job_list) == 1:
             graph_as_dict[job_list[0]] = []
@@ -295,7 +310,7 @@ class InvalidJobGraph(Exception):
 
 
 class JobGraphValidator:
-    def __init__(self, job_graph: T.OrderedDict[Job, T.List[Job]]):
+    def __init__(self, job_graph: OrderedDict[WorkflowJob, List[WorkflowJob]]):
         self.job_graph = job_graph
 
     def validate(self) -> None:
@@ -307,7 +322,7 @@ class JobGraphValidator:
         for job in self.job_graph:
             self._validate_job(job, visited, stack)
 
-    def _validate_job(self, job: Job, visited: T.Set[Job], stack: T.Set[Job]) -> None:
+    def _validate_job(self, job: WorkflowJob, visited: Set[WorkflowJob], stack: Set[WorkflowJob]) -> None:
         if job in stack:
             raise InvalidJobGraph(f"Found cyclic dependency on job {job}")
         if job in visited:
@@ -323,14 +338,14 @@ class JobGraphValidator:
 
 
 class JobOrderResolver:
-    def __init__(self, job_graph: T.Dict[Job, Job]):
+    def __init__(self, job_graph: Dict[WorkflowJob, List[WorkflowJob]]):
         self.job_graph = job_graph
-        self.parental_map: T.OrderedDict[Job, T.List[Job]] = self._build_parental_map()
+        self.parental_map: OrderedDict[WorkflowJob, List[WorkflowJob]] = self._build_parental_map()
 
-    def find_sequential_run_order(self) -> T.List[Job]:
-        ordered_jobs: T.List[Job] = []
+    def find_sequential_run_order(self) -> List[WorkflowJob]:
+        ordered_jobs: List[WorkflowJob] = []
 
-        def add_to_ordered_job(job: Job, dependencies: T.Any) -> None:
+        def add_to_ordered_job(job: WorkflowJob, dependencies: Any) -> None:
             ordered_jobs.append(job)
 
         self._call_on_graph_nodes(add_to_ordered_job)
@@ -338,14 +353,14 @@ class JobOrderResolver:
 
     def _call_on_graph_nodes(
             self,
-            consumer: T.Callable[[Job, T.Any], None],
+            consumer: Callable[[WorkflowJob, Any], None],
     ) -> None:
         visited = set()
         for job in self.parental_map:
             self._call_on_graph_node_helper(
                 job, self.parental_map, visited, consumer)
 
-    def _build_parental_map(self) -> T.OrderedDict[Job, T.List[Job]]:
+    def _build_parental_map(self) -> OrderedDict[WorkflowJob, List[WorkflowJob]]:
         visited = set()
         parental_map = collections.OrderedDict()
         for job in self.job_graph:
@@ -354,9 +369,9 @@ class JobOrderResolver:
 
     def _fill_parental_map(
             self,
-            job: Job,
-            parental_map: T.OrderedDict[Job, T.List[Job]],
-            visited: T.Set[Job],
+            job: WorkflowJob,
+            parental_map: OrderedDict[WorkflowJob, List[WorkflowJob]],
+            visited: Set[WorkflowJob],
     ) -> None:
         if job not in self.job_graph or job in visited:
             return
@@ -373,10 +388,10 @@ class JobOrderResolver:
 
     def _call_on_graph_node_helper(
             self,
-            job: Job,
-            parental_map: T.OrderedDict[Job, T.List[Job]],
-            visited: T.Set[Job],
-            consumer: T.Callable[[Job, T.Any], None],
+            job: WorkflowJob,
+            parental_map: OrderedDict[WorkflowJob, List[WorkflowJob]],
+            visited: Set[WorkflowJob],
+            consumer: Callable[[WorkflowJob, Any], None],
     ) -> None:
         if job in visited:
             return
