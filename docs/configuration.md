@@ -541,3 +541,74 @@ config2 = config.replace(one=101)
 print(config.two)  # => 2
 print(config2.two) # => 102
 ```
+
+## Secrets management
+
+To define a secret for your BigFlow workflow, you need to use [Kubernetes Secrets](https://cloud.google.com/composer/docs/how-to/using/using-kubernetes-pod-operator#secret-config) 
+mechanism (Cloud Composer is a GKE cluster under the hood). Run the following commands in the [Cloud Shell](https://cloud.google.com/shell/docs/launching-cloud-shell#launching_from_the_console)
+or a terminal on your local machine:
+
+```shell script
+gcloud composer environments describe YOUR-COMPOSER-NAME --location <YOUR COMPOSER REGION> --format="value(config.gkeCluster)"
+gcloud container clusters get-credentials <COMPOSER GKE CLUSTER NAME> --zone <GKE ZONE> --project <GKE PROJECT ID>
+kubectl create secret generic <SECRET NAME> --from-literal <SECRET ENVIRONMENT KEY>=<SECRET ENVIRONMENT VALUE>
+```
+
+Let us go through a example. First, you need to get the Composer GKE cluster name:
+
+```shell script
+gcloud composer environments describe my-composer --location europe-west1 --format="value(config.gkeCluster)"
+>>> projects/my-gcp-project/zones/europe-west1-d/clusters/europe-west1-my-composer-6274b78f-gke
+```
+
+It's the last element of the whole ID – `europe-west1-my-composer-6274b78f-gke`. Then, you can use the name to fetch the
+credentials. You also need to specify the zone and project of your composer:
+
+```shell script
+gcloud container clusters get-credentials europe-west1-my-composer-6274b78f-gke --zone europe-west1-d --project my-super-project
+```
+
+And you can then set a secret:
+
+```shell script
+kubectl create secret generic bf-super-secret --from-literal bf_my_super_secret=passwd1234
+```
+
+Next, you need to specify secrets that you want to use in a workflow:
+
+```python
+import bigflow
+
+workflow = bigflow.Workflow(
+    workflow_id='example', 
+    definition=[],
+    secrets=['bf_my_super_secret'])
+```
+
+And finally, you can use the secret in a job:
+
+```python
+import os
+import bigflow
+
+class ExampleJob(bigflow.Job):
+    id = 'example_job'
+
+    def execute(self, context: bigflow.JobContext):
+        os.environ['BF_MY_SUPER_SECRET']
+
+workflow = bigflow.Workflow(
+    workflow_id='example', 
+    definition=[ExampleJob()],
+    secrets=['bf_my_super_secret'])
+```
+
+We don't recommend using secrets through the `os.environ`, but instead, through
+the `bigflow.konfig.Konfig` configuration class (it makes sure that you can't just log a secret):
+
+```python
+class DevConfig(Konfig):
+    name = 'dev'
+    env_prefix = 'BF_'
+    my_super_secret = fromenv('MY_SUPER_SECRET', 'None')
+```
