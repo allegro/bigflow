@@ -73,7 +73,7 @@ def _deploy_image_loaded_to_local_registry(
     else:
         raise ValueError('unsupported auth_method: ' + auth_method)
 
-    bf_commons.run_process(['docker', 'push', docker_image, docker_image_latest])
+    bf_commons.run_process(['docker', 'push', docker_image])  # TODO(anjensan) use docker_image_latest
 
     return docker_image
 
