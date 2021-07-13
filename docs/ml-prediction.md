@@ -15,7 +15,7 @@ This recipe will show you how to set up a PyTorch prediction process, but the do
 to define an environment for any framework. We assume that you are already familiar with the BigFlow API.
 
 We are going to create a batch prediction process for the Fashion MNIST model, using Dataflow. You can download
-the model here. We won't focus on the utility or performance side of the project, but more on the API that
+the model [here](fashion.pth). We won't focus on the utility or performance side of the project, but more on the API that
 BigFlow provides, which makes creating prediction processes easier.
 
 ## Docker image and packages
