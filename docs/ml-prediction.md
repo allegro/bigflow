@@ -2,10 +2,7 @@
 
 ## Introduction
 
-Dataflow allows you to run a process:
-
-* in a user-defined Docker container
-* on machines with GPU
+Dataflow allows you to run a process in a custom Docker container, optionally with a GPU.
 
 These 2 features bring new possibilities for people who want to run batch and streaming
 predictions on Dataflow. Thanks to Dockerized environment, you can define any
