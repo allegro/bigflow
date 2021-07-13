@@ -554,12 +554,23 @@ gcloud container clusters get-credentials <COMPOSER GKE CLUSTER NAME> --zone <GK
 kubectl create secret generic <SECRET NAME> --from-literal <SECRET ENVIRONMENT KEY>=<SECRET ENVIRONMENT VALUE>
 ```
 
-For example:
+Let us go through a example. First, you need to get the Composer GKE cluster name:
 
 ```shell script
 gcloud composer environments describe my-composer --location europe-west1 --format="value(config.gkeCluster)"
 >>> projects/my-gcp-project/zones/europe-west1-d/clusters/europe-west1-my-composer-6274b78f-gke
+```
+
+It's the last element of the whole ID – `europe-west1-my-composer-6274b78f-gke`. Then, you can use the name to fetch the
+credentials. You also need to specify the zone and project of your composer:
+
+```shell script
 gcloud container clusters get-credentials europe-west1-my-composer-6274b78f-gke --zone europe-west1-d --project my-super-project
+```
+
+And you can then set a secret:
+
+```shell script
 kubectl create secret generic bf-super-secret --from-literal bf_my_super_secret=passwd1234
 ```
 
