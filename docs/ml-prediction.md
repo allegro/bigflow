@@ -36,7 +36,7 @@ FROM apache/beam_python3.7_sdk:2.27.0
 # COPY --from=apache/beam_python3.6_sdk:2.26.0 /opt/apache/beam /opt/apache/beam
 
 
-# Uncomment if you want to install CUDA drivers to your docker
+# Install CUDA drivers to your docker
 # Note - this will increase size of your image dramatically, which has influence
 # on building and deployment timings as well. Do not install CUDA unless you are using GPU.
 #
