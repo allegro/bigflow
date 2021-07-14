@@ -608,7 +608,5 @@ the `bigflow.konfig.Konfig` configuration class (it makes sure that you can't ju
 
 ```python
 class DevConfig(Konfig):
-    name = 'dev'
-    env_prefix = 'BF_'
-    my_super_secret = fromenv('MY_SUPER_SECRET', 'None')
+    my_super_secret = fromenv('BF_MY_SUPER_SECRET', 'None')
 ```
