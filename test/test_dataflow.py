@@ -280,7 +280,7 @@ class BeamJobTestCase(TestCase):
         _create_pipeline_mock.return_value.run.return_value = RunnerResult('DONE', None)
         driver = CountWordsDriver()
 
-        options = PipelineOptions(x="y")
+        options = PipelineOptions()
         options.view_as(StandardOptions).runner = 'DataflowRunner'
         options.view_as(GoogleCloudOptions).project = 'gcp_project_id'
         options.view_as(GoogleCloudOptions).job_name = 'beam-wordcount-uuid'
