@@ -235,7 +235,7 @@ class BeamJobTestCase(TestCase):
 
         driver = CountWordsDriver()
 
-        options = PipelineOptions()
+        options = PipelineOptions(x="y")
         options.view_as(StandardOptions).runner = 'DataflowRunner'
         options.view_as(GoogleCloudOptions).project = 'gcp_project_id'
         options.view_as(GoogleCloudOptions).job_name = 'beam-wordcount-uuid'
@@ -307,11 +307,13 @@ class BeamJobTestCase(TestCase):
         job.execute(JobContext.make())
 
         # then
-        options.get_all_options()
         self.assertDictEqual(
             options.get_all_options(),
             _create_pipeline_mock.call_args[1]['options'].get_all_options(),
         )
+        # and
+        self.assertEqual(options._all_options['x'], _create_pipeline_mock.call_args[1]['options']._all_options['x'])
+
 
     def test_should_throw_if_pipeline_options_and_pipeline_both_not_provided(
         self,
