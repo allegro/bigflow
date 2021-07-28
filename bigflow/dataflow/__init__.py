@@ -103,8 +103,7 @@ class BeamJob(Job):
             logger.info("Convert PipelineOptions to dict")
             orig = pipeline_options
             pipeline_options = pipeline_options.get_all_options(
-                drop_default=True,
-                retain_unknown_options=True,
+                drop_default=True
             )
             new = PipelineOptions(flags=[], **pipeline_options)
             assert orig.get_all_options() == new.get_all_options(), "During convertsion PipelineOptions<>dict some parameters was gone"
