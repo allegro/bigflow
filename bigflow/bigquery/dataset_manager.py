@@ -43,8 +43,8 @@ def get_partition_from_run_datetime_or_none(run_datetime: str) -> str:
     :return: string partition in format YYYYMMDDHH for run_datetime in format: YYYY-MM-DD HH:mm:ss or
      YYYYMMDD for run_datetime in format YYYY-MM-DD
     """
-    assert re.fullmatch(run_datetime, r"\d{4}-\d\d-\d\d( \d\d:\d\d:\d\d)?"), "run_datetime in invalid format"
     if run_datetime:
+        assert re.fullmatch(r"\d{4}-\d\d-\d\d( \d\d:\d\d:\d\d)?", run_datetime), "run_datetime in invalid format"
         return re.sub(r"\D", "", run_datetime)[:10]
 
 
