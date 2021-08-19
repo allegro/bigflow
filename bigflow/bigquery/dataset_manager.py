@@ -1,12 +1,11 @@
-import json
-import uuid
-import logging
 import functools
-import typing
+import json
 import logging
+import re
+import typing
+import uuid
 from pathlib import Path
 
-from google.cloud.bigquery import dataset
 # hidden BQ and pandas imports due to https://github.com/allegro/bigflow/issues/149
 
 
@@ -38,13 +37,15 @@ def handle_key_error(method):
     return decorated
 
 
-def get_partition_from_run_datetime_or_none(run_datetime):
+def get_partition_from_run_datetime_or_none(run_datetime: str) -> str:
     """
-    :param run_datetime: string run datetime in format YYYY-MM-DD HH:mm:ss or YYY-MM-DD
-    :return: string partition in format YYYYMMDD
+    :param run_datetime: string run datetime in format YYYY-MM-DD HH:mm:ss or YYYY-MM-DD
+    :return: string partition in format YYYYMMDDHH for run_datetime in format: YYYY-MM-DD HH:mm:ss or
+     YYYYMMDD for run_datetime in format YYYY-MM-DD
     """
-    if run_datetime is not None:
-        return run_datetime[:10].replace('-', '')
+    if run_datetime:
+        assert re.fullmatch(r"\d{4}-\d\d-\d\d( \d\d:\d\d:\d\d)?", run_datetime), "run_datetime in invalid format"
+        return re.sub(r"\D", "", run_datetime)[:10]
 
 
 class TemplatedDatasetManager(object):
