@@ -44,7 +44,7 @@ def get_partition_from_run_datetime_or_none(run_datetime):
     :return: string partition in format YYYYMMDD
     """
     if run_datetime is not None:
-        return run_datetime[:10].replace('-', '')
+        return run_datetime.replace('-', '').replace(':', '').replace(' ', '')[:10]
 
 
 class TemplatedDatasetManager(object):
