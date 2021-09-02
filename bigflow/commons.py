@@ -233,7 +233,7 @@ def decode_version_number_from_file_name(file_path: Path):
 
 def get_docker_image_id(tag):
     logger.info("Getting docker image ID.")
-    images = subprocess.getoutput(f"docker images -q {tag}")
+    images = run_process(f"docker images -q {tag}")
     logger.info(images[:1000] + '...')
     return images.split('\n')[0]
 
