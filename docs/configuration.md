@@ -545,7 +545,10 @@ print(config2.two) # => 102
 ## Secrets management
 
 To define a secret for your BigFlow workflow, you need to use [Kubernetes Secrets](https://cloud.google.com/composer/docs/how-to/using/using-kubernetes-pod-operator#secret-config) 
-mechanism (Cloud Composer is a GKE cluster under the hood). Run the following commands in the [Cloud Shell](https://cloud.google.com/shell/docs/launching-cloud-shell#launching_from_the_console)
+mechanism (Cloud Composer is a GKE cluster under the hood). 
+
+### Public cluster
+Run the following commands in the [Cloud Shell](https://cloud.google.com/shell/docs/launching-cloud-shell#launching_from_the_console)
 or a terminal on your local machine:
 
 ```shell script
@@ -554,6 +557,20 @@ gcloud container clusters get-credentials <COMPOSER GKE CLUSTER NAME> --zone <GK
 kubectl create secret generic <SECRET NAME> --from-literal <SECRET ENVIRONMENT KEY>=<SECRET ENVIRONMENT VALUE>
 ```
 
+### Private cluster
+If the cluster is private, you can still connect from inside your subnet. 
+First, [create a VM](https://cloud.google.com/compute/docs/instances/create-start-instance#create_a_vm_instance_in_a_specific_subnet) 
+in your project using the same VPC and subnet as your cluster.
+Then, [connect to your VM](https://cloud.google.com/compute/docs/instances/connecting-to-instance) 
+and run the following commands. Remember to use the `--internal-ip` flag when getting credentials:
+
+```shell script
+gcloud composer environments describe YOUR-COMPOSER-NAME --location <YOUR COMPOSER REGION> --format="value(config.gkeCluster)"
+gcloud container clusters get-credentials --internal-ip <COMPOSER GKE CLUSTER NAME> --zone <GKE ZONE> --project <GKE PROJECT ID>
+kubectl create secret generic <SECRET NAME> --from-literal <SECRET ENVIRONMENT KEY>=<SECRET ENVIRONMENT VALUE>
+```
+
+### Example
 Let us go through a example. First, you need to get the Composer GKE cluster name:
 
 ```shell script
