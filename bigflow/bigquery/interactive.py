@@ -42,7 +42,7 @@ def log_syntax_error(method):
     return decorated
 
 
-def interactive_component(partition_type=TimePartitioningType.DAY, **dependencies):
+def interactive_component(partition_type:TimePartitioningType=TimePartitioningType.DAY, **dependencies):
     def decorator(standard_component):
         logger.debug("Wrap %s with @interactive_component, deps %s", standard_component, dependencies)
         return InteractiveComponent(standard_component,
@@ -206,7 +206,7 @@ class InteractiveComponent(object):
     """Let's you run the component for the specific runtime
      and peek the operation results as the pandas.DataFrame."""
 
-    def __init__(self, standard_component, dependency_config, partition_type=TimePartitioningType.DAY):
+    def __init__(self, standard_component, dependency_config, partition_type:TimePartitioningType=TimePartitioningType.DAY):
         self._standard_component = standard_component
         self._dependency_config = dependency_config
         self._partition_type = partition_type

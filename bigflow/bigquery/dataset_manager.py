@@ -39,7 +39,7 @@ def handle_key_error(method):
     return decorated
 
 
-def get_partition_from_run_datetime_or_none(run_datetime, partition=TimePartitioningType.DAY):
+def get_partition_from_run_datetime_or_none(run_datetime, partition:TimePartitioningType=TimePartitioningType.DAY):
     """
     :param run_datetime: string run datetime in format YYYY-MM-DD HH:mm:ss or YYY-MM-DD
     :return: string partition in format YYYYMMDD
@@ -447,7 +447,7 @@ def create_dataset_manager(
         credentials=None,
         location=DEFAULT_LOCATION,
         logger=None,
-        partition_type=TimePartitioningType.DAY) -> typing.Tuple[str, PartitionedDatasetManager]:
+        partition_type:TimePartitioningType=TimePartitioningType.DAY) -> typing.Tuple[str, PartitionedDatasetManager]:
     """
     Dataset manager factory.
     If dataset does not exist then it will also create dataset with given name.
@@ -463,6 +463,7 @@ def create_dataset_manager(
     :param project_id: string full project id where dataset being processed is available.
     :param location: string location of dataset will be used to create datasets, tables, jobs, etc. EU by default.
     :param logger: custom logger.
+    :param partition_type: string of partition type. Depending on value DAY/HOUR partitioning will be used.
     :return: tuple (full dataset ID, dataset manager).
     """
     dataset_name = dataset_name or random_uuid(suffix='_test_case')

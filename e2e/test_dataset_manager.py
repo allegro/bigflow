@@ -2,6 +2,7 @@ import uuid
 import tempfile
 import json
 import pandas as pd
+from pandas._testing import assert_frame_equal
 from pytz import UTC
 from datetime import datetime, timedelta
 
@@ -94,15 +95,16 @@ class PartitionedDatasetManagerTestCase(TestCase):
         ''', )
 
         # when
-        self.dataset_manager.write_truncate('partitioned_hourly_fake_target_table', '''
+        self.dataset_manager.write_append('partitioned_hourly_fake_target_table', '''
         SELECT 'Joe' AS first_name, 'Doe' AS last_name
         ''', custom_run_datetime=(self.TEST_PARTITION_DT + timedelta(hours=1)).isoformat(sep=' ')[:19])
 
         # then
         records = df_to_collections(self.dataset_manager.collect('''
         SELECT * FROM `{partitioned_hourly_fake_target_table}`
-        WHERE _PARTITIONTIME= '{dt}'
+        WHERE _PARTITIONTIME = '{dt}'
         '''))
+
         # then
         self.assertEqual(len(records), 1)
         self.assertEqual(records[0]['first_name'], 'John')
@@ -117,23 +119,30 @@ class PartitionedDatasetManagerTestCase(TestCase):
             partition_type=TimePartitioningType.DAY)
         self.dataset_manager.create_table('''
         CREATE TABLE IF NOT EXISTS partitioned_daily_fake_target_table (
+            batch_date TIMESTAMP,
             first_name STRING,
             last_name STRING)
-        PARTITION BY _PARTITIONDATE
+        PARTITION BY DATE(batch_date)
         ''')
 
         # given
         self.dataset_manager.write_truncate('partitioned_daily_fake_target_table', '''
-        SELECT 'John' AS first_name, 'Smith' AS last_name
+        SELECT TIMESTAMP('{dt}') AS batch_date, 'John' AS first_name, 'Smith' AS last_name
         ''')
-        self.dataset_manager.write_truncate('partitioned_daily_fake_target_table', '''
-        SELECT 'Joe' AS first_name, 'Doe' AS last_name
+        self.dataset_manager.write_append('partitioned_daily_fake_target_table', '''
+        SELECT TIMESTAMP('{dt}') AS batch_date, 'Joe' AS first_name, 'Doe' AS last_name
         ''', custom_run_datetime=(self.TEST_PARTITION_DT + timedelta(hours=1)).isoformat(sep=' ')[:10])
-        # then
-        records = df_to_collections(self.dataset_manager.collect('''
+
+        # when
+        records = self.dataset_manager.collect('''
         SELECT * FROM `{partitioned_daily_fake_target_table}`
-        WHERE _PARTITIONTIME = '{dt}'
-        '''))
+        WHERE batch_date = TIMESTAMP('{dt}')
+        ''')
+
+        # then
+        assert_frame_equal(records.sort_values('last_name'), pd.DataFrame([
+            {'batch_date': self.TEST_PARTITION_DT, 'first_name': 'Joe', 'last_name': 'Doe'},
+            {'batch_date': self.TEST_PARTITION_DT, 'first_name': 'John', 'last_name': 'Smith'}]), check_like=True, check_dtype=False)
 
 
 
