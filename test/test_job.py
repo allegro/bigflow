@@ -26,7 +26,8 @@ class JobTestCase(TestCase):
                 'extras': {'extra_param': 'some-extra-param'},
                 'runtime': '2019-01-01 00:00:00',
                 'credentials': 'credentials',
-                'location': 'EU'
+                'location': 'EU',
+                'partition_type': 'DAY'
             })
 
             # and
@@ -38,7 +39,8 @@ class JobTestCase(TestCase):
                 'extras': {'extra_param': 'some-extra-param'},
                 'credentials': 'credentials',
                 'runtime': '2019-01-01 00:00:00',
-                'location': 'EU'
+                'location': 'EU',
+                'partition_type': 'DAY'
             })
 
         job = Job(component=test_component,
