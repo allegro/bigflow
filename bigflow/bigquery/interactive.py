@@ -8,6 +8,7 @@ import typing
 from pathlib import Path
 
 from google.api_core.exceptions import BadRequest
+from google.cloud.bigquery import TimePartitioningType
 
 import bigflow
 
@@ -204,9 +205,10 @@ class InteractiveComponent(object):
     """Let's you run the component for the specific runtime
      and peek the operation results as the pandas.DataFrame."""
 
-    def __init__(self, standard_component, dependency_config):
+    def __init__(self, standard_component, dependency_config, partition_type=TimePartitioningType.DAY):
         self._standard_component = standard_component
         self._dependency_config = dependency_config
+        self._partition_type = partition_type
 
     def to_job(self,
                id=None,
@@ -225,13 +227,14 @@ class InteractiveComponent(object):
             id=id,
             retry_count=retry_count,
             retry_pause_sec=retry_pause_sec,
+            partition_type=self._partition_type,
             **dependency_config)
 
     @log_syntax_error
     def run(self, runtime=DEFAULT_RUNTIME, operation_name=None):
         _, component_callable = decorate_component_dependencies_with_operation_level_dataset_manager(
             self._standard_component, operation_name=operation_name)
-        job = Job(component_callable, **self._dependency_config)
+        job = Job(component=component_callable, partition_type=self._partition_type, **self._dependency_config)
         logger.info("Run interactive component, id=%s, component %s", job.id, job.component)
         return job.execute(bigflow.JobContext.make(runtime=runtime))
 
@@ -250,7 +253,7 @@ class InteractiveComponent(object):
         results_container, component_callable = decorate_component_dependencies_with_operation_level_dataset_manager(
             self._standard_component, operation_name=operation_name, peek=True, peek_limit=limit)
 
-        job = Job(component_callable, **self._dependency_config)
+        job = Job(component=component_callable, partition_type=self._partition_type, **self._dependency_config)
         job.execute(bigflow.JobContext.make(runtime=runtime))
 
         try:

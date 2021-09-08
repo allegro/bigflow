@@ -1,12 +1,13 @@
 import json
 import uuid
-import logging
 import functools
+import re
 import typing
 import logging
 from pathlib import Path
 
-from google.cloud.bigquery import dataset
+from google.cloud.bigquery import TimePartitioningType
+
 # hidden BQ and pandas imports due to https://github.com/allegro/bigflow/issues/149
 
 
@@ -38,13 +39,19 @@ def handle_key_error(method):
     return decorated
 
 
-def get_partition_from_run_datetime_or_none(run_datetime):
+def get_partition_from_run_datetime_or_none(run_datetime, partition=TimePartitioningType.DAY):
     """
     :param run_datetime: string run datetime in format YYYY-MM-DD HH:mm:ss or YYY-MM-DD
     :return: string partition in format YYYYMMDD
     """
-    if run_datetime is not None:
-        return run_datetime[:10].replace('-', '')
+    if run_datetime:
+        if partition is TimePartitioningType.DAY:
+            assert re.fullmatch(r"\d{4}-\d\d-\d\d( \d\d:\d\d:\d\d)?", run_datetime), "run_datetime in invalid format"
+            return re.sub(r"\D", "", run_datetime)[:8]
+        elif partition is TimePartitioningType.HOUR:
+            assert re.fullmatch(r"\d{4}-\d\d-\d\d \d\d:\d\d:\d\d", run_datetime), "run_datetime in invalid format"
+            return re.sub(r"\D", "", run_datetime)[:10]
+
 
 
 class TemplatedDatasetManager(object):
@@ -151,9 +158,10 @@ class PartitionedDatasetManager(object):
     Interface available for user. Manages partitioning.
     Delegate rest of the tasks to TemplatedDatasetManager and DatasetManager.
     """
-    def __init__(self, templated_dataset_manager: TemplatedDatasetManager, partition):
+    def __init__(self, templated_dataset_manager: TemplatedDatasetManager, partition: str, partition_type: TimePartitioningType):
         self._dataset_manager = templated_dataset_manager
         self.partition = partition
+        self.partition_type = partition_type
 
     def write_truncate(self, table_name, sql, partitioned=True, custom_run_datetime=None):
         return self._write(
@@ -247,7 +255,7 @@ class PartitionedDatasetManager(object):
         return write_callable(table_id, sql, custom_run_datetime)
 
     def _create_table_id(self, custom_run_datetime, table_name, partitioned):
-        custom_partition = get_partition_from_run_datetime_or_none(custom_run_datetime)
+        custom_partition = get_partition_from_run_datetime_or_none(custom_run_datetime, self.partition_type)
         if partitioned:
             table_name = table_name + '${partition}'.format(partition=custom_partition or self.partition)
         return table_name
@@ -438,7 +446,8 @@ def create_dataset_manager(
         extras=None,
         credentials=None,
         location=DEFAULT_LOCATION,
-        logger=None) -> typing.Tuple[str, PartitionedDatasetManager]:
+        logger=None,
+        partition_type=TimePartitioningType.DAY) -> typing.Tuple[str, PartitionedDatasetManager]:
     """
     Dataset manager factory.
     If dataset does not exist then it will also create dataset with given name.
@@ -469,4 +478,4 @@ def create_dataset_manager(
 
     core_dataset_manager = DatasetManager(client, dataset, logger)
     templated_dataset_manager = TemplatedDatasetManager(core_dataset_manager, internal_tables, external_tables, extras, runtime)
-    return dataset.full_dataset_id.replace(':', '.'), PartitionedDatasetManager(templated_dataset_manager, get_partition_from_run_datetime_or_none(runtime))
+    return dataset.full_dataset_id.replace(':', '.'), PartitionedDatasetManager(templated_dataset_manager, get_partition_from_run_datetime_or_none(runtime, partition_type), partition_type)

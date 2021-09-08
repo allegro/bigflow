@@ -1,5 +1,8 @@
 from unittest import TestCase
-from bigflow.bigquery.dataset_manager import handle_key_error
+
+from google.cloud.bigquery import TimePartitioningType
+
+from bigflow.bigquery.dataset_manager import handle_key_error, get_partition_from_run_datetime_or_none
 from bigflow.bigquery.dataset_manager import AliasNotFoundError
 
 
@@ -12,3 +15,25 @@ class HandleKeyErrorTestCase(TestCase):
     @handle_key_error
     def raise_key_error(self):
         '{missing_key}'.format(meh='bla')
+
+
+class GetPartitionFromRunDatetimeOrNoneTestCase(TestCase):
+    def test_should_get_daily_partition(self):
+        # expect
+        self.assertEqual(get_partition_from_run_datetime_or_none("2021-01-01 00:00:00"), "20210101")
+
+        # expect
+        self.assertEqual(get_partition_from_run_datetime_or_none("2021-01-01"), "20210101")
+
+        # expect
+        self.assertEqual(get_partition_from_run_datetime_or_none("2021-01-01 00:00:00", TimePartitioningType.DAY), "20210101")
+
+    def test_should_get_hourly_partition(self):
+        # expect
+        self.assertEqual(get_partition_from_run_datetime_or_none("2021-01-01 00:00:00", TimePartitioningType.HOUR), "2021010100")
+
+    def test_should_throw_if_runtime_without_time_part_provided_for_hourly_partition(self):
+        # expect
+        with self.assertRaises(AssertionError):
+            get_partition_from_run_datetime_or_none("2021-01-01", TimePartitioningType.HOUR)
+

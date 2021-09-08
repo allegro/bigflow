@@ -1,3 +1,5 @@
+from google.cloud.bigquery import TimePartitioningType
+
 import bigflow
 
 from inspect import getargspec
@@ -20,6 +22,7 @@ class Job(bigflow.Job):
                  retry_count=DEFAULT_RETRY_COUNT,
                  retry_pause_sec=DEFAULT_RETRY_PAUSE_SEC,
                  execution_timeout_sec=DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS,
+                 partition_type=TimePartitioningType.DAY,
                  **dependency_configuration):
         self.id = id or component.__name__
         logger.debug("Init bigquery Job with id %s", self.id)
@@ -29,6 +32,7 @@ class Job(bigflow.Job):
         self.retry_count = retry_count
         self.retry_pause_sec = retry_pause_sec
         self.execution_timeout_sec = execution_timeout_sec
+        self.partition_type = partition_type
 
     def execute(self, context: bigflow.JobContext):
         logger.info("Execute job %s: %s", self.id, context)
@@ -68,5 +72,6 @@ class Job(bigflow.Job):
         logger.debug("Build dataset manager for config %s", dependency_config)
         _, dataset_manager = create_dataset_manager(
             runtime=runtime,
+            partition_type=self.partition_type,
             **dependency_config._as_dict())
         return dataset_manager
