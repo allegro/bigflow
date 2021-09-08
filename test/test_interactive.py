@@ -3,6 +3,7 @@ from unittest import TestCase
 import mock
 
 from google.api_core.exceptions import BadRequest
+from google.cloud.bigquery import TimePartitioningType
 
 import bigflow
 
@@ -442,6 +443,40 @@ class InteractiveComponentPeekTestCase(TestCase):
         with self.assertRaises(ValueError):
             # when
             fake_component.peek('2019-01-01', operation_name='nonexistent')
+
+    @mock.patch('bigflow.bigquery.job.create_dataset_manager')
+    def test_should_create_job_with_hourly_partition_type(self, create_dataset_manager_mock):
+        # given
+        fake_dataset_manager = mock.Mock()
+        create_dataset_manager_mock.side_effect = lambda **kwargs: (None, fake_dataset_manager)
+
+
+        @interactive_component(partition_type=TimePartitioningType.HOUR)
+        def standard_component(ds):
+            pass
+
+        # when
+        job = standard_component.to_job()
+
+        # then
+        self.assertEqual(job.partition_type, TimePartitioningType.HOUR)
+
+    @mock.patch('bigflow.bigquery.job.create_dataset_manager')
+    def test_should_create_job_with_daily_partition_type(self, create_dataset_manager_mock):
+        # given
+        fake_dataset_manager = mock.Mock()
+        create_dataset_manager_mock.side_effect = lambda **kwargs: (None, fake_dataset_manager)
+
+
+        @interactive_component()
+        def standard_component(ds):
+            pass
+
+        # when
+        job = standard_component.to_job()
+
+        # then
+        self.assertEqual(job.partition_type, TimePartitioningType.DAY)
 
 
 class InteractiveDatasetManagerTestCase(TestCase):

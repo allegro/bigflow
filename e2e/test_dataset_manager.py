@@ -9,7 +9,7 @@ from unittest import TestCase
 from unittest import main
 from pathlib import Path
 
-from google.cloud.bigquery import Table, TimePartitioning
+from google.cloud.bigquery import Table, TimePartitioning, TimePartitioningType
 
 from bigflow.bigquery.dataset_manager import create_dataset_manager
 from . import config
@@ -59,6 +59,84 @@ class DatasetManagerTestCase(TestCase):
         self.dataset_manager.remove_dataset()
 
 
+class PartitionedDatasetManagerTestCase(TestCase):
+    TEST_PARTITION_DT = (datetime.utcnow() - timedelta(days=-1)).replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=UTC)
+    TEST_PARTITION_HOURLY = TEST_PARTITION_DT.isoformat(sep=' ')[:19]
+
+    def setUp(self):
+        self.dataset_uuid = str(uuid.uuid4()).replace('-', '')
+        self.internal_tables = [
+            'partitioned_hourly_fake_target_table',
+            'partitioned_daily_fake_target_table'
+        ]
+
+    def tearDown(self):
+        self.dataset_manager.remove_dataset()
+
+    def test_should_collect_records_from_hourly_partitioned_table(self):
+        self.test_dataset_id, self.dataset_manager = create_dataset_manager(
+            config.PROJECT_ID,
+            self.TEST_PARTITION_HOURLY,
+            dataset_name=self.dataset_uuid,
+            internal_tables=self.internal_tables,
+            partition_type=TimePartitioningType.HOUR)
+
+        self.dataset_manager.create_table('''
+        CREATE TABLE IF NOT EXISTS partitioned_hourly_fake_target_table (
+            first_name STRING,
+            last_name STRING)
+        PARTITION BY DATE_TRUNC (_PARTITIONTIME, HOUR)
+        ''')
+
+        # given
+        self.dataset_manager.write_truncate('partitioned_hourly_fake_target_table', '''
+        SELECT 'John' AS first_name, 'Smith' AS last_name
+        ''', )
+
+        # when
+        self.dataset_manager.write_truncate('partitioned_hourly_fake_target_table', '''
+        SELECT 'Joe' AS first_name, 'Doe' AS last_name
+        ''', custom_run_datetime=(self.TEST_PARTITION_DT + timedelta(hours=1)).isoformat(sep=' ')[:19])
+
+        # then
+        records = df_to_collections(self.dataset_manager.collect('''
+        SELECT * FROM `{partitioned_hourly_fake_target_table}`
+        WHERE _PARTITIONTIME= '{dt}'
+        '''))
+        # then
+        self.assertEqual(len(records), 1)
+        self.assertEqual(records[0]['first_name'], 'John')
+        self.assertEqual(records[0]['last_name'], 'Smith')
+
+    def test_should_collect_records_from_daily_partitioned_table(self):
+        self.test_dataset_id, self.dataset_manager = create_dataset_manager(
+            config.PROJECT_ID,
+            self.TEST_PARTITION_HOURLY,
+            dataset_name=self.dataset_uuid,
+            internal_tables=self.internal_tables,
+            partition_type=TimePartitioningType.DAY)
+        self.dataset_manager.create_table('''
+        CREATE TABLE IF NOT EXISTS partitioned_daily_fake_target_table (
+            first_name STRING,
+            last_name STRING)
+        PARTITION BY _PARTITIONDATE
+        ''')
+
+        # given
+        self.dataset_manager.write_truncate('partitioned_daily_fake_target_table', '''
+        SELECT 'John' AS first_name, 'Smith' AS last_name
+        ''')
+        self.dataset_manager.write_truncate('partitioned_daily_fake_target_table', '''
+        SELECT 'Joe' AS first_name, 'Doe' AS last_name
+        ''', custom_run_datetime=(self.TEST_PARTITION_DT + timedelta(hours=1)).isoformat(sep=' ')[:10])
+        # then
+        records = df_to_collections(self.dataset_manager.collect('''
+        SELECT * FROM `{partitioned_daily_fake_target_table}`
+        WHERE _PARTITIONTIME = '{dt}'
+        '''))
+
+
+
 class PartitionedDatasetManagerPropertiesTestCase(DatasetManagerTestCase):
 
     def test_should_expose_project_id_as_property(self):
@@ -71,7 +149,8 @@ class PartitionedDatasetManagerPropertiesTestCase(DatasetManagerTestCase):
 
     def test_should_expose_internal_tables_as_property(self):
         # expect
-        self.assertEqual(self.dataset_manager.internal_tables, self.internal_tables)
+        internal_tables = {table: config.PROJECT_ID + '.' + self.dataset_uuid + '.' + table for table in self.internal_tables}
+        self.assertEqual(self.dataset_manager.internal_tables, internal_tables)
 
     def test_should_expose_external_tables_as_property(self):
         # expect

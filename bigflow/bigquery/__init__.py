@@ -1,3 +1,5 @@
+from google.cloud.bigquery import TimePartitioningType
+
 from bigflow.commons import public
 
 from . import interactive, dataset_configuration, job
@@ -30,4 +32,4 @@ def sensor(table_alias, where_clause, ds=None): ...
 
 
 @public(alias_for=interactive.interactive_component)
-def component(**dependencies): ...
+def component(partition_type=TimePartitioningType.DAY, **dependencies): ...

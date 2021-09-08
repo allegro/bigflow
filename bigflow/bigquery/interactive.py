@@ -42,11 +42,12 @@ def log_syntax_error(method):
     return decorated
 
 
-def interactive_component(**dependencies):
+def interactive_component(partition_type=TimePartitioningType.DAY, **dependencies):
     def decorator(standard_component):
         logger.debug("Wrap %s with @interactive_component, deps %s", standard_component, dependencies)
         return InteractiveComponent(standard_component,
-                                    {dep_name: dep.config for dep_name, dep in dependencies.items()})
+                                    {dep_name: dep.config for dep_name, dep in dependencies.items()},
+                                    partition_type)
     return decorator
 
 
