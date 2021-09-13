@@ -231,11 +231,17 @@ def decode_version_number_from_file_name(file_path: Path):
     return split[1]
 
 
-def get_docker_image_id(tag):
+def get_docker_image_id(tag, retries_left=3):
     logger.info("Getting docker image ID.")
     images = run_process(f"docker images -q {tag}")
     logger.info(images[:1000] + '...')
-    return images.split('\n')[0]
+
+    result = images.split('\n')[0]
+    if not result and retries_left:
+        logger.info("Can't find any images. Sleeping for 3 seconds and retrying...")
+        time.sleep(3.0)
+        return get_docker_image_id(tag, retries_left-1)
+    return result
 
 
 def build_docker_image_tag(docker_repository: str, package_version: str):
