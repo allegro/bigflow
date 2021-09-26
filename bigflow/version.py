@@ -1,7 +1,7 @@
 import re
 import logging
 import subprocess
-import typing
+import typing as T
 import tempfile
 import pathlib
 
@@ -11,11 +11,14 @@ import bigflow.commons
 logger = logging.getLogger(__name__)
 
 
-def run_process(*args, verbose=False, **kwargs):
+def run_process(
+        *args: T.Union[str, T.List],
+        verbose: bool = False,
+        **kwargs) -> str:
     return bigflow.commons.run_process(*args, verbose=verbose, **kwargs)
 
 
-def get_version():
+def get_version() -> str:
     if not _is_git_available():
         logger.warning("No git repo is available")
         return f"0+BROKEN"
@@ -69,7 +72,7 @@ def get_version():
     return f"0+BROKEN{dirty}"
 
 
-def _is_git_available():
+def _is_git_available() -> bool:
     try:
         run_process(["git", "rev-parse", "--is-inside-work-tree"])
     except subprocess.SubprocessError:
@@ -78,7 +81,7 @@ def _is_git_available():
         return True
 
 
-def _generate_dirty_suffix():
+def _generate_dirty_suffix() -> str:
     try:
         dirty = bool(run_process(["git", "diff", "--shortstat", "HEAD"]).strip())
     except subprocess.SubprocessError as e:
@@ -92,7 +95,7 @@ def _generate_dirty_suffix():
         return ""
 
 
-def _get_workdir_treehash():
+def _get_workdir_treehash() -> str:
     """Copy git index, add all changed files and returns 'tree-hash'"""
 
     git_root =  run_process(["git", "rev-parse", "--show-toplevel"]).rstrip("\n")
@@ -106,7 +109,7 @@ def _get_workdir_treehash():
         return run_process(["git", "write-tree"], env_add=env)
 
 
-def get_tag():
+def get_tag() -> T.Optional[str]:
     """Return the last tag for the git repository reachable from HEAD."""
     tags = run_process(["git", "tag", "--sort=version:refname", "--merged"]).splitlines()
     if not tags:
@@ -116,7 +119,7 @@ def get_tag():
     return tags[-1]
 
 
-def release(identity_file: typing.Optional[str] = None) -> None:
+def release(identity_file: T.Optional[str] = None) -> None:
     latest_tag = get_tag()
     if not latest_tag:
         logger.warning("No existing git tags found, use '0.0'")
@@ -125,7 +128,7 @@ def release(identity_file: typing.Optional[str] = None) -> None:
     push_tag(new_tag, identity_file)
 
 
-def push_tag(tag, identity_file: typing.Optional[str] = None) -> None:
+def push_tag(tag: str, identity_file: T.Optional[str] = None) -> None:
     logger.info("Create git tag %s", tag)
     run_process(["git", "tag", tag])
 

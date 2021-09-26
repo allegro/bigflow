@@ -10,6 +10,7 @@ from typing import (
     Any,
     OrderedDict,
     Set,
+    Iterable,
 )
 import warnings
 import datetime as dt
@@ -164,7 +165,8 @@ class Workflow(object):
         schedule_interval: str = DEFAULT_SCHEDULE_INTERVAL,
         start_time_factory: Callable[[dt.datetime], dt.datetime] = daily_start_time,
         log_config: Optional['bigflow.log.LogConfigDict'] = None,
-        depends_on_past: bool = True
+        depends_on_past: bool = True,
+        secrets: Iterable[str] = ()
     ):
         self.definition = self._parse_definition(definition)
         self.schedule_interval = schedule_interval
@@ -172,6 +174,7 @@ class Workflow(object):
         self.start_time_factory = start_time_factory
         self.log_config = log_config
         self.depends_on_past = depends_on_past
+        self.secrets = secrets
 
     @staticmethod
     def _execute_job(job: Job, context: JobContext) -> None:

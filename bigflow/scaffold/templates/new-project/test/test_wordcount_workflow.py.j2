@@ -10,7 +10,10 @@ class WordCountWorkflowTestCase(TestCase):
     def test_should_return_result(self):
         fake_file = FakeFile()
         with TestPipeline() as p:
-            count_words(p, FakeFileSaver(fake_file))
+            (p
+                | "CountWords" >> count_words()
+                | "SaveResult" >> FakeFileSaver(fake_file)
+            )
         self.assertEqual(fake_file.data, {'a': 2, 'b': 2, 'c': 2, 'd': 2})
 
 

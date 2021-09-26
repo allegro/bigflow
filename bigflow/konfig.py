@@ -7,9 +7,6 @@ import re
 import typing
 import sys
 
-import lazy_object_proxy  # type: ignore
-
-
 from typing import (
     Any,
     Callable,
@@ -19,8 +16,18 @@ from typing import (
     Tuple,
     Dict,
     Type,
-    Union,
 )
+
+import lazy_object_proxy  # type: ignore
+from bigflow.commons import public
+
+__all__ = [
+    'dynamic',
+    'expand',
+    'fromenv',
+    'Konfig',
+    'resolve_konfig',
+]
 
 
 logger = logging.getLogger(__name__)
@@ -82,6 +89,7 @@ class KonfigMeta(abc.ABCMeta):
         return obj
 
 
+@public()
 class Konfig(collections.abc.Mapping, metaclass=KonfigMeta):
     """Base class for configs.
 
@@ -146,6 +154,7 @@ class _LazyKonfig(lazy_object_proxy.Proxy):
         return str(self)
 
 
+@public()
 def resolve_konfig(
     konfigs: Dict[str, Type[K]],
     name: Optional[str] = None,
@@ -189,6 +198,7 @@ class secretstr(str):
         return f"<secretstr {'*' * len(self)}>"
 
 
+@public()
 def fromenv(
     key: str,
     default: Optional[str] = None,
@@ -211,6 +221,7 @@ def fromenv(
     return dynamic(__get__)
 
 
+@public()
 def expand(value: str) -> cached_property[str]:
     """Expands placeholders ('{key_name}' is replaced with value of `konfig.key_name`)"""
 
@@ -223,6 +234,7 @@ def expand(value: str) -> cached_property[str]:
     return dynamic(__get__)
 
 
+@public()
 def dynamic(get: Callable[[K], T_co]) -> cached_property[T_co]:
 
     def __get__(self: K) -> T_co:

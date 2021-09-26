@@ -21,6 +21,7 @@
 
 * [Monitoring](./docs/monitoring.md)
 * [Automated end-to-end testing](./docs/e2e_testing.md)
+* [Dockerized, GPU based ML prediction process](./docs/ml-prediction.md)
 
 
 ## What is BigFlow?

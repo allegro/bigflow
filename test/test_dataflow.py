@@ -1,7 +1,6 @@
-from os import pipe
+import sys
 from unittest import TestCase
 from unittest import mock
-import unittest
 from unittest.mock import patch
 
 import apache_beam as beam
@@ -9,9 +8,8 @@ from apache_beam import Pipeline
 from apache_beam.options.pipeline_options import PipelineOptions, GoogleCloudOptions, SetupOptions, StandardOptions, WorkerOptions
 from apache_beam.runners.portability.fn_api_runner.fn_runner import RunnerResult
 from apache_beam.testing.test_pipeline import TestPipeline
-from collections import defaultdict, Counter
-from bigflow import JobContext, Workflow
-from bigflow import dataflow
+from collections import Counter
+from bigflow import JobContext
 
 from bigflow.dataflow import BeamJob
 from bigflow.workflow import DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS, DEFAULT_PIPELINE_LEVEL_EXECUTION_TIMEOUT_SHIFT_IN_SECONDS
@@ -248,8 +246,56 @@ class BeamJobTestCase(TestCase):
         options.view_as(WorkerOptions).machine_type = 'n2-standard-8'
         options.view_as(WorkerOptions).max_num_workers = 2
         options.view_as(WorkerOptions).autoscaling_algorithm = 'THROUGHPUT_BASED'
+        options.view_as(WorkerOptions).network = 'default'
+        options.view_as(WorkerOptions).use_public_ips = False
+        options.view_as(StandardOptions).runner = 'DataflowRunner'
+
         options.view_as(SetupOptions).setup_file = "/path/to/setup.py"
 
+        job = BeamJob(
+            id='count_words',
+            entry_point=driver.nope,
+            pipeline_options=options,
+            execution_timeout_sec=10,
+        )
+
+        # when
+        job.execute(JobContext.make())
+
+        # then
+        options.get_all_options()
+        self.assertDictEqual(
+            options.get_all_options(),
+            _create_pipeline_mock.call_args[1]['options'].get_all_options(),
+        )
+
+
+    @patch('bigflow.dataflow.Pipeline')
+    def test_should_create_pipeline_from_pipeline_options_when_argument_passed_to_sys_argv(
+        self,
+        _create_pipeline_mock: mock.Mock,
+    ):
+        # given
+        sys.argv.append('build') # it simulates situation when we call `bf build`and build is passed to argv
+        _create_pipeline_mock.return_value.run.return_value = RunnerResult('DONE', None)
+        driver = CountWordsDriver()
+
+        options = PipelineOptions()
+        options.view_as(StandardOptions).runner = 'DataflowRunner'
+        options.view_as(GoogleCloudOptions).project = 'gcp_project_id'
+        options.view_as(GoogleCloudOptions).job_name = 'beam-wordcount-uuid'
+        options.view_as(GoogleCloudOptions).staging_location = "gs://staging_location"
+        options.view_as(GoogleCloudOptions).temp_location = "gs://temp_location"
+        options.view_as(GoogleCloudOptions).region = 'region'
+        options.view_as(GoogleCloudOptions).service_account_email = 'service-account'
+        options.view_as(WorkerOptions).machine_type = 'n2-standard-8'
+        options.view_as(WorkerOptions).max_num_workers = 2
+        options.view_as(WorkerOptions).autoscaling_algorithm = 'THROUGHPUT_BASED'
+        options.view_as(WorkerOptions).network = 'default'
+        options.view_as(WorkerOptions).use_public_ips = False
+        options.view_as(StandardOptions).runner = 'DataflowRunner'
+
+        options.view_as(SetupOptions).setup_file = "/path/to/setup.py"
         job = BeamJob(
             id='count_words',
             entry_point=driver.nope,
