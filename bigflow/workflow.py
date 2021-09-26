@@ -65,7 +65,7 @@ class JobContext(NamedTuple):
     def make(
         cls,
         *,
-        runtime: Union[str, dt.datetime, None] = None,
+        runtime: Union[str, dt.datetime, dt.date, None] = None,
         runtime_str: Optional[str] = None,
         workflow: Optional['Workflow'] = None,
         workflow_id: Optional[str] = None,
@@ -149,7 +149,7 @@ class Job(abc.ABC):
         raise NotImplementedError
 
     @public(deprecate_reason="Method `Job.run` is deprecated, use `Job.execute()` instead")
-    def run(self, runtime: Union[str, dt.datetime, None]) -> Any:
+    def run(self, runtime: Union[str, dt.datetime, dt.date, None]) -> Any:
         context = JobContext.make(runtime=runtime)
         return self.execute(context)
 
@@ -184,10 +184,10 @@ class Workflow(object):
             warnings.warn("Old bigflow.Job api is used, please implement method `execute` (see bigflow.Job)")
             job.run(context.runtime_str)
 
-    def _make_job_context(self, runtime: Union[dt.date, str, None]) -> JobContext:
+    def _make_job_context(self, runtime: Union[dt.date, dt.datetime, str, None]) -> JobContext:
         return JobContext.make(workflow=self, runtime=runtime)
 
-    def run(self, runtime: Union[dt.date, str, None] = None) -> None:
+    def run(self, runtime: Union[dt.date, dt.datetime, str, None] = None) -> None:
         context = self._make_job_context(runtime)
         for job in self._build_sequential_order():
             self._execute_job(job, context)
@@ -198,14 +198,14 @@ class Workflow(object):
                 return job_wrapper.job
         raise ValueError(f'Job {job_id} not found.')
 
-    def run_job(self, job_id: str, runtime: Union[dt.date, str, None] = None) -> None:
+    def run_job(self, job_id: str, runtime: Union[dt.date, dt.datetime, str, None] = None) -> None:
         context = self._make_job_context(runtime)
         self._execute_job(self.find_job(job_id), context)
 
     def _build_sequential_order(self) -> List['WorkflowJob']:
         return self.definition._sequential_order()
 
-    def _call_on_graph_nodes(self, consumer: Callable[[Job, Any], None]) -> None:
+    def _call_on_graph_nodes(self, consumer: Callable[[Job, List['WorkflowJob']], None]) -> None:
         self.definition._call_on_graph_nodes(consumer)
 
     def _parse_definition(self, definition: Union[List['Job'], 'Definition']) -> 'Definition':
@@ -263,7 +263,7 @@ class Definition:
     def _sequential_order(self) -> List['WorkflowJob']:
         return self.job_order_resolver.find_sequential_run_order()
 
-    def _call_on_graph_nodes(self, consumer: Callable[[Job, Any], None]) -> None:
+    def _call_on_graph_nodes(self, consumer: Callable[[Job, List[WorkflowJob]], None]) -> None:
         self.job_order_resolver._call_on_graph_nodes(consumer)
 
     def _build_graph(
@@ -345,7 +345,7 @@ class JobOrderResolver:
     def find_sequential_run_order(self) -> List[WorkflowJob]:
         ordered_jobs: List[WorkflowJob] = []
 
-        def add_to_ordered_job(job: WorkflowJob, dependencies: Any) -> None:
+        def add_to_ordered_job(job: WorkflowJob, dependencies: List[WorkflowJob]) -> None:
             ordered_jobs.append(job)
 
         self._call_on_graph_nodes(add_to_ordered_job)
@@ -353,7 +353,7 @@ class JobOrderResolver:
 
     def _call_on_graph_nodes(
             self,
-            consumer: Callable[[WorkflowJob, Any], None],
+            consumer: Callable[[WorkflowJob, List[WorkflowJob]], None],
     ) -> None:
         visited = set()
         for job in self.parental_map:
@@ -391,7 +391,7 @@ class JobOrderResolver:
             job: WorkflowJob,
             parental_map: OrderedDict[WorkflowJob, List[WorkflowJob]],
             visited: Set[WorkflowJob],
-            consumer: Callable[[WorkflowJob, Any], None],
+            consumer: Callable[[WorkflowJob, List[WorkflowJob]], None],
     ) -> None:
         if job in visited:
             return
