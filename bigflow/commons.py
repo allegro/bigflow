@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import hashlib
 import logging
 import re
@@ -10,21 +12,29 @@ import os
 from pathlib import Path
 from deprecated import deprecated
 from datetime import datetime, timedelta
+from typing import (
+    Any,
+    TypeVar,
+    Callable,
+    Union,
+    Optional,
+)
 
 
 logger = logging.getLogger(__name__)
 
 
-T = typing.TypeVar('T')
+_T = TypeVar('_T')
+_F = TypeVar("_F", bound=Callable[..., Any])
 
 
 def public(
     *,
-    alias_for: typing.Union[T, None] = None,
+    alias_for: Union[_F, None] = None,
     class_alias: bool = False,
-    deprecate_reason: typing.Optional[str] = None,
-    deprecate_dropat: typing.Optional[str] = None,
-):
+    deprecate_reason: Optional[str] = None,
+    deprecate_dropat: Optional[str] = None,
+) -> Callable[[_F], _F]:
     """Documentation decorator, used to mark function/class which should be considered as a public API.
 
     Only elements marked with this decorator may be treated as `stable API`.
@@ -61,7 +71,7 @@ def public(
     assert alias_for is None or not class_alias
     assert deprecate_reason or not deprecate_dropat
 
-    def wrapper(f: T) -> T:
+    def wrapper(f: _F) -> _F:
         if class_alias:
             assert isinstance(f, type)
             assert len(f.__bases__) == 1
@@ -77,7 +87,9 @@ def public(
             logging.warning("Both %r and %r have their docstrings", f, ff)
 
         if deprecate_reason or deprecate_dropat:
-            return deprecated(reason=deprecate_reason)(ff)
+            dwrapp = deprecated(str(deprecate_reason))
+            return dwrapp(ff)
+
         return ff
 
     return wrapper
@@ -186,12 +198,16 @@ def run_process(
         **kwargs,
     )
 
+    assert process.stdout, "invalid stdout"
+    assert process.stderr, "invalid stderr"
+
     stdout_dumper = _StreamOutputDumper(
         process, process.stdout, logger.info if verbose else logger.debug)
     stderr_dumper = _StreamOutputDumper(
         process, process.stderr, logger.error if verbose else logger.debug)
 
     if input:
+        assert process.stdin, "invalid stdin"
         process.stdin.write(input)
         process.stdin.close()
 
