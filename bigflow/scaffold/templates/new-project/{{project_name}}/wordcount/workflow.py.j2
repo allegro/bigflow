@@ -10,7 +10,6 @@ from .pipeline import dataflow_pipeline_options, workflow_config
 from .processing import count_words
 
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -21,8 +20,8 @@ def wordcount_entry_point(
 ):
     logger.info(f'Running wordcount at {context.runtime_str}')
     (pipeline
-        "Count words" >> count_words()
-        "Save" >> WriteToText(f"gs://{temp_location}/beam_wordcount")
+        | "Count words" >> count_words()
+        | "Save" >> WriteToText(f"gs://{temp_location}/beam_wordcount")
     )
 
 
@@ -34,7 +33,7 @@ wordcount_workflow = bigflow.Workflow(
     },
     definition=[BeamJob(
         id='wordcount_job',
-        pipeline_options=dataflow_pipeline_options,
+        pipeline_options=dataflow_pipeline_options(),
         entry_point=wordcount_entry_point,
         entry_point_kwargs={
             'temp_location': workflow_config['temp_location'],
