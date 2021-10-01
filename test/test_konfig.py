@@ -6,7 +6,7 @@ import pickle
 
 import dill  # type: ignore
 
-from bigflow.konfig import Konfig, resolve_konfig, dynamic, expand, fromenv
+from bigflow.konfig import Konfig, dynamic_super, merge, resolve_konfig, dynamic, expand, fromenv
 
 
 class TestKonfig(unittest.TestCase):
@@ -312,3 +312,88 @@ class TestKonfig(unittest.TestCase):
         # then
         self.assertEqual(config.a, 123)
         self.assertEqual(config.b, '2')
+
+    def test_dynamic_super(self):
+
+        # given
+        class A(Konfig):
+            x = 1
+            y = 1
+
+        class B(A):
+            x = dynamic_super(lambda s, x: x + s.y)
+            y = 2
+
+        class C(A):
+            y = 3
+
+        class D(C, B):
+            x = dynamic_super(lambda s, x: x * s.y)
+
+        # when
+        a = A()
+        b = B()
+        c = C()
+        d = D()
+
+        # then
+        self.assertEqual(dict(a), dict(x=1, y=1))
+        self.assertEqual(dict(b), dict(x=3, y=2))
+        self.assertEqual(dict(c), dict(x=1, y=3))
+
+        # both lambas are executed with 's.y == 3'
+        self.assertEqual(dict(d), dict(x=12, y=3))
+
+    def test_merge(self):
+
+        # given
+        class A(Konfig):
+            x = 1
+            y = {
+                'str1': "value",
+                'str2': "value",
+                'bool1': True,
+                'bool2': True,
+                'int1': 10,
+                'int2': 10,
+                'float1': 1.23,
+                'float2': 1.23,
+                'list1': [1, 2, 3],
+                'list2': [1, 2, 3],
+                'dict1': {'x': 2, 'y': 3},
+                'dict2': {'x': 2, 'y': 3},
+            }
+
+        class B(A):
+            x = merge((1).__add__)
+            y = merge({
+                'str2': "new-value",
+                'bool2': False,
+                'int2': 20,
+                'float2': 3.21,
+                'list2': [4].__add__,
+                'dict2': {'x': (10).__mul__, 'y': 40},
+            })
+
+        # when
+        a = A()
+        b = B()
+
+        # then
+        self.assertEqual(dict(b), {
+            'x': 2,
+            'y': {
+                'str1': "value",
+                'str2': "new-value",
+                'bool1': True,
+                'bool2': False,
+                'int1': 10,
+                'int2': 20,
+                'float1': 1.23,
+                'float2': 3.21,
+                'list1': [1, 2, 3],
+                'list2': [4, 1, 2, 3],
+                'dict1': {'x': 2, 'y': 3},
+                'dict2': {'x': 20, 'y': 40},
+            }
+        })
