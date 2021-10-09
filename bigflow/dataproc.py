@@ -1,3 +1,4 @@
+"""Deprecated. We are removing Dataproc support, due to lack of interest."""
 import json
 import base64
 import functools
