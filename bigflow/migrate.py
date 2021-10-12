@@ -3,7 +3,7 @@ import sys
 import re
 import toml
 
-from typing import Optional
+from typing import Optional, List
 from pathlib import Path
 
 import bigflow
@@ -24,24 +24,24 @@ def _yes_or_no() -> bool:
             return choice in yes
 
 
-def _find_bigflow_req(reqs):
+def _find_bigflow_requirements(requirements: List[str]) -> str:
     pat = re.compile(r"^bigflow\W")
-    return next(filter(pat.match, reqs), None)
+    return next(filter(pat.match, requirements), None)
 
 
-def maybe_upgrade_pyproject_bigflow_version(root: Path):
+def maybe_upgrade_pyproject_bigflow_version(root: Path) -> None:
     pptf = root / "pyproject.toml"
     reqsf = root / "resources" / "requirements.txt"
 
     if not pptf.exists() or not reqsf.exists():
         return
 
-    reqs_version =_find_bigflow_req(bigflow.build.pip.read_requirements(reqsf, False))
+    reqs_version =_find_bigflow_requirements(bigflow.build.pip.read_requirements(reqsf, False))
     reqs_version = re.sub(r"\[.*\]", "", reqs_version)  # strip extras
 
     ppt = toml.load(pptf)
     ppt_requires = ppt.get('build-system', {}).get('requires', [])
-    ppt_version = _find_bigflow_req(ppt_requires)
+    ppt_version = _find_bigflow_requirements(ppt_requires)
 
     if reqs_version == ppt_version:
         logger.debug("Same bigflow version in pyproject.toml & requirements.txt")
@@ -66,14 +66,14 @@ def maybe_upgrade_pyproject_bigflow_version(root: Path):
     pptf.write_text(toml.dumps(ppt))
 
 
-def need_migrate_to_11(root: Path):
+def need_migrate_to_11(root: Path) -> bool:
     return (root / "project_setup.py").exists() and not all([
         (root / "setup.py").exists(),
         (root / "pyproject.toml").exists(),
     ])
 
 
-def _rename_projectsetup_to_setup(root: Path):
+def _rename_projectsetup_to_setup(root: Path) -> None:
     prj_setup_py = root / "project_setup.py"
     setup_py = root / "setup.py"
 
@@ -87,7 +87,7 @@ def _rename_projectsetup_to_setup(root: Path):
         prj_setup_py.rename(setup_py)
 
 
-def migrate__v1_0__v1_1(root: Path):
+def migrate__v1_0__v1_1(root: Path) -> None:
 
     print("Project uses old structure - it needs to be migrated in order to use bigflow >= 1.1")
     print("Project config 'project_setup.py' will be renamed into 'setup.py'")
@@ -119,7 +119,7 @@ def migrate__v1_0__v1_1(root: Path):
         gitignore.write_text(gitignore_content)
 
 
-def check_migrate(root: Optional[Path] = None):
+def check_migrate(root: Optional[Path] = None) -> None:
     # TODO: Implement proper migration detection based on `bigflow.__version__` and `requirements.txt`
     # Consider adding 'bigflow' version as argument to `bigflow.build.setup(...)`
     if root is None:
