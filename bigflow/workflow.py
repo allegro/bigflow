@@ -208,7 +208,7 @@ class Workflow(object):
     def _build_sequential_order(self) -> List['WorkflowJob']:
         return self.definition._sequential_order()
 
-    def _call_on_graph_nodes(self, consumer: Callable[[Job, List['WorkflowJob']], None]) -> None:
+    def _call_on_graph_nodes(self, consumer: Callable[['WorkflowJob', List['WorkflowJob']], None]) -> None:
         self.definition._call_on_graph_nodes(consumer)
 
     def _parse_definition(self, definition: Union[List['Job'], 'Definition']) -> 'Definition':
@@ -266,7 +266,7 @@ class Definition:
     def _sequential_order(self) -> List['WorkflowJob']:
         return self.job_order_resolver.find_sequential_run_order()
 
-    def _call_on_graph_nodes(self, consumer: Callable[[Job, List[WorkflowJob]], None]) -> None:
+    def _call_on_graph_nodes(self, consumer: Callable[[WorkflowJob, List[WorkflowJob]], None]) -> None:
         self.job_order_resolver._call_on_graph_nodes(consumer)
 
     def _build_graph(

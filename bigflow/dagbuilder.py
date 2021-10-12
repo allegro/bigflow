@@ -1,14 +1,21 @@
 import shutil
-import typing
+from typing import (
+    List,
+    Union,
+)
 
 from pathlib import Path
 from datetime import datetime
 
 from bigflow import commons
-from bigflow.workflow import DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS
+from bigflow.workflow import (
+    DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS,
+    Workflow,
+    WorkflowJob
+)
 
 
-def clear_dags_output_dir(workdir: str):
+def clear_dags_output_dir(workdir: str) -> None:
     dags_dir_path = get_dags_output_dir(workdir)
 
     print("clearing dags_output_dir", str(dags_dir_path.resolve()))
@@ -21,8 +28,8 @@ def secret_template(secret: str) -> str:
 
 def generate_dag_file(workdir: str,
                       docker_repository: str,
-                      workflow,
-                      start_from: typing.Union[datetime, str],
+                      workflow: Workflow,
+                      start_from: Union[datetime, str],
                       build_ver: str,
                       root_package_name: str) -> str:
     start_from = _str_to_datetime(start_from)
@@ -66,11 +73,8 @@ dag = DAG(
            depends_on_past=workflow.depends_on_past,
            execution_timeout_sec=DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS))
 
-    def get_job(workflow_job):
-        return workflow_job.job
-
-    def build_dag_operator(workflow_job, dependencies):
-        job = get_job(workflow_job)
+    def build_dag_operator(workflow_job: WorkflowJob, dependencies: List[WorkflowJob]) -> None:
+        job = workflow_job.job
         job_var = "t" + str(job.id)
         task_id = job.id.replace("_", "-")
 
@@ -94,8 +98,8 @@ dag = DAG(
     execution_timeout={execution_timeout_sec!r})
 """.format(job_var=job_var,
           task_id=task_id,
-          docker_image = commons.build_docker_image_tag(docker_repository, build_ver),
-          bf_job= workflow.workflow_id+"."+job.id,
+          docker_image=commons.build_docker_image_tag(docker_repository, build_ver),
+          bf_job=workflow.workflow_id+"."+job.id,
           root_folder=root_package_name,
           retries=job.retry_count if hasattr(job, 'retry_count') else 3,
           retry_delay=job.retry_pause_sec if hasattr(job, 'retry_pause_sec') else 60,
@@ -104,7 +108,7 @@ dag = DAG(
           ))
 
         for d in dependencies:
-            up_job_var = "t" + str(get_job(d).id)
+            up_job_var = "t" + str(d.job.id)
             dag_chunks.append("{job_var}.set_upstream({up_job_var})".format(job_var=job_var, up_job_var=up_job_var))
 
     workflow._call_on_graph_nodes(build_dag_operator)
@@ -116,8 +120,8 @@ dag = DAG(
 
 
 def get_dag_deployment_id(workflow_name: str,
-                          start_from: str,
-                          build_ver: str):
+                          start_from: datetime,
+                          build_ver: str) -> str:
     return '{workflow_name}__v{ver}__{start_from}'.format(
         workflow_name=workflow_name,
         ver=build_ver.translate(str.maketrans(".-+", "___")),
@@ -134,7 +138,7 @@ def get_dags_output_dir(workdir: str) -> Path:
     return dags_dir_path
 
 
-def _str_to_datetime(dt: typing.Union[str, datetime]):
+def _str_to_datetime(dt: Union[str, datetime]) -> datetime:
     if isinstance(dt, datetime):
         return dt
     elif len(dt) <= 10:

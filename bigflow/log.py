@@ -1,3 +1,4 @@
+"""Deprecated. Please, use standard Composer/Dataflow/Dataproc logging mechanisms."""
 import logging
 import typing
 import sys
