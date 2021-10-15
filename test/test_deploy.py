@@ -1,19 +1,21 @@
 import os
-from unittest import TestCase, mock
+from unittest import mock
 from pathlib import Path
 
 import responses
 
-from bigflow.dagbuilder import get_dags_output_dir, clear_dags_output_dir
-from bigflow.deploy import deploy_dags_folder, get_vault_token, deploy_docker_image
+from bigflow.build.operate import create_image_version_file
+from bigflow.dagbuilder import get_dags_output_dir
+from bigflow.deploy import deploy_dags_folder, get_vault_token, deploy_docker_image, \
+    get_image_tags_from_image_version_file, \
+    check_images_exist, AuthorizationType
+from test.mixins import TempCwdMixin
 
 
-class DeployTestCase(TestCase):
+class DeployTestCase(TempCwdMixin):
 
-    def test_should_clear_GCS_DAGs_folder(self):
-
-        # given
-        workdir = os.path.dirname(__file__)
+    @mock.patch('bigflow.deploy.check_images_exist')
+    def test_should_clear_GCS_DAGs_folder(self, check_images_exist):
 
         # mocking
         gs_client_mock = mock.Mock()
@@ -27,9 +29,18 @@ class DeployTestCase(TestCase):
         bucket_mock.list_blobs.return_value = [users_dag_blob, dags_blob, monitoring_dag_blob]
         gs_client_mock.bucket.return_value = bucket_mock
 
+        dags_dir = os.path.join(self.cwd, '.dags')
+        os.mkdir(dags_dir)
+
         # when
-        deploy_dags_folder(dags_dir=workdir + '/.dags', dags_bucket='europe-west1-1-bucket', project_id='', clear_dags_folder=True,
-                           auth_method='local_account', gs_client=gs_client_mock)
+        with self.assertLogs(level='ERROR') as cm:
+            deploy_dags_folder(dags_dir=dags_dir, dags_bucket='europe-west1-1-bucket', project_id='',
+                               clear_dags_folder=True, auth_method=AuthorizationType['local_account'],
+                               gs_client=gs_client_mock)
+            self.assertIn(
+                'ERROR:bigflow.deploy:The image_version.txt file not found, the image check '
+                'will not be performed. To perform the check regenerate DAG files with the '
+                'new version of BigFlow', cm.output)
 
         # then
         gs_client_mock.bucket.assert_called_with('europe-west1-1-bucket')
@@ -37,18 +48,8 @@ class DeployTestCase(TestCase):
         dags_blob.delete.assert_not_called()
         monitoring_dag_blob.delete.assert_not_called()
 
-    def test_should_upload_files_from_DAGs_output_dir_to_GCS_DAGs_folder(self):
-
-        # given
-        workdir = os.path.dirname(__file__)
-
-        clear_dags_output_dir(workdir)
-        dags_dir = get_dags_output_dir(workdir)
-        f1 = dags_dir / 'zonk_1.txt'
-        f1.touch()
-        f2 = dags_dir / 'zonk_2.txt'
-        f2.touch()
-
+    @mock.patch('bigflow.deploy.check_images_exist')
+    def test_should_upload_files_from_DAGs_output_dir_to_GCS_DAGs_folder(self, check_images_exist):
         # mocking
         gs_client_mock = mock.Mock()
         bucket_mock = mock.Mock()
@@ -63,12 +64,19 @@ class DeployTestCase(TestCase):
                 return f2_blob_mock
             return None
 
+        # given
+        dags_dir = get_dags_output_dir(self.cwd)
+        f1 = dags_dir / 'zonk_1.txt'
+        f1.touch()
+        f2 = dags_dir / 'zonk_2.txt'
+        f2.touch()
+
         gs_client_mock.bucket.return_value = bucket_mock
         bucket_mock.blob.side_effect = blobs
 
         # when
-        deploy_dags_folder(dags_dir=workdir + '/.dags', dags_bucket='europe-west1-1-bucket', project_id='', clear_dags_folder=False,
-                           auth_method='local_account', gs_client=gs_client_mock)
+        deploy_dags_folder(dags_dir=os.path.join(self.cwd, '.dags'), dags_bucket='europe-west1-1-bucket', project_id='',
+                           clear_dags_folder=False, auth_method=AuthorizationType['local_account'], gs_client=gs_client_mock)
 
         # then
         gs_client_mock.bucket.assert_called_with('europe-west1-1-bucket')
@@ -78,8 +86,9 @@ class DeployTestCase(TestCase):
     @responses.activate
     def test_should_retrieve_token_from_vault(self):
         # given
-        responses.add(responses.GET, 'https://example.com/v1/gcp/token', status=200, json={'data': {'token': 'token_value'}})
         vault_endpoint = 'https://example.com/v1/gcp/token'
+        responses.add(responses.GET, vault_endpoint, status=200,
+                      json={'data': {'token': 'token_value'}})
 
         # when
         token = get_vault_token(vault_endpoint, 'secret')
@@ -123,7 +132,8 @@ class DeployTestCase(TestCase):
         # then
         decode_version_number_from_file_name.assert_called_with(Path('image-version123.tar'))
         load_image_from_tar.assert_called_with('image-version123.tar')
-        _deploy_image_loaded_to_local_registry.assert_called_with('version123', 'docker_repository', 'image_id', 'local_account', None, None)
+        _deploy_image_loaded_to_local_registry.assert_called_with('version123', 'docker_repository', 'image_id',
+                                                                  AuthorizationType.local_account, None, None)
         remove_docker_image_from_local_registry.assert_called_with('docker_repository:version123')
 
     @mock.patch('bigflow.deploy.decode_version_number_from_file_name')
@@ -145,3 +155,53 @@ class DeployTestCase(TestCase):
         # then
         load_image_from_tar.assert_called_with('image-version123.tar')
         remove_docker_image_from_local_registry.assert_called_with('docker_repository:version123')
+
+    def test_should_parse_image_versions_from_files(self):
+        # given
+        docker_repository = 'eu.gcr.io/project/name'
+        version1 = '0.74.dev1-g4ef53366'
+        version2 = '0.74'
+        dags_path = Path(self.cwd, '.dags')
+        dags_path.mkdir(exist_ok=True)
+        with (dags_path / 'image_version.txt').open(mode='w') as f:
+            for version in [version1, version2]:
+                f.write(f'{docker_repository}:{version}\n')
+
+        # when
+        tags = get_image_tags_from_image_version_file(os.path.join(self.cwd, '.dags'))
+
+        # then
+        self.assertEqual(tags, {f'{docker_repository}:{version1}', f'{docker_repository}:{version2}'})
+
+    @mock.patch('bigflow.deploy._authenticate_to_registry')
+    @mock.patch('bigflow.deploy.bf_commons.run_process', return_value='')
+    def test_should_raise_error_when_image_doesnt_exist(self, _authenticate_to_registry, run_process):
+        with self.assertRaises(ValueError):
+            check_images_exist(auth_method=AuthorizationType.local_account,
+                               images={f'eu.gcr.io/non-existing-project/name:some-version'})
+
+    @mock.patch('bigflow.deploy._authenticate_to_registry')
+    @mock.patch('bigflow.deploy.bf_commons.run_process', return_value='[{"name": "some_image"}]')
+    def test_should_not_raise_error_if_the_image_exists(self, _authenticate_to_registry, run_process):
+        check_images_exist(auth_method=AuthorizationType.local_account,
+                           images={f'eu.gcr.io/non-existing-project/name:some-version'})
+
+    @mock.patch('bigflow.deploy._authenticate_to_registry')
+    @mock.patch('bigflow.deploy.upload_dags_folder')
+    @mock.patch('bigflow.deploy.bf_commons.run_process', return_value=None)
+    def test_should_not_upload_dags_if_image_is_missing(self, _authenticate_to_registry,
+                                                        upload_dags_folder, run_process):
+        # given
+        gs_client = mock.Mock()
+        docker_repository = 'eu.gcr.io/project/name'
+        version = '0.74.dev1-g4ef53366'
+        create_image_version_file(self.cwd, f'{docker_repository}:{version}')
+
+        # when/then
+        with self.assertRaises(ValueError):
+            deploy_dags_folder(dags_dir=os.path.join(self.cwd, '.dags'), dags_bucket='europe-west1-1-bucket', project_id='',
+                               clear_dags_folder=False, auth_method=AuthorizationType['local_account'], gs_client=gs_client)
+
+        _authenticate_to_registry.assert_called_once()
+        gs_client.bucket.assert_not_called()
+        upload_dags_folder.assert_not_called()
