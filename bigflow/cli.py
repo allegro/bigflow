@@ -28,7 +28,7 @@ import bigflow.build.spec
 import bigflow.migrate
 
 from bigflow import Config
-from bigflow.deploy import deploy_dags_folder, deploy_docker_image
+from bigflow.deploy import deploy_dags_folder, deploy_docker_image, AuthorizationType
 from bigflow.scaffold import start_project
 from bigflow.version import get_version, release
 
@@ -516,7 +516,7 @@ def _cli_deploy_dags(args):
     deploy_dags_folder(dags_dir=_resolve_dags_dir(args),
                        dags_bucket=_resolve_property(args, 'dags_bucket'),
                        clear_dags_folder=args.clear_dags_folder,
-                       auth_method=args.auth_method,
+                       auth_method=AuthorizationType.from_str(args.auth_method),
                        vault_endpoint=_resolve_vault_endpoint(args),
                        vault_secret=vault_secret,
                        project_id=_resolve_property(args, 'gcp_project_id')

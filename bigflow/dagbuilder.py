@@ -27,7 +27,7 @@ def secret_template(secret: str) -> str:
 
 
 def generate_dag_file(workdir: str,
-                      docker_repository: str,
+                      image_version: str,
                       workflow: Workflow,
                       start_from: Union[datetime, str],
                       build_ver: str,
@@ -36,7 +36,7 @@ def generate_dag_file(workdir: str,
 
     print(f'start_from: {start_from}')
     print(f'build_ver: {build_ver}')
-    print(f'docker_repository: {docker_repository}')
+    print(f'image version: {image_version}')
 
     dag_deployment_id = get_dag_deployment_id(workflow.workflow_id, start_from, build_ver)
     dag_file_path = get_dags_output_dir(workdir) / (dag_deployment_id + '_dag.py')
@@ -98,7 +98,7 @@ dag = DAG(
     execution_timeout={execution_timeout_sec!r})
 """.format(job_var=job_var,
           task_id=task_id,
-          docker_image=commons.build_docker_image_tag(docker_repository, build_ver),
+          docker_image=image_version,
           bf_job=workflow.workflow_id+"."+job.id,
           root_folder=root_package_name,
           retries=job.retry_count if hasattr(job, 'retry_count') else 3,

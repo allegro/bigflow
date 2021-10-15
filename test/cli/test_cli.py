@@ -290,7 +290,7 @@ deployment_config = Config(name='dev',
         cli(['deploy-dags'])
 
         # then
-        deploy_dags_folder_mock.assert_called_with(auth_method='local_account',
+        deploy_dags_folder_mock.assert_called_with(auth_method=AuthorizationType.local_account,
                                                    clear_dags_folder=False,
                                                    dags_bucket='my-dags-bucket',
                                                    dags_dir=self._expected_default_dags_dir(),
@@ -324,7 +324,7 @@ deployment_config = Config(name='dev',
         cli(['deploy-dags'])
 
         # then
-        deploy_dags_folder_mock.assert_called_with(auth_method='local_account',
+        deploy_dags_folder_mock.assert_called_with(auth_method=AuthorizationType.local_account,
                                                    clear_dags_folder=False,
                                                    dags_bucket='my-dags-dev-bucket',
                                                    dags_dir=self._expected_default_dags_dir(),
@@ -336,7 +336,7 @@ deployment_config = Config(name='dev',
         cli(['deploy-dags', '--config', 'dev'])
 
         # then
-        deploy_dags_folder_mock.assert_called_with(auth_method='local_account',
+        deploy_dags_folder_mock.assert_called_with(auth_method=AuthorizationType.local_account,
                                                    clear_dags_folder=False,
                                                    dags_bucket='my-dags-dev-bucket',
                                                    dags_dir=self._expected_default_dags_dir(),
@@ -348,7 +348,7 @@ deployment_config = Config(name='dev',
         cli(['deploy-dags', '--config', 'prod'])
 
         # then
-        deploy_dags_folder_mock.assert_called_with(auth_method='local_account',
+        deploy_dags_folder_mock.assert_called_with(auth_method=AuthorizationType.local_account,
                                                    clear_dags_folder=False,
                                                    dags_bucket='my-dags-prod-bucket',
                                                    dags_dir=self._expected_default_dags_dir(),
@@ -381,7 +381,7 @@ deployment_config = Config(name='dev',
              ])
 
         # then
-        deploy_dags_folder_mock.assert_called_with(auth_method='vault',
+        deploy_dags_folder_mock.assert_called_with(auth_method=AuthorizationType.vault,
                                                    clear_dags_folder=False,
                                                    dags_bucket='my-another-dags-bucket',
                                                    dags_dir='/tmp/my-dags-dir',
@@ -404,7 +404,7 @@ deployment_config = Config(name='dev',
              ])
 
         # then
-        deploy_dags_folder_mock.assert_called_with(auth_method='vault',
+        deploy_dags_folder_mock.assert_called_with(auth_method=AuthorizationType.vault,
                                                    clear_dags_folder=True,
                                                    dags_bucket='my-dags-bucket',
                                                    dags_dir='/tmp/my-dags-dir',
@@ -527,7 +527,7 @@ deployment_config = Config(name='dev',
         cli(['deploy', '-i', 'my-images/image-version'])
 
         # then
-        deploy_dags_folder_mock.assert_called_with(auth_method='local_account',
+        deploy_dags_folder_mock.assert_called_with(auth_method=AuthorizationType.local_account,
                                                    clear_dags_folder=False,
                                                    dags_bucket='my-dags-bucket',
                                                    dags_dir=self._expected_default_dags_dir(),

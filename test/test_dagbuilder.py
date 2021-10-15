@@ -5,6 +5,7 @@ from pathlib import Path
 import mock
 from unittest import TestCase
 from bigflow.bigquery.job import Job
+from bigflow.build.operate import create_image_version_file
 from bigflow.dagbuilder import get_dags_output_dir, clear_dags_output_dir, generate_dag_file, secret_template
 from bigflow.workflow import WorkflowJob, Workflow, Definition, get_timezone_offset_seconds, hourly_start_time
 
@@ -34,12 +35,26 @@ class DagBuilderTestCase(TestCase):
         # then
         self.assertFalse(f.exists())
 
+    def test_should_generate_image_version_file(self):
+        # given
+        workdir = os.path.dirname(__file__)
+        image = 'repository:version'
+
+        # when
+        create_image_version_file(workdir, image)
+
+        # then
+        self.assertEqual(Path(workdir, '.dags', 'image_version.txt').read_text(), image)
+
+
     @mock.patch('bigflow.workflow.get_timezone_offset_seconds')
     def test_should_generate_DAG_file_from_workflow_with_hourly_scheduling(self, get_timezone_offset_seconds_mock):
         # given
         workdir = os.path.dirname(__file__)
         get_timezone_offset_seconds_mock.return_value = 2 * 3600
         docker_repository = 'eu.gcr.io/my_docker_repository_project/my-project'
+        version = '0.3.0'
+        image = f'{docker_repository}:{version}'
 
         # given
         job1 = Job(
@@ -74,7 +89,7 @@ class DagBuilderTestCase(TestCase):
             schedule_interval='@hourly')
 
         # when
-        dag_file_path = generate_dag_file(workdir, docker_repository, workflow, '2020-07-02 10:00:00', '0.3.0', 'ca')
+        dag_file_path = generate_dag_file(workdir, image, workflow, '2020-07-02 10:00:00', version, 'ca')
 
         # then
         self.assertEqual(dag_file_path, workdir + '/.dags/my_workflow__v0_3_0__2020_07_02_10_00_00_dag.py')
@@ -158,6 +173,8 @@ tjob3.set_upstream(tjob1)
         # given
         workdir = os.path.dirname(__file__)
         docker_repository = 'eu.gcr.io/my_docker_repository_project/my-project'
+        version = '0.3.0'
+        image = f'{docker_repository}:{version}'
 
         # given
         job1 = Job(
@@ -178,7 +195,7 @@ tjob3.set_upstream(tjob1)
             secrets=['bf_secret_password', 'bf_secret_token'])
 
         # when
-        dag_file_path = generate_dag_file(workdir, docker_repository, workflow, '2020-07-02', '0.3.0', 'ca')
+        dag_file_path = generate_dag_file(workdir, image, workflow, '2020-07-02', version, 'ca')
 
         # then passes the depends_on_past parameter value
         self.assertEqual(dag_file_path, workdir + '/.dags/my_daily_workflow__v0_3_0__2020_07_02_00_00_00_dag.py')
@@ -228,6 +245,8 @@ tjob1 = kubernetes_pod_operator.KubernetesPodOperator(
         # given
         workdir = os.path.dirname(__file__)
         docker_repository = 'eu.gcr.io/my_docker_repository_project/my-project'
+        version = '0.3.0'
+        image = f'{docker_repository}:{version}'
 
         # given
         job1 = Job(
@@ -246,7 +265,7 @@ tjob1 = kubernetes_pod_operator.KubernetesPodOperator(
             schedule_interval='@daily')
 
         # when
-        dag_file_path = generate_dag_file(workdir, docker_repository, workflow, '2020-07-02', '0.3.0', 'ca')
+        dag_file_path = generate_dag_file(workdir, image, workflow, '2020-07-02', version, 'ca')
 
         # then
         self.assertEqual(dag_file_path, workdir + '/.dags/my_daily_workflow__v0_3_0__2020_07_02_00_00_00_dag.py')

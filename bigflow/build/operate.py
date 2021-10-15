@@ -3,7 +3,6 @@
 import os
 import subprocess
 import shutil
-import typing
 import logging
 import typing
 
@@ -79,6 +78,11 @@ def build_image(
     logger.info("Docker image was built")
 
 
+def create_image_version_file(dags_dir: str, image_version: str):
+    dags_path = bigflow.dagbuilder.get_dags_output_dir(dags_dir) / "image_version.txt"
+    dags_path.write_text(image_version)
+
+
 def build_dags(
     project_spec: BigflowProjectSpec,
     start_time: str,
@@ -86,6 +90,9 @@ def build_dags(
 ):
     logger.info("Building airflow DAGs...")
     clear_dags_leftovers(project_spec)
+
+    image_version = bf_commons.build_docker_image_tag(project_spec.docker_repository, project_spec.version)
+    create_image_version_file(str(project_spec.project_dir), image_version)
 
     # TODO: Move common frunctions from bigflow.cli to bigflow.commons (or other shared module)
     from bigflow.cli import _valid_datetime, walk_workflows
@@ -104,7 +111,7 @@ def build_dags(
             cnt += 1
             bigflow.dagbuilder.generate_dag_file(
                 str(project_spec.project_dir),
-                project_spec.docker_repository,
+                image_version,
                 workflow,
                 start_time,
                 project_spec.version,
