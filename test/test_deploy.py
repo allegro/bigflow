@@ -35,7 +35,7 @@ class DeployTestCase(TempCwdMixin):
         # when
         with self.assertLogs(level='ERROR') as cm:
             deploy_dags_folder(dags_dir=dags_dir, dags_bucket='europe-west1-1-bucket', project_id='',
-                               clear_dags_folder=True, auth_method=AuthorizationType['local_account'],
+                               clear_dags_folder=True, auth_method=AuthorizationType.LOCAL_ACCOUNT,
                                gs_client=gs_client_mock)
             self.assertIn(
                 'ERROR:bigflow.deploy:The image_version.txt file not found, the image check '
@@ -76,7 +76,7 @@ class DeployTestCase(TempCwdMixin):
 
         # when
         deploy_dags_folder(dags_dir=os.path.join(self.cwd, '.dags'), dags_bucket='europe-west1-1-bucket', project_id='',
-                           clear_dags_folder=False, auth_method=AuthorizationType['local_account'], gs_client=gs_client_mock)
+                           clear_dags_folder=False, auth_method=AuthorizationType.LOCAL_ACCOUNT, gs_client=gs_client_mock)
 
         # then
         gs_client_mock.bucket.assert_called_with('europe-west1-1-bucket')
@@ -113,10 +113,10 @@ class DeployTestCase(TempCwdMixin):
             self.assertEqual(responses.calls[0].request.url, 'https://example.com/v1/gcp/token')
             self.assertEqual(responses.calls[0].request.headers['X-Vault-Token'], 'secret')
 
-    @mock.patch('bigflow.deploy.decode_version_number_from_file_name')
+    @mock.patch('bigflow.commons.decode_version_number_from_file_name')
     @mock.patch('bigflow.deploy.load_image_from_tar')
     @mock.patch('bigflow.deploy._deploy_image_loaded_to_local_registry')
-    @mock.patch('bigflow.deploy.remove_docker_image_from_local_registry')
+    @mock.patch('bigflow.commons.remove_docker_image_from_local_registry')
     def test_should_remove_image_from_local_registry_after_deploy(self,
                                                                   remove_docker_image_from_local_registry,
                                                                   _deploy_image_loaded_to_local_registry,
@@ -133,13 +133,13 @@ class DeployTestCase(TempCwdMixin):
         decode_version_number_from_file_name.assert_called_with(Path('image-version123.tar'))
         load_image_from_tar.assert_called_with('image-version123.tar')
         _deploy_image_loaded_to_local_registry.assert_called_with('version123', 'docker_repository', 'image_id',
-                                                                  AuthorizationType.local_account, None, None)
+                                                                  AuthorizationType.LOCAL_ACCOUNT, None, None)
         remove_docker_image_from_local_registry.assert_called_with('docker_repository:version123')
 
-    @mock.patch('bigflow.deploy.decode_version_number_from_file_name')
+    @mock.patch('bigflow.commons.decode_version_number_from_file_name')
     @mock.patch('bigflow.deploy.load_image_from_tar')
     @mock.patch('bigflow.deploy.tag_image')
-    @mock.patch('bigflow.deploy.remove_docker_image_from_local_registry')
+    @mock.patch('bigflow.commons.remove_docker_image_from_local_registry')
     def test_should_remove_image_from_local_registry_after_failed_deploy(self, remove_docker_image_from_local_registry,
                                                                          tag_image, load_image_from_tar,
                                                                          decode_version_number_from_file_name):
@@ -177,13 +177,13 @@ class DeployTestCase(TempCwdMixin):
     @mock.patch('bigflow.deploy.bf_commons.run_process', return_value='')
     def test_should_raise_error_when_image_doesnt_exist(self, _authenticate_to_registry, run_process):
         with self.assertRaises(ValueError):
-            check_images_exist(auth_method=AuthorizationType.local_account,
+            check_images_exist(auth_method=AuthorizationType.LOCAL_ACCOUNT,
                                images={f'eu.gcr.io/non-existing-project/name:some-version'})
 
     @mock.patch('bigflow.deploy._authenticate_to_registry')
     @mock.patch('bigflow.deploy.bf_commons.run_process', return_value='[{"name": "some_image"}]')
     def test_should_not_raise_error_if_the_image_exists(self, _authenticate_to_registry, run_process):
-        check_images_exist(auth_method=AuthorizationType.local_account,
+        check_images_exist(auth_method=AuthorizationType.LOCAL_ACCOUNT,
                            images={f'eu.gcr.io/non-existing-project/name:some-version'})
 
     @mock.patch('bigflow.deploy._authenticate_to_registry')
@@ -200,7 +200,7 @@ class DeployTestCase(TempCwdMixin):
         # when/then
         with self.assertRaises(ValueError):
             deploy_dags_folder(dags_dir=os.path.join(self.cwd, '.dags'), dags_bucket='europe-west1-1-bucket', project_id='',
-                               clear_dags_folder=False, auth_method=AuthorizationType['local_account'], gs_client=gs_client)
+                               clear_dags_folder=False, auth_method=AuthorizationType.LOCAL_ACCOUNT, gs_client=gs_client)
 
         _authenticate_to_registry.assert_called_once()
         gs_client.bucket.assert_not_called()

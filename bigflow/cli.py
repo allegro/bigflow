@@ -382,13 +382,14 @@ def _add_parsers_common_arguments(parser):
 
 def _add_deploy_parsers_common_arguments(parser):
     parser.add_argument('-a', '--auth-method',
-                        type=str,
+                        type=AuthorizationType,
                         default='local_account',
                         help='One of two authentication method: '
                              'local_account -- you are using credentials of your local user authenticated in gcloud; '
                              'vault -- credentials for service account are obtained from Vault. '
                              'Default: local_account',
-                        choices=['local_account', 'vault'])
+                        choices=list(AuthorizationType),
+    )
     parser.add_argument('-ve', '--vault-endpoint',
                         type=str,
                         help='URL of a Vault endpoint to get OAuth token for service account. '
@@ -493,7 +494,7 @@ def _resolve_dags_dir(args):
 
 
 def _resolve_vault_endpoint(args):
-    if args.auth_method == 'vault':
+    if args.auth_method == AuthorizationType.VAULT:
         return _resolve_property(args, 'vault_endpoint')
     else:
         return None
@@ -516,7 +517,7 @@ def _cli_deploy_dags(args):
     deploy_dags_folder(dags_dir=_resolve_dags_dir(args),
                        dags_bucket=_resolve_property(args, 'dags_bucket'),
                        clear_dags_folder=args.clear_dags_folder,
-                       auth_method=AuthorizationType.from_str(args.auth_method),
+                       auth_method=args.auth_method,
                        vault_endpoint=_resolve_vault_endpoint(args),
                        vault_secret=vault_secret,
                        project_id=_resolve_property(args, 'gcp_project_id')

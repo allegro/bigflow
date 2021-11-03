@@ -1,13 +1,7 @@
-import json
 import logging
-import re
 import typing as T
-from enum import Enum
 
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
+from enum import Enum
 from pathlib import Path
 
 import requests
@@ -16,22 +10,14 @@ from google.oauth2 import credentials
 from google.cloud import storage
 
 import bigflow.commons as bf_commons
-from .commons import decode_version_number_from_file_name, remove_docker_image_from_local_registry, build_docker_image_tag
 
 
 logger = logging.getLogger(__name__)
 
 
 class AuthorizationType(Enum):
-    local_account = 'local_account'
-    vault = 'vault'
-
-    @classmethod
-    def from_str(cls, value: str):
-        try:
-            return cls[value]
-        except KeyError:
-            raise ValueError('unsupported auth_method: ' + value)
+    LOCAL_ACCOUNT = 'local_account'
+    VAULT = 'vault'
 
 
 def load_image_from_tar(image_tar_path: str) -> str:
@@ -49,19 +35,19 @@ def tag_image(image_id: str, repository: str, tag: str) -> str:
 def deploy_docker_image(
         image_tar_path: str,
         docker_repository: str,
-        auth_method: str = 'local_account',
+        auth_method: AuthorizationType = AuthorizationType.LOCAL_ACCOUNT,
         vault_endpoint: T.Optional[str] = None,
         vault_secret: T.Optional[str] = None,
 ) -> str:
-    build_ver = decode_version_number_from_file_name(Path(image_tar_path))
+    build_ver = bf_commons.decode_version_number_from_file_name(Path(image_tar_path))
     build_ver = build_ver.replace("+", "-")  # fix local version separator
     image_id = load_image_from_tar(image_tar_path)
     try:
-        auth_method = AuthorizationType.from_str(auth_method)
         return _deploy_image_loaded_to_local_registry(build_ver, docker_repository, image_id, auth_method,
                                                       vault_endpoint, vault_secret)
     finally:
-        remove_docker_image_from_local_registry(build_docker_image_tag(docker_repository, build_ver))
+        image_tag = bf_commons.build_docker_image_tag(docker_repository, build_ver)
+        bf_commons.remove_docker_image_from_local_registry(image_tag)
 
 
 def _deploy_image_loaded_to_local_registry(
@@ -93,16 +79,16 @@ def _authenticate_to_registry(
 ):
     logger.info("Authenticating to registry with auth_method=%s", auth_method)
 
-    if auth_method == AuthorizationType.local_account:
+    if auth_method == AuthorizationType.LOCAL_ACCOUNT:
         bf_commons.run_process(['gcloud', 'auth', 'configure-docker'])
-    elif auth_method == AuthorizationType.vault:
+    elif auth_method == AuthorizationType.VAULT:
         oauthtoken = get_vault_token(vault_endpoint, vault_secret)
         bf_commons.run_process(
             ['docker', 'login', '-u', 'oauth2accesstoken', '--password-stdin', 'https://eu.gcr.io'],
             input=oauthtoken,
         )
     else:
-        raise ValueError('unsupported auth_method: ' + auth_method.value)
+        raise ValueError(f"unsupported auth_method: {auth_method!r}")
 
 
 def check_images_exist(
@@ -141,7 +127,7 @@ def deploy_dags_folder(
         dags_bucket: str,
         project_id: str,
         clear_dags_folder: bool = False,
-        auth_method: AuthorizationType = AuthorizationType.local_account,
+        auth_method: AuthorizationType = AuthorizationType.LOCAL_ACCOUNT,
         vault_endpoint: T.Optional[str] = None,
         vault_secret: T.Optional[str] = None,
         gs_client: T.Optional[storage.Client] = None,
@@ -201,13 +187,13 @@ def create_storage_client(
         vault_endpoint: str,
         vault_secret: str,
 ) -> storage.Client:
-    if auth_method == AuthorizationType.local_account:
+    if auth_method == AuthorizationType.LOCAL_ACCOUNT:
         return storage.Client(project=project_id)
-    elif auth_method == AuthorizationType.vault:
+    elif auth_method == AuthorizationType.VAULT:
         oauthtoken = get_vault_token(vault_endpoint, vault_secret)
         return storage.Client(project=project_id, credentials=credentials.Credentials(oauthtoken))
     else:
-        raise ValueError('unsupported auth_method: ' + auth_method.value)
+        raise ValueError(f"unsupported auth_method: {auth_method!r}")
 
 
 def get_vault_token(vault_endpoint: str, vault_secret: str) -> str:
