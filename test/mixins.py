@@ -1,6 +1,8 @@
-from typing import Union
+from __future__ import annotations
+
 import venv
 import unittest
+import unittest.mock
 import subprocess
 import shutil
 import tempfile
@@ -10,9 +12,19 @@ import inspect
 import pexpect
 import logging
 
+
+from typing import Any, Union
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
+
+
+class BaseTestCase(unittest.TestCase):
+    """Common helpers, usefull for any test"""
+
+    def addMock(self, mock: unittest.mock._patch) -> unittest.mock.Mock:
+        self.addCleanup(mock.stop)
+        return mock.start()
 
 
 class Mixin(unittest.TestCase):
