@@ -25,11 +25,13 @@ import lazy_object_proxy  # type: ignore
 from bigflow.commons import public
 
 __all__ = [
-    'dynamic',
-    'expand',
-    'fromenv',
     'Konfig',
     'resolve_konfig',
+    'dynamic',
+    'dynamic_super',
+    'expand',
+    'fromenv',
+    'merge',
 ]
 
 

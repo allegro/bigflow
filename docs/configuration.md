@@ -456,20 +456,12 @@ import bigflow.konfig
 from bigflow.konfig import expand
 
 class Conf(bigflow.konfig.Konfig):
-    """Defines configuration properties and their types"""
-    project: str
-    region: str
-    machine_type: str
-    num_machines: int
-    dataset: str
-
-class Common(Conf):
     """Shared across all configs"""
-    env: str
-    project = expand("my-project-{env}")
-    region = "europe-west1"
-    machine_type = "n2-standard-2"
-    num_machines = 10
+    env: str  # no default value, must be overwritten
+    project: str = expand("my-project-{env}")
+    region: str = "europe-west1"
+    machine_type: str = "n2-standard-2"
+    num_machines: int = 10
 
 class Dev(Common):
     """Development environment"""
@@ -477,26 +469,37 @@ class Dev(Common):
     dataset = "dataset-one"
     num_machines = 2
 
-class DevBench(Dev):
-    """Similar to dev, suitable for benchmarks"""
+class Bench(Conf):
+    """Mixin, override some properties to enable benchmarking"""
+    # don't change 'env'
     dataset = "dataset-benchmark"
     num_machines = 15
 
-class Prod(Common):
+class Stage(Common):
+    """Test environment"""
+    env = "test"
+    dataset = "dataset-one"
+    num_machines = 20
+
+class Prod(Stage):
     """Production environment"""
     env = "prod"
-    dataset = "dataset-one"
-    num_machines = 15
 
-config = bigflow.konfig.resolve_konfig(
-    {
-        'prod': Prod,
-        'dev': Dev,
-        'dev-bench': DevBench,
-    },
-)
+# combine several configs
+# resolves attributes from `Bench` and then from `Stage`
+class StageBench(Bench, Stage): pass
 
-# IDE should be able to autocomplete after `config.`
+# or the same with a special sugar syntax
+StageBench = Bench @ Stage
+
+config: Conf = bigflow.konfig.resolve_konfig({
+    'prod': Prod,
+    'dev': Dev,
+    'stage': Stage,
+    'dev-bench': Bench @ Dev,      # combine mixin Bench and Dev
+    'stage-bench': Bench @ Stage,
+})
+
 print(config.num_machines)
 ```
 
@@ -544,8 +547,8 @@ print(config2.two) # => 102
 
 ## Secrets management
 
-To define a secret for your BigFlow workflow, you need to use [Kubernetes Secrets](https://cloud.google.com/composer/docs/how-to/using/using-kubernetes-pod-operator#secret-config) 
-mechanism (Cloud Composer is a GKE cluster under the hood). 
+To define a secret for your BigFlow workflow, you need to use [Kubernetes Secrets](https://cloud.google.com/composer/docs/how-to/using/using-kubernetes-pod-operator#secret-config)
+mechanism (Cloud Composer is a GKE cluster under the hood).
 
 ### Public cluster
 Run the following commands in the [Cloud Shell](https://cloud.google.com/shell/docs/launching-cloud-shell#launching_from_the_console)
@@ -558,10 +561,10 @@ kubectl create secret generic <SECRET NAME> --from-literal <SECRET ENVIRONMENT K
 ```
 
 ### Private cluster
-If the cluster is private, you can still connect from inside your subnet. 
-First, [create a VM](https://cloud.google.com/compute/docs/instances/create-start-instance#create_a_vm_instance_in_a_specific_subnet) 
+If the cluster is private, you can still connect from inside your subnet.
+First, [create a VM](https://cloud.google.com/compute/docs/instances/create-start-instance#create_a_vm_instance_in_a_specific_subnet)
 in your project using the same VPC and subnet as your cluster.
-Then, [connect to your VM](https://cloud.google.com/compute/docs/instances/connecting-to-instance) 
+Then, [connect to your VM](https://cloud.google.com/compute/docs/instances/connecting-to-instance)
 and run the following commands. Remember to use the `--internal-ip` flag when getting credentials:
 
 ```shell script
@@ -597,7 +600,7 @@ Next, you need to specify secrets that you want to use in a workflow:
 import bigflow
 
 workflow = bigflow.Workflow(
-    workflow_id='example', 
+    workflow_id='example',
     definition=[],
     secrets=['bf_my_super_secret'])
 ```
@@ -615,7 +618,7 @@ class ExampleJob(bigflow.Job):
         os.environ['BF_MY_SUPER_SECRET']
 
 workflow = bigflow.Workflow(
-    workflow_id='example', 
+    workflow_id='example',
     definition=[ExampleJob()],
     secrets=['bf_my_super_secret'])
 ```
