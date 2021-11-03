@@ -290,7 +290,7 @@ deployment_config = Config(name='dev',
         cli(['deploy-dags'])
 
         # then
-        deploy_dags_folder_mock.assert_called_with(auth_method=AuthorizationType.local_account,
+        deploy_dags_folder_mock.assert_called_with(auth_method=AuthorizationType.LOCAL_ACCOUNT,
                                                    clear_dags_folder=False,
                                                    dags_bucket='my-dags-bucket',
                                                    dags_dir=self._expected_default_dags_dir(),
@@ -324,7 +324,7 @@ deployment_config = Config(name='dev',
         cli(['deploy-dags'])
 
         # then
-        deploy_dags_folder_mock.assert_called_with(auth_method=AuthorizationType.local_account,
+        deploy_dags_folder_mock.assert_called_with(auth_method=AuthorizationType.LOCAL_ACCOUNT,
                                                    clear_dags_folder=False,
                                                    dags_bucket='my-dags-dev-bucket',
                                                    dags_dir=self._expected_default_dags_dir(),
@@ -336,7 +336,7 @@ deployment_config = Config(name='dev',
         cli(['deploy-dags', '--config', 'dev'])
 
         # then
-        deploy_dags_folder_mock.assert_called_with(auth_method=AuthorizationType.local_account,
+        deploy_dags_folder_mock.assert_called_with(auth_method=AuthorizationType.LOCAL_ACCOUNT,
                                                    clear_dags_folder=False,
                                                    dags_bucket='my-dags-dev-bucket',
                                                    dags_dir=self._expected_default_dags_dir(),
@@ -348,7 +348,7 @@ deployment_config = Config(name='dev',
         cli(['deploy-dags', '--config', 'prod'])
 
         # then
-        deploy_dags_folder_mock.assert_called_with(auth_method=AuthorizationType.local_account,
+        deploy_dags_folder_mock.assert_called_with(auth_method=AuthorizationType.LOCAL_ACCOUNT,
                                                    clear_dags_folder=False,
                                                    dags_bucket='my-dags-prod-bucket',
                                                    dags_dir=self._expected_default_dags_dir(),
@@ -381,7 +381,7 @@ deployment_config = Config(name='dev',
              ])
 
         # then
-        deploy_dags_folder_mock.assert_called_with(auth_method=AuthorizationType.vault,
+        deploy_dags_folder_mock.assert_called_with(auth_method=AuthorizationType.VAULT,
                                                    clear_dags_folder=False,
                                                    dags_bucket='my-another-dags-bucket',
                                                    dags_dir='/tmp/my-dags-dir',
@@ -404,7 +404,7 @@ deployment_config = Config(name='dev',
              ])
 
         # then
-        deploy_dags_folder_mock.assert_called_with(auth_method=AuthorizationType.vault,
+        deploy_dags_folder_mock.assert_called_with(auth_method=AuthorizationType.VAULT,
                                                    clear_dags_folder=True,
                                                    dags_bucket='my-dags-bucket',
                                                    dags_dir='/tmp/my-dags-dir',
@@ -430,7 +430,7 @@ deployment_config = Config(name='dev',
         cli(['deploy-image', '--image-tar-path', 'image-0.0.2.tar'])
 
         # then
-        deploy_docker_image_mock.assert_called_with(auth_method='local_account',
+        deploy_docker_image_mock.assert_called_with(auth_method=AuthorizationType.LOCAL_ACCOUNT,
                                                     docker_repository='my-docker--repository',
                                                     image_tar_path='image-0.0.2.tar',
                                                     vault_endpoint=None,
@@ -459,7 +459,7 @@ deployment_config = Config(name='dev',
              ])
 
         # then
-        deploy_docker_image_mock.assert_called_with(auth_method='vault',
+        deploy_docker_image_mock.assert_called_with(auth_method=AuthorizationType.VAULT,
                                                     docker_repository='my-another-docker-repository',
                                                     image_tar_path='image-0.0.3.tar',
                                                     vault_endpoint='my-another-vault-endpoint',
@@ -478,7 +478,7 @@ deployment_config = Config(name='dev',
              ])
 
         # then
-        deploy_docker_image_mock.assert_called_with(auth_method='vault',
+        deploy_docker_image_mock.assert_called_with(auth_method=AuthorizationType.VAULT,
                                                     docker_repository='my-docker-repository',
                                                     image_tar_path='image-0.0.1.tar',
                                                     vault_endpoint='my-vault-endpoint',
@@ -500,7 +500,7 @@ deployment_config = Config(name='dev',
              ])
 
         # then
-        deploy_docker_image_mock.assert_called_with(auth_method='vault',
+        deploy_docker_image_mock.assert_called_with(auth_method=AuthorizationType.VAULT,
                                                     docker_repository='my-docker-repository',
                                                     image_tar_path='.image/image-123.tar',
                                                     vault_endpoint='my-vault-endpoint',
@@ -527,7 +527,7 @@ deployment_config = Config(name='dev',
         cli(['deploy', '-i', 'my-images/image-version'])
 
         # then
-        deploy_dags_folder_mock.assert_called_with(auth_method=AuthorizationType.local_account,
+        deploy_dags_folder_mock.assert_called_with(auth_method=AuthorizationType.LOCAL_ACCOUNT,
                                                    clear_dags_folder=False,
                                                    dags_bucket='my-dags-bucket',
                                                    dags_dir=self._expected_default_dags_dir(),
@@ -535,7 +535,7 @@ deployment_config = Config(name='dev',
                                                    vault_endpoint=None,
                                                    vault_secret=None)
 
-        deploy_docker_image_mock.assert_called_with(auth_method='local_account',
+        deploy_docker_image_mock.assert_called_with(auth_method=AuthorizationType.LOCAL_ACCOUNT,
                                                     docker_repository='my-docker--repository',
                                                     image_tar_path='my-images/image-version',
                                                     vault_endpoint=None,
