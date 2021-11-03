@@ -14,6 +14,8 @@ from bigflow import JobContext
 from bigflow.dataflow import BeamJob
 from bigflow.workflow import DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS, DEFAULT_PIPELINE_LEVEL_EXECUTION_TIMEOUT_SHIFT_IN_SECONDS
 
+from test.mixins import BaseTestCase
+
 
 class CountWordsDriver:
 
@@ -52,11 +54,7 @@ class CountWordsDriver:
         self.context = context
 
 
-class BeamJobTestCase(TestCase):
-
-    def addMock(self, m):
-        self.addCleanup(m.stop)
-        return m.start()
+class BeamJobTestCase(BaseTestCase):
 
     def setUp(self):
         super().setUp()

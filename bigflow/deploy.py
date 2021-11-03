@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import typing as T
 
@@ -55,10 +57,11 @@ def _deploy_image_loaded_to_local_registry(
     docker_repository: str,
     image_id: str,
     auth_method: AuthorizationType,
-    vault_endpoint: str,
-    vault_secret: str,
+    vault_endpoint: str | None = None,
+    vault_secret: str | None = None,
 ) -> str:
     tag_image(image_id, docker_repository, build_ver)
+    tag_image(image_id, docker_repository, "latest")
 
     docker_image = docker_repository + ":" + build_ver
     docker_image_latest = docker_repository + ":latest"
@@ -66,8 +69,7 @@ def _deploy_image_loaded_to_local_registry(
     logger.info("Deploying docker image tag=%s auth_method=%s", docker_image, auth_method)
 
     _authenticate_to_registry(auth_method, vault_endpoint, vault_secret)
-
-    bf_commons.run_process(['docker', 'push', docker_image])  # TODO(anjensan) use docker_image_latest
+    bf_commons.run_process(['docker', 'push', docker_image, docker_image_latest])
 
     return docker_image
 
