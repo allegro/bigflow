@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import abc
 import collections
 import collections.abc
@@ -12,6 +14,7 @@ from typing import (
     Callable,
     Generic,
     List,
+    Mapping,
     Optional,
     Tuple,
     Dict,
@@ -22,11 +25,13 @@ import lazy_object_proxy  # type: ignore
 from bigflow.commons import public
 
 __all__ = [
-    'dynamic',
-    'expand',
-    'fromenv',
     'Konfig',
     'resolve_konfig',
+    'dynamic',
+    'dynamic_super',
+    'expand',
+    'fromenv',
+    'merge',
 ]
 
 
@@ -42,7 +47,7 @@ else:
     from backports.cached_property import cached_property as _cached_property
     class cached_property(Generic[T_co], _cached_property):
         def __get__(self, instance: Any, owner: Optional[Type]) -> T_co:   # type: ignore
-            return super().__get__(instance, owner)
+            return super().__get__(instance, owner)  # type: ignore
 
 
 def current_env() -> Optional[str]:
@@ -50,35 +55,30 @@ def current_env() -> Optional[str]:
     return os.environ.get('bf_env')
 
 
-class KonfigMeta(abc.ABCMeta):
+class KonfigMeta(abc.ABCMeta, Type):
 
-    @staticmethod
-    def _copy_classvars_to_obj(klass, obj):
-        for k, v in klass.__dict__.items():
-            if k.startswith("_"):
-                # ignore private attributes
-                continue
-            elif hasattr(v, '__get__'):
-                # descriptor, pop out attribute from obj
-                obj.__dict__.pop(k, None)
-            else:
-                # normal value, put into obj
-                obj.__dict__[k] = v
+    def __new__(cls, clsname, bases, dct):
 
-    def __new__(metacls, clsname, bases, dct):
-
-        if not any(isinstance(b, metacls) for b in bases):
+        if not any(isinstance(b, cls) for b in bases):
             # no Konfig's in bases - create root type
-            return type.__new__(metacls, clsname, bases, dct)
+            return type.__new__(cls, clsname, bases, dct)
 
         if '__init__' in dct:
             raise ValueError("Konfig classes doesn't support custom '__init__'")
 
-        def __init__(self, **kwargs):
-            super(cls, self).__init__(**kwargs)
-            metacls._copy_classvars_to_obj(cls, self)
+        dct = dict(dct)
+        for k, v in list(dct.items()):
+            if k.startswith("_"):
+                # ignore private attributes
+                pass
+            elif hasattr(v, '__get__'):
+                # descriptor, maybe `dynamic`, skip
+                pass
+            else:
+                # normal value, wrap into cached property
+                dct[k] = dynamic(lambda self, v=v: v)
 
-        cls = type.__new__(metacls, clsname, bases, {'__init__': __init__, **dct})
+        cls = type.__new__(cls, clsname, bases, dct)
         return cls
 
     def __call__(self, **kwargs):
@@ -87,6 +87,15 @@ class KonfigMeta(abc.ABCMeta):
         obj.__post_init__(**kwargs)
         obj._frozen = True
         return obj
+
+    def __matmul__(self: type, other: KonfigMeta | Dict):
+
+        if isinstance(other, Dict):
+            hx = hash(tuple(other.keys()))
+            logger.debug("Create anonymous config, hx %s: %s", hx, other)
+            other = type(f"AnonKonf{hx}", (Konfig,), other)
+
+        return type(f"{self.__name__}@{other.__name__}", (self, other), {})  # type: ignore
 
 
 @public()
@@ -175,7 +184,7 @@ def resolve_konfig(
     extra = dict(extra or {})
 
     if lazy:
-        return _LazyKonfig(konfigs=konfigs, name=name, default=default, extra=extra, lazy=False)
+        return _LazyKonfig(konfigs=konfigs, name=name, default=default, extra=extra, lazy=False)  # type:ignore
 
     logger.debug("Resolve konfig %s from %s", name or "*", konfigs)
     name = name or current_env() or default
@@ -204,8 +213,7 @@ def fromenv(
     default: Optional[str] = None,
     type: Type = secretstr,
 ) -> cached_property[str]:
-
-    """Reads config value from os environment, prepends `bf_` to variable name"""
+    """Reads config value from os environment"""
 
     def __get__(self):
         try:
@@ -234,14 +242,46 @@ def expand(value: str) -> cached_property[str]:
     return dynamic(__get__)
 
 
+class _dynamic(cached_property):
+    def __set_name__(self, owner: Type[Any], name: str) -> None:
+        self._the_owner = owner
+        self._the_name = name
+        super().__set_name__(owner, name)
+
+
 @public()
 def dynamic(get: Callable[[K], T_co]) -> cached_property[T_co]:
+    """Calls lambda once to get attribute value, caches result."""
 
     def __get__(self: K) -> T_co:
         assert isinstance(self, Konfig), f"object {self} must be subclass of `Konfig` class"
         return get(self)
 
-    return cached_property(get)
+    return _dynamic(__get__)
+
+
+@public()
+def dynamic_super(get: Callable[[K, Any], T_co]) -> cached_property[T_co]:
+    """Calls lambda once to get attribute value, caches result. Passes attribute value from parent class."""
+
+    def __get__(self: K) -> T_co:
+        assert isinstance(self, Konfig), f"object {self} must be subclass of `Konfig` class"
+        super_proxy = super(prop._the_owner, self)
+        parent = getattr(super_proxy, prop._the_name, None)
+        return get(self, parent)
+
+    prop = _dynamic(__get__)
+    return prop
+
+
+@public()
+def merge(value: Any):
+    """Gets attribute value from parent class and comerge `value` onto it."""
+
+    def __get__(self, parent):
+        return _merge_dicts_recursively(parent, value)
+
+    return dynamic_super(__get__)
 
 
 _placeholder_re = re.compile(r"""
@@ -267,3 +307,19 @@ def _resolve_placeholders(
             return str(resolve(k))
 
     return _placeholder_re.sub(valueof, value)
+
+
+def _merge_dicts_recursively(a, b):
+    if a is None:
+        return b
+    elif b is None:
+        return a
+    elif isinstance(a, Mapping) and isinstance(b, Mapping):
+        return {
+            k: _merge_dicts_recursively(a.get(k), b.get(k))
+            for k in a.keys() | b.keys()
+        }
+    elif callable(b):
+        return b(a)
+    else:
+        return b
