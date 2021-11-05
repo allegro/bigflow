@@ -115,9 +115,8 @@ def generate_dag_file(
                 dag=dag,
                 task_id={task_id!r},
                 name={task_id!r},
-                cmds=['bf'],
+                cmds=['python', '-m', 'bigflow', 'run'],
                 arguments=[
-                    'run',
                     '--job', {bf_job!r},
                     '--runtime', '{{{{ execution_date.strftime("%Y-%m-%d %H:%M:%S") }}}}',
                     '--project-package', {root_package_name!r},

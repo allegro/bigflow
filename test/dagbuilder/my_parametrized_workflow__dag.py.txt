@@ -36,9 +36,8 @@ tjob1 = KubernetesPodOperator(
     dag=dag,
     task_id='job1',
     name='job1',
-    cmds=['bf'],
+    cmds=['python', '-m', 'bigflow', 'run'],
     arguments=[
-        'run',
         '--job', 'my_parametrized_workflow.job1',
         '--runtime', '{{ execution_date.strftime("%Y-%m-%d %H:%M:%S") }}',
         '--project-package', 'ca',
