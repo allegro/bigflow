@@ -86,6 +86,7 @@ class TempCwdMixin(Mixin):
             cwd.mkdir(parents=True)
         os.chdir(cwd)
 
+
 class PrototypedDirMixin(TempCwdMixin, FileUtilsMixin):
     """Creates temp directory & copy files tree from `proto_dir`, chdir into temp directory before each test"""
 
@@ -187,7 +188,7 @@ class VenvMixin(SubprocessMixin):
 
     @classmethod
     def tearDownClass(cls):
-        #shutil.rmtree(cls.venv_directory, ignore_errors=True)
+        shutil.rmtree(cls.venv_directory, ignore_errors=True)
         super().tearDownClass()
 
     @staticmethod
