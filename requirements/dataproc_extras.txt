@@ -1,2 +1,7 @@
-google-cloud-dataproc>=2,<3
+google-cloud-dataproc>=3,<4
 pyspark>=3.0,<4
+
+# proto-plus `1.19.7` requires protobuf>=3.19, but google-api-core allows only <=3.18
+# 1.19.7 differs literaly by 1 commit https://github.com/googleapis/proto-plus-python/commit/a8991d71ff455093fbfef142f9140d3f2928195f
+# from previous version - it is safe to ignore such important chagne
+proto-plus!=1.19.7
