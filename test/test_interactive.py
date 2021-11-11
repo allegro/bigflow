@@ -1,6 +1,5 @@
 import datetime
-from unittest import TestCase
-import mock
+from unittest import TestCase, mock
 
 from google.api_core.exceptions import BadRequest
 

@@ -1,6 +1,5 @@
 import datetime
-from unittest import TestCase
-import mock
+from unittest import TestCase, mock
 
 import bigflow
 from bigflow.bigquery.interactive import DatasetConfigInternal
