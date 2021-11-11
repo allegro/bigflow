@@ -236,5 +236,6 @@ class DeployTestCase(TempCwdMixin, BaseTestCase):
         run_process_mock.assert_has_calls([
             mock.call(["docker", "tag", "image123", "docker_repository:1.2"]),
             mock.call(["docker", "tag", "image123", "docker_repository:latest"]),
-            mock.call(["docker", "push", "docker_repository:1.2", "docker_repository:latest"]),
+            mock.call(["docker", "push", "docker_repository:1.2"]),
+            mock.call(["docker", "push", "docker_repository:latest"]),
         ])
