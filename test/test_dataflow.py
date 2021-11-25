@@ -12,6 +12,7 @@ from collections import Counter
 from bigflow import JobContext
 
 from bigflow.dataflow import BeamJob
+from bigflow.dataflow.options import get_pipeline_options
 from bigflow.workflow import DEFAULT_EXECUTION_TIMEOUT_IN_SECONDS, DEFAULT_PIPELINE_LEVEL_EXECUTION_TIMEOUT_SHIFT_IN_SECONDS
 
 from test.mixins import BaseTestCase
@@ -55,6 +56,8 @@ class CountWordsDriver:
 
 
 class BeamJobTestCase(BaseTestCase):
+
+    maxDiff = 10000
 
     def setUp(self):
         super().setUp()
@@ -223,7 +226,7 @@ class BeamJobTestCase(BaseTestCase):
                 execution_timeout_sec=1,
                 wait_until_finish=False)
 
-    @patch('bigflow.dataflow.Pipeline')
+    @patch('bigflow.dataflow.job.Pipeline')
     def test_should_create_pipeline_from_pipeline_options(
         self,
         _create_pipeline_mock: mock.Mock,
@@ -247,7 +250,6 @@ class BeamJobTestCase(BaseTestCase):
         options.view_as(WorkerOptions).network = 'default'
         options.view_as(WorkerOptions).use_public_ips = False
         options.view_as(StandardOptions).runner = 'DataflowRunner'
-
         options.view_as(SetupOptions).setup_file = "/path/to/setup.py"
 
         job = BeamJob(
@@ -261,14 +263,12 @@ class BeamJobTestCase(BaseTestCase):
         job.execute(JobContext.make())
 
         # then
-        options.get_all_options()
-        self.assertDictEqual(
-            options.get_all_options(),
-            _create_pipeline_mock.call_args[1]['options'].get_all_options(),
-        )
+        options1 = {**options.get_all_options(), 'bigflow_jobid': "count_words"}
+        options2 = _create_pipeline_mock.call_args[1]['options'].get_all_options()
+        self.assertDictEqual(options1, options2)
 
 
-    @patch('bigflow.dataflow.Pipeline')
+    @patch('bigflow.dataflow.job.Pipeline')
     def test_should_create_pipeline_from_pipeline_options_when_argument_passed_to_sys_argv(
         self,
         _create_pipeline_mock: mock.Mock,
@@ -305,11 +305,9 @@ class BeamJobTestCase(BaseTestCase):
         job.execute(JobContext.make())
 
         # then
-        options.get_all_options()
-        self.assertDictEqual(
-            options.get_all_options(),
-            _create_pipeline_mock.call_args[1]['options'].get_all_options(),
-        )
+        options1 = {**options.get_all_options(), 'bigflow_jobid': "count_words"}
+        options2 = _create_pipeline_mock.call_args[1]['options'].get_all_options()
+        self.assertDictEqual(options1, options2)
 
     def test_should_throw_if_pipeline_options_and_pipeline_both_not_provided(
         self,
@@ -340,7 +338,7 @@ class BeamJobTestCase(BaseTestCase):
         google_cloud_options.labels.append(f'workflow_id={workflow_id}')
         return TestPipeline(options=google_cloud_options)
 
-    @patch('bigflow.dataflow.Pipeline')
+    @patch('bigflow.dataflow.job.Pipeline')
     def test_create_pipeline_dict_options(
         self,
         _create_pipeline_mock: mock.Mock,
@@ -365,16 +363,20 @@ class BeamJobTestCase(BaseTestCase):
         )
 
         # when
-        job.execute(JobContext.make())
+        job.execute(JobContext.make(workflow_id="workflow1", env="test"))
 
         # then
         options2 = _create_pipeline_mock.call_args[1]['options'].get_all_options(drop_default=True)
 
         self.assertTrue(options2.pop('setup_file'))
         self.assertEqual(options2.pop('runner'), 'DataflowRunner')
+        self.assertEqual(options2.pop('bigflow_jobid'), "count_words")
+        self.assertEqual(options2.pop('bigflow_workflow'), "workflow1")
+        self.assertEqual(options2.pop('bigflow_env'), "test")
+        self.assertEqual(options2.pop('labels'), options.pop("labels") + ["workflow_id=workflow1"])
         self.assertDictEqual(options, options2)
 
-    @mock.patch('bigflow.dataflow.Pipeline')
+    @mock.patch('bigflow.dataflow.job.Pipeline')
     @mock.patch('bigflow.build.reflect.get_project_spec')
     def test_add_docker_to_pipelineoptions(
         self,
@@ -404,7 +406,7 @@ class BeamJobTestCase(BaseTestCase):
         self.assertEqual('my_repo:1.2.3', options2['worker_harness_container_image'])
         self.assertIn('use_runner_v2', options2['experiments'])
 
-    @patch('bigflow.dataflow.Pipeline')
+    @patch('bigflow.dataflow.job.Pipeline')
     def test_add_setuppy_onle_for_dataflow_runner(
         self,
         _create_pipeline_mock: mock.Mock,
@@ -431,3 +433,25 @@ class BeamJobTestCase(BaseTestCase):
         options2 = _create_pipeline_mock.call_args[1]['options'].get_all_options(drop_default=True)
 
         self.assertNotIn('setup_file', options2)
+
+    def test_add_bigflof_to_pipeline_options(self):
+        # given
+        _create_pipeline_mock = self.addMock(mock.patch('bigflow.dataflow.job.Pipeline'))
+        _create_pipeline_mock.return_value.run.return_value = RunnerResult('DONE', None)
+
+        driver = CountWordsDriver()
+        job = BeamJob(
+            id='count_words',
+            entry_point=driver.nope,
+            pipeline_options={},
+        )
+
+        # when
+        job.execute(JobContext.make(env="the-env", workflow_id="workflow_one"))
+
+        # then
+        options2 = _create_pipeline_mock.call_args[1]['options'].get_all_options(drop_default=True)
+
+        self.assertEqual(options2.get('bigflow_jobid'), "count_words")
+        self.assertEqual(options2.get('bigflow_env'), "the-env")
+        self.assertEqual(options2.get('bigflow_workflow'), "workflow_one")

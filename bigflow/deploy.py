@@ -69,7 +69,8 @@ def _deploy_image_loaded_to_local_registry(
     logger.info("Deploying docker image tag=%s auth_method=%s", docker_image, auth_method)
 
     _authenticate_to_registry(auth_method, vault_endpoint, vault_secret)
-    bf_commons.run_process(['docker', 'push', docker_image, docker_image_latest])
+    bf_commons.run_process(['docker', 'push', docker_image])
+    bf_commons.run_process(['docker', 'push', docker_image_latest])
 
     return docker_image
 

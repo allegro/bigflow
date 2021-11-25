@@ -50,9 +50,26 @@ else:
             return super().__get__(instance, owner)  # type: ignore
 
 
+def _current_env_from_beam_pipelineoptions():
+
+    if 'apache_beam' not in sys.modules:
+        # beam is not imported (probably even not installed) - nothing to do
+        return None
+
+    from bigflow.dataflow.options import get_pipeline_options
+    popts = get_pipeline_options() or {}
+    env = popts.get('bigflow_env')
+
+    logger.debug("Env from pipeline options: %s", env)
+    return env or None
+
+
 def current_env() -> Optional[str]:
     """Returns current env name (specified via 'bigflow --config' option)"""
-    return os.environ.get('bf_env')
+    return (
+        os.environ.get('bf_env')
+        or _current_env_from_beam_pipelineoptions()
+    )
 
 
 class KonfigMeta(abc.ABCMeta, Type):

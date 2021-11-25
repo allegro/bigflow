@@ -5,15 +5,10 @@ import pprint
 import typing as T
 
 from bigflow.commons import public
+from bigflow.konfig import current_env
 
 
 logger = logging.getLogger(__name__)
-
-
-
-def current_env():
-    """Returns current env name (specified via 'bigflow --config' option)"""
-    return os.environ.get('bf_env')
 
 
 @public()
@@ -31,6 +26,12 @@ class Config:
         self.environment_variables_prefix = 'bf_'
 
         self.add_configuration(name, properties, is_default)
+
+    def _current_env(self):
+        if self.environment_variables_prefix == '_bf':
+            return current_env()
+        else:
+            return os.environ.get(f'{self.environment_variables_prefix}env')
 
     def __str__(self):
         return "".join(map(self.pretty_print, self.configs.keys())).rstrip("\n")
@@ -102,7 +103,7 @@ class Config:
         self.default_env_name = name
 
     def _get_env_config(self, name: str) -> T.Tuple[dict, str]:
-        explicit_env_name = name or os.environ.get(f'{self.environment_variables_prefix}env')
+        explicit_env_name = name or self._current_env()
         if not explicit_env_name:
             if not self.default_env_name:
                 raise ValueError("No explicit env name is given and no default env is defined, can't resolve properties.")
