@@ -3,6 +3,7 @@ google-cloud-storage>=1.30,<2
 # Until this issue is closed
 # https://github.com/googleapis/google-cloud-python/issues/10566
 google-auth>=1.20,<3
+google-api-python-client==2.31.0
 unittest-xml-reporting>=3.0.2,<4
 jinja2>=2.10,<3
 pip-tools>=5.3,<7
