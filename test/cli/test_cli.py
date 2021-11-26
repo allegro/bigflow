@@ -1,5 +1,7 @@
-from unittest import TestCase, mock
+from bigflow.build.operate import build_project
+from unittest import TestCase
 import itertools
+import mock
 import shutil
 import freezegun
 

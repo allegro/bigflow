@@ -5,7 +5,6 @@ import subprocess
 import shutil
 import logging
 import typing
-import textwrap
 
 from pathlib import Path
 
@@ -137,23 +136,8 @@ def clear_dags_leftovers(project_spec: BigflowProjectSpec):
 
 def build_package(project_spec: BigflowProjectSpec):
     logger.info('Building python package')
-
-    req_in = Path(project_spec.project_requirements_file)
-    recompiled = bigflow.build.pip.maybe_recompile_requirements_file(req_in)
-    if recompiled:
-        req_txt = req_in.with_suffix(".txt")
-        logger.warning(textwrap.dedent(f"""
-            !!! Requirements file was recompiled, you need to reinstall packages.
-            !!! Run this command from your virtualenv:
-            pip install -r {req_txt}
-        """))
-        project_spec.requries = bigflow.build.pip.read_requirements(req_in)
-
-    bigflow.build.dataflow.dependency_checker.check_beam_worker_dependencies_conflict(req_in)
-
     clear_package_leftovers(project_spec)
     run_tests(project_spec)
-
     bigflow.build.dist.run_setup_command(project_spec, 'bdist_wheel')
 
 

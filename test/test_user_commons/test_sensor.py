@@ -1,5 +1,7 @@
-from unittest import TestCase, mock
+from unittest import TestCase
+from unittest import main
 import pandas as pd
+import mock
 from bigflow.bigquery.interactive import sensor as sensor_component
 
 YESTERDAY_WHERE_CLAUSE = "DATE(%(partitioning_column)s) = DATE(TIMESTAMP_ADD(TIMESTAMP('{dt} UTC'), INTERVAL -24 HOUR))"
@@ -51,3 +53,6 @@ class SensorComponentTestCase(TestCase):
         WHERE DATE(partition) = DATE(TIMESTAMP_ADD(TIMESTAMP('{dt} UTC'), INTERVAL -24 HOUR))
         ''', custom_run_datetime=None)
 
+
+if __name__ == '__main__':
+    main()

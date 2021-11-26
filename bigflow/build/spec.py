@@ -14,8 +14,12 @@ import setuptools
 
 import bigflow.resources
 import bigflow.version
+
 import bigflow.build.pip
 import bigflow.build.dev
+import bigflow.build.dataflow.dependency_checker
+
+import bigflow.commons as bf_commons
 
 
 logger = logging.getLogger(__name__)
@@ -87,13 +91,7 @@ def parse_project_spec(
     docker_repository = docker_repository or get_docker_repository_from_deployment_config(project_dir / deployment_config_file)
     version = version or secure_get_version()
     packages = packages if packages is not None else discover_project_packages(project_dir)
-
-    if requries is None:
-        try:
-            requries = read_project_requirements(project_dir / project_requirements_file)
-        except FileNotFoundError as e:
-            logger.error("Can't read requirements file: %s", e)
-
+    requries = requries if requries is not None else read_project_requirements(project_dir / project_requirements_file)
     metainfo = {k: kwargs.pop(k) for k in _PROJECT_METAINFO_KEYS if k in kwargs}
 
     setuptools = kwargs  # all unknown arguments
@@ -222,7 +220,15 @@ def discover_project_packages(project_dir: Path):
 def read_project_requirements(project_requirements_file):
     logger.info("Read project requirements from %s", project_requirements_file)
     req_txt = Path(project_requirements_file)
-    return bigflow.build.pip.read_requirements(req_txt, recompile_check=False)
+    recompiled = bigflow.build.pip.maybe_recompile_requirements_file(req_txt)
+    if recompiled:
+        logger.warning(textwrap.dedent(f"""
+            !!! Requirements file was recompiled, you need to reinstall packages.
+            !!! Run this command from your virtualenv:
+            pip install -r {req_txt}
+        """))
+    bigflow.build.dataflow.dependency_checker.check_beam_worker_dependencies_conflict(req_txt)  # XXX
+    return bigflow.build.pip.read_requirements(req_txt)
 
 
 def get_docker_repository_from_deployment_config(deployment_config_file: Path) -> str:
