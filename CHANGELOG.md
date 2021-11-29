@@ -1,5 +1,14 @@
 # BigFlow changelog
 
+## Version 1.4
+
+### Added
+ * Check if docker image was pushed before deploying airflow dags
+
+### Fixed
+ * Propagate 'env' to bigflow jobs
+ * Automatically create and push `:latest` docker tag
+
 ## Version 1.3
 
 ### Changed
