@@ -12,12 +12,11 @@ import os
 from pathlib import Path
 from deprecated import deprecated
 from datetime import datetime, timedelta
+from numbers import Number
 from typing import (
     Any,
     TypeVar,
     Callable,
-    Union,
-    Optional,
 )
 
 
@@ -30,11 +29,11 @@ _F = TypeVar("_F", bound=Callable[..., Any])
 
 def public(
     *,
-    alias_for: Union[_F, None] = None,
+    alias_for: _T | None = None,
     class_alias: bool = False,
-    deprecate_reason: Optional[str] = None,
-    deprecate_dropat: Optional[str] = None,
-) -> Callable[[_F], _F]:
+    deprecate_reason: str | None = None,
+    deprecate_dropat: str | None = None,
+) -> Callable[[_T], _T]:
     """Documentation decorator, used to mark function/class which should be considered as a public API.
 
     Only elements marked with this decorator may be treated as `stable API`.
@@ -98,7 +97,7 @@ def public(
     deprecate_reason="Use `str(x.absolute()) inliner instead",
     deprecate_dropat="2.0",
 )
-def resolve(path: Path):
+def resolve(path: Path) -> str:
     return str(path.absolute())
 
 
@@ -106,7 +105,7 @@ def resolve(path: Path):
     deprecate_reason="Use `datetime.now().strftime('%Y-%m-%d %H:00:00')` instead.",
     deprecate_dropat="2.0",
 )
-def now(template: str = "%Y-%m-%d %H:00:00"):
+def now(template: str = "%Y-%m-%d %H:00:00") -> datetime:
     return datetime.now().strftime(template)
 
 
@@ -155,15 +154,15 @@ class _StreamOutputDumper(threading.Thread):
 
 
 def run_process(
-    args: typing.Union[str, typing.List],
+    args: str | list[str],
     *,
-    verbose=True,
-    check=True,
-    env_add=None,
-    input=None,
-    env=None,
+    verbose: bool = True,
+    check: bool = True,
+    env_add: dict[str, str] = None,
+    input: str | None = None,
+    env: dict[str, str] = None,
     **kwargs,
-):
+) -> str:
     """Run external process, extends `subprocess.run`, returns 'stdout', may throw `subprocess.SubprocessError`.
 
     Arguments:
@@ -264,13 +263,13 @@ def remove_docker_image_from_local_registry(tag):
     run_process(f"docker rmi -f {get_docker_image_id(tag)} --no-prune")
 
 
-def as_timedelta(v: typing.Union[None, str, int, float, timedelta]) -> typing.Optional[timedelta]:
+def as_timedelta(v: None | str | Number | timedelta) -> timedelta | None:
     if v is None:
         return None
     elif isinstance(v, timedelta):
         return v
-    elif isinstance(v, (int, float)):
-        return timedelta(seconds=v)
+    elif isinstance(v, Number):
+        return timedelta(seconds=float(v))
     elif v == "":
         return None
     else:

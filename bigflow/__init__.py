@@ -33,7 +33,6 @@ class Workflow(bigflow.workflow.Workflow): ...
 @public(class_alias=True)
 class Config(bigflow.configuration.Config): ...
 
-
 # proactively try to initialize bigflow-specific logging
 # it is used to configure logging on pyspark/beam/etc workers
 try:
