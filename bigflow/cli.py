@@ -713,16 +713,58 @@ def _cli_release(args):
     release(args.ssh_identity_file)
 
 
+class _ConsoleStreamLogHandler(logging.StreamHandler):
+
+    # TODO: consider moving this class & `init_console_logging` fn to "log.py" module
+    # Not it is not possible, as 'log.py' *must* be
+    # non-imporable when 'google.cloud.logging' is not installed
+    # making 'log.py' always importable will require refactoring
+
+    def __init__(self):
+        super().__init__(sys.stdout)
+        self.last_incomplete_msg = ""
+        self.isatty = sys.stdout.isatty()
+
+    def emit(self, record: logging.LogRecord):
+        incomplete_line = getattr(record, 'incomplete_line', False)
+
+        with self.lock:
+            try:
+                last_msg = self.last_incomplete_msg
+                msg = self.format(record)
+                self.last_incomplete_msg = msg
+
+                if msg.startswith(last_msg):
+                    msg = msg[len(last_msg):]
+                elif self.isatty:
+                    msg = "\r\033[K" + msg
+                else:
+                    msg = "\n" + msg
+
+                if not incomplete_line:
+                    msg += "\n"
+                    self.last_incomplete_msg = ""
+
+                self.stream.write(msg)
+                self.flush()
+            except RecursionError:
+                raise
+            except Exception:
+                self.handleError(record)
+
+
 def init_console_logging(verbose):
     if verbose:
         logging.basicConfig(
             level=logging.DEBUG,
             format="%(asctime)s| %(message)s",
+            handlers=[_ConsoleStreamLogHandler()],
         )
     else:
         logging.basicConfig(
             level=logging.INFO,
             format="%(message)s",
+            handlers=[_ConsoleStreamLogHandler()],
         )
 
 
