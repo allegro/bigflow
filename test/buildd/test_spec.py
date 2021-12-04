@@ -104,6 +104,7 @@ class _BaseRealProjectTest(
             'description': "No",
             'url': "http://example.org/myproject",
         }
+        s.test_framework = 'pytest'
 
         # when
         spec.add_spec_to_pyproject_toml(self.cwd / "pyproject.toml", s)
@@ -120,6 +121,7 @@ class _BaseRealProjectTest(
             'packages',
             'metainfo',
             'data_files',
+            'test_framework',
         ]:
             self.assertEqual(getattr(s, f), getattr(ss, f), f"field {f} should be same")
 
@@ -159,3 +161,17 @@ class SpecBigflowV12TestCase(_BaseRealProjectTest):
     )
 
 
+class SpecBigflowV12TestCase(_BaseRealProjectTest):
+    __test__ = True
+    proto_dir = "bf-projects/bf_simple_pytest"
+
+    expected_name = "bf-simple-v12"
+    expected_packages = ["bf_simple_pytest"]
+    expected_metainfo = dict(
+        author="Bigflow UnitTest",
+        description="Sample bigflow project",
+        url="http://example.org",
+    )
+    expected_requires = [
+        "pytest==6.2.3",
+    ]

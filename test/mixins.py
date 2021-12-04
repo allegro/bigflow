@@ -61,7 +61,7 @@ class FileUtilsMixin(Mixin):
 
 class TempCwdMixin(Mixin):
 
-    cwd = None
+    cwd: Path = None
 
     def setUp(self):
         super().setUp()

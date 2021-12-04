@@ -11,6 +11,7 @@ import toml
 from pathlib import Path
 
 import setuptools
+import typing_extensions
 
 import bigflow.resources
 import bigflow.version
@@ -63,7 +64,7 @@ class BigflowProjectSpec:
     # Just bypass any unknown options to 'distutils'
     setuptools: typing.Dict[str, typing.Any]
 
-    test_framework: typing.Literal['pytest', 'unittest']
+    test_framework: typing_extensions.Literal['pytest', 'unittest']
 
 
 def parse_project_spec(
