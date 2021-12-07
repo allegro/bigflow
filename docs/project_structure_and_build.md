@@ -39,7 +39,7 @@ The `bigflow build` command should produce:
 
 The `bigflow build` command uses three subcommands to generate all the
 artifacts: [`bigflow build-package`](./cli.md#building-airflow-dags), [`bigflow build-image`](./cli.md#building-airflow-dags), [`bigflow build-dags`](./cli.md#building-airflow-dags).
-There is also an optional [`bigflow build-requirements`](./cli.md#building-airflow-dags) command that allows you 
+There is also an optional [`bigflow build-requirements`](./cli.md#building-airflow-dags) command that allows you
 to [resolve and freeze](https://github.com/jazzband/pip-tools) the project dependencies.
 
 Now, let us go through each building element in detail, starting from the Python package.
@@ -109,9 +109,7 @@ Because every BigFlow project is a standard Python package, we suggest going thr
 The `bigflow build-package` command takes three steps to build a Python package from your project:
 
 1. Cleans leftovers from a previous build.
-1. Runs tests from the `test` package and generates a JUnit xml report,
-using the [`unittest-xml-reporting`](https://pypi.org/project/unittest-xml-reporting/) package. You can find the generated report
-inside the `project_dir/build/junit-reports` directory.
+1. Runs tests for the project. You can find the generated report inside the `build/junit-reports` directory.
 1. Runs the `bdist_wheel` setup tools command. It generates a `.whl` package which you can
 upload to `pypi` or install locally - `pip install your_generated_package.whl`.
 
@@ -173,6 +171,23 @@ If needed, you can specify an identity file for ssh, used to push a tag to a rem
 bigflow release --ssh-identity-file /path/to/id_rsa
 bigflow release -i keys.pem
 
+```
+
+## Test framework
+
+Bigflow automatically runs tests via [`unittest`](https://docs.python.org/3/library/unittest.html) or [`pytest`](https://docs.pytest.org/) framework:
+
+* `unittest` - deafult testing framework for Python, has similar api to Java JUnit.
+* `pytest` - "pythonic" framework with lighter API, can also run tests written for `unittest` .
+
+By deafult `unittest` is used, no extra configuration is needed.  Switching to `pytest` may be done by adding  `pytest` into `requirements.in` and specifying `test_framework` option in `setup.py`:
+
+```python
+import bigflow.build
+bigflow.build.setup(
+    ...
+    test_framework='pytest',  # either 'unittest' or 'pytest'
+)
 ```
 
 ## Docker image
@@ -262,7 +277,7 @@ using the `bigflow build-requirements` command.
 
 Under the hood, the `build-requirements` command uses the [`pip-tools`](https://github.com/jazzband/pip-tools).
 
-The `build-requirements` command is part of the `build` command, but it's not mandatory to use `requirements.in`. That 
+The `build-requirements` command is part of the `build` command, but it's not mandatory to use `requirements.in`. That
 mechanism is optional, so you can just use `requirements.txt` alone. BigFlow automatically detects if you have `requirements.in`
 in the `resources` directory and generates or updates the `requirements.txt`. If `requirements.in` is not there, then BigFlow
 just skips the `build-requirements` phase.
