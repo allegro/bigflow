@@ -713,44 +713,53 @@ def _cli_release(args):
     release(args.ssh_identity_file)
 
 
-class _ConsoleStreamLogHandler(logging.StreamHandler):
+class _ConsoleStreamLogHandler(logging.Handler):
+    """
+    A handler class which writes logging records to `sys.stderr`.
+
+    When `sys.stderr` is a TTY device a new line is not appended to log
+    records with `incomplete_line` attribute set to true.  This allows to
+    propagate progress bars / dynamic prints produced by child processes.
+    See `bigflow.commons.run_process` for more details.
+    """
 
     # TODO: consider moving this class & `init_console_logging` fn to "log.py" module
-    # Not it is not possible, as 'log.py' *must* be
+    # Not it is not poss`ible, as 'log.py' *must* be
     # non-imporable when 'google.cloud.logging' is not installed
     # making 'log.py' always importable will require refactoring
 
     def __init__(self):
-        super().__init__(sys.stdout)
+        logging.Handler.__init__(self)
         self.last_incomplete_msg = ""
-        self.isatty = sys.stdout.isatty()
+        self.stream = sys.stderr
+        self.isatty = self.stream.isatty()
 
     def emit(self, record: logging.LogRecord):
         incomplete_line = getattr(record, 'incomplete_line', False)
 
-        with self.lock:
-            try:
-                last_msg = self.last_incomplete_msg
-                msg = self.format(record)
-                self.last_incomplete_msg = msg
+        try:
+            last_msg = self.last_incomplete_msg
+            msg = self.format(record)
 
-                if msg.startswith(last_msg):
-                    msg = msg[len(last_msg):]
-                elif self.isatty:
-                    msg = "\r\033[K" + msg
-                else:
-                    msg = "\n" + msg
+            if msg.startswith(last_msg):
+                msg = msg[len(last_msg):]
+            elif self.isatty:
+                msg = "\r\033[K" + msg
+            else:
+                msg = "\n" + msg
 
+            with self.lock:
                 if not incomplete_line:
                     msg += "\n"
                     self.last_incomplete_msg = ""
-
+                else:
+                    self.last_incomplete_msg = msg
                 self.stream.write(msg)
-                self.flush()
-            except RecursionError:
-                raise
-            except Exception:
-                self.handleError(record)
+
+        except RecursionError:  # See issue 36272
+            raise
+        except Exception:
+            self.handleError(record)
 
 
 def init_console_logging(verbose):
