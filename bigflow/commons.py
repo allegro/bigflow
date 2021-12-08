@@ -122,35 +122,67 @@ class _StreamOutputDumper(threading.Thread):
         self.process = process
         self.stream = stream
         self.callback = callback
+        self._last_line_incomplete = False
         self._result_list = []
+        self.done = False
         self.start()
+
+    def print_line(self, line: bytes):
+        self.callback(line.decode(errors='ignore'))
+
+    def print_line_incomplete(self, line: bytes):
+        if line:
+            self.callback(
+                line.decode(errors='ignore'),
+                extra={'incomplete_line': True},
+            )
 
     def result(self):
         self.join()
-        return "".join(self._result_list)
+        return b"".join(self._result_list).decode()
 
     def run(self):
-        space_buffer = []
 
-        while not self.stream.closed:
+        buffer = b""
+        delay = 0.001
+        incomplete_line = False
+
+        while True:
+
             try:
-                line = self.stream.readline()
+                raw: bytes = self.stream.read()
             except (ValueError, EOFError):
-                return  # closed
+                break  # closed
 
-            linee = line
-            if linee.endswith("\n"):
-                linee = linee[:-1]
+            if not raw:
+                if self.done:
+                    break
 
-            if linee.strip():
-                # log line and prepend all buffered whitespaces
-                space_buffer.append(linee)
-                self.callback("".join(space_buffer))
-                space_buffer.clear()
-            else:
-                # line contains only whitespaces
-                space_buffer.append(line)
-            self._result_list.append(line)
+                delay = min(1, delay * 1.66)
+                time.sleep(delay)
+
+                if delay > 0.01 and buffer and not incomplete_line:
+                    self.print_line_incomplete(buffer)
+                    incomplete_line = True
+
+                continue
+
+            delay = 0.001
+            self._result_list.append(raw)
+            buffer += raw
+
+            lines = buffer.split(b"\n")
+
+            for line in lines[:-1]:
+                incomplete_line = False
+                self.print_line(line)
+
+            buffer = lines[-1]
+            if buffer and incomplete_line:
+                self.print_line_incomplete(buffer)
+
+        for line in buffer.split(b"\n"):
+            self.print_line(line)
 
 
 def run_process(
@@ -189,7 +221,7 @@ def run_process(
 
     start = time.time()
     process = subprocess.Popen(
-        cmd, text=True,
+        cmd, text=False,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         stdin=subprocess.PIPE if input is not None else None,
@@ -200,8 +232,12 @@ def run_process(
     assert process.stdout, "invalid stdout"
     assert process.stderr, "invalid stderr"
 
+    os.set_blocking(process.stdout.fileno(), False)
+    os.set_blocking(process.stderr.fileno(), False)
+
     stdout_dumper = _StreamOutputDumper(
         process, process.stdout, logger.info if verbose else logger.debug)
+
     stderr_dumper = _StreamOutputDumper(
         process, process.stderr, logger.error if verbose else logger.debug)
 
@@ -211,9 +247,14 @@ def run_process(
         process.stdin.close()
 
     code = process.wait()
+    stdout_dumper.done = True
+    stderr_dumper.done = True
+    stdout_dumper.join()
+    stderr_dumper.join()
 
     process.stdout.close()
     process.stderr.close()
+
     stdout = stdout_dumper.result()
     stderr = stderr_dumper.result()
 

@@ -292,3 +292,22 @@ class BuildImageTest(SetupTestCase):
         # then
         build_docker_image.assert_called_with(self.prj.project_dir, 'tag_value')
         remove_docker_image_from_local_registry.assert_called_with('tag_value')
+
+
+class BuildProjectWithPytestFrameworkTest(
+    mixins.BfCliInteractionMixin,
+    mixins.PrototypedDirMixin,
+    mixins.SubprocessMixin,
+    TestCase,
+):
+    proto_dir = "bf-projects/bf_simple_pytest"
+
+    def test_build_run_pytest(self):
+        # given
+        self.assertFalse((self.cwd / "build" / "junit-reports").exists())
+
+        # when
+        self.bigflow_run(["build"])
+
+        # then
+        self.assertFileContentRegex("build/junit-reports/report.xml", r"<testsuites><testsuite")

@@ -11,6 +11,7 @@ import toml
 from pathlib import Path
 
 import setuptools
+import typing_extensions
 
 import bigflow.resources
 import bigflow.version
@@ -63,6 +64,8 @@ class BigflowProjectSpec:
     # Just bypass any unknown options to 'distutils'
     setuptools: typing.Dict[str, typing.Any]
 
+    test_framework: typing_extensions.Literal['pytest', 'unittest']
+
 
 def parse_project_spec(
     project_dir,
@@ -76,6 +79,7 @@ def parse_project_spec(
     deployment_config_file="deployment_config.py",
     project_requirements_file="resources/requirements.txt",
     resources_dir="resources",
+    test_framework='unittest',
     **kwargs,
 
 ) -> BigflowProjectSpec:
@@ -100,6 +104,10 @@ def parse_project_spec(
     if setuptools:
         logger.info("Found unrecognized build parameters: %s", setuptools)
 
+    if test_framework not in {'pytest', 'unittest'}:
+        logger.error("Unknown test framework %r, fallback to 'unittest'", test_framework)
+        test_framework = 'unittest'
+
     logger.info("Bigflow project spec is ready")
 
     return BigflowProjectSpec(
@@ -115,6 +123,7 @@ def parse_project_spec(
         deployment_config_file=deployment_config_file,
         metainfo=metainfo,
         setuptools=kwargs,
+        test_framework=test_framework,
     )
 
 
@@ -130,6 +139,7 @@ def render_project_spec(prj: BigflowProjectSpec) -> dict:
         'project_requirements_file': prj.project_requirements_file,
         # 'data_files': prj.data_files,  # https://github.com/uiri/toml/issues/270
         'resources_dir': prj.resources_dir,
+        'test_framework': prj.test_framework,
         **prj.metainfo,
         **prj.setuptools,
     }

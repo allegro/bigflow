@@ -5,6 +5,7 @@ import freezegun
 
 from bigflow.testing.isolate import ForkIsolateMixin
 from bigflow.cli import *
+from bigflow.cli import _ConsoleStreamLogHandler
 
 from test import mixins
 
@@ -924,7 +925,8 @@ another-project-id                         ANOTHER PROJECT                002242
 
         # then
         self.assertEqual(len(logging.root.handlers), 1)
-        self.assertIsInstance(logging.root.handlers[0], logging.StreamHandler)
+
+        self.assertIsInstance(logging.root.handlers[0], _ConsoleStreamLogHandler)
         self.assertEqual(logging.root.level, logging.INFO)
 
     @mock.patch('bigflow.cli._cli_build')
@@ -935,5 +937,6 @@ another-project-id                         ANOTHER PROJECT                002242
 
         # then
         self.assertEqual(len(logging.root.handlers), 1)
-        self.assertIsInstance(logging.root.handlers[0], logging.StreamHandler)
+        self.assertIsInstance(logging.root.handlers[0], _ConsoleStreamLogHandler)
+
         self.assertEqual(logging.root.level, logging.DEBUG)

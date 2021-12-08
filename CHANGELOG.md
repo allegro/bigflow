@@ -1,5 +1,10 @@
 # BigFlow changelog
 
+## Version 1.5 (WIP)
+
+### Added
+ * Optional support for 'pytest' as testing framework
+
 ## Version 1.4
 
 ### Added

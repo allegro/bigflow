@@ -1,0 +1,8 @@
+[bigflow-project]
+name = "bf-simple-v12"
+version = "1.2.3"
+author = "Bigflow UnitTest"
+url = "http://example.org"
+description = "Sample bigflow project"
+docker_repository = "test_repository"
+test_framework = "pytest"

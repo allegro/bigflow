@@ -6,6 +6,7 @@ import shutil
 import logging
 import typing
 import textwrap
+import sys
 
 from pathlib import Path
 
@@ -25,20 +26,44 @@ logger = logging.getLogger(__name__)
 
 
 def run_tests(project_spec: BigflowProjectSpec):
-    logger.info('Runing tests...')
-    output_dir = "build/junit-reports"
+
+    test_fn = {
+        'pytest': run_tests_pytest,
+        'unittest': run_tests_unittest,
+    }[project_spec.test_framework]
+
+    logger.info("Runing tests with %s...", project_spec.test_framework)
     try:
-        bf_commons.run_process([
-            "python", "-m", "xmlrunner", "discover",
-            "-s", ".",
-            "-t", project_spec.project_dir,
-            "-o", output_dir,
-        ])
+        test_fn(project_spec)
     except subprocess.CalledProcessError:
         logger.error("Test suite was FAILED")
         exit(1)
-
     logger.info("Test suite was PASSED")
+
+
+def run_tests_pytest(project_spec: BigflowProjectSpec):
+    junit_xml = Path("./build/junit-reports/report.xml").absolute()
+    junit_xml.parent.mkdir(parents=True, exist_ok=True)
+    color = sys.stdout.isatty()
+    bf_commons.run_process(
+        [
+            "python",
+            "-u",  # disable buffering
+            "-m", "pytest",
+            "--color", ("yes" if color else "auto"),
+            "--junit-xml", str(junit_xml),
+        ],
+    )
+
+
+def run_tests_unittest(project_spec: BigflowProjectSpec):
+    output_dir = "build/junit-reports"
+    bf_commons.run_process([
+        "python", "-m", "xmlrunner", "discover",
+        "-s", ".",
+        "-t", project_spec.project_dir,
+        "-o", output_dir,
+    ])
 
 
 def _export_docker_image_to_file(tag: str, target_dir: Path, version: str):
