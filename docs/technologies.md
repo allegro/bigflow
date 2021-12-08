@@ -140,6 +140,25 @@ run beam pipelines.  You migh also specify different image by passing its full i
 
 Please refer to [Dataflow documentation](https://cloud.google.com/dataflow/docs/guides/using-custom-containers) for more details about how to build a custom image.
 
+### Resolving dependency clashes [DEPRECATED]
+
+Dependency clashes in an Apache Beam job running on Dataflow result in a "hanging" (not making any progress but also not failing instantly) job. It's a common issue so we have created a tool that helps avoid such cases.
+
+The tool is an automatic dependency clash resolver. To use the resolver in your project, run the following command:
+
+```shell
+bf codegen pin-dataflow-requirements
+```
+
+It will go through your `resources/requirements.txt` and generate the `dataflow_pins.in` file, containing pinned dependencies. Pin file will be automatically
+linked to your `requirements.in`.
+
+To rebuild your requirements with pins included, run the `build-requirements` command:
+
+```shell
+bf build-requirements
+```
+
 ## BigQuery
 
 BigFlow provides comprehensive support for BigQuery. Example use cases:
