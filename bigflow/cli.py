@@ -764,6 +764,7 @@ class _ConsoleStreamLogHandler(logging.Handler):
 
 
 def init_console_logging(verbose):
+    verbose = verbose or os.environ.get('BIGFLOW_VERBOSE', "")
     if verbose:
         logging.basicConfig(
             level=logging.DEBUG,
@@ -847,3 +848,5 @@ def cli(raw_args) -> None:
         _cli_codegen(parsed_args)
     else:
         raise ValueError(f'Operation unknown - {operation}')
+
+    logger.debug("bigflow cli finished")
