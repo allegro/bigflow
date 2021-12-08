@@ -755,6 +755,7 @@ class _ConsoleStreamLogHandler(logging.Handler):
                 else:
                     self.last_incomplete_msg = msg
                 self.stream.write(msg)
+                self.stream.flush()
 
         except RecursionError:  # See issue 36272
             raise
