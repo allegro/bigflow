@@ -6,6 +6,7 @@ from inspect import getfullargspec
 
 import typing
 from pathlib import Path
+from typing import Dict, List
 
 from google.api_core.exceptions import BadRequest
 
@@ -16,6 +17,7 @@ from .job import DEFAULT_RETRY_COUNT
 from .job import DEFAULT_RETRY_PAUSE_SEC
 from .dataset_manager import DEFAULT_LOCATION
 from .interface import Dataset, DEFAULT_RUNTIME
+from .. import public
 
 logger = logging.getLogger(__name__)
 
@@ -53,13 +55,15 @@ class InteractiveDatasetManager(Dataset):
     """Let's you run operations on a dataset, without the need of creating a component."""
 
     def __init__(self,
-                 project_id,
-                 dataset_name,
-                 internal_tables=None,
-                 external_tables=None,
+                 project_id: str,
+                 dataset_name: str,
+                 internal_tables: List[str] = None,
+                 external_tables: Dict[str, str] = None,
                  credentials=None,
-                 extras=None,
-                 location=DEFAULT_LOCATION):
+                 extras: Dict = None,
+                 location: str = DEFAULT_LOCATION,
+                 tables_labels: Dict[str, Dict[str, str]] = None,
+                 dataset_labels: Dict[str, str] = None):
         self.config = DatasetConfigInternal(
             project_id=project_id,
             dataset_name=dataset_name,
@@ -67,7 +71,9 @@ class InteractiveDatasetManager(Dataset):
             external_tables=external_tables,
             credentials=credentials,
             extras=extras,
-            location=location)
+            location=location,
+            tables_labels=tables_labels,
+            dataset_labels=dataset_labels)
         logger.debug("Create InteractiveDatasetManager, config %s", self.config._as_dict())
 
     def write_truncate(self, table_name, sql, partitioned=True):
@@ -480,7 +486,10 @@ class DatasetConfigInternal(object):
                  external_tables=None,
                  credentials=None,
                  extras=None,
-                 location=DEFAULT_LOCATION):
+                 location=DEFAULT_LOCATION,
+                 tables_labels: Dict[str, Dict[str, str]] = None,
+                 dataset_labels: Dict[str, str] = None
+                 ):
         self.project_id = project_id
         self.dataset_name = dataset_name
         self.internal_tables = internal_tables or []
@@ -488,6 +497,8 @@ class DatasetConfigInternal(object):
         self.credentials = credentials or None
         self.extras = extras or {}
         self.location = location
+        self.tables_labels = tables_labels or {}
+        self.dataset_labels = dataset_labels or {}
 
     def _as_dict(self):
         return {
@@ -497,7 +508,9 @@ class DatasetConfigInternal(object):
             'external_tables': self.external_tables,
             'credentials': self.credentials,
             'extras': self.extras,
-            'location': self.location
+            'location': self.location,
+            'tables_labels': self.tables_labels,
+            'dataset_labels': self.dataset_labels
         }
 
 
@@ -521,6 +534,7 @@ def sensor(table_alias, where_clause, ds=None):
     return sensor_function if ds is None else interactive_component(ds=ds)(sensor_function)
 
 
+@public(deprecate_reason="Pass labels as arguments to DatasetConfig")
 def add_label(table_name, labels, ds=None):
 
     def add_label_function(ds):

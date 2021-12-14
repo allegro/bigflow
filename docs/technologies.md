@@ -328,6 +328,7 @@ methods are lazy and return a [`BigQueryOperation`](../bigflow/bigquery/interfac
 
 You can turn a lazy operation into a job or simply run it (useful for ad-hoc queries or debugging).
 
+
 ```python
 create_target_table_operation = dataset.write_truncate('target_table', '''
 SELECT *
@@ -466,25 +467,28 @@ workflow = Workflow(
         schedule_interval='@once')
 ```
 
-#### Label table
+#### Labels
 
-The `add_label` function allows your workflow to create/overrides a label for a BigQuery table.
+The `table_labels` and `dataset_labels` parameters allows your workflow to create/overrides a label for a BigQuery table and dataset.
 
 ```python
-from bigflow.bigquery import DatasetConfig, Dataset, add_label
+from bigflow.bigquery import DatasetConfig 
 
 dataset_config = DatasetConfig(
     env='dev',
     project_id='your-project-id',
     dataset_name='example_dataset',
     internal_tables=['example_table'],
-    external_tables={})
+    external_tables={},
+    table_labels={
+      'example_table': {
+        "label_1": "value_1",
+        "label_2": "value_2"
+      }
+    },
+    dataset_labels={"dataset_label_1": "value_1", "dataset_label_2": "value_2"}).create_dataset_manager()
 
-dataset: Dataset = dataset_config.create_dataset_manager()
 
-adding_label_to_example_table_job = (add_label('example_table', {'sensitiveData': 'True'}, dataset)
-    .to_job(id='adding_label_to_example_table'))
-adding_label_to_example_table_job.run()
 ```
 
 You can us it as a ad-hoc tool or put a labeling job to a workflow as well.

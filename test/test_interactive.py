@@ -219,7 +219,9 @@ class InteractiveComponentToJobTestCase(TestCase):
             dataset_name='default_dataset',
             internal_tables=['table1'],
             external_tables={'table': 'table1'},
-            extras={'param': 'param1'})
+            extras={'param': 'param1'},
+            dataset_labels={'dataset_label': 'dataset_label_value'},
+            tables_labels={'table_name': {'table_label': 'table_label_value'}})
 
         @interactive_component(ds1=default_dataset, ds2=default_dataset)
         def standard_component(ds1, ds2):
@@ -229,19 +231,26 @@ class InteractiveComponentToJobTestCase(TestCase):
             self.assertEqual(ds1._dataset_manager['dependency_kwargs']['internal_tables'], ['table1'])
             self.assertEqual(ds1._dataset_manager['dependency_kwargs']['external_tables'], {'table': 'table1'})
             self.assertEqual(ds1._dataset_manager['dependency_kwargs']['extras'], {'param': 'param1'})
+            self.assertEqual(ds1._dataset_manager['dependency_kwargs']['dataset_labels'], {'dataset_label': 'dataset_label_value'})
+            self.assertEqual(ds1._dataset_manager['dependency_kwargs']['tables_labels'], {'table_name': {'table_label': 'table_label_value'}})
 
             self.assertEqual(ds2._dataset_manager['dependency_kwargs']['project_id'], 'modified_project')
             self.assertEqual(ds2._dataset_manager['dependency_kwargs']['dataset_name'], 'modified_dataset')
             self.assertEqual(ds2._dataset_manager['dependency_kwargs']['internal_tables'], ['table2'])
             self.assertEqual(ds2._dataset_manager['dependency_kwargs']['external_tables'], {'table': 'table2'})
             self.assertEqual(ds2._dataset_manager['dependency_kwargs']['extras'], {'param': 'param2'})
+            self.assertEqual(ds2._dataset_manager['dependency_kwargs']['dataset_labels'], {'modified_dataset_label': 'modified_dataset_label_value'})
+            self.assertEqual(ds2._dataset_manager['dependency_kwargs']['tables_labels'], {'table_name': {'modified_table_label': 'modified_table_label_value'}})
 
         modified_dataset = InteractiveDatasetManager(
             project_id='modified_project',
             dataset_name='modified_dataset',
             internal_tables=['table2'],
             external_tables={'table': 'table2'},
-            extras={'param': 'param2'})
+            extras={'param': 'param2'},
+            dataset_labels={'modified_dataset_label': 'modified_dataset_label_value'},
+            tables_labels={'table_name': {'modified_table_label': 'modified_table_label_value'}}
+        )
 
         # when
         job = standard_component.to_job(dependencies_override={'ds2': modified_dataset})

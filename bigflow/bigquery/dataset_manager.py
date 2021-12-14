@@ -1,14 +1,14 @@
 import json
 import uuid
-import logging
 import functools
 import typing
 import logging
+from logging import Logger
 from pathlib import Path
+import re
 
-from google.cloud.bigquery import dataset
 # hidden BQ and pandas imports due to https://github.com/allegro/bigflow/issues/149
-
+from typing import Dict, List
 
 logger = logging.getLogger(__name__)
 
@@ -263,17 +263,19 @@ class DatasetManager(object):
     def __init__(self,
                  bigquery_client,
                  dataset,
-                 logger):
+                 logger,
+                 tables_labels):
         from google.cloud import bigquery
-        self.bigquery_client: bigquery.Client  = bigquery_client
+        self.bigquery_client: bigquery.Client = bigquery_client
         self.dataset = dataset
         self.dataset_id = dataset.full_dataset_id.replace(':', '.')
         self.logger = logger
+        self.tables_labels = tables_labels
 
-    def write_tmp(self, table_id, sql):
+    def write_tmp(self, table_id: str, sql: str):
         return self.write(table_id, sql, 'WRITE_TRUNCATE')
 
-    def write(self, table_id, sql, mode):
+    def write(self, table_id: str, sql: str, mode: str):
         from google.cloud import bigquery
         self.logger.info('%s to %s', mode, table_id)
         job_config = bigquery.QueryJobConfig()
@@ -286,20 +288,20 @@ class DatasetManager(object):
         job = self.bigquery_client.query(sql, job_config=job_config)
         return job.result()
 
-    def write_truncate(self, table_id, sql):
+    def write_truncate(self, table_id: str, sql: str):
         self.table_exists_or_error(table_id)
         return self.write(table_id, sql, 'WRITE_TRUNCATE')
 
-    def write_append(self, table_id, sql):
+    def write_append(self, table_id: str, sql: str):
         self.table_exists_or_error(table_id)
         return self.write(table_id, sql, 'WRITE_APPEND')
 
-    def table_exists_or_error(self, table_id):
+    def table_exists_or_error(self, table_id: str):
         table_name = table_id.split('$')[0].split('.')[2]
         if not self.table_exists(table_name):
             raise ValueError('Table {id} does not exist'.format(id=table_id))
 
-    def create_table(self, create_query):
+    def create_table(self, create_query: str):
         from google.cloud import bigquery
         self.logger.info('CREATE TABLE: %s', create_query)
         job_config = bigquery.QueryJobConfig()
@@ -309,9 +311,20 @@ class DatasetManager(object):
         job = self.bigquery_client.query(
             create_query,
             job_config=job_config)
-        return job.result()
+        job_result = job.result()
+        table_name = re.findall(r"(?is)\b(?:create table ?(?:if not exists)?)\s+(\w+)", create_query)[0]
+        self._add_table_labels(table_name)
+        return job_result
 
-    def collect(self, sql):
+    def _add_table_labels(self, table_name: str):
+        if self.tables_labels and table_name in self.tables_labels:
+            self.logger.info(f'ADDING LABELS FOR TABLE: ${table_name}')
+            table = self.bigquery_client.get_table(self.dataset_id + '.' + table_name)
+            table.labels = _prepare_labels(table.labels, self.tables_labels[table_name])
+            self.bigquery_client.update_table(table, ["labels"])
+
+
+    def collect(self, sql: str):
         return self._query(sql).to_dataframe()
 
     def collect_list(self, sql: str, record_as_dict: bool = False):
@@ -320,7 +333,7 @@ class DatasetManager(object):
             result = [dict(e) for e in result]
         return result
 
-    def dry_run(self, sql):
+    def dry_run(self, sql: str):
         from google.cloud import bigquery
         job_config = bigquery.QueryJobConfig()
         job_config.dry_run = True
@@ -333,10 +346,10 @@ class DatasetManager(object):
     def remove_dataset(self):
         return self.bigquery_client.delete_dataset(self.dataset, delete_contents=True, not_found_ok=True)
 
-    def load_table_from_dataframe(self, table_id, df):
+    def load_table_from_dataframe(self, table_id: str, df):
         return self.bigquery_client.load_table_from_dataframe(df, table_id).result()
 
-    def table_exists(self, table_name):
+    def table_exists(self, table_name: str):
         return self.bigquery_client.query('''
             SELECT count(*) as table_exists
             FROM `{dataset_id}.__TABLES__`
@@ -385,7 +398,7 @@ class DatasetManager(object):
         if errors:
             raise ValueError(errors)
 
-    def _query(self, sql, job_config=None):
+    def _query(self, sql: str, job_config=None):
         self.logger.info('COLLECTING DATA: %s', sql)
         if job_config:
             return self.bigquery_client.query(sql, job_config=job_config)
@@ -408,20 +421,31 @@ class DatasetManager(object):
                 'cost': cost}
 
 
-def create_dataset(dataset_name, bigquery_client, location=DEFAULT_LOCATION):
+def create_dataset(dataset_name: str, bigquery_client, location: str = DEFAULT_LOCATION, dataset_new_labels: Dict = None):
     from google.cloud import bigquery
     dataset = bigquery.Dataset('{project_id}.{dataset_name}'.format(
         project_id=bigquery_client.project,
         dataset_name=dataset_name))
     dataset.location = location
-    return bigquery_client.create_dataset(dataset, exists_ok=True)
+    bigquery_dataset = bigquery_client.create_dataset(dataset, exists_ok=True)
+    if dataset_new_labels:
+        logger.info(f'ADDING LABELS FOR DATASET: ${dataset_name}')
+        bigquery_dataset.labels = _prepare_labels(bigquery_dataset.labels, dataset_new_labels)
+        return bigquery_client.update_dataset(bigquery_dataset, ["labels"])
+    return bigquery_dataset
+
+
+def _prepare_labels(labels: Dict, new_labels: Dict):
+    labels_to_remove = {label_to_remove: None for label_to_remove in labels}
+    labels_to_remove.update(new_labels)
+    return labels_to_remove
 
 
 def random_uuid(suffix=''):
     return uuid.uuid1().hex + suffix
 
 
-def create_bigquery_client(project_id, credentials, location):
+def create_bigquery_client(project_id: str, credentials, location: str):
     from google.cloud import bigquery
     return bigquery.Client(
         project=project_id,
@@ -430,15 +454,17 @@ def create_bigquery_client(project_id, credentials, location):
 
 
 def create_dataset_manager(
-        project_id,
-        runtime,
-        dataset_name=None,
-        internal_tables=None,
-        external_tables=None,
-        extras=None,
+        project_id: str,
+        runtime: str,
+        dataset_name: str = None,
+        internal_tables: List[str] = None,
+        external_tables: Dict[str, str] = None,
+        extras: Dict = None,
         credentials=None,
-        location=DEFAULT_LOCATION,
-        logger=None) -> typing.Tuple[str, PartitionedDatasetManager]:
+        location: str = DEFAULT_LOCATION,
+        logger: Logger = None,
+        tables_labels: Dict[str, Dict[str, str]] = None,
+        dataset_labels: Dict[str, str] = None) -> typing.Tuple[str, PartitionedDatasetManager]:
     """
     Dataset manager factory.
     If dataset does not exist then it will also create dataset with given name.
@@ -454,6 +480,8 @@ def create_dataset_manager(
     :param project_id: string full project id where dataset being processed is available.
     :param location: string location of dataset will be used to create datasets, tables, jobs, etc. EU by default.
     :param logger: custom logger.
+    :param tables_labels: Dict with key as table_name and value as list of key/valued labels.
+    :param dataset_labels: Dict with key/valued labels.
     :return: tuple (full dataset ID, dataset manager).
     """
     dataset_name = dataset_name or random_uuid(suffix='_test_case')
@@ -465,8 +493,8 @@ def create_dataset_manager(
         logger = logging.getLogger(__name__)
 
     client = create_bigquery_client(project_id, credentials, location)
-    dataset = create_dataset(dataset_name, client, location)
+    dataset = create_dataset(dataset_name, client, location, dataset_labels)
 
-    core_dataset_manager = DatasetManager(client, dataset, logger)
+    core_dataset_manager = DatasetManager(client, dataset, logger, tables_labels)
     templated_dataset_manager = TemplatedDatasetManager(core_dataset_manager, internal_tables, external_tables, extras, runtime)
     return dataset.full_dataset_id.replace(':', '.'), PartitionedDatasetManager(templated_dataset_manager, get_partition_from_run_datetime_or_none(runtime))
