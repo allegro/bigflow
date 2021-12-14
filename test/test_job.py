@@ -26,8 +26,8 @@ class JobTestCase(TestCase):
                 'runtime': '2019-01-01 00:00:00',
                 'credentials': 'credentials',
                 'location': 'EU',
-                'tables_labels': None,
-                'dataset_labels': None,
+                'tables_labels': {},
+                'dataset_labels': {},
             })
 
             # and
@@ -40,8 +40,8 @@ class JobTestCase(TestCase):
                 'credentials': 'credentials',
                 'runtime': '2019-01-01 00:00:00',
                 'location': 'EU',
-                'tables_labels': None,
-                'dataset_labels': None,
+                'tables_labels': {},
+                'dataset_labels': {},
             })
 
         job = Job(component=test_component,
