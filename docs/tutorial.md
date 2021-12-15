@@ -33,7 +33,7 @@ You can run them directly from your local machine or deploy them to Cloud Compos
 Our "Hello, World!" workflow is the simple Python code. It consists of two jobs.
 The first one says Hello, and the second one says Goodbye:
 
-[hello_world_workflow.py](examples/cli/hello_world_workflow.py):
+[hello_world_workflow.py](/examples/cli/hello_world_workflow.py):
 
 ```python
 import bigflow
