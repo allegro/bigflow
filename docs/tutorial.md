@@ -33,7 +33,7 @@ You can run them directly from your local machine or deploy them to Cloud Compos
 Our "Hello, World!" workflow is the simple Python code. It consists of two jobs.
 The first one says Hello, and the second one says Goodbye:
 
-[hello_world_workflow.py](examples/cli/hello_world_workflow.py):
+[hello_world_workflow.py](/examples/cli/hello_world_workflow.py):
 
 ```python
 import bigflow
@@ -116,7 +116,7 @@ a GCP environment, which consist of two services:
 * a [Cloud Composer](deployment.md#cloud-composer) instance
 * a [Docker Registry](deployment.md#docker-registry)
  
-Then, add the configuration of your environment to the [deployment_config.py](deployment_config.py) file.
+Then, add the configuration of your environment to the [deployment_config.py](/examples/deployment_config.py) file.
 For the purpose of this example, it's enough to set these two properties:
 `gcp_project_id` and `dags_bucket`:
 
@@ -214,7 +214,7 @@ In BigFlow, project environments are configured by
 [`bigflow.Config`](configuration.md) objects.
 Here we show how to create the workflow which prints different messaged for each environment.
 
-[`hello_config_workflow.py`](examples/cli/hello_config_workflow.py):
+[`hello_config_workflow.py`](/examples/cli/hello_config_workflow.py):
 
 ```python
 import bigflow
