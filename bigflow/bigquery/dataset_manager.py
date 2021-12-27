@@ -5,12 +5,10 @@ import typing
 import logging
 from logging import Logger
 from pathlib import Path
-import re
 
 # hidden BQ and pandas imports due to https://github.com/allegro/bigflow/issues/149
 from typing import Dict, List
 
-from google.cloud.exceptions import NotFound
 
 logger = logging.getLogger(__name__)
 
@@ -442,7 +440,8 @@ def create_bigquery_client(project_id: str, credentials, location: str):
         location=location)
 
 
-def upsert_labels(dataset_name: str, tables_labels: Dict[str, Dict[str, str]], bigquery_client):
+def upsert_tables_labels(dataset_name: str, tables_labels: Dict[str, Dict[str, str]], bigquery_client):
+    from google.cloud.exceptions import NotFound
     if tables_labels:
         for table_name, labels in tables_labels.items():
             logger.info(f'ADDING LABELS FOR TABLE: ${table_name}')
@@ -496,7 +495,7 @@ def create_dataset_manager(
     client = create_bigquery_client(project_id, credentials, location)
     dataset = create_dataset(dataset_name, client, location, dataset_labels)
 
-    upsert_labels(dataset_name, tables_labels, client)
+    upsert_tables_labels(dataset_name, tables_labels, client)
 
     core_dataset_manager = DatasetManager(client, dataset, logger)
     templated_dataset_manager = TemplatedDatasetManager(core_dataset_manager, internal_tables, external_tables, extras, runtime)
