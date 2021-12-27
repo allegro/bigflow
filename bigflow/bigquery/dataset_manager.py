@@ -10,6 +10,8 @@ import re
 # hidden BQ and pandas imports due to https://github.com/allegro/bigflow/issues/149
 from typing import Dict, List
 
+from google.cloud.exceptions import NotFound
+
 logger = logging.getLogger(__name__)
 
 
@@ -263,14 +265,12 @@ class DatasetManager(object):
     def __init__(self,
                  bigquery_client,
                  dataset,
-                 logger,
-                 tables_labels):
+                 logger):
         from google.cloud import bigquery
         self.bigquery_client: bigquery.Client = bigquery_client
         self.dataset = dataset
         self.dataset_id = dataset.full_dataset_id.replace(':', '.')
         self.logger = logger
-        self.tables_labels = tables_labels
 
     def write_tmp(self, table_id: str, sql: str):
         return self.write(table_id, sql, 'WRITE_TRUNCATE')
@@ -311,18 +311,7 @@ class DatasetManager(object):
         job = self.bigquery_client.query(
             create_query,
             job_config=job_config)
-        job_result = job.result()
-        table_name = re.findall(r"(?is)\b(?:create table ?(?:if not exists)?)\s+(\w+)", create_query)[0]
-        self._add_table_labels(table_name)
-        return job_result
-
-    def _add_table_labels(self, table_name: str):
-        if self.tables_labels and table_name in self.tables_labels:
-            self.logger.info(f'ADDING LABELS FOR TABLE: ${table_name}')
-            table = self.bigquery_client.get_table(self.dataset_id + '.' + table_name)
-            table.labels = _prepare_labels(table.labels, self.tables_labels[table_name])
-            self.bigquery_client.update_table(table, ["labels"])
-
+        return job.result()
 
     def collect(self, sql: str):
         return self._query(sql).to_dataframe()
@@ -453,6 +442,18 @@ def create_bigquery_client(project_id: str, credentials, location: str):
         location=location)
 
 
+def upsert_labels(dataset_name: str, tables_labels: Dict[str, Dict[str, str]], bigquery_client):
+    if tables_labels:
+        for table_name, labels in tables_labels.items():
+            logger.info(f'ADDING LABELS FOR TABLE: ${table_name}')
+            try:
+                table = bigquery_client.get_table(dataset_name + '.' + table_name)
+            except NotFound:
+                continue
+            table.labels = _prepare_labels(table.labels, tables_labels[table_name])
+            bigquery_client.update_table(table, ["labels"])
+
+
 def create_dataset_manager(
         project_id: str,
         runtime: str,
@@ -495,6 +496,8 @@ def create_dataset_manager(
     client = create_bigquery_client(project_id, credentials, location)
     dataset = create_dataset(dataset_name, client, location, dataset_labels)
 
-    core_dataset_manager = DatasetManager(client, dataset, logger, tables_labels)
+    upsert_labels(dataset_name, tables_labels, client)
+
+    core_dataset_manager = DatasetManager(client, dataset, logger)
     templated_dataset_manager = TemplatedDatasetManager(core_dataset_manager, internal_tables, external_tables, extras, runtime)
     return dataset.full_dataset_id.replace(':', '.'), PartitionedDatasetManager(templated_dataset_manager, get_partition_from_run_datetime_or_none(runtime))

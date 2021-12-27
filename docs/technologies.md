@@ -469,7 +469,8 @@ workflow = Workflow(
 
 #### Labels
 
-The `table_labels` and `dataset_labels` parameters allows your workflow to create/overrides a label for a BigQuery table and dataset.
+The `table_labels` and `dataset_labels` parameters allows your workflow to create/overrides a label for a BigQuery table and dataset. 
+On the first run tables are not created yet, so we can not create labels then. Labels are added on second and later run when tables are already created.
 
 ```python
 from bigflow.bigquery import DatasetConfig 

@@ -226,7 +226,31 @@ class CreateTableTestCase(DatasetManagerBaseTestCase):
         # then
         self.assertTrue(self.dataset_manager._table_exists('new_table'))
 
-    def test_should_create_table_with_labels(self):
+    def test_should_add_labels(self):
+
+        # given
+        self.dataset_manager.create_table('''
+        CREATE TABLE labeled_table (
+            id STRING
+        )''')
+
+        # when
+        test_dataset_id, dataset_manager = create_dataset_manager(
+            config.PROJECT_ID,
+            self.TEST_PARTITION,
+            dataset_name=self.dataset_uuid,
+            internal_tables=self.internal_tables,
+            external_tables=self.external_tables,
+            dataset_labels={'test_label_key': 'test_label_value', 'another_test_label_key': 'another_test_label_value'},
+            tables_labels={'labeled_table': {'labeled_table_key': 'labeled_table_value', 'another_labeled_table_key': 'another_labeled_table_value'}})
+
+        # then
+        self.assertEqual(
+            dataset_manager.client.get_table(test_dataset_id + '.' + 'labeled_table').labels,
+            {'labeled_table_key': 'labeled_table_value', 'another_labeled_table_key': 'another_labeled_table_value'}
+        )
+
+    def test_should_not_add_labels(self):
 
         # when
         self.dataset_manager.create_table('''
@@ -236,21 +260,7 @@ class CreateTableTestCase(DatasetManagerBaseTestCase):
 
         # then
         self.assertEqual(
-            self.dataset_manager.client.get_table(self.test_dataset_id + '.' + 'labeled_table').labels,
-            {'labeled_table_key': 'labeled_table_value', 'another_labeled_table_key': 'another_labeled_table_value'}
-        )
-
-    def test_should_create_table_without_labels(self):
-
-        # when
-        self.dataset_manager.create_table('''
-        CREATE TABLE not_labeled_table (
-            id STRING
-        )''')
-
-        # then
-        self.assertEqual(
-            self.dataset_manager.client.get_table(self.test_dataset_id + '.' + 'not_labeled_table').labels, {}
+            self.dataset_manager.client.get_table(self.test_dataset_id + '.' + 'labeled_table').labels, {}
         )
 
     def test_should_upsert_labels_when_table_exists(self):
@@ -260,21 +270,34 @@ class CreateTableTestCase(DatasetManagerBaseTestCase):
         CREATE TABLE IF NOT EXISTS labeled_table (
             id STRING
         )''')
+
+        test_dataset_id, dataset_manager = create_dataset_manager(
+            config.PROJECT_ID,
+            self.TEST_PARTITION,
+            dataset_name=self.dataset_uuid,
+            internal_tables=self.internal_tables,
+            external_tables=self.external_tables,
+            dataset_labels={'test_label_key': 'test_label_value', 'another_test_label_key': 'another_test_label_value'},
+            tables_labels={'labeled_table': {'labeled_table_key': 'labeled_table_value', 'another_labeled_table_key': 'another_labeled_table_value'}})
+
         self.assertEqual(
-            self.dataset_manager.client.get_table(self.test_dataset_id + '.' + 'labeled_table').labels,
+            dataset_manager.client.get_table(test_dataset_id + '.' + 'labeled_table').labels,
             {'labeled_table_key': 'labeled_table_value', 'another_labeled_table_key': 'another_labeled_table_value'}
         )
 
         # when
-        self.dataset_manager._dataset_manager.dataset_manager.tables_labels = {'labeled_table': {'labeled_table_key': 'updated_labeled_table_value', 'new_labeled_table_key': 'new_labeled_table_value'}}
-        self.dataset_manager.create_table('''
-        CREATE TABLE IF NOT EXISTS labeled_table (
-            id STRING
-        )''')
+        test_dataset_id, dataset_manager = create_dataset_manager(
+            config.PROJECT_ID,
+            self.TEST_PARTITION,
+            dataset_name=self.dataset_uuid,
+            internal_tables=self.internal_tables,
+            external_tables=self.external_tables,
+            dataset_labels={'test_label_key': 'test_label_value', 'another_test_label_key': 'another_test_label_value'},
+            tables_labels={'labeled_table': {'labeled_table_key': 'updated_labeled_table_value', 'new_labeled_table_key': 'new_labeled_table_value'}})
 
         # then
         self.assertEqual(
-            self.dataset_manager.client.get_table(self.test_dataset_id + '.' + 'labeled_table').labels,
+            dataset_manager.client.get_table(test_dataset_id + '.' + 'labeled_table').labels,
             {'labeled_table_key': 'updated_labeled_table_value', 'new_labeled_table_key': 'new_labeled_table_value'})
 
 
