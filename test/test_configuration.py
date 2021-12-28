@@ -203,7 +203,7 @@ class TestConfig(TestCase):
                                dataset_name='None',
                                internal_tables=['table_1', 'table_2'],
                                dataset_labels={'label_key': 'label_value'},
-                               tables_labels={'table_name': [{'table_label_key': 'table_label_value'}]},
+                               tables_labels={'table_name': {'table_label_key': 'table_label_value'}},
                                properties={
                                    'page-routes-v2': 'page-routes-v2-{env}',
                                    'datastore_project_id': 'my_dev_datastore_project',
@@ -241,7 +241,7 @@ class TestConfig(TestCase):
                                            'window_period_seconds': '60'
                                        })
         self.assertEqual(config.resolve_dataset_labels('prod'), {'label_key': 'label_value'})
-        self.assertEqual(config.resolve_tables_labels('prod'), {'table_name': [{'table_label_key': 'table_label_value'}]})
+        self.assertEqual(config.resolve_tables_labels('prod'), {'table_name': {'table_label_key': 'table_label_value'}})
 
     def test_should_resolve_env_variables_via_resolve_method(self):
         # when

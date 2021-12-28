@@ -15,7 +15,7 @@ class DatasetConfig:
                  properties: dict = None,
                  is_master: bool = True,
                  is_default: bool = True,
-                 tables_labels: Dict[str, List[Dict[str, str]]] = None,
+                 tables_labels: Dict[str, Dict[str, str]] = None,
                  dataset_labels: Dict[str, str] = None):
        all_properties = (properties or {}).copy()
        all_properties['project_id'] = project_id
