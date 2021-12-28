@@ -62,12 +62,12 @@ class DatasetManagerBaseTestCase(TestCase):
 
 
 class DatasetManagerTestCase(DatasetManagerBaseTestCase):
-    def test_should_have_labels(self):
+    def test_should_add_labels(self):
         # expect
         self.assertEqual(self.dataset_manager.client.get_dataset(self.test_dataset_id).labels,
                          {'test_label_key': 'test_label_value', 'another_test_label_key': 'another_test_label_value'})
 
-    def test_should_not_have_labels(self):
+    def test_should_not_add_labels(self):
         # when
         self.test_dataset_id, self.dataset_manager = create_dataset_manager(
             config.PROJECT_ID,
@@ -79,7 +79,7 @@ class DatasetManagerTestCase(DatasetManagerBaseTestCase):
         # then
         self.assertEqual(self.dataset_manager.client.get_dataset(self.test_dataset_id).labels, {})
 
-    def test_should_upsert_labels_when_dataset_exists(self):
+    def test_should_upsert_labels(self):
         # given
         self.assertEqual(self.dataset_manager.client.get_dataset(self.test_dataset_id).labels,
                          {'test_label_key': 'test_label_value', 'another_test_label_key': 'another_test_label_value'})
@@ -263,7 +263,7 @@ class CreateTableTestCase(DatasetManagerBaseTestCase):
             self.dataset_manager.client.get_table(self.test_dataset_id + '.' + 'labeled_table').labels, {}
         )
 
-    def test_should_upsert_labels_when_table_exists(self):
+    def test_should_upsert_labels(self):
 
         # given
         self.dataset_manager.create_table('''

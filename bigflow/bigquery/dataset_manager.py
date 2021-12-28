@@ -422,7 +422,7 @@ def create_dataset(dataset_name: str, bigquery_client, location: str = DEFAULT_L
     return bigquery_dataset
 
 
-def _prepare_labels(labels: Dict, new_labels: Dict):
+def _prepare_labels(labels: Dict[str, str], new_labels: Dict[str, str]) -> Dict[str, str]:
     labels_to_remove = {label_to_remove: None for label_to_remove in labels}
     labels_to_remove.update(new_labels)
     return labels_to_remove
