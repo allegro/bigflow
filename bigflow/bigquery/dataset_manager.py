@@ -408,7 +408,7 @@ class DatasetManager(object):
                 'cost': cost}
 
 
-def create_dataset(dataset_name: str, bigquery_client, location: str = DEFAULT_LOCATION, dataset_new_labels: Dict = None):
+def create_dataset(dataset_name: str, bigquery_client, location: str = DEFAULT_LOCATION, dataset_new_labels: Dict[str, str] = None):
     from google.cloud import bigquery
     dataset = bigquery.Dataset('{project_id}.{dataset_name}'.format(
         project_id=bigquery_client.project,
