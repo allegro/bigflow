@@ -250,19 +250,6 @@ class CreateTableTestCase(DatasetManagerBaseTestCase):
             {'labeled_table_key': 'labeled_table_value', 'another_labeled_table_key': 'another_labeled_table_value'}
         )
 
-    def test_should_not_add_labels(self):
-
-        # when
-        self.dataset_manager.create_table('''
-        CREATE TABLE labeled_table (
-            id STRING
-        )''')
-
-        # then
-        self.assertEqual(
-            self.dataset_manager.client.get_table(self.test_dataset_id + '.' + 'labeled_table').labels, {}
-        )
-
     def test_should_upsert_labels(self):
 
         # given
