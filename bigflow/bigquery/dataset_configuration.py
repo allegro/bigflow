@@ -35,7 +35,7 @@ class DatasetConfig:
                           external_tables: dict = None,
                           properties: dict = None,
                           is_default: bool = False,
-                          tables_labels: Dict[str, List[Dict[str, str]]] = None,
+                          tables_labels: Dict[str, Dict[str, str]] = None,
                           dataset_labels: Dict[str, str] = None):
 
         all_properties = (properties or {}).copy()
