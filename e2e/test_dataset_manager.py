@@ -19,7 +19,7 @@ def df_to_collections(df):
     return [r for _, r in df.iterrows()]
 
 
-class DatasetManagerTestCase(TestCase):
+class DatasetManagerBaseTestCase(TestCase):
     TEST_PARTITION_DT = (datetime.utcnow() - timedelta(days=-1)).replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=UTC)
     TEST_PARTITION = TEST_PARTITION_DT.isoformat()[:10]
     TEST_PARTITION_PLUS_ONE = datetime.now().isoformat()[:10]
@@ -39,7 +39,9 @@ class DatasetManagerTestCase(TestCase):
             self.TEST_PARTITION,
             dataset_name=self.dataset_uuid,
             internal_tables=self.internal_tables,
-            external_tables=self.external_tables)
+            external_tables=self.external_tables,
+            dataset_labels={'test_label_key': 'test_label_value', 'another_test_label_key': 'another_test_label_value'},
+            tables_labels={'labeled_table': {'labeled_table_key': 'labeled_table_value', 'another_labeled_table_key': 'another_labeled_table_value'}})
 
         self.dataset_manager.create_table('''
         CREATE TABLE IF NOT EXISTS fake_target_table (
@@ -59,7 +61,46 @@ class DatasetManagerTestCase(TestCase):
         self.dataset_manager.remove_dataset()
 
 
-class PartitionedDatasetManagerPropertiesTestCase(DatasetManagerTestCase):
+class DatasetManagerTestCase(DatasetManagerBaseTestCase):
+    def test_should_add_labels(self):
+        # expect
+        self.assertEqual(self.dataset_manager.client.get_dataset(self.test_dataset_id).labels,
+                         {'test_label_key': 'test_label_value', 'another_test_label_key': 'another_test_label_value'})
+
+    def test_should_not_add_labels(self):
+        # when
+        self.test_dataset_id, self.dataset_manager = create_dataset_manager(
+            config.PROJECT_ID,
+            self.TEST_PARTITION,
+            dataset_name="without_labels"+self.dataset_uuid,
+            internal_tables=self.internal_tables,
+            external_tables=self.external_tables)
+
+        # then
+        self.assertEqual(self.dataset_manager.client.get_dataset(self.test_dataset_id).labels, {})
+
+    def test_should_upsert_labels(self):
+        # given
+        self.assertEqual(self.dataset_manager.client.get_dataset(self.test_dataset_id).labels,
+                         {'test_label_key': 'test_label_value', 'another_test_label_key': 'another_test_label_value'})
+
+        # when
+        new_test_dataset_id, new_dataset_manager = create_dataset_manager(
+            config.PROJECT_ID,
+            self.TEST_PARTITION,
+            dataset_name=self.dataset_uuid,
+            internal_tables=self.internal_tables,
+            external_tables=self.external_tables,
+            dataset_labels={'test_label_key': 'updated_test_label_value', 'new_test_label_key': 'new_test_label_value'},
+            tables_labels={'labeled_table': {'labeled_table_key': 'labeled_table_value'}})
+
+        # then
+        self.assertEqual(new_test_dataset_id, self.test_dataset_id)
+        self.assertEqual(new_dataset_manager.client.get_dataset(self.test_dataset_id).labels,
+                         {'test_label_key': 'updated_test_label_value', 'new_test_label_key': 'new_test_label_value'})
+
+
+class PartitionedDatasetManagerPropertiesTestCase(DatasetManagerBaseTestCase):
 
     def test_should_expose_project_id_as_property(self):
         # expect
@@ -78,7 +119,7 @@ class PartitionedDatasetManagerPropertiesTestCase(DatasetManagerTestCase):
         self.assertEqual(self.dataset_manager.external_tables, self.external_tables)
 
 
-class WriteTruncateTestCase(DatasetManagerTestCase):
+class WriteTruncateTestCase(DatasetManagerBaseTestCase):
 
     def test_should_save_records_to_non_partitioned_table(self):
 
@@ -169,7 +210,7 @@ class WriteTruncateTestCase(DatasetManagerTestCase):
             ''')
 
 
-class CreateTableTestCase(DatasetManagerTestCase):
+class CreateTableTestCase(DatasetManagerBaseTestCase):
 
     def test_should_create_table(self):
 
@@ -185,8 +226,69 @@ class CreateTableTestCase(DatasetManagerTestCase):
         # then
         self.assertTrue(self.dataset_manager._table_exists('new_table'))
 
+    def test_should_add_labels(self):
 
-class WriteAppendTestCase(DatasetManagerTestCase):
+        # given
+        self.dataset_manager.create_table('''
+        CREATE TABLE labeled_table (
+            id STRING
+        )''')
+
+        # when
+        test_dataset_id, dataset_manager = create_dataset_manager(
+            config.PROJECT_ID,
+            self.TEST_PARTITION,
+            dataset_name=self.dataset_uuid,
+            internal_tables=self.internal_tables,
+            external_tables=self.external_tables,
+            dataset_labels={'test_label_key': 'test_label_value', 'another_test_label_key': 'another_test_label_value'},
+            tables_labels={'labeled_table': {'labeled_table_key': 'labeled_table_value', 'another_labeled_table_key': 'another_labeled_table_value'}})
+
+        # then
+        self.assertEqual(
+            dataset_manager.client.get_table(test_dataset_id + '.' + 'labeled_table').labels,
+            {'labeled_table_key': 'labeled_table_value', 'another_labeled_table_key': 'another_labeled_table_value'}
+        )
+
+    def test_should_upsert_labels(self):
+
+        # given
+        self.dataset_manager.create_table('''
+        CREATE TABLE IF NOT EXISTS labeled_table (
+            id STRING
+        )''')
+
+        test_dataset_id, dataset_manager = create_dataset_manager(
+            config.PROJECT_ID,
+            self.TEST_PARTITION,
+            dataset_name=self.dataset_uuid,
+            internal_tables=self.internal_tables,
+            external_tables=self.external_tables,
+            dataset_labels={'test_label_key': 'test_label_value', 'another_test_label_key': 'another_test_label_value'},
+            tables_labels={'labeled_table': {'labeled_table_key': 'labeled_table_value', 'another_labeled_table_key': 'another_labeled_table_value'}})
+
+        self.assertEqual(
+            dataset_manager.client.get_table(test_dataset_id + '.' + 'labeled_table').labels,
+            {'labeled_table_key': 'labeled_table_value', 'another_labeled_table_key': 'another_labeled_table_value'}
+        )
+
+        # when
+        test_dataset_id, dataset_manager = create_dataset_manager(
+            config.PROJECT_ID,
+            self.TEST_PARTITION,
+            dataset_name=self.dataset_uuid,
+            internal_tables=self.internal_tables,
+            external_tables=self.external_tables,
+            dataset_labels={'test_label_key': 'test_label_value', 'another_test_label_key': 'another_test_label_value'},
+            tables_labels={'labeled_table': {'labeled_table_key': 'updated_labeled_table_value', 'new_labeled_table_key': 'new_labeled_table_value'}})
+
+        # then
+        self.assertEqual(
+            dataset_manager.client.get_table(test_dataset_id + '.' + 'labeled_table').labels,
+            {'labeled_table_key': 'updated_labeled_table_value', 'new_labeled_table_key': 'new_labeled_table_value'})
+
+
+class WriteAppendTestCase(DatasetManagerBaseTestCase):
 
     def test_should_write_append_to_non_partitioned_table(self):
 
@@ -260,7 +362,7 @@ class WriteAppendTestCase(DatasetManagerTestCase):
         ''', custom_run_datetime=self.TEST_PARTITION_PLUS_ONE)))
 
 
-class WriteToTemporaryTableTestCase(DatasetManagerTestCase):
+class WriteToTemporaryTableTestCase(DatasetManagerBaseTestCase):
 
     def test_should_create_temporary_table_from_query_results_if_table_not_exists(self):
 
@@ -307,7 +409,7 @@ class WriteToTemporaryTableTestCase(DatasetManagerTestCase):
         ''', custom_run_datetime=self.TEST_PARTITION_PLUS_ONE)))
 
 
-class QueryTemplatingTestCase(DatasetManagerTestCase):
+class QueryTemplatingTestCase(DatasetManagerBaseTestCase):
 
     def setUp(self):
 
@@ -463,7 +565,7 @@ class QueryTemplatingTestCase(DatasetManagerTestCase):
         ''', custom_run_datetime=self.TEST_PARTITION_PLUS_ONE)))
 
 
-class CollectTestCase(DatasetManagerTestCase):
+class CollectTestCase(DatasetManagerBaseTestCase):
 
     def test_should_collect_records(self):
 
@@ -542,7 +644,7 @@ class CollectTestCase(DatasetManagerTestCase):
         self.assertEqual(records[0]['last_name'], 'Smith')
 
 
-class RunDryTestCase(DatasetManagerTestCase):
+class RunDryTestCase(DatasetManagerBaseTestCase):
     def test_should_dry_run(self):
         # given
         self.dataset_manager.write_tmp('tmp_table', '''
@@ -576,7 +678,7 @@ class RunDryTestCase(DatasetManagerTestCase):
         self.assertTrue(costs, 'This query will process 21.0 B and cost 0.0 USD.')
 
 
-class LoadTableFromDataFrameTestCase(DatasetManagerTestCase):
+class LoadTableFromDataFrameTestCase(DatasetManagerBaseTestCase):
 
     def test_should_load_df_to_non_partitioned_table(self):
         # given
@@ -651,7 +753,7 @@ class LoadTableFromDataFrameTestCase(DatasetManagerTestCase):
         ''', custom_run_datetime=self.TEST_PARTITION_PLUS_ONE)))
 
 
-class CreateTableFromSchemaTestCase(DatasetManagerTestCase):
+class CreateTableFromSchemaTestCase(DatasetManagerBaseTestCase):
 
     def test_should_create_table_from_dict_schema(self):
         # when
@@ -732,7 +834,7 @@ class CreateTableFromSchemaTestCase(DatasetManagerTestCase):
         '''))
 
 
-class InsertTestCase(DatasetManagerTestCase):
+class InsertTestCase(DatasetManagerBaseTestCase):
 
     def test_should_insert_records_to_partitioned_table(self):
         with tempfile.NamedTemporaryFile() as f:
@@ -798,7 +900,6 @@ class InsertTestCase(DatasetManagerTestCase):
         FROM `{example_test_table}`
         ''').to_dict(orient='records')
         self.assertEqual(expected_result, actual_result)
-
 
 
 if __name__ == '__main__':
