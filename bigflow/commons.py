@@ -119,6 +119,7 @@ class _StreamOutputDumper(threading.Thread):
         callback: typing.Callable[[str], None],
     ):
         threading.Thread.__init__(self)
+        self.daemon = True
         self.process = process
         self.stream = stream
         self.callback = callback
@@ -148,7 +149,6 @@ class _StreamOutputDumper(threading.Thread):
         incomplete_line = False
 
         while True:
-
             try:
                 raw: bytes = self.stream.read()
             except (ValueError, EOFError):
@@ -214,14 +214,15 @@ def run_process(
             for x in args
         ]
 
-    logger.debug("cmd %r, kwargs %r", cmd, kwargs)
+    logger.debug("run process %r", cmd)
     if env_add:
         env = dict(env or os.environ)
         env.update(env_add)
 
     start = time.time()
     process = subprocess.Popen(
-        cmd, text=False,
+        cmd,
+        text=False,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         stdin=subprocess.PIPE if input is not None else None,
@@ -243,6 +244,8 @@ def run_process(
 
     if input:
         assert process.stdin, "invalid stdin"
+        if isinstance(input, str):
+            input = input.encode()
         process.stdin.write(input)
         process.stdin.close()
 
@@ -300,8 +303,10 @@ def build_docker_image_tag(docker_repository: str, package_version: str):
 
 
 def remove_docker_image_from_local_registry(tag):
-    print('Removing the image from the local registry')
-    run_process(f"docker rmi -f {get_docker_image_id(tag)} --no-prune")
+    logger.info("Removing the image from the local registry")
+    image = get_docker_image_id(tag)
+    run_process(f"docker rmi -f {image} --no-prune")
+    logger.debug("Image %s removed from docker registry", image)
 
 
 def as_timedelta(v: None | str | Number | timedelta) -> timedelta | None:
