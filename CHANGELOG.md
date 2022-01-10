@@ -1,9 +1,10 @@
 # BigFlow changelog
 
-## Version 1.5 (WIP)
+## Version 1.4.1
 
 ### Added
  * Optional support for 'pytest' as testing framework
+ * Labels support for datasets and tables in DatasetConfig and DatasetManager
 
 ## Version 1.4
 
