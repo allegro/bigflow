@@ -320,3 +320,24 @@ def as_timedelta(v: None | str | Number | timedelta) -> timedelta | None:
         return None
     else:
         return timedelta(seconds=float(v))
+
+
+def valid_datetime(dt: str) -> str:
+    """
+    Validates provided datetime string. Raises ValueError for strings that are none of:
+    * 'NOW'
+    * valid '%Y-%m-%d %H:%M:%S'
+    * valid '%Y-%m-%d'
+    """
+    if dt == 'NOW':
+        return dt
+
+    try:
+        datetime.strptime(dt, "%Y-%m-%d %H:%M:%S")
+    except ValueError:
+        try:
+            datetime.strptime(dt, "%Y-%m-%d")
+        except ValueError:
+            raise ValueError("Not a valid date: '{0}'.".format(dt))
+
+    return dt

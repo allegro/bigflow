@@ -114,17 +114,11 @@ def build_dags(
     start_time: str,
     workflow_id: typing.Optional[str] = None,
 ):
-    logger.info("Building airflow DAGs...")
-    clear_dags_leftovers(project_spec)
+    # TODO: Move common functions from bigflow.cli to bigflow.commons (or other shared module)
+    from bigflow.cli import walk_workflows
 
-    image_version = bf_commons.build_docker_image_tag(project_spec.docker_repository, project_spec.version)
-    create_image_version_file(str(project_spec.project_dir), image_version)
-
-    # TODO: Move common frunctions from bigflow.cli to bigflow.commons (or other shared module)
-    from bigflow.cli import _valid_datetime, walk_workflows
-    _valid_datetime(start_time)
-
-    cnt = 0
+    logger.debug('Loading workflow(s)...')
+    workflows = []
     for root_package in project_spec.packages:
         if "." in root_package:
             # leaf package
@@ -133,18 +127,32 @@ def build_dags(
         for workflow in walk_workflows(project_spec.project_dir / root_package):
             if workflow_id is not None and workflow_id != workflow.workflow_id:
                 continue
-            logger.info("Generating DAG file for %s", workflow.workflow_id)
-            cnt += 1
-            bigflow.dagbuilder.generate_dag_file(
-                str(project_spec.project_dir),
-                image_version,
-                workflow,
-                start_time,
-                project_spec.version,
-                root_package,
-            )
+            workflows.append((workflow, root_package))
 
-    logger.info("Geneated %d DAG files", cnt)
+    if not workflows:
+        if not workflow_id:
+            raise Exception('No workflow found')
+        else:
+            raise Exception("Workflow '{}' not found".format(workflow_id))
+
+    logger.info("Building airflow DAGs...")
+    clear_dags_leftovers(project_spec)
+
+    image_version = bf_commons.build_docker_image_tag(project_spec.docker_repository, project_spec.version)
+    create_image_version_file(str(project_spec.project_dir), image_version)
+
+    for (workflow, package) in workflows:
+        logger.info("Generating DAG file for %s", workflow.workflow_id)
+        bigflow.dagbuilder.generate_dag_file(
+            str(project_spec.project_dir),
+            image_version,
+            workflow,
+            start_time,
+            project_spec.version,
+            package,
+        )
+
+    logger.info("Generated %d DAG files", len(workflows))
 
 
 def _rmtree(p: Path):
@@ -194,7 +202,7 @@ def build_project(
     workflow_id: typing.Optional[str] = None,
 ):
     logger.info("Build the project")
+    build_dags(project_spec, start_time, workflow_id=workflow_id)
     build_package(project_spec)
     build_image(project_spec)
-    build_dags(project_spec, start_time, workflow_id=workflow_id)
     logger.info("Project was built")
