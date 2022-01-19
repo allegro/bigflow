@@ -303,21 +303,6 @@ def _create_build_package_parser(subparsers):
     subparsers.add_parser('build-package', description='Builds .whl package from local sources.')
 
 
-def _valid_datetime(dt):
-    if dt == 'NOW':
-        return
-
-    try:
-        datetime.strptime(dt, "%Y-%m-%d %H:%M:%S")
-        return dt
-    except ValueError:
-        try:
-            datetime.strptime(dt, "%Y-%m-%d")
-            return dt
-        except ValueError:
-            raise ValueError("Not a valid date: '{0}'.".format(dt))
-
-
 def _add_build_dags_parser_arguments(parser):
     parser.add_argument('-w', '--workflow',
                         type=str,
@@ -330,7 +315,7 @@ def _add_build_dags_parser_arguments(parser):
                              'For workflows triggered hourly -- datetime in format: Y-m-d H:M:S, for example 2020-01-01 00:00:00. '
                              'For workflows triggered daily -- date in format: Y-m-d, for example 2020-01-01. '
                              'If empty or set as NOW, current hour is used.',
-                        type=_valid_datetime)
+                        type=bf_commons.valid_datetime)
 
 
 def _create_build_dags_parser(subparsers):

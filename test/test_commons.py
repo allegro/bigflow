@@ -43,6 +43,45 @@ class CliTestCase(TestCase):
             # when
             decode_version_number_from_file_name(Path('/Users/image-0.1122123.0.tar'))
 
+    def test_valid_datetime_should_pass_for_NOW(self):
+        # when
+        valid_datetime('NOW')
+
+        # then
+        # no error is raised
+
+    def test_valid_datetime_should_pass_for_valid_YmdHMS(self):
+        # when
+        valid_datetime('2022-01-01 12:34:56')
+
+        # then
+        # no error is raised
+
+    def test_valid_datetime_should_raise_error_for_invalid_YmdHMS(self):
+        # then
+        with self.assertRaises(ValueError):
+            # when
+            valid_datetime('2022-01-01 34:56:78')
+
+    def test_valid_datetime_should_pass_for_valid_Ymd(self):
+        # when
+        valid_datetime('2022-01-01')
+
+        # then
+        # no error is raised
+
+    def test_valid_datetime_should_raise_error_for_invalid_Ymd(self):
+        # then
+        with self.assertRaises(ValueError):
+            # when
+            valid_datetime('2022-23-45')
+
+    def test_valid_datetime_should_raise_error_for_other_string(self):
+        # then
+        with self.assertRaises(ValueError):
+            # when
+            valid_datetime('foo bar baz')
+
     def _touch_file(self, file_name: str, content: str = ''):
         workdir = Path(os.getcwd())
         f = workdir / file_name
