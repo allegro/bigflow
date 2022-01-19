@@ -1,5 +1,10 @@
 # BigFlow changelog
 
+## Version 1.4.2
+
+### Fixed
+ * FST-250: `bf build` arguments validation
+
 ## Version 1.4.1
 
 ### Added
