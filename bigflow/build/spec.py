@@ -217,7 +217,7 @@ def read_project_spec(dir: Path) -> BigflowProjectSpec:
         raise ValueError(
             "The project configuration is invalid. "
             "Check the documentation how to create a valid `setup.py`: "
-            "https://github.com/allegro/bigflow/blob/master/docs/build.md"
+            "https://github.com/allegro/bigflow/blob/master/docs/project_structure_and_build.md"
         ) from e
 
 
