@@ -329,7 +329,7 @@ def _add_build_image_parser_arguments(parser: argparse.ArgumentParser):
         '--no-export-image-tar', dest='export_image_tar', action='store_false',
         help="Don't epxort built docker image into .tar file (keep image in local docker registry)",
     )
-    parser.set_defaults(export_image_tar=True)
+    parser.set_defaults(export_image_tar=None)
 
 
 def _create_build_dags_parser(subparsers):

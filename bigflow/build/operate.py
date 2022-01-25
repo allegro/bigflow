@@ -1,5 +1,7 @@
 """Actual implementaion of buid/distribution operations"""
 
+from __future__ import annotations
+
 import os
 import subprocess
 import shutil
@@ -22,7 +24,7 @@ import bigflow.build.dist
 import bigflow.build.dataflow.dependency_checker
 import bigflow.commons as bf_commons
 
-from bigflow.build.spec import BigflowProjectSpec
+from bigflow.build.spec import BigflowProjectSpec, get_project_spec
 
 
 logger = logging.getLogger(__name__)
@@ -82,8 +84,11 @@ def _build_docker_image(project_dir: Path, tag: str):
 
 def build_image(
     project_spec: BigflowProjectSpec,
-    export_image_tar: bool = False,
+    export_image_tar: bool | None = None,
 ):
+    if export_image_tar is None:
+        export_image_tar = get_project_spec().export_image_tar
+
     logger.info("Building docker image...")
     clear_image_leftovers(project_spec)
 
@@ -225,7 +230,7 @@ def build_project(
     project_spec: BigflowProjectSpec,
     start_time: str,
     workflow_id: typing.Optional[str] = None,
-    export_image_tar: bool = True,
+    export_image_tar: bool | None = None,
 ):
     logger.info("Build the project")
     build_dags(project_spec, start_time, workflow_id=workflow_id)

@@ -69,6 +69,7 @@ class BigflowProjectSpec:
     setuptools: typing.Dict[str, typing.Any]
 
     test_framework: Literal['pytest', 'unittest']
+    export_image_tar: bool
 
 
 def parse_project_spec(
@@ -85,6 +86,7 @@ def parse_project_spec(
     resources_dir="resources",
     test_framework='unittest',
     container_builder='docker',  # TODO: use 'docker-buildkit' by default
+    export_image_tar=True,       # TODO: Switch to 'True' by default
     **kwargs,
 
 ) -> BigflowProjectSpec:
@@ -130,6 +132,7 @@ def parse_project_spec(
         setuptools=kwargs,
         test_framework=test_framework,
         container_builder=container_builder,
+        export_image_tar=export_image_tar,
     )
 
 
