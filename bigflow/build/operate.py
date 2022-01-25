@@ -8,7 +8,10 @@ import typing
 import textwrap
 import sys
 
+from datetime import datetime
 from pathlib import Path
+
+import toml
 
 import bigflow.resources
 import bigflow.dagbuilder
@@ -79,6 +82,7 @@ def _build_docker_image(project_dir: Path, tag: str):
 
 def build_image(
     project_spec: BigflowProjectSpec,
+    export_image_tar: bool = False,
 ):
     logger.info("Building docker image...")
     clear_image_leftovers(project_spec)
@@ -90,16 +94,37 @@ def build_image(
     logger.info("Generated image tag: %s", tag)
     _build_docker_image(project_spec.project_dir, tag)
 
-    try:
-        _export_docker_image_to_file(tag, image_dir, project_spec.version)
-        dconf_file = Path(project_spec.deployment_config_file)
-        shutil.copyfile(dconf_file, image_dir / dconf_file.name)
-    finally:
-        logger.info("Trying to remove the docker image. Tag: %s, image ID: %s", tag, bf_commons.get_docker_image_id(tag))
+    if export_image_tar:
         try:
-            bf_commons.remove_docker_image_from_local_registry(tag)
-        except Exception:
-            logger.exception("Couldn't remove the docker image. Tag: %s, image ID: %s", tag, bf_commons.get_docker_image_id(tag))
+            _export_docker_image_to_file(tag, image_dir, project_spec.version)
+            dconf_file = Path(project_spec.deployment_config_file)
+            shutil.copyfile(dconf_file, image_dir / dconf_file.name)
+        finally:
+            logger.info("Trying to remove the docker image. Tag: %s, image ID: %s", tag, bf_commons.get_docker_image_id(tag))
+            try:
+                bf_commons.remove_docker_image_from_local_registry(tag)
+            except Exception:
+                logger.exception("Couldn't remove the docker image. Tag: %s, image ID: %s", tag, bf_commons.get_docker_image_id(tag))
+    else:
+        infofile = Path(image_dir) / f"imageinfo-{project_spec.version}.toml"
+        image_id = bf_commons.get_docker_image_id(tag)
+        info = toml.dumps({
+            'created': datetime.now(),
+            'project_version': project_spec.version,
+            'project_name': project_spec.name,
+            'docker_image_id': image_id,
+            'docker_image_tag': tag,
+        })
+
+        logger.debug("Create 'image-info' marker %s", infofile)
+        infofile.write_text(
+            textwrap.dedent(f"""
+                # This file is a marker indicating that docker image
+                # was built by bigflow but wasn't exported to a tar.
+                # Instead it kept inside local docker repo
+                # and tagged with `{tag}`.
+            """) + info
+        )
 
     logger.info("Docker image was built")
 
@@ -200,9 +225,10 @@ def build_project(
     project_spec: BigflowProjectSpec,
     start_time: str,
     workflow_id: typing.Optional[str] = None,
+    export_image_tar: bool = True,
 ):
     logger.info("Build the project")
     build_dags(project_spec, start_time, workflow_id=workflow_id)
     build_package(project_spec)
-    build_image(project_spec)
+    build_image(project_spec, export_image_tar=export_image_tar)
     logger.info("Project was built")

@@ -16,6 +16,7 @@ from types import ModuleType
 from typing import Tuple, Iterator
 from typing import Optional
 from glob import glob1
+import fnmatch
 
 import bigflow as bf
 import bigflow.build.pip
@@ -297,6 +298,7 @@ def _create_start_project_parser(subparsers):
 def _create_build_parser(subparsers):
     parser = subparsers.add_parser('build', description='Builds a Docker image, DAG files and .whl package from local sources.')
     _add_build_dags_parser_arguments(parser)
+    _add_build_image_parser_arguments(parser)
 
 
 def _create_build_package_parser(subparsers):
@@ -318,6 +320,18 @@ def _add_build_dags_parser_arguments(parser):
                         type=bf_commons.valid_datetime)
 
 
+def _add_build_image_parser_arguments(parser: argparse.ArgumentParser):
+    parser.add_argument(
+        '--export-image-tar', dest='export_image_tar', action='store_true',
+        help="Export built docker image into .tar file",
+    )
+    parser.add_argument(
+        '--no-export-image-tar', dest='export_image_tar', action='store_false',
+        help="Don't epxort built docker image into .tar file (keep image in local docker registry)",
+    )
+    parser.set_defaults(export_image_tar=True)
+
+
 def _create_build_dags_parser(subparsers):
     parser = subparsers.add_parser('build-dags',
                                    description='Builds DAG files from local sources to {current_dir}/.dags')
@@ -325,8 +339,11 @@ def _create_build_dags_parser(subparsers):
 
 
 def _create_build_image_parser(subparsers):
-    subparsers.add_parser('build-image',
-                          description='Builds a docker image from local files.')
+    parser = subparsers.add_parser(
+        'build-image',
+        description='Builds a docker image from local files.',
+    )
+    _add_build_image_parser_arguments(parser)
 
 
 def _create_run_parser(subparsers, project_name):
@@ -509,37 +526,49 @@ def _cli_deploy_dags(args):
                        )
 
 
-def _load_image_from_tar(image_tar_path: str):
-    print(f'Loading Docker image from {image_tar_path} ...', )
-
-
 def _cli_deploy_image(args):
     docker_repository = _resolve_property(args, 'docker_repository')
     try:
         vault_secret = _resolve_property(args, 'vault_secret')
     except ValueError:
         vault_secret = None
-    image_tar_path = args.image_tar_path if args.image_tar_path  else find_image_file()
 
-    deploy_docker_image(image_tar_path=image_tar_path,
-                        auth_method=args.auth_method,
-                        docker_repository=docker_repository,
-                        vault_endpoint=_resolve_vault_endpoint(args),
-                        vault_secret=vault_secret)
+    image_tar_path = args.image_tar_path if args.image_tar_path else find_image_file()
+    deploy_docker_image(
+        image_tar_path=image_tar_path,
+        auth_method=args.auth_method,
+        docker_repository=docker_repository,
+        vault_endpoint=_resolve_vault_endpoint(args),
+        vault_secret=vault_secret,
+    )
 
 
 def find_image_file():
-    # TODO parametrize ".image" using settings from build.py
-    files = glob1(".image", "*-*.tar")
-    if files:
-        return os.path.join(".image", files[0])
-    else:
-        raise ValueError('File containing image to deploy not found')
+
+    logger.debug("Scan folder .image")
+    if not os.path.isdir(".image"):
+        raise ValueError("Directory .image does not exist")
+
+    for f in os.listdir(".image"):
+        logger.debug("Foud file %s", f)
+
+        if fnmatch.fnmatch(f, "*-*.tar"):
+            logger.info("Found image located at .image/%s", f)
+            return f".image/{f}"
+
+        if fnmatch.fnmatch(f, "imageinfo-*.toml"):
+            logger.info("Found image info file located at .image/%s", f)
+            return f".image/{f}"
+
+    raise ValueError('File containing image to deploy not found')
 
 
 def _cli_build_image(args):
     prj = bigflow.build.spec.get_project_spec()
-    bigflow.build.operate.build_image(prj)
+    bigflow.build.operate.build_image(
+        prj,
+        export_image_tar=args.export_image_tar,
+    )
 
 
 def _cli_build_package():
@@ -562,6 +591,7 @@ def _cli_build(args):
         prj,
         start_time=args.start_time if _is_starttime_selected(args) else datetime.now().strftime("%Y-%m-%d %H:00:00"),
         workflow_id=args.workflow if _is_workflow_selected(args) else None,
+        export_image_tar=args.export_image_tar,
     )
 
 
