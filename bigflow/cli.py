@@ -579,21 +579,29 @@ def find_image_file():
     raise ValueError('File containing image to deploy not found')
 
 
-def _cli_build_image(args):
-    vault_secret = _resolve_property(args, 'vault_secret', ignore_value_error=True)
-    vault_endpoint = _resolve_vault_endpoint(args)
-
-    prj = bigflow.build.spec.get_project_spec()
-    bigflow.build.operate.build_image(
-        prj,
-        export_image_tar=args.export_image_tar,
-        cache_params=bigflow.build.operate.BuildImageCacheParams(
+def _grab_image_cache_params(args):
+    if args.cache_from_image or args.cache_from_version:
+        logger.debug("Image caching is requested - create build image cache params obj")
+        vault_secret = _resolve_property(args, 'vault_secret', ignore_value_error=True)
+        vault_endpoint = _resolve_vault_endpoint(args)
+        return bigflow.build.operate.BuildImageCacheParams(
             auth_method=args.auth_method,
             vault_endpoint=vault_endpoint,
             vault_secret=vault_secret,
             cache_from_version=args.cache_from_version,
             cache_from_image=args.cache_from_image,
-        ),
+        )
+    else:
+        logger.debug("No caching is requested - so just disable it completly")
+        return None
+
+
+def _cli_build_image(args):
+    prj = bigflow.build.spec.get_project_spec()
+    bigflow.build.operate.build_image(
+        prj,
+        export_image_tar=args.export_image_tar,
+        cache_params=_grab_image_cache_params(args),
     )
 
 
@@ -612,23 +620,13 @@ def _cli_build_dags(args):
 
 
 def _cli_build(args):
-
     prj = bigflow.build.spec.get_project_spec()
-    vault_secret = _resolve_property(args, 'vault_secret', ignore_value_error=True)
-    vault_endpoint = _resolve_vault_endpoint(args)
-
     bigflow.build.operate.build_project(
         prj,
         start_time=args.start_time if _is_starttime_selected(args) else datetime.now().strftime("%Y-%m-%d %H:00:00"),
         workflow_id=args.workflow if _is_workflow_selected(args) else None,
         export_image_tar=args.export_image_tar,
-        cache_params=bigflow.build.operate.BuildImageCacheParams(
-            auth_method=args.auth_method,
-            vault_endpoint=vault_endpoint,
-            vault_secret=vault_secret,
-            cache_from_version=args.cache_from_version,
-            cache_from_image=args.cache_from_image,
-        ),
+        cache_params=_grab_image_cache_params(args),
     )
 
 

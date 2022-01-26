@@ -88,10 +88,6 @@ def _build_docker_image(
     logger.debug("Run docker build...")
     cmd = ["docker", "build", project_spec.project_dir, "--tag", tag]
 
-    if cache_params and not cache_params.cache_from_image and not cache_params.cache_from_version:
-        logger.debug("No caching is requested - so just disable it completly")
-        cache_params = None
-
     if cache_params:
 
         logger.debug("Authenticate to docker registry")
@@ -150,7 +146,11 @@ def build_image(
             dconf_file = Path(project_spec.deployment_config_file)
             shutil.copyfile(dconf_file, image_dir / dconf_file.name)
         finally:
-            logger.info("Trying to remove the docker image. Tag: %s, image ID: %s", tag, bf_commons.get_docker_image_id(tag))
+            logger.info(
+                "Trying to remove the docker image. Tag: %s, image ID: %s",
+                tag,
+                bf_commons.get_docker_image_id(tag),
+            )
             try:
                 bf_commons.remove_docker_image_from_local_registry(tag)
             except Exception:

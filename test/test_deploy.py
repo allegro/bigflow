@@ -180,23 +180,23 @@ class DeployTestCase(TempCwdMixin, BaseTestCase):
         # then
         self.assertEqual(tags, {f'{docker_repository}:{version1}', f'{docker_repository}:{version2}'})
 
-    @mock.patch('bigflow.deploy._authenticate_to_registry')
+    @mock.patch('bigflow.deploy.authenticate_to_registry')
     @mock.patch('bigflow.deploy.bf_commons.run_process', return_value='')
-    def test_should_raise_error_when_image_doesnt_exist(self, _authenticate_to_registry, run_process):
+    def test_should_raise_error_when_image_doesnt_exist(self, authenticate_to_registry, run_process):
         with self.assertRaises(ValueError):
             check_images_exist(auth_method=AuthorizationType.LOCAL_ACCOUNT,
                                images={f'eu.gcr.io/non-existing-project/name:some-version'})
 
-    @mock.patch('bigflow.deploy._authenticate_to_registry')
+    @mock.patch('bigflow.deploy.authenticate_to_registry')
     @mock.patch('bigflow.commons.run_process', return_value='[{"name": "some_image"}]')
-    def test_should_not_raise_error_if_the_image_exists(self, _authenticate_to_registry, run_process):
+    def test_should_not_raise_error_if_the_image_exists(self, authenticate_to_registry, run_process):
         check_images_exist(auth_method=AuthorizationType.LOCAL_ACCOUNT,
                            images={f'eu.gcr.io/non-existing-project/name:some-version'})
 
-    @mock.patch('bigflow.deploy._authenticate_to_registry')
+    @mock.patch('bigflow.deploy.authenticate_to_registry')
     @mock.patch('bigflow.deploy.upload_dags_folder')
     @mock.patch('bigflow.commons.run_process', return_value=None)
-    def test_should_not_upload_dags_if_image_is_missing(self, _authenticate_to_registry,
+    def test_should_not_upload_dags_if_image_is_missing(self, authenticate_to_registry,
                                                         upload_dags_folder, run_process):
         # given
         gs_client = mock.Mock()
@@ -209,14 +209,14 @@ class DeployTestCase(TempCwdMixin, BaseTestCase):
             deploy_dags_folder(dags_dir=os.path.join(self.cwd, '.dags'), dags_bucket='europe-west1-1-bucket', project_id='',
                                clear_dags_folder=False, auth_method=AuthorizationType.LOCAL_ACCOUNT, gs_client=gs_client)
 
-        _authenticate_to_registry.assert_called_once()
+        authenticate_to_registry.assert_called_once()
         gs_client.bucket.assert_not_called()
         upload_dags_folder.assert_not_called()
 
 
     def test_deploy_image_pushes_tags(self):
         # given
-        authenticate_to_registry_mock = self.addMock(mock.patch('bigflow.deploy._authenticate_to_registry'))
+        authenticate_to_registry_mock = self.addMock(mock.patch('bigflow.deploy.authenticate_to_registry'))
         run_process_mock = self.addMock(mock.patch('bigflow.commons.run_process'))
 
         # when

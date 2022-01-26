@@ -612,6 +612,8 @@ deployment_config = Config(name='dev',
             read_project_spec.return_value,
             start_time="2001-02-03 15:00:00",
             workflow_id=None,
+            cache_params=None,
+            export_image_tar=None,
         )
 
     @mock.patch('bigflow.cli._cli_build_image')
@@ -620,7 +622,20 @@ deployment_config = Config(name='dev',
         cli(['build-image'])
 
         # then
-        _cli_build_image_mock.assert_called_with(Namespace(operation='build-image', verbose=False))
+        _cli_build_image_mock.assert_called_with(
+            Namespace(
+                auth_method=AuthorizationType.LOCAL_ACCOUNT,
+                cache_from_image=None,
+                cache_from_version=None,
+                config=None,
+                deployment_config_path=None,
+                export_image_tar=None,
+                operation='build-image',
+                vault_endpoint=None,
+                vault_secret=None,
+                verbose=False,
+            )
+        )
 
     @mock.patch('bigflow.build.operate.build_project')
     @mock.patch('bigflow.build.spec.read_project_spec')
@@ -639,6 +654,8 @@ deployment_config = Config(name='dev',
             read_project_spec.return_value,
             start_time="2001-02-03 15:00:00",
             workflow_id=None,
+            cache_params=None,
+            export_image_tar=None,
         )
 
     @mock.patch('bigflow.cli._cli_build_package')
@@ -653,22 +670,37 @@ deployment_config = Config(name='dev',
     def test_should_call_cli_build_command(self, _cli_build_mock):
         # when
         cli(['build'])
+        args = Namespace(
+            auth_method=AuthorizationType.LOCAL_ACCOUNT,
+            cache_from_image=None,
+            cache_from_version=None,
+            deployment_config_path=None,
+            export_image_tar=None,
+            operation='build',
+            start_time=None,
+            vault_endpoint=None,
+            vault_secret=None,
+            verbose=False,
+            workflow=None,
+        )
 
         # then
-        _cli_build_mock.assert_called_with(Namespace(operation='build', start_time=None, workflow=None, verbose=False))
+        _cli_build_mock.assert_called_with(args)
 
         # when
         cli(['build', '--start-time', '2020-01-01 00:00:00'])
 
         # then
-
-        _cli_build_mock.assert_called_with(Namespace(operation='build', start_time='2020-01-01 00:00:00', workflow=None, verbose=False))
+        args.start_time = '2020-01-01 00:00:00'
+        _cli_build_mock.assert_called_with(args)
 
         # when
         cli(['build', '--start-time', '2020-01-01 00:00:00', '--workflow', 'some_workflow'])
 
         # then
-        _cli_build_mock.assert_called_with(Namespace(operation='build', start_time='2020-01-01 00:00:00', workflow='some_workflow', verbose=False))
+        args.start_time = '2020-01-01 00:00:00'
+        args.workflow = 'some_workflow'
+        _cli_build_mock.assert_called_with(args)
 
     @mock.patch('bigflow.build.operate.build_package')
     @mock.patch('bigflow.build.spec.read_project_spec')
@@ -697,7 +729,7 @@ deployment_config = Config(name='dev',
 
         # then
         read_project_mock.assert_called_once()
-        build_image_mock.assert_any_call(read_project_mock.return_value)
+        build_image_mock.assert_called_once()
 
     @mock.patch('bigflow.build.operate.build_dags')
     @mock.patch('bigflow.build.spec.read_project_spec')

@@ -294,7 +294,7 @@ def get_docker_image_id(tag):
     logger.info("Getting docker image ID.")
     images = run_process(["docker", "images", "-q", "--no-trunc", tag])
     logger.info(images[:1000] + '...')
-    return images.splitlines()[0]
+    return images.split("\n")[0]
 
 
 def build_docker_image_tag(docker_repository: str, package_version: str):

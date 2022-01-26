@@ -290,7 +290,7 @@ class BuildImageTest(SetupTestCase):
             build_image(self.prj)
 
         # then
-        build_docker_image.assert_called_with(self.prj.project_dir, 'tag_value')
+        build_docker_image.assert_called_once_with(self.prj, 'tag_value', None)
         remove_docker_image_from_local_registry.assert_called_with('tag_value')
 
 

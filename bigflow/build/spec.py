@@ -85,7 +85,7 @@ def parse_project_spec(
     project_requirements_file="resources/requirements.txt",
     resources_dir="resources",
     test_framework='unittest',
-    export_image_tar=True,       # TODO: Switch to 'True' by default
+    export_image_tar=True,
     **kwargs,
 
 ) -> BigflowProjectSpec:
