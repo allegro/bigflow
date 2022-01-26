@@ -85,7 +85,6 @@ def parse_project_spec(
     project_requirements_file="resources/requirements.txt",
     resources_dir="resources",
     test_framework='unittest',
-    container_builder='docker',  # TODO: use 'docker-buildkit' by default
     export_image_tar=True,       # TODO: Switch to 'True' by default
     **kwargs,
 
@@ -131,7 +130,6 @@ def parse_project_spec(
         metainfo=metainfo,
         setuptools=kwargs,
         test_framework=test_framework,
-        container_builder=container_builder,
         export_image_tar=export_image_tar,
     )
 

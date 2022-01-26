@@ -331,6 +331,16 @@ def _add_build_image_parser_arguments(parser: argparse.ArgumentParser):
     )
     parser.set_defaults(export_image_tar=None)
 
+    parser.add_argument(
+        '--cache-from-image', dest='cache_from_image',
+        help="Docker images to consider as cache sources",
+    )
+    parser.add_argument(
+        '--cache-from-version', dest='cache_from_version',
+        help="Use previous version of the project as cache source",
+    )
+    _add_dockerrepo_auth_parsers_arguments(parser)
+
 
 def _create_build_dags_parser(subparsers):
     parser = subparsers.add_parser('build-dags',
@@ -344,6 +354,7 @@ def _create_build_image_parser(subparsers):
         description='Builds a docker image from local files.',
     )
     _add_build_image_parser_arguments(parser)
+    _add_parsers_common_arguments(parser)
 
 
 def _create_run_parser(subparsers, project_name):
@@ -382,7 +393,7 @@ def _add_parsers_common_arguments(parser):
                              ' individual workflows as well as to deployment_config.py.')
 
 
-def _add_deploy_parsers_common_arguments(parser):
+def _add_dockerrepo_auth_parsers_arguments(parser):
     parser.add_argument('-a', '--auth-method',
                         type=AuthorizationType,
                         default='local_account',
@@ -408,6 +419,9 @@ def _add_deploy_parsers_common_arguments(parser):
                         help='Path to the deployment_config.py file. '
                              'If not set, {current_dir}/deployment_config.py will be used.')
 
+
+def _add_deploy_parsers_common_arguments(parser):
+    _add_dockerrepo_auth_parsers_arguments(parser)
     _add_parsers_common_arguments(parser)
 
 
@@ -502,20 +516,23 @@ def _resolve_vault_endpoint(args):
         return None
 
 
-def _resolve_property(args, property_name):
-    cli_atr = getattr(args, property_name)
-    if cli_atr:
-        return cli_atr
-    else:
-        config = import_deployment_config(_resolve_deployment_config_path(args), property_name)
-        return config.resolve_property(property_name, args.config)
+def _resolve_property(args, property_name, ignore_value_error=False):
+    try:
+        cli_atr = getattr(args, property_name)
+        if cli_atr:
+            return cli_atr
+        else:
+            config = import_deployment_config(_resolve_deployment_config_path(args), property_name)
+            return config.resolve_property(property_name, args.config)
+    except ValueError:
+        if ignore_value_error:
+            return None
+        else:
+            raise
 
 
 def _cli_deploy_dags(args):
-    try:
-        vault_secret = _resolve_property(args, 'vault_secret')
-    except ValueError:
-        vault_secret = None
+    vault_secret = _resolve_property(args, 'vault_secret', ignore_value_error=True)
     deploy_dags_folder(dags_dir=_resolve_dags_dir(args),
                        dags_bucket=_resolve_property(args, 'dags_bucket'),
                        clear_dags_folder=args.clear_dags_folder,
@@ -527,18 +544,17 @@ def _cli_deploy_dags(args):
 
 
 def _cli_deploy_image(args):
-    docker_repository = _resolve_property(args, 'docker_repository')
-    try:
-        vault_secret = _resolve_property(args, 'vault_secret')
-    except ValueError:
-        vault_secret = None
 
+    docker_repository = _resolve_property(args, 'docker_repository')
+    vault_secret = _resolve_property(args, 'vault_secret', ignore_value_error=True)
+    vault_endpoint = _resolve_vault_endpoint(args)
     image_tar_path = args.image_tar_path if args.image_tar_path else find_image_file()
+
     deploy_docker_image(
         image_tar_path=image_tar_path,
         auth_method=args.auth_method,
         docker_repository=docker_repository,
-        vault_endpoint=_resolve_vault_endpoint(args),
+        vault_endpoint=vault_endpoint,
         vault_secret=vault_secret,
     )
 
@@ -564,10 +580,20 @@ def find_image_file():
 
 
 def _cli_build_image(args):
+    vault_secret = _resolve_property(args, 'vault_secret', ignore_value_error=True)
+    vault_endpoint = _resolve_vault_endpoint(args)
+
     prj = bigflow.build.spec.get_project_spec()
     bigflow.build.operate.build_image(
         prj,
         export_image_tar=args.export_image_tar,
+        cache_params=bigflow.build.operate.BuildImageCacheParams(
+            auth_method=args.auth_method,
+            vault_endpoint=vault_endpoint,
+            vault_secret=vault_secret,
+            cache_from_version=args.cache_from_version,
+            cache_from_image=args.cache_from_image,
+        ),
     )
 
 
@@ -586,12 +612,23 @@ def _cli_build_dags(args):
 
 
 def _cli_build(args):
+
     prj = bigflow.build.spec.get_project_spec()
+    vault_secret = _resolve_property(args, 'vault_secret', ignore_value_error=True)
+    vault_endpoint = _resolve_vault_endpoint(args)
+
     bigflow.build.operate.build_project(
         prj,
         start_time=args.start_time if _is_starttime_selected(args) else datetime.now().strftime("%Y-%m-%d %H:00:00"),
         workflow_id=args.workflow if _is_workflow_selected(args) else None,
         export_image_tar=args.export_image_tar,
+        cache_params=bigflow.build.operate.BuildImageCacheParams(
+            auth_method=args.auth_method,
+            vault_endpoint=vault_endpoint,
+            vault_secret=vault_secret,
+            cache_from_version=args.cache_from_version,
+            cache_from_image=args.cache_from_image,
+        ),
     )
 
 

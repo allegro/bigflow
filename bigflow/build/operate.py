@@ -12,11 +12,13 @@ import sys
 
 from datetime import datetime
 from pathlib import Path
+from dataclasses import dataclass
 
 import toml
 
 import bigflow.resources
 import bigflow.dagbuilder
+import bigflow.deploy
 import bigflow.version
 import bigflow.build.pip
 import bigflow.build.dev
@@ -77,17 +79,60 @@ def _export_docker_image_to_file(tag: str, target_dir: Path, version: str):
     bf_commons.run_process(["docker", "image", "save", "-o", image_target_path, bf_commons.get_docker_image_id(tag)])
 
 
-def _build_docker_image(project_dir: Path, tag: str):
+def _build_docker_image(
+    project_spec: BigflowProjectSpec,
+    tag: str,
+    cache_params: BuildImageCacheParams | None,
+):
+
     logger.debug("Run docker build...")
-    bf_commons.run_process(f'docker build {project_dir} --tag {tag}')
+    cmd = ["docker", "build", project_spec.project_dir, "--tag", tag]
+
+    if cache_params and not cache_params.cache_from_image and not cache_params.cache_from_version:
+        logger.debug("No caching is requested - so just disable it completly")
+        cache_params = None
+
+    if cache_params:
+
+        logger.debug("Authenticate to docker registry")
+        bigflow.deploy.authenticate_to_registry(
+            auth_method=cache_params.auth_method or bigflow.deploy.AuthorizationType.LOCAL_ACCOUNT,
+            vault_endpoint=cache_params.vault_endpoint,
+            vault_secret=cache_params.vault_secret,
+        )
+
+        image = cache_params.cache_from_image or ""
+        if cache_params.cache_from_version:
+            image += f",{project_spec.docker_repository}:{cache_params.cache_from_version}"
+            image = image.lstrip(",")
+
+        logger.debug("Add --cache-from=%s to `docker build`", image)
+        cmd.extend(["--cache-from", image])
+
+        logger.debug("Enable buildkit inline cache")
+
+    # noop when building backend is not a buildkit
+    cmd.extend(["--build-arg", "BUILDKIT_INLINE_CACHE=1"])
+
+    return bf_commons.run_process(cmd)
+
+
+@dataclass()
+class BuildImageCacheParams:
+    auth_method: bigflow.deploy.AuthorizationType
+    vault_endpoint: str | None
+    vault_secret: str | None
+    cache_from_version: str | None
+    cache_from_image: str | None
 
 
 def build_image(
     project_spec: BigflowProjectSpec,
     export_image_tar: bool | None = None,
+    cache_params: BuildImageCacheParams | None = None,
 ):
     if export_image_tar is None:
-        export_image_tar = get_project_spec().export_image_tar
+        export_image_tar = project_spec.export_image_tar
 
     logger.info("Building docker image...")
     clear_image_leftovers(project_spec)
@@ -97,7 +142,7 @@ def build_image(
 
     tag = bf_commons.build_docker_image_tag(project_spec.docker_repository, project_spec.version)
     logger.info("Generated image tag: %s", tag)
-    _build_docker_image(project_spec.project_dir, tag)
+    _build_docker_image(project_spec, tag, cache_params)
 
     if export_image_tar:
         try:
@@ -110,6 +155,7 @@ def build_image(
                 bf_commons.remove_docker_image_from_local_registry(tag)
             except Exception:
                 logger.exception("Couldn't remove the docker image. Tag: %s, image ID: %s", tag, bf_commons.get_docker_image_id(tag))
+
     else:
         infofile = Path(image_dir) / f"imageinfo-{project_spec.version}.toml"
         image_id = bf_commons.get_docker_image_id(tag)
@@ -231,9 +277,14 @@ def build_project(
     start_time: str,
     workflow_id: typing.Optional[str] = None,
     export_image_tar: bool | None = None,
+    cache_params: BuildImageCacheParams | None = None,
 ):
     logger.info("Build the project")
     build_dags(project_spec, start_time, workflow_id=workflow_id)
     build_package(project_spec)
-    build_image(project_spec, export_image_tar=export_image_tar)
+    build_image(
+        project_spec,
+        export_image_tar=export_image_tar,
+        cache_params=cache_params,
+    )
     logger.info("Project was built")

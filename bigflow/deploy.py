@@ -82,7 +82,7 @@ def deploy_docker_image_from_local_repo(
     tag_image(image_id, docker_repository, "latest")
 
     logger.info("Deploying docker image tag=%s auth_method=%s", docker_image, auth_method)
-    _authenticate_to_registry(auth_method, vault_endpoint, vault_secret)
+    authenticate_to_registry(auth_method, vault_endpoint, vault_secret)
     bf_commons.run_process(['docker', 'push', docker_image])
     bf_commons.run_process(['docker', 'push', docker_image_latest])
 
@@ -129,14 +129,14 @@ def _deploy_image_loaded_to_local_registry(
 
     logger.info("Deploying docker image tag=%s auth_method=%s", docker_image, auth_method)
 
-    _authenticate_to_registry(auth_method, vault_endpoint, vault_secret)
+    authenticate_to_registry(auth_method, vault_endpoint, vault_secret)
     bf_commons.run_process(['docker', 'push', docker_image])
     bf_commons.run_process(['docker', 'push', docker_image_latest])
 
     return docker_image
 
 
-def _authenticate_to_registry(
+def authenticate_to_registry(
         auth_method: AuthorizationType,
         vault_endpoint: T.Optional[str] = None,
         vault_secret: T.Optional[str] = None,
@@ -162,7 +162,7 @@ def check_images_exist(
         vault_secret: T.Optional[str] = None,
 ):
     logger.info("Checking if images used in DAGs exist in the registry")
-    _authenticate_to_registry(auth_method, vault_endpoint, vault_secret)
+    authenticate_to_registry(auth_method, vault_endpoint, vault_secret)
     missing_images = set()
     for image in images:
         found_images = bf_commons.run_process(['docker', 'manifest', 'inspect', image], check=False, verbose=False)
