@@ -327,7 +327,7 @@ def _add_build_image_parser_arguments(parser: argparse.ArgumentParser):
     )
     parser.add_argument(
         '--no-export-image-tar', dest='export_image_tar', action='store_false',
-        help="Don't epxort built docker image into .tar file (keep image in local docker registry)",
+        help="Don't export built docker image into .tar file (keep image in local docker registry)",
     )
     parser.set_defaults(export_image_tar=None)
 
@@ -339,7 +339,7 @@ def _add_build_image_parser_arguments(parser: argparse.ArgumentParser):
         '--cache-from-version', dest='cache_from_version',
         help="Use previous version of the project as cache source",
     )
-    _add_dockerrepo_auth_parsers_arguments(parser)
+    _add_auth_parsers_arguments(parser)
 
 
 def _create_build_dags_parser(subparsers):
@@ -393,7 +393,7 @@ def _add_parsers_common_arguments(parser):
                              ' individual workflows as well as to deployment_config.py.')
 
 
-def _add_dockerrepo_auth_parsers_arguments(parser):
+def _add_auth_parsers_arguments(parser):
     parser.add_argument('-a', '--auth-method',
                         type=AuthorizationType,
                         default='local_account',
@@ -421,7 +421,7 @@ def _add_dockerrepo_auth_parsers_arguments(parser):
 
 
 def _add_deploy_parsers_common_arguments(parser):
-    _add_dockerrepo_auth_parsers_arguments(parser)
+    _add_auth_parsers_arguments(parser)
     _add_parsers_common_arguments(parser)
 
 
@@ -566,7 +566,7 @@ def find_image_file():
         raise ValueError("Directory .image does not exist")
 
     for f in os.listdir(".image"):
-        logger.debug("Foud file %s", f)
+        logger.debug("Found file %s", f)
 
         if fnmatch.fnmatch(f, "*-*.tar"):
             logger.info("Found image located at .image/%s", f)

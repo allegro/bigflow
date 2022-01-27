@@ -97,20 +97,27 @@ def _build_docker_image(
             vault_secret=cache_params.vault_secret,
         )
 
-        image = cache_params.cache_from_image or ""
-        if cache_params.cache_from_version:
-            image += f",{project_spec.docker_repository}:{cache_params.cache_from_version}"
-            image = image.lstrip(",")
+        cache_from = _generate_cachefrom_for_docker_build(project_spec, cache_params)
+        logger.debug("Add --cache-from=%s to `docker build`", cache_from)
+        cmd.extend(["--cache-from", cache_from])
 
-        logger.debug("Add --cache-from=%s to `docker build`", image)
-        cmd.extend(["--cache-from", image])
-
-        logger.debug("Enable buildkit inline cache")
 
     # noop when building backend is not a buildkit
+    logger.debug("Enable buildkit inline cache")
     cmd.extend(["--build-arg", "BUILDKIT_INLINE_CACHE=1"])
 
     return bf_commons.run_process(cmd)
+
+
+def _generate_cachefrom_for_docker_build(
+    project_spec: BigflowProjectSpec,
+    cache_params: BuildImageCacheParams,
+) -> str:
+    image = cache_params.cache_from_image or ""
+    if cache_params.cache_from_version:
+        image += f",{project_spec.docker_repository}:{cache_params.cache_from_version}"
+        image = image.lstrip(",")
+    return image
 
 
 @dataclass()
@@ -141,43 +148,48 @@ def build_image(
     _build_docker_image(project_spec, tag, cache_params)
 
     if export_image_tar:
-        try:
-            _export_docker_image_to_file(tag, image_dir, project_spec.version)
-            dconf_file = Path(project_spec.deployment_config_file)
-            shutil.copyfile(dconf_file, image_dir / dconf_file.name)
-        finally:
-            logger.info(
-                "Trying to remove the docker image. Tag: %s, image ID: %s",
-                tag,
-                bf_commons.get_docker_image_id(tag),
-            )
-            try:
-                bf_commons.remove_docker_image_from_local_registry(tag)
-            except Exception:
-                logger.exception("Couldn't remove the docker image. Tag: %s, image ID: %s", tag, bf_commons.get_docker_image_id(tag))
-
+        _export_image_as_tar(project_spec, image_dir, tag)
     else:
-        infofile = Path(image_dir) / f"imageinfo-{project_spec.version}.toml"
-        image_id = bf_commons.get_docker_image_id(tag)
-        info = toml.dumps({
+        _export_image_as_tag(project_spec, image_dir, tag)
+    logger.info("Docker image was built")
+
+
+def _export_image_as_tag(project_spec, image_dir, tag):
+    infofile = Path(image_dir) / f"imageinfo-{project_spec.version}.toml"
+    image_id = bf_commons.get_docker_image_id(tag)
+    info = toml.dumps({
             'created': datetime.now(),
             'project_version': project_spec.version,
             'project_name': project_spec.name,
             'docker_image_id': image_id,
             'docker_image_tag': tag,
         })
+    logger.debug("Create 'image-info' marker %s", infofile)
+    infofile.write_text(
+        textwrap.dedent(f"""
+            # This file is a marker indicating that docker image
+            # was built by bigflow but wasn't exported to a tar.
+            # Instead it kept inside local docker repo
+            # and tagged with `{tag}`.
+        """) + info
+    )
 
-        logger.debug("Create 'image-info' marker %s", infofile)
-        infofile.write_text(
-            textwrap.dedent(f"""
-                # This file is a marker indicating that docker image
-                # was built by bigflow but wasn't exported to a tar.
-                # Instead it kept inside local docker repo
-                # and tagged with `{tag}`.
-            """) + info
-        )
 
-    logger.info("Docker image was built")
+def _export_image_as_tar(project_spec, image_dir, tag):
+    try:
+        _export_docker_image_to_file(tag, image_dir, project_spec.version)
+        dconf_file = Path(project_spec.deployment_config_file)
+        shutil.copyfile(dconf_file, image_dir / dconf_file.name)
+    finally:
+        logger.info(
+                "Trying to remove the docker image. Tag: %s, image ID: %s",
+                tag,
+                bf_commons.get_docker_image_id(tag),
+            )
+        try:
+            bf_commons.remove_docker_image_from_local_registry(tag)
+        except Exception:
+            logger.exception("Couldn't remove the docker image. Tag: %s, image ID: %s", tag, bf_commons.get_docker_image_id(tag))
 
 
 def create_image_version_file(dags_dir: str, image_version: str):
@@ -275,7 +287,7 @@ def clear_package_leftovers(project_spec: BigflowProjectSpec):
 def build_project(
     project_spec: BigflowProjectSpec,
     start_time: str,
-    workflow_id: typing.Optional[str] = None,
+    workflow_id: str | None = None,
     export_image_tar: bool | None = None,
     cache_params: BuildImageCacheParams | None = None,
 ):

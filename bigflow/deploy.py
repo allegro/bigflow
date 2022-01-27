@@ -45,10 +45,10 @@ def deploy_docker_image(
     vault_secret: T.Optional[str] = None,
 ) -> str:
     if image_tar_path.endswith(".toml"):
-        deploy_fn = deploy_docker_image_from_local_repo
+        deploy_fn = _deploy_docker_image_from_local_repo
     else:
-        deploy_fn = deploy_docker_image_from_fs
-    deploy_fn(
+        deploy_fn = _deploy_docker_image_from_fs
+    return deploy_fn(
         image_tar_path,
         docker_repository,
         auth_method,
@@ -57,20 +57,17 @@ def deploy_docker_image(
     )
 
 
-def deploy_docker_image_from_local_repo(
+def _deploy_docker_image_from_local_repo(
     image_info_path: str,
     docker_repository: str,
     auth_method: AuthorizationType = AuthorizationType.LOCAL_ACCOUNT,
     vault_endpoint: str | None = None,
     vault_secret: str | None = None,
-):
+) -> str:
+
     spec = get_project_spec()
     info = toml.load(image_info_path)
-
     image_project_version = info['project_version']
-    image_id = info['docker_image_id']
-    docker_image = bf_commons.build_docker_image_tag(
-        docker_repository, image_project_version)
 
     if spec.version != image_project_version:
         logger.warning(
@@ -78,28 +75,27 @@ def deploy_docker_image_from_local_repo(
             spec.version, image_project_version,
         )
 
-    docker_image_latest = docker_repository + ":latest"
-    tag_image(image_id, docker_repository, "latest")
-
-    logger.info("Deploying docker image tag=%s auth_method=%s", docker_image, auth_method)
-    authenticate_to_registry(auth_method, vault_endpoint, vault_secret)
-    bf_commons.run_process(['docker', 'push', docker_image])
-    bf_commons.run_process(['docker', 'push', docker_image_latest])
-
-    return docker_image
+    return _deploy_image_loaded_to_local_registry(
+        build_ver=image_project_version,
+        docker_repository=docker_repository,
+        auth_method=auth_method,
+        vault_endpoint=vault_endpoint,
+        vault_secret=vault_secret,
+    )
 
 
-def deploy_docker_image_from_fs(
+def _deploy_docker_image_from_fs(
     image_tar_path: str,
     docker_repository: str,
     auth_method: AuthorizationType = AuthorizationType.LOCAL_ACCOUNT,
     vault_endpoint: str | None = None,
     vault_secret: str | None = None,
-):
+) -> str:
     build_ver = bf_commons.decode_version_number_from_file_name(Path(image_tar_path))
     build_ver = build_ver.replace("+", "-")  # fix local version separator
     image_id = load_image_from_tar(image_tar_path)
     try:
+        tag_image(image_id, docker_repository, build_ver)
         return _deploy_image_loaded_to_local_registry(
             build_ver,
             docker_repository,
@@ -121,14 +117,11 @@ def _deploy_image_loaded_to_local_registry(
     vault_endpoint: str | None = None,
     vault_secret: str | None = None,
 ) -> str:
-    tag_image(image_id, docker_repository, build_ver)
-    tag_image(image_id, docker_repository, "latest")
-
     docker_image = docker_repository + ":" + build_ver
     docker_image_latest = docker_repository + ":latest"
+    tag_image(image_id, docker_repository, "latest")
 
     logger.info("Deploying docker image tag=%s auth_method=%s", docker_image, auth_method)
-
     authenticate_to_registry(auth_method, vault_endpoint, vault_secret)
     bf_commons.run_process(['docker', 'push', docker_image])
     bf_commons.run_process(['docker', 'push', docker_image_latest])

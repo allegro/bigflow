@@ -132,6 +132,7 @@ class DeployTestCase(TempCwdMixin, BaseTestCase):
         # given
         decode_version_number_from_file_name.return_value = 'version123'
         load_image_from_tar.return_value = 'image_id'
+        self.addMock(mock.patch('bigflow.deploy.tag_image'))
 
         # when
         deploy_docker_image('image-version123.tar', 'docker_repository')
@@ -234,7 +235,6 @@ class DeployTestCase(TempCwdMixin, BaseTestCase):
             AuthorizationType.VAULT, "vault_endpoint", "vault_secret")
 
         run_process_mock.assert_has_calls([
-            mock.call(["docker", "tag", "image123", "docker_repository:1.2"]),
             mock.call(["docker", "tag", "image123", "docker_repository:latest"]),
             mock.call(["docker", "push", "docker_repository:1.2"]),
             mock.call(["docker", "push", "docker_repository:latest"]),
