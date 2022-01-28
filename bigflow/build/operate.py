@@ -143,6 +143,9 @@ def build_image(
     image_dir = project_spec.project_dir / ".image"
     os.mkdir(image_dir)
 
+    dconf_file = Path(project_spec.deployment_config_file)
+    shutil.copyfile(dconf_file, image_dir / dconf_file.name)
+
     tag = bf_commons.build_docker_image_tag(project_spec.docker_repository, project_spec.version)
     logger.info("Generated image tag: %s", tag)
     _build_docker_image(project_spec, tag, cache_params)
@@ -178,8 +181,6 @@ def _export_image_as_tag(project_spec, image_dir, tag):
 def _export_image_as_tar(project_spec, image_dir, tag):
     try:
         _export_docker_image_to_file(tag, image_dir, project_spec.version)
-        dconf_file = Path(project_spec.deployment_config_file)
-        shutil.copyfile(dconf_file, image_dir / dconf_file.name)
     finally:
         logger.info(
                 "Trying to remove the docker image. Tag: %s, image ID: %s",

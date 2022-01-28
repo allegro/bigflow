@@ -5,6 +5,7 @@ import subprocess
 
 from datetime import timedelta
 from pathlib import Path
+import time
 from unittest import TestCase, mock
 
 from test import mixins
@@ -45,7 +46,8 @@ def create_image_leftovers(test_project_dir_path=None):
 
     mkdir(test_project_dir_path / '.image')
     (test_project_dir_path / '.image' / 'leftover').touch()
-
+    (test_project_dir_path / '.image' / 'imageinfo-1.2.3.toml').touch()
+    (test_project_dir_path / '.image' / 'image-1.2.3.tar').touch()
 
 def create_package_leftovers(
         test_project_dir_path=None,
@@ -139,6 +141,7 @@ def dags_contain(test_project_dir_path: Path, substring: str):
 
 class SetupTestCase(
     mixins.PrototypedDirMixin,
+    mixins.BfCliInteractionMixin,
     mixins.SubprocessMixin,
     mixins.BigflowInPythonPathMixin,
     TestCase,
@@ -256,16 +259,37 @@ class BuildImageCommandE2E(SetupTestCase):
         clear_dags_leftovers(self.prj)
         clear_package_leftovers(self.prj)
 
-        self.run_build('python setup.py build_project --build-package')
-
         # when
-        self.run_build('python setup.py build_project --build-image')
+        self.bigflow_run(["build-package"])
+        self.bigflow_run(["build-image"])
 
         # then
         self.assertFalse(image_leftovers_exist())
         self.assertFalse(docker_image_built_in_registry(DOCKER_REPOSITORY, '0.1.0'))
         self.assertTrue(docker_image_as_file_built())
         self.assertTrue(deployment_config_copied())
+
+    def test_build_image_without_tar(self):
+
+        self.addCleanup(self.subprocess_run, ["docker", "rmi", f"{DOCKER_REPOSITORY}:0.1.0"], check=False)
+
+        # given
+        create_image_leftovers(self.prj.project_dir)
+        clear_dags_leftovers(self.prj)
+        clear_package_leftovers(self.prj)
+
+        # when
+        self.bigflow_run(["build-package"])
+        self.bigflow_run(["build-image", "--no-export-image-tar"])
+
+        # then
+        self.assertFalse(image_leftovers_exist())
+        self.assertTrue(docker_image_built_in_registry(DOCKER_REPOSITORY, '0.1.0'))
+        self.assertTrue(deployment_config_copied())
+
+        imginfo = self.assertFileExists(".image/imageinfo-0.1.0.toml")
+        self.assertFileContentRegex(imginfo, r"created = .*")
+        self.assertFileContentRegex(imginfo, r'project_version = "0.1.0"')
 
 
 class BuildImageTest(SetupTestCase):
