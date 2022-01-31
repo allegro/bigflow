@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import json
 import uuid
 import functools
-import typing
+import typing as tp
 import logging
 from logging import Logger
 from pathlib import Path
@@ -38,7 +40,7 @@ def handle_key_error(method):
     return decorated
 
 
-def get_partition_from_run_datetime_or_none(run_datetime):
+def get_partition_from_run_datetime_or_none(run_datetime: str | None) -> str | None:
     """
     :param run_datetime: string run datetime in format YYYY-MM-DD HH:mm:ss or YYY-MM-DD
     :return: string partition in format YYYYMMDD
@@ -99,7 +101,7 @@ class TemplatedDatasetManager(object):
         return self.dataset_manager.collect(sql.format(**self.template_variables(custom_run_datetime)))
 
     @handle_key_error
-    def collect_list(self, sql: str, custom_run_datetime: typing.Optional[str] = None, record_as_dict: bool = False):
+    def collect_list(self, sql: str, custom_run_datetime: tp.Optional[str] = None, record_as_dict: bool = False):
         return self.dataset_manager.collect_list(
             sql.format(**self.template_variables(custom_run_datetime)), record_as_dict)
 
@@ -133,7 +135,7 @@ class TemplatedDatasetManager(object):
     def create_table_from_schema(
             self,
             table_name: str,
-            schema: typing.Union[None, typing.List[dict], Path] = None,
+            schema: tp.Union[None, tp.List[dict], Path] = None,
             table=None):
         table_id = self.create_table_id(table_name)
         return self.dataset_manager.create_table_from_schema(table_id, schema, table)
@@ -141,7 +143,7 @@ class TemplatedDatasetManager(object):
     def insert(
             self,
             table_name: str,
-            records: typing.Union[typing.List[dict], Path]):
+            records: tp.Union[tp.List[dict], Path]):
         table_id = self.create_table_id(table_name)
         return self.dataset_manager.insert(table_id, records)
 
@@ -182,7 +184,7 @@ class PartitionedDatasetManager(object):
     def collect(self, sql, custom_run_datetime=None):
         return self._dataset_manager.collect(sql, custom_run_datetime)
 
-    def collect_list(self, sql: str, custom_run_datetime: typing.Optional[str] = None, record_as_dict: bool = False):
+    def collect_list(self, sql: str, custom_run_datetime: tp.Optional[str] = None, record_as_dict: bool = False):
         return self._dataset_manager.collect_list(sql, custom_run_datetime, record_as_dict)
 
     def dry_run(self, sql, custom_run_datetime=None):
@@ -229,16 +231,16 @@ class PartitionedDatasetManager(object):
     def create_table_from_schema(
             self,
             table_name: str,
-            schema: typing.Optional[typing.Union[typing.List[dict], Path]] = None,
+            schema: tp.Optional[tp.Union[tp.List[dict], Path]] = None,
             table=None):
         return self._dataset_manager.create_table_from_schema(table_name, schema, table)
 
     def insert(
             self,
             table_name: str,
-            records: typing.Union[typing.List[dict], Path],
+            records: tp.Union[tp.List[dict], Path],
             partitioned: bool = True,
-            custom_run_datetime: typing.Optional[str] = None):
+            custom_run_datetime: tp.Optional[str] = None):
         table_id = self._create_table_id(custom_run_datetime, table_name, partitioned)
         return self._dataset_manager.insert(table_id, records)
 
@@ -261,19 +263,19 @@ class DatasetManager(object):
     Manages BigQuery IO operations.
     """
     def __init__(self,
-                 bigquery_client,
-                 dataset,
-                 logger):
+                 bigquery_client: 'google.cloud.bigquery.Client',
+                 dataset: 'google.cloud.bigquery.Dataset',
+                 logger: logging.Logger):
         from google.cloud import bigquery
         self.bigquery_client: bigquery.Client = bigquery_client
         self.dataset = dataset
         self.dataset_id = dataset.full_dataset_id.replace(':', '.')
         self.logger = logger
 
-    def write_tmp(self, table_id: str, sql: str):
+    def write_tmp(self, table_id: str, sql: str) -> 'google.cloud.bigquery.table.RowIterator':
         return self.write(table_id, sql, 'WRITE_TRUNCATE')
 
-    def write(self, table_id: str, sql: str, mode: str):
+    def write(self, table_id: str, sql: str, mode: str) -> 'google.cloud.bigquery.table.RowIterator':
         from google.cloud import bigquery
         self.logger.info('%s to %s', mode, table_id)
         job_config = bigquery.QueryJobConfig()
@@ -286,11 +288,11 @@ class DatasetManager(object):
         job = self.bigquery_client.query(sql, job_config=job_config)
         return job.result()
 
-    def write_truncate(self, table_id: str, sql: str):
+    def write_truncate(self, table_id: str, sql: str) -> 'google.cloud.bigquery.table.RowIterator':
         self.table_exists_or_error(table_id)
         return self.write(table_id, sql, 'WRITE_TRUNCATE')
 
-    def write_append(self, table_id: str, sql: str):
+    def write_append(self, table_id: str, sql: str) -> 'google.cloud.bigquery.table.RowIterator':
         self.table_exists_or_error(table_id)
         return self.write(table_id, sql, 'WRITE_APPEND')
 
@@ -299,7 +301,7 @@ class DatasetManager(object):
         if not self.table_exists(table_name):
             raise ValueError('Table {id} does not exist'.format(id=table_id))
 
-    def create_table(self, create_query: str):
+    def create_table(self, create_query: str) -> 'google.cloud.bigquery.table.RowIterator':
         from google.cloud import bigquery
         self.logger.info('CREATE TABLE: %s', create_query)
         job_config = bigquery.QueryJobConfig()
@@ -311,16 +313,20 @@ class DatasetManager(object):
             job_config=job_config)
         return job.result()
 
-    def collect(self, sql: str):
+    def collect(self, sql: str) -> 'pandas.DataFrame':
         return self._query(sql).to_dataframe()
 
-    def collect_list(self, sql: str, record_as_dict: bool = False):
+    def collect_list(
+            self,
+            sql: str,
+            record_as_dict: bool = False
+    ) -> tp.List[tp.Dict] | tp.List['google.cloud.bigquery.table.Row']:
         result = list(self._query(sql).result())
         if record_as_dict:
             result = [dict(e) for e in result]
         return result
 
-    def dry_run(self, sql: str):
+    def dry_run(self, sql: str) -> str:
         from google.cloud import bigquery
         job_config = bigquery.QueryJobConfig()
         job_config.dry_run = True
@@ -333,10 +339,10 @@ class DatasetManager(object):
     def remove_dataset(self):
         return self.bigquery_client.delete_dataset(self.dataset, delete_contents=True, not_found_ok=True)
 
-    def load_table_from_dataframe(self, table_id: str, df):
+    def load_table_from_dataframe(self, table_id: str, df) -> 'google.cloud.bigquery.table.RowIterator':
         return self.bigquery_client.load_table_from_dataframe(df, table_id).result()
 
-    def table_exists(self, table_name: str):
+    def table_exists(self, table_name: str) -> bool:
         return self.bigquery_client.query('''
             SELECT count(*) as table_exists
             FROM `{dataset_id}.__TABLES__`
@@ -351,7 +357,7 @@ class DatasetManager(object):
     def create_table_from_schema(
             self,
             table_id: str,
-            schema: typing.Union[typing.List[dict], Path, None] = None,
+            schema: tp.Union[tp.List[dict], Path, None] = None,
             table=None):
         from google.cloud.bigquery import Table, TimePartitioning
 
@@ -375,7 +381,7 @@ class DatasetManager(object):
     def insert(
             self,
             table_id: str,
-            records: typing.Union[typing.List[dict], Path]):
+            records: tp.Union[tp.List[dict], Path]):
         self.logger.info('INSERTING RECORDS TO TABLE: %s', table_id)
         table = self.bigquery_client.get_table(table_id)
         if isinstance(records, Path):
@@ -385,7 +391,7 @@ class DatasetManager(object):
         if errors:
             raise ValueError(errors)
 
-    def _query(self, sql: str, job_config=None):
+    def _query(self, sql: str, job_config=None) -> 'google.cloud.bigquery.job.QueryJob':
         self.logger.info('COLLECTING DATA: %s', sql)
         if job_config:
             return self.bigquery_client.query(sql, job_config=job_config)
@@ -408,7 +414,12 @@ class DatasetManager(object):
                 'cost': cost}
 
 
-def create_dataset(dataset_name: str, bigquery_client, location: str = DEFAULT_LOCATION, dataset_new_labels: Dict[str, str] = None):
+def create_dataset(
+        dataset_name: str,
+        bigquery_client: 'google.cloud.bigquery.Client',
+        location: str = DEFAULT_LOCATION,
+        dataset_new_labels: Dict[str, str] | None = None
+) -> 'google.cloud.bigquery.Dataset':
     from google.cloud import bigquery
     dataset = bigquery.Dataset('{project_id}.{dataset_name}'.format(
         project_id=bigquery_client.project,
@@ -428,11 +439,15 @@ def _prepare_labels(labels: Dict[str, str], new_labels: Dict[str, str]) -> Dict[
     return labels_to_remove
 
 
-def random_uuid(suffix=''):
+def random_uuid(suffix='') -> str:
     return uuid.uuid1().hex + suffix
 
 
-def create_bigquery_client(project_id: str, credentials, location: str):
+def create_bigquery_client(
+        project_id: str,
+        credentials: 'google.auth.credentials.Credentials' | None,
+        location: str
+) -> 'google.cloud.bigquery.Client':
     from google.cloud import bigquery
     return bigquery.Client(
         project=project_id,
@@ -440,7 +455,10 @@ def create_bigquery_client(project_id: str, credentials, location: str):
         location=location)
 
 
-def upsert_tables_labels(dataset_name: str, tables_labels: Dict[str, Dict[str, str]], bigquery_client):
+def upsert_tables_labels(
+        dataset_name: str,
+        tables_labels: Dict[str, Dict[str, str]] | None,
+        bigquery_client: 'google.cloud.bigquery.Client'):
     from google.cloud.exceptions import NotFound
     if tables_labels:
         for table_name, labels in tables_labels.items():
@@ -456,15 +474,16 @@ def upsert_tables_labels(dataset_name: str, tables_labels: Dict[str, Dict[str, s
 def create_dataset_manager(
         project_id: str,
         runtime: str,
-        dataset_name: str = None,
-        internal_tables: List[str] = None,
-        external_tables: Dict[str, str] = None,
-        extras: Dict = None,
-        credentials=None,
+        dataset_name: str | None = None,
+        internal_tables: List[str] | None = None,
+        external_tables: Dict[str, str] | None = None,
+        extras: Dict | None = None,
+        credentials: 'google.auth.credentials.Credentials' | None = None,
         location: str = DEFAULT_LOCATION,
-        logger: Logger = None,
-        tables_labels: Dict[str, Dict[str, str]] = None,
-        dataset_labels: Dict[str, str] = None) -> typing.Tuple[str, PartitionedDatasetManager]:
+        logger: Logger | None = None,
+        tables_labels: Dict[str, Dict[str, str]] | None = None,
+        dataset_labels: Dict[str, str] | None = None
+) -> tp.Tuple[str, PartitionedDatasetManager]:
     """
     Dataset manager factory.
     If dataset does not exist then it will also create dataset with given name.
