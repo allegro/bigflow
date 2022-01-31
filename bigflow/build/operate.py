@@ -26,7 +26,7 @@ import bigflow.build.dist
 import bigflow.build.dataflow.dependency_checker
 import bigflow.commons as bf_commons
 
-from bigflow.build.spec import BigflowProjectSpec, get_project_spec
+from bigflow.build.spec import BigflowProjectSpec
 
 
 logger = logging.getLogger(__name__)
@@ -123,10 +123,10 @@ def _generate_cachefrom_for_docker_build(
 @dataclass()
 class BuildImageCacheParams:
     auth_method: bigflow.deploy.AuthorizationType
-    vault_endpoint: str | None
-    vault_secret: str | None
-    cache_from_version: str | None
-    cache_from_image: str | None
+    vault_endpoint: str | None = None
+    vault_secret: str | None = None
+    cache_from_version: str | None = None
+    cache_from_image: str | None = None
 
 
 def build_image(

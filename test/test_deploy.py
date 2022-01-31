@@ -140,8 +140,14 @@ class DeployTestCase(TempCwdMixin, BaseTestCase):
         # then
         decode_version_number_from_file_name.assert_called_with(Path('image-version123.tar'))
         load_image_from_tar.assert_called_with('image-version123.tar')
-        _deploy_image_loaded_to_local_registry.assert_called_with('version123', 'docker_repository', 'image_id',
-                                                                  AuthorizationType.LOCAL_ACCOUNT, None, None)
+        _deploy_image_loaded_to_local_registry.assert_called_with(
+            auth_method=AuthorizationType.LOCAL_ACCOUNT,
+            build_ver='version123',
+            docker_repository='docker_repository',
+            image_id='image_id',
+            vault_endpoint=None,
+            vault_secret=None,
+        )
         remove_docker_image_from_local_registry.assert_called_with('docker_repository:version123')
 
     @mock.patch('bigflow.commons.decode_version_number_from_file_name')

@@ -147,6 +147,7 @@ def render_project_spec(prj: BigflowProjectSpec) -> dict:
         # 'data_files': prj.data_files,  # https://github.com/uiri/toml/issues/270
         'resources_dir': prj.resources_dir,
         'test_framework': prj.test_framework,
+        'export_image_tar': prj.export_image_tar,
         **prj.metainfo,
         **prj.setuptools,
     }

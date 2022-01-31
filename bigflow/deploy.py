@@ -68,6 +68,8 @@ def _deploy_docker_image_from_local_repo(
     spec = get_project_spec()
     info = toml.load(image_info_path)
     image_project_version = info['project_version']
+    image_id = info['docker_image_id']
+    build_ver = image_project_version.replace("+", "-")
 
     if spec.version != image_project_version:
         logger.warning(
@@ -76,11 +78,12 @@ def _deploy_docker_image_from_local_repo(
         )
 
     return _deploy_image_loaded_to_local_registry(
-        build_ver=image_project_version,
         docker_repository=docker_repository,
         auth_method=auth_method,
         vault_endpoint=vault_endpoint,
         vault_secret=vault_secret,
+        image_id=image_id,
+        build_ver=build_ver,
     )
 
 
@@ -97,12 +100,12 @@ def _deploy_docker_image_from_fs(
     try:
         tag_image(image_id, docker_repository, build_ver)
         return _deploy_image_loaded_to_local_registry(
-            build_ver,
-            docker_repository,
-            image_id,
-            auth_method,
-            vault_endpoint,
-            vault_secret,
+            build_ver=build_ver,
+            docker_repository=docker_repository,
+            image_id=image_id,
+            auth_method=auth_method,
+            vault_endpoint=vault_endpoint,
+            vault_secret=vault_secret,
         )
     finally:
         image_tag = bf_commons.build_docker_image_tag(docker_repository, build_ver)

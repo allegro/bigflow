@@ -2,6 +2,7 @@ from unittest import TestCase, mock
 import itertools
 import shutil
 import freezegun
+from bigflow.build.operate import BuildImageCacheParams
 
 from bigflow.testing.isolate import ForkIsolateMixin
 from bigflow.cli import *
@@ -15,7 +16,7 @@ TESTS_DIR = Path(__file__).parent
 class CliTestCase(
     mixins.PrototypedDirMixin,
     ForkIsolateMixin,
-    TestCase,
+    mixins.BaseTestCase,
 ):
     proto_dir = "bf-projects/example_project"
 
@@ -505,6 +506,30 @@ deployment_config = Config(name='dev',
                                                     vault_endpoint='my-vault-endpoint',
                                                     vault_secret='secrett')
 
+    @mock.patch('bigflow.cli.deploy_docker_image')
+    def test_should_find_toml_ref_in_image_directory(self, deploy_docker_image_mock):
+
+        # given
+        shutil.rmtree(Path.cwd() / ".image", ignore_errors=True)
+        self._touch_file('imageinfo-123.toml', '', '.image')
+
+        # when
+        cli(['deploy-image',
+             '--docker-repository', 'my-docker-repository',
+             '--vault-endpoint', 'my-vault-endpoint',
+             '--auth-method', 'vault',
+             '--vault-secret', 'secrett',
+             ])
+
+        # then
+        deploy_docker_image_mock.assert_called_with(
+            auth_method=AuthorizationType.VAULT,
+            docker_repository='my-docker-repository',
+            image_tar_path='.image/imageinfo-123.toml',
+            vault_endpoint='my-vault-endpoint',
+            vault_secret='secrett',
+        )
+
     @mock.patch('bigflow.cli.deploy_dags_folder')
     @mock.patch('bigflow.cli.deploy_docker_image')
     def test_should_call_both_deploy_methods_with_deploy_command(self, deploy_docker_image_mock,
@@ -616,10 +641,32 @@ deployment_config = Config(name='dev',
             export_image_tar=None,
         )
 
-    @mock.patch('bigflow.cli._cli_build_image')
-    def test_should_call_cli_build_image_command(self, _cli_build_image_mock):
+    def test_should_call_cli_build_image_command_without_tar(self):
+        # given
+        cli_build_mock = self.addMock(mock.patch('bigflow.cli._cli_build_image'))
+
         # when
-        cli(['build-image'])
+        cli(['build-image', '--no-export-image-tar'])
+
+        # then
+        cli_build_mock.assert_called_once()
+        self.assertEqual(cli_build_mock.call_args[0][0].export_image_tar, False)
+
+    def test_should_call_cli_build_image_command_with_tar(self):
+        # given
+        cli_build_mock = self.addMock(mock.patch('bigflow.cli._cli_build_image'))
+
+        # when
+        cli(['build-image', '--export-image-tar'])
+
+        # then
+        cli_build_mock.assert_called_once()
+        self.assertEqual(cli_build_mock.call_args[0][0].export_image_tar, True)
+
+    @mock.patch('bigflow.cli._cli_build_image')
+    def test_should_call_cli_build_image_command_without_tar(self, _cli_build_image_mock):
+        # when
+        cli(['build-image', '--no-export-image-tar'])
 
         # then
         _cli_build_image_mock.assert_called_with(
@@ -629,13 +676,67 @@ deployment_config = Config(name='dev',
                 cache_from_version=None,
                 config=None,
                 deployment_config_path=None,
-                export_image_tar=None,
+                export_image_tar=False,
                 operation='build-image',
                 vault_endpoint=None,
                 vault_secret=None,
                 verbose=False,
             )
         )
+
+    def test_should_call_cli_build_image_with_cached_from_image(self):
+
+        # given
+        build_image_mock = self.addMock(mock.patch('bigflow.build.operate.build_image'))
+
+        # when
+        cli([
+            'build-image',
+            '--no-export-image-tar',
+            '--vault-endpoint', 'my-vault-endpoint',
+            '--auth-method', 'vault',
+            '--vault-secret', 'secrett',
+            '--cache-from-image', 'xyz.org/foo:bar',
+        ])
+
+        # then
+        build_image_mock.assert_called_once()
+        _, kwrgs = build_image_mock.call_args
+        self.assertEqual(kwrgs['export_image_tar'], False)
+        self.assertEqual(kwrgs['cache_params'], BuildImageCacheParams(
+            auth_method=AuthorizationType.VAULT,
+            vault_endpoint='my-vault-endpoint',
+            vault_secret='secrett',
+            cache_from_image='xyz.org/foo:bar',
+            cache_from_version=None,
+        ))
+
+    def test_should_call_cli_build_image_with_cached_from_version(self):
+
+        # given
+        build_image_mock = self.addMock(mock.patch('bigflow.build.operate.build_image'))
+
+        # when
+        cli([
+            'build-image',
+            '--no-export-image-tar',
+            '--vault-endpoint', 'my-vault-endpoint',
+            '--auth-method', 'vault',
+            '--vault-secret', 'secrett',
+            '--cache-from-version', 'bar',
+        ])
+
+        # then
+        build_image_mock.assert_called_once()
+        _, kwrgs = build_image_mock.call_args
+        self.assertEqual(kwrgs['export_image_tar'], False)
+        self.assertEqual(kwrgs['cache_params'], BuildImageCacheParams(
+            auth_method=AuthorizationType.VAULT,
+            vault_endpoint='my-vault-endpoint',
+            vault_secret='secrett',
+            cache_from_image=None,
+            cache_from_version='bar',
+        ))
 
     @mock.patch('bigflow.build.operate.build_project')
     @mock.patch('bigflow.build.spec.read_project_spec')
