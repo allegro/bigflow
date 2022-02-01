@@ -687,6 +687,7 @@ deployment_config = Config(name='dev',
     def test_should_call_cli_build_image_with_cached_from_image(self):
 
         # given
+        self.addMock(mock.patch('bigflow.build.spec.read_project_spec'))
         build_image_mock = self.addMock(mock.patch('bigflow.build.operate.build_image'))
 
         # when
@@ -714,6 +715,7 @@ deployment_config = Config(name='dev',
     def test_should_call_cli_build_image_with_cached_from_version(self):
 
         # given
+        self.addMock(mock.patch('bigflow.build.spec.read_project_spec'))
         build_image_mock = self.addMock(mock.patch('bigflow.build.operate.build_image'))
 
         # when
