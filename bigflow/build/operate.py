@@ -97,10 +97,14 @@ def _build_docker_image(
             vault_secret=cache_params.vault_secret,
         )
 
-        cache_from = _generate_cachefrom_for_docker_build(project_spec, cache_params)
-        logger.debug("Add --cache-from=%s to `docker build`", cache_from)
-        cmd.extend(["--cache-from", cache_from])
+        for image in (cache_params.cache_from_image or []):
+            logger.debug("Add --cache-from=%s to `docker build`", image)
+            cmd.extend(["--cache-from", image])
 
+        for version in (cache_params.cache_from_version or []):
+            image = f"{project_spec.docker_repository}:{version}"
+            logger.debug("Add --cache-from=%s to `docker build`", image)
+            cmd.extend(["--cache-from", image])
 
     # noop when building backend is not a buildkit
     logger.debug("Enable buildkit inline cache")
@@ -109,24 +113,13 @@ def _build_docker_image(
     return bf_commons.run_process(cmd)
 
 
-def _generate_cachefrom_for_docker_build(
-    project_spec: BigflowProjectSpec,
-    cache_params: BuildImageCacheParams,
-) -> str:
-    image = cache_params.cache_from_image or ""
-    if cache_params.cache_from_version:
-        image += f",{project_spec.docker_repository}:{cache_params.cache_from_version}"
-        image = image.lstrip(",")
-    return image
-
-
 @dataclass()
 class BuildImageCacheParams:
     auth_method: bigflow.deploy.AuthorizationType
     vault_endpoint: str | None = None
     vault_secret: str | None = None
-    cache_from_version: str | None = None
-    cache_from_image: str | None = None
+    cache_from_version: list[str] | None = None
+    cache_from_image: list[str] | None = None
 
 
 def build_image(

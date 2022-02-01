@@ -98,7 +98,7 @@ class BuildDockerImageTestCase(
             self.project_spec, True,
             bigflow.build.operate.BuildImageCacheParams(
                 auth_method=bigflow.deploy.AuthorizationType.LOCAL_ACCOUNT,
-                cache_from_image="xyz.org/foo:bar",
+                cache_from_image=["xyz.org/foo:bar"],
             ),
         )
 
@@ -119,7 +119,7 @@ class BuildDockerImageTestCase(
             self.project_spec, "1.2",
             bigflow.build.operate.BuildImageCacheParams(
                 auth_method=bigflow.deploy.AuthorizationType.LOCAL_ACCOUNT,
-                cache_from_version="1.1",
+                cache_from_version=["1.1"],
             ),
         )
 

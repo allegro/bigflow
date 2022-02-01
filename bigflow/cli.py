@@ -332,11 +332,15 @@ def _add_build_image_parser_arguments(parser: argparse.ArgumentParser):
     parser.set_defaults(export_image_tar=None)
 
     parser.add_argument(
-        '--cache-from-image', dest='cache_from_image',
+        '--cache-from-image',
+        dest='cache_from_image',
+        action='append',
         help="Docker images to consider as cache sources",
     )
     parser.add_argument(
-        '--cache-from-version', dest='cache_from_version',
+        '--cache-from-version',
+        dest='cache_from_version',
+        action='append',
         help="Use previous version of the project as cache source",
     )
     _add_auth_parsers_arguments(parser)

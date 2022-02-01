@@ -699,6 +699,7 @@ deployment_config = Config(name='dev',
             '--auth-method', 'vault',
             '--vault-secret', 'secrett',
             '--cache-from-image', 'xyz.org/foo:bar',
+            '--cache-from-image', 'xyz.org/foo:baz',
         ])
 
         # then
@@ -709,7 +710,7 @@ deployment_config = Config(name='dev',
             auth_method=AuthorizationType.VAULT,
             vault_endpoint='my-vault-endpoint',
             vault_secret='secrett',
-            cache_from_image='xyz.org/foo:bar',
+            cache_from_image=['xyz.org/foo:bar', 'xyz.org/foo:baz'],
             cache_from_version=None,
         ))
 
@@ -727,6 +728,7 @@ deployment_config = Config(name='dev',
             '--auth-method', 'vault',
             '--vault-secret', 'secrett',
             '--cache-from-version', 'bar',
+            '--cache-from-version', 'baz',
         ])
 
         # then
@@ -738,7 +740,7 @@ deployment_config = Config(name='dev',
             vault_endpoint='my-vault-endpoint',
             vault_secret='secrett',
             cache_from_image=None,
-            cache_from_version='bar',
+            cache_from_version=['bar', 'baz'],
         ))
 
     @mock.patch('bigflow.build.operate.build_project')
@@ -786,6 +788,7 @@ deployment_config = Config(name='dev',
             vault_secret=None,
             verbose=False,
             workflow=None,
+            config=None,
         )
 
         # then
