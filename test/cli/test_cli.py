@@ -1,8 +1,9 @@
-from unittest import TestCase, mock
-import itertools
+from unittest import mock
 import shutil
 import freezegun
+
 from bigflow.build.operate import BuildImageCacheParams
+from bigflow.deploy import AuthorizationType
 
 from bigflow.testing.isolate import ForkIsolateMixin
 from bigflow.cli import *
@@ -270,7 +271,7 @@ class CliTestCase(
             # when
             cli(['deploy-dags'])
 
-    @mock.patch('bigflow.cli.deploy_dags_folder')
+    @mock.patch('bigflow.deploy.deploy_dags_folder')
     def test_should_call_cli_deploy_dags_command__with_defaults_and_with_implicit_deployment_config_file(self,
                                                                                                          deploy_dags_folder_mock):
         # given
@@ -298,7 +299,7 @@ deployment_config = Config(name='dev',
                                                    vault_endpoint=None,
                                                    vault_secret='secret')
 
-    @mock.patch('bigflow.cli.deploy_dags_folder')
+    @mock.patch('bigflow.deploy.deploy_dags_folder')
     def test_should_call_cli_deploy_dags_command_for_different_environments(self, deploy_dags_folder_mock):
         # given
         self._touch_file('deployment_config.py',
@@ -356,7 +357,7 @@ deployment_config = Config(name='dev',
                                                    vault_endpoint=None,
                                                    vault_secret='secret-prod')
 
-    @mock.patch('bigflow.cli.deploy_dags_folder')
+    @mock.patch('bigflow.deploy.deploy_dags_folder')
     def test_should_call_cli_deploy_dags_command__when_parameters_are_given_by_explicit_deployment_config_file(self,
                                                                                                                deploy_dags_folder_mock):
         # given
@@ -389,7 +390,7 @@ deployment_config = Config(name='dev',
                                                    vault_endpoint='my-another-vault-endpoint',
                                                    vault_secret='secrett')
 
-    @mock.patch('bigflow.cli.deploy_dags_folder')
+    @mock.patch('bigflow.deploy.deploy_dags_folder')
     def test_should_call_cli_deploy_dags_command__when_all_parameters_are_given_by_cli_arguments(self,
                                                                                                  deploy_dags_folder_mock):
         # when
@@ -412,7 +413,7 @@ deployment_config = Config(name='dev',
                                                    vault_endpoint='my-vault-endpoint',
                                                    vault_secret='secrett')
 
-    @mock.patch('bigflow.cli.deploy_docker_image')
+    @mock.patch('bigflow.deploy.deploy_docker_image')
     def test_should_call_cli_deploy_image_command__with_defaults_and_with_implicit_deployment_config_file(self,
                                                                                                           deploy_docker_image_mock):
         # given
@@ -436,7 +437,7 @@ deployment_config = Config(name='dev',
                                                     vault_endpoint=None,
                                                     vault_secret=None)
 
-    @mock.patch('bigflow.cli.deploy_docker_image')
+    @mock.patch('bigflow.deploy.deploy_docker_image')
     def test_should_call_cli_deploy_image_command__with_explicit_deployment_config_file(self, deploy_docker_image_mock):
         # given
         dc_file = self._touch_file('my_deployment_config.py',
@@ -465,7 +466,7 @@ deployment_config = Config(name='dev',
                                                     vault_endpoint='my-another-vault-endpoint',
                                                     vault_secret='secrett')
 
-    @mock.patch('bigflow.cli.deploy_docker_image')
+    @mock.patch('bigflow.deploy.deploy_docker_image')
     def test_should_call_cli_deploy_image_command__when_all_parameters_are_given_by_cli_arguments_and_image_is_loaded_from_tar(
             self, deploy_docker_image_mock):
         # when
@@ -484,7 +485,7 @@ deployment_config = Config(name='dev',
                                                     vault_endpoint='my-vault-endpoint',
                                                     vault_secret='secrett')
 
-    @mock.patch('bigflow.cli.deploy_docker_image')
+    @mock.patch('bigflow.deploy.deploy_docker_image')
     def test_should_find_tar_in_image_directory(self, deploy_docker_image_mock):
         # given
 
@@ -506,7 +507,7 @@ deployment_config = Config(name='dev',
                                                     vault_endpoint='my-vault-endpoint',
                                                     vault_secret='secrett')
 
-    @mock.patch('bigflow.cli.deploy_docker_image')
+    @mock.patch('bigflow.deploy.deploy_docker_image')
     def test_should_find_toml_ref_in_image_directory(self, deploy_docker_image_mock):
 
         # given
@@ -530,8 +531,8 @@ deployment_config = Config(name='dev',
             vault_secret='secrett',
         )
 
-    @mock.patch('bigflow.cli.deploy_dags_folder')
-    @mock.patch('bigflow.cli.deploy_docker_image')
+    @mock.patch('bigflow.deploy.deploy_dags_folder')
+    @mock.patch('bigflow.deploy.deploy_docker_image')
     def test_should_call_both_deploy_methods_with_deploy_command(self, deploy_docker_image_mock,
                                                                  deploy_dags_folder_mock):
         # given
@@ -853,7 +854,7 @@ deployment_config = Config(name='dev',
             workflow_id=None,
         )
 
-    @mock.patch('bigflow.cli.get_version')
+    @mock.patch('bigflow.version.get_version')
     def test_should_call_cli_project_version_command(self, get_version):
         # when
         cli(['project-version'])
@@ -861,7 +862,7 @@ deployment_config = Config(name='dev',
         # then
         get_version.assert_called_once()
 
-    @mock.patch('bigflow.cli.get_version')
+    @mock.patch('bigflow.version.get_version')
     def test_should_call_cli_project_version_command_by_alias(self, get_version):
         # when
         cli(['pv'])
@@ -869,7 +870,7 @@ deployment_config = Config(name='dev',
         # then
         get_version.assert_called_once()
 
-    @mock.patch('bigflow.cli.release')
+    @mock.patch('bigflow.version.release')
     def test_should_call_cli_release_command_with_no_args(self, release):
         # when
         cli(['release'])
@@ -877,7 +878,7 @@ deployment_config = Config(name='dev',
         # then
         release.assert_called_once_with(None)
 
-    @mock.patch('bigflow.cli.release')
+    @mock.patch('bigflow.version.release')
     def test_should_call_cli_release_command_with_identity_file(self, release):
         # when
         cli(['release', '--ssh-identity-file', 'path/to/identity_file'])
@@ -885,7 +886,7 @@ deployment_config = Config(name='dev',
         # then
         release.assert_called_once_with('path/to/identity_file')
 
-    @mock.patch('bigflow.cli.release')
+    @mock.patch('bigflow.version.release')
     def test_should_call_cli_release_command_with_identity_file_parameter_shortcut(self, release):
         # when
         cli(['release', '-i', 'path/to/identity_file'])

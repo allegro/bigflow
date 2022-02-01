@@ -15,7 +15,6 @@ from pathlib import Path
 from types import ModuleType
 from typing import Tuple, Iterator
 from typing import Optional
-from glob import glob1
 import fnmatch
 
 import bigflow as bf
@@ -27,11 +26,11 @@ import bigflow.build.dev
 import bigflow.build.operate
 import bigflow.build.spec
 import bigflow.migrate
+import bigflow.deploy
+import bigflow.scaffold
+import bigflow.version
 
 from bigflow import Config
-from bigflow.deploy import deploy_dags_folder, deploy_docker_image, AuthorizationType
-from bigflow.scaffold import start_project
-from bigflow.version import get_version, release
 
 
 logger = logging.getLogger(__name__)
@@ -395,13 +394,13 @@ def _add_parsers_common_arguments(parser):
 
 def _add_auth_parsers_arguments(parser):
     parser.add_argument('-a', '--auth-method',
-                        type=AuthorizationType,
+                        type=bigflow.deploy.AuthorizationType,
                         default='local_account',
                         help='One of two authentication method: '
                              'local_account -- you are using credentials of your local user authenticated in gcloud; '
                              'vault -- credentials for service account are obtained from Vault. '
                              'Default: local_account',
-                        choices=list(AuthorizationType),
+                        choices=list(bigflow.deploy.AuthorizationType),
     )
     parser.add_argument('-ve', '--vault-endpoint',
                         type=str,
@@ -510,7 +509,7 @@ def _resolve_dags_dir(args):
 
 
 def _resolve_vault_endpoint(args):
-    if args.auth_method == AuthorizationType.VAULT:
+    if args.auth_method == bigflow.deploy.AuthorizationType.VAULT:
         return _resolve_property(args, 'vault_endpoint')
     else:
         return None
@@ -533,7 +532,7 @@ def _resolve_property(args, property_name, ignore_value_error=False):
 
 def _cli_deploy_dags(args):
     vault_secret = _resolve_property(args, 'vault_secret', ignore_value_error=True)
-    deploy_dags_folder(dags_dir=_resolve_dags_dir(args),
+    bigflow.deploy.deploy_dags_folder(dags_dir=_resolve_dags_dir(args),
                        dags_bucket=_resolve_property(args, 'dags_bucket'),
                        clear_dags_folder=args.clear_dags_folder,
                        auth_method=args.auth_method,
@@ -550,7 +549,7 @@ def _cli_deploy_image(args):
     vault_endpoint = _resolve_vault_endpoint(args)
     image_tar_path = args.image_tar_path if args.image_tar_path else find_image_file()
 
-    deploy_docker_image(
+    bigflow.deploy.deploy_docker_image(
         image_tar_path=image_tar_path,
         auth_method=args.auth_method,
         docker_repository=docker_repository,
@@ -751,16 +750,16 @@ def _cli_start_project():
 
         config['pyspark_job'] = True
 
-    start_project(**config)
+    bigflow.scaffold.start_project(**config)
     print('Bigflow project created successfully.')
 
 
 def _cli_project_version(args):
-    print(get_version())
+    print(bigflow.version.get_version())
 
 
 def _cli_release(args):
-    release(args.ssh_identity_file)
+    bigflow.version.release(args.ssh_identity_file)
 
 
 class _ConsoleStreamLogHandler(logging.Handler):
