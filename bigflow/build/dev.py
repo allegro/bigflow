@@ -46,7 +46,11 @@ def read_setuppy_args(
 def _read_setuppy_args(path_to_setup: Path) -> dict:
     logger.info("Read project options from %s", path_to_setup)
     with tempfile.NamedTemporaryFile("r+b") as f:
-        bf_commons.run_process(["python", path_to_setup, DUMP_PARAMS_SETUPPY_CMDARG, f.name], cwd=str(path_to_setup.parent))
+        bf_commons.run_process(
+            ["python", path_to_setup, DUMP_PARAMS_SETUPPY_CMDARG, f.name],
+            cwd=str(path_to_setup.parent),
+            verbose=False,
+        )
         return pickle.load(f)
 
 

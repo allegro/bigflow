@@ -298,6 +298,7 @@ def _create_build_parser(subparsers):
     parser = subparsers.add_parser('build', description='Builds a Docker image, DAG files and .whl package from local sources.')
     _add_build_dags_parser_arguments(parser)
     _add_build_image_parser_arguments(parser)
+    _add_parsers_common_arguments(parser)
 
 
 def _create_build_package_parser(subparsers):
@@ -452,7 +453,12 @@ def _create_deploy_dags_parser(subparsers):
 
 
 def _create_project_version_parser(subparsers):
-    subparsers.add_parser('project-version', aliases=['pv'], description='Prints project version')
+    parser = subparsers.add_parser('project-version', aliases=['pv'], description='Prints project version')
+    parser.add_argument(
+        '--git-commit',
+        type=str,
+        help="Return project version of specifid git commit",
+    )
 
 
 def _create_release_parser(subparsers):
@@ -755,7 +761,8 @@ def _cli_start_project():
 
 
 def _cli_project_version(args):
-    print(bigflow.version.get_version())
+    commit_ish = args.git_commit or "HEAD"
+    print(bigflow.version.get_version(commit_ish))
 
 
 def _cli_release(args):
