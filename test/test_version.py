@@ -9,20 +9,17 @@ from test import mixins
 
 class GetVersionE2E(
     mixins.TempCwdMixin,
+    mixins.BfCliInteractionMixin,
     mixins.SubprocessMixin,
     mixins.BigflowInPythonPathMixin,
     unittest.TestCase,
 ):
 
     def get_version(self):
-        return self.subprocess_run([
-            "python", "-c", textwrap.dedent("""
-                import bigflow.version
-                print(bigflow.version.get_version())
-            """)
-            ],
-            text=True,
-        ).stdout.strip()
+        return self.bigflow_run(["project-version"]).stdout.decode()
+
+    def get_version_of_commit(self, commit_ish):
+        return self.bigflow_run(["project-version", "--git-commit", commit_ish]).stdout.decode()
 
     def test_should_version_based_on_git_tags(self):
         # then
@@ -67,6 +64,17 @@ class GetVersionE2E(
         (self.cwd / "file1").write_text("change4")
         # then
         self.assertRegex(self.get_version(), r"^0.2.0.dev1\+g.{8,}\.t.+$", "No exact tag matched, dirty")
+        self.assertRegex(self.get_version_of_commit("HEAD~1"), r"^0.2.0$", "Explicit commit passed")
+
+        # when
+        (self.cwd / "file1").write_text("change5")
+        self.subprocess_run("git add file1")
+        self.subprocess_run("git commit -m message")
+
+        # then
+        self.assertRegex(self.get_version(), r"^0.2.0.dev2\+g.{8,}$", "No exact tag matched, clean")
+        self.assertRegex(self.get_version_of_commit("HEAD~1"), r"^0.2.0.dev1\+g.{8,}$", "Previous dev version")
+        self.assertRegex(self.get_version_of_commit("HEAD~2"), r"^0.2.0$", "Previous tag version")
 
 
 class ReleaseTestCase(unittest.TestCase):

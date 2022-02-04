@@ -34,6 +34,8 @@ class Mixin(unittest.TestCase):
 class FileUtilsMixin(Mixin):
 
     def assertFileExists(self, pattern):
+        if isinstance(pattern, Path):
+            pattern = str(pattern)
         if os.path.isabs(pattern):
             # TODO: Add absolute globs?
             p = Path(pattern)

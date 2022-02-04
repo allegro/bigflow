@@ -18,17 +18,18 @@ def run_process(
     return bigflow.commons.run_process(*args, verbose=verbose, **kwargs)
 
 
-def get_version() -> str:
+def get_version(commit_ish: str = "HEAD") -> str:
+
     if not _is_git_available():
         logger.warning("No git repo is available")
         return f"0+BROKEN"
 
-    dirty = _generate_dirty_suffix()
+    dirty = _generate_dirty_suffix() if commit_ish == "HEAD" else ""
 
     if not dirty:
         # try direct tag match
         try:
-            tag = run_process(["git", "describe", "--exact-match", "--dirty=+dirty", "--tags"])
+            tag = run_process(["git", "describe", "--exact-match", "--tags", commit_ish])
         except subprocess.SubprocessError as e:
             logger.debug("No direct git tag match: %s", e)
         else:
@@ -43,7 +44,7 @@ def get_version() -> str:
 
     # try generic 'git describe' (fail when there are no tags)
     try:
-        version = run_process(["git", "describe", "--abbrev=8", "--long", "--tags"])
+        version = run_process(["git", "describe", "--abbrev=8", "--long", "--tags", commit_ish])
     except subprocess.SubprocessError as e:
         logger.debug("No long git describtion: %s", e)
     else:
@@ -62,7 +63,7 @@ def get_version() -> str:
 
     # no tags? mayb just githash will work
     try:
-        ghash = run_process(["git", "rev-parse", "HEAD"])[:12]
+        ghash = run_process(["git", "rev-parse", commit_ish])[:12]
     except subprocess.SubprocessError as e:
         logger.debug("No githash available: %s", e)
     else:

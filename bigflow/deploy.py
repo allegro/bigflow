@@ -7,9 +7,12 @@ from enum import Enum
 from pathlib import Path
 
 import requests
+import toml
+
 from google.cloud.storage import Bucket
 from google.oauth2 import credentials
 from google.cloud import storage
+from bigflow.build.spec import get_project_spec
 
 import bigflow.commons as bf_commons
 
@@ -35,18 +38,75 @@ def tag_image(image_id: str, repository: str, tag: str) -> str:
 
 
 def deploy_docker_image(
-        image_tar_path: str,
-        docker_repository: str,
-        auth_method: AuthorizationType = AuthorizationType.LOCAL_ACCOUNT,
-        vault_endpoint: T.Optional[str] = None,
-        vault_secret: T.Optional[str] = None,
+    image_tar_path: str,
+    docker_repository: str,
+    auth_method: AuthorizationType = AuthorizationType.LOCAL_ACCOUNT,
+    vault_endpoint: T.Optional[str] = None,
+    vault_secret: T.Optional[str] = None,
+) -> str:
+    if image_tar_path.endswith(".toml"):
+        deploy_fn = _deploy_docker_image_from_local_repo
+    else:
+        deploy_fn = _deploy_docker_image_from_fs
+    return deploy_fn(
+        image_tar_path,
+        docker_repository,
+        auth_method,
+        vault_endpoint,
+        vault_secret,
+    )
+
+
+def _deploy_docker_image_from_local_repo(
+    image_info_path: str,
+    docker_repository: str,
+    auth_method: AuthorizationType = AuthorizationType.LOCAL_ACCOUNT,
+    vault_endpoint: str | None = None,
+    vault_secret: str | None = None,
+) -> str:
+
+    spec = get_project_spec()
+    info = toml.load(image_info_path)
+    image_project_version = info['project_version']
+    image_id = info['docker_image_id']
+    build_ver = image_project_version.replace("+", "-")
+
+    if spec.version != image_project_version:
+        logger.warning(
+            "Project version is %r, but image was built for %r",
+            spec.version, image_project_version,
+        )
+
+    return _deploy_image_loaded_to_local_registry(
+        docker_repository=docker_repository,
+        auth_method=auth_method,
+        vault_endpoint=vault_endpoint,
+        vault_secret=vault_secret,
+        image_id=image_id,
+        build_ver=build_ver,
+    )
+
+
+def _deploy_docker_image_from_fs(
+    image_tar_path: str,
+    docker_repository: str,
+    auth_method: AuthorizationType = AuthorizationType.LOCAL_ACCOUNT,
+    vault_endpoint: str | None = None,
+    vault_secret: str | None = None,
 ) -> str:
     build_ver = bf_commons.decode_version_number_from_file_name(Path(image_tar_path))
     build_ver = build_ver.replace("+", "-")  # fix local version separator
     image_id = load_image_from_tar(image_tar_path)
     try:
-        return _deploy_image_loaded_to_local_registry(build_ver, docker_repository, image_id, auth_method,
-                                                      vault_endpoint, vault_secret)
+        tag_image(image_id, docker_repository, build_ver)
+        return _deploy_image_loaded_to_local_registry(
+            build_ver=build_ver,
+            docker_repository=docker_repository,
+            image_id=image_id,
+            auth_method=auth_method,
+            vault_endpoint=vault_endpoint,
+            vault_secret=vault_secret,
+        )
     finally:
         image_tag = bf_commons.build_docker_image_tag(docker_repository, build_ver)
         bf_commons.remove_docker_image_from_local_registry(image_tag)
@@ -60,22 +120,19 @@ def _deploy_image_loaded_to_local_registry(
     vault_endpoint: str | None = None,
     vault_secret: str | None = None,
 ) -> str:
-    tag_image(image_id, docker_repository, build_ver)
-    tag_image(image_id, docker_repository, "latest")
-
     docker_image = docker_repository + ":" + build_ver
     docker_image_latest = docker_repository + ":latest"
+    tag_image(image_id, docker_repository, "latest")
 
     logger.info("Deploying docker image tag=%s auth_method=%s", docker_image, auth_method)
-
-    _authenticate_to_registry(auth_method, vault_endpoint, vault_secret)
+    authenticate_to_registry(auth_method, vault_endpoint, vault_secret)
     bf_commons.run_process(['docker', 'push', docker_image])
     bf_commons.run_process(['docker', 'push', docker_image_latest])
 
     return docker_image
 
 
-def _authenticate_to_registry(
+def authenticate_to_registry(
         auth_method: AuthorizationType,
         vault_endpoint: T.Optional[str] = None,
         vault_secret: T.Optional[str] = None,
@@ -101,7 +158,7 @@ def check_images_exist(
         vault_secret: T.Optional[str] = None,
 ):
     logger.info("Checking if images used in DAGs exist in the registry")
-    _authenticate_to_registry(auth_method, vault_endpoint, vault_secret)
+    authenticate_to_registry(auth_method, vault_endpoint, vault_secret)
     missing_images = set()
     for image in images:
         found_images = bf_commons.run_process(['docker', 'manifest', 'inspect', image], check=False, verbose=False)

@@ -105,6 +105,7 @@ class _BaseRealProjectTest(
             'url': "http://example.org/myproject",
         }
         s.test_framework = 'pytest'
+        s.export_image_tar = False
 
         # when
         spec.add_spec_to_pyproject_toml(self.cwd / "pyproject.toml", s)
@@ -122,6 +123,7 @@ class _BaseRealProjectTest(
             'metainfo',
             'data_files',
             'test_framework',
+            'export_image_tar',
         ]:
             self.assertEqual(getattr(s, f), getattr(ss, f), f"field {f} should be same")
 

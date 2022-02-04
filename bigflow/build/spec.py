@@ -69,6 +69,7 @@ class BigflowProjectSpec:
     setuptools: typing.Dict[str, typing.Any]
 
     test_framework: Literal['pytest', 'unittest']
+    export_image_tar: bool
 
 
 def parse_project_spec(
@@ -84,6 +85,7 @@ def parse_project_spec(
     project_requirements_file="resources/requirements.txt",
     resources_dir="resources",
     test_framework='unittest',
+    export_image_tar=True,
     **kwargs,
 
 ) -> BigflowProjectSpec:
@@ -128,6 +130,7 @@ def parse_project_spec(
         metainfo=metainfo,
         setuptools=kwargs,
         test_framework=test_framework,
+        export_image_tar=export_image_tar,
     )
 
 
@@ -144,6 +147,7 @@ def render_project_spec(prj: BigflowProjectSpec) -> dict:
         # 'data_files': prj.data_files,  # https://github.com/uiri/toml/issues/270
         'resources_dir': prj.resources_dir,
         'test_framework': prj.test_framework,
+        'export_image_tar': prj.export_image_tar,
         **prj.metainfo,
         **prj.setuptools,
     }

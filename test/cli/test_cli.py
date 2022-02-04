@@ -1,7 +1,9 @@
-from unittest import TestCase, mock
-import itertools
+from unittest import mock
 import shutil
 import freezegun
+
+from bigflow.build.operate import BuildImageCacheParams
+from bigflow.deploy import AuthorizationType
 
 from bigflow.testing.isolate import ForkIsolateMixin
 from bigflow.cli import *
@@ -15,7 +17,7 @@ TESTS_DIR = Path(__file__).parent
 class CliTestCase(
     mixins.PrototypedDirMixin,
     ForkIsolateMixin,
-    TestCase,
+    mixins.BaseTestCase,
 ):
     proto_dir = "bf-projects/example_project"
 
@@ -269,7 +271,7 @@ class CliTestCase(
             # when
             cli(['deploy-dags'])
 
-    @mock.patch('bigflow.cli.deploy_dags_folder')
+    @mock.patch('bigflow.deploy.deploy_dags_folder')
     def test_should_call_cli_deploy_dags_command__with_defaults_and_with_implicit_deployment_config_file(self,
                                                                                                          deploy_dags_folder_mock):
         # given
@@ -297,7 +299,7 @@ deployment_config = Config(name='dev',
                                                    vault_endpoint=None,
                                                    vault_secret='secret')
 
-    @mock.patch('bigflow.cli.deploy_dags_folder')
+    @mock.patch('bigflow.deploy.deploy_dags_folder')
     def test_should_call_cli_deploy_dags_command_for_different_environments(self, deploy_dags_folder_mock):
         # given
         self._touch_file('deployment_config.py',
@@ -355,7 +357,7 @@ deployment_config = Config(name='dev',
                                                    vault_endpoint=None,
                                                    vault_secret='secret-prod')
 
-    @mock.patch('bigflow.cli.deploy_dags_folder')
+    @mock.patch('bigflow.deploy.deploy_dags_folder')
     def test_should_call_cli_deploy_dags_command__when_parameters_are_given_by_explicit_deployment_config_file(self,
                                                                                                                deploy_dags_folder_mock):
         # given
@@ -388,7 +390,7 @@ deployment_config = Config(name='dev',
                                                    vault_endpoint='my-another-vault-endpoint',
                                                    vault_secret='secrett')
 
-    @mock.patch('bigflow.cli.deploy_dags_folder')
+    @mock.patch('bigflow.deploy.deploy_dags_folder')
     def test_should_call_cli_deploy_dags_command__when_all_parameters_are_given_by_cli_arguments(self,
                                                                                                  deploy_dags_folder_mock):
         # when
@@ -411,7 +413,7 @@ deployment_config = Config(name='dev',
                                                    vault_endpoint='my-vault-endpoint',
                                                    vault_secret='secrett')
 
-    @mock.patch('bigflow.cli.deploy_docker_image')
+    @mock.patch('bigflow.deploy.deploy_docker_image')
     def test_should_call_cli_deploy_image_command__with_defaults_and_with_implicit_deployment_config_file(self,
                                                                                                           deploy_docker_image_mock):
         # given
@@ -435,7 +437,7 @@ deployment_config = Config(name='dev',
                                                     vault_endpoint=None,
                                                     vault_secret=None)
 
-    @mock.patch('bigflow.cli.deploy_docker_image')
+    @mock.patch('bigflow.deploy.deploy_docker_image')
     def test_should_call_cli_deploy_image_command__with_explicit_deployment_config_file(self, deploy_docker_image_mock):
         # given
         dc_file = self._touch_file('my_deployment_config.py',
@@ -464,7 +466,7 @@ deployment_config = Config(name='dev',
                                                     vault_endpoint='my-another-vault-endpoint',
                                                     vault_secret='secrett')
 
-    @mock.patch('bigflow.cli.deploy_docker_image')
+    @mock.patch('bigflow.deploy.deploy_docker_image')
     def test_should_call_cli_deploy_image_command__when_all_parameters_are_given_by_cli_arguments_and_image_is_loaded_from_tar(
             self, deploy_docker_image_mock):
         # when
@@ -483,7 +485,7 @@ deployment_config = Config(name='dev',
                                                     vault_endpoint='my-vault-endpoint',
                                                     vault_secret='secrett')
 
-    @mock.patch('bigflow.cli.deploy_docker_image')
+    @mock.patch('bigflow.deploy.deploy_docker_image')
     def test_should_find_tar_in_image_directory(self, deploy_docker_image_mock):
         # given
 
@@ -505,8 +507,32 @@ deployment_config = Config(name='dev',
                                                     vault_endpoint='my-vault-endpoint',
                                                     vault_secret='secrett')
 
-    @mock.patch('bigflow.cli.deploy_dags_folder')
-    @mock.patch('bigflow.cli.deploy_docker_image')
+    @mock.patch('bigflow.deploy.deploy_docker_image')
+    def test_should_find_toml_ref_in_image_directory(self, deploy_docker_image_mock):
+
+        # given
+        shutil.rmtree(Path.cwd() / ".image", ignore_errors=True)
+        self._touch_file('imageinfo-123.toml', '', '.image')
+
+        # when
+        cli(['deploy-image',
+             '--docker-repository', 'my-docker-repository',
+             '--vault-endpoint', 'my-vault-endpoint',
+             '--auth-method', 'vault',
+             '--vault-secret', 'secrett',
+             ])
+
+        # then
+        deploy_docker_image_mock.assert_called_with(
+            auth_method=AuthorizationType.VAULT,
+            docker_repository='my-docker-repository',
+            image_tar_path='.image/imageinfo-123.toml',
+            vault_endpoint='my-vault-endpoint',
+            vault_secret='secrett',
+        )
+
+    @mock.patch('bigflow.deploy.deploy_dags_folder')
+    @mock.patch('bigflow.deploy.deploy_docker_image')
     def test_should_call_both_deploy_methods_with_deploy_command(self, deploy_docker_image_mock,
                                                                  deploy_dags_folder_mock):
         # given
@@ -612,15 +638,110 @@ deployment_config = Config(name='dev',
             read_project_spec.return_value,
             start_time="2001-02-03 15:00:00",
             workflow_id=None,
+            cache_params=None,
+            export_image_tar=None,
         )
 
-    @mock.patch('bigflow.cli._cli_build_image')
-    def test_should_call_cli_build_image_command(self, _cli_build_image_mock):
+    def test_should_call_cli_build_image_command_without_tar(self):
+        # given
+        cli_build_mock = self.addMock(mock.patch('bigflow.cli._cli_build_image'))
+
         # when
-        cli(['build-image'])
+        cli(['build-image', '--no-export-image-tar'])
 
         # then
-        _cli_build_image_mock.assert_called_with(Namespace(operation='build-image', verbose=False))
+        cli_build_mock.assert_called_once()
+        self.assertEqual(cli_build_mock.call_args[0][0].export_image_tar, False)
+
+    def test_should_call_cli_build_image_command_with_tar(self):
+        # given
+        cli_build_mock = self.addMock(mock.patch('bigflow.cli._cli_build_image'))
+
+        # when
+        cli(['build-image', '--export-image-tar'])
+
+        # then
+        cli_build_mock.assert_called_once()
+        self.assertEqual(cli_build_mock.call_args[0][0].export_image_tar, True)
+
+    @mock.patch('bigflow.cli._cli_build_image')
+    def test_should_call_cli_build_image_command_without_tar(self, _cli_build_image_mock):
+        # when
+        cli(['build-image', '--no-export-image-tar'])
+
+        # then
+        _cli_build_image_mock.assert_called_with(
+            Namespace(
+                auth_method=AuthorizationType.LOCAL_ACCOUNT,
+                cache_from_image=None,
+                cache_from_version=None,
+                config=None,
+                deployment_config_path=None,
+                export_image_tar=False,
+                operation='build-image',
+                vault_endpoint=None,
+                vault_secret=None,
+                verbose=False,
+            )
+        )
+
+    def test_should_call_cli_build_image_with_cached_from_image(self):
+
+        # given
+        self.addMock(mock.patch('bigflow.build.spec.read_project_spec'))
+        build_image_mock = self.addMock(mock.patch('bigflow.build.operate.build_image'))
+
+        # when
+        cli([
+            'build-image',
+            '--no-export-image-tar',
+            '--vault-endpoint', 'my-vault-endpoint',
+            '--auth-method', 'vault',
+            '--vault-secret', 'secrett',
+            '--cache-from-image', 'xyz.org/foo:bar',
+            '--cache-from-image', 'xyz.org/foo:baz',
+        ])
+
+        # then
+        build_image_mock.assert_called_once()
+        _, kwrgs = build_image_mock.call_args
+        self.assertEqual(kwrgs['export_image_tar'], False)
+        self.assertEqual(kwrgs['cache_params'], BuildImageCacheParams(
+            auth_method=AuthorizationType.VAULT,
+            vault_endpoint='my-vault-endpoint',
+            vault_secret='secrett',
+            cache_from_image=['xyz.org/foo:bar', 'xyz.org/foo:baz'],
+            cache_from_version=None,
+        ))
+
+    def test_should_call_cli_build_image_with_cached_from_version(self):
+
+        # given
+        self.addMock(mock.patch('bigflow.build.spec.read_project_spec'))
+        build_image_mock = self.addMock(mock.patch('bigflow.build.operate.build_image'))
+
+        # when
+        cli([
+            'build-image',
+            '--no-export-image-tar',
+            '--vault-endpoint', 'my-vault-endpoint',
+            '--auth-method', 'vault',
+            '--vault-secret', 'secrett',
+            '--cache-from-version', 'bar',
+            '--cache-from-version', 'baz',
+        ])
+
+        # then
+        build_image_mock.assert_called_once()
+        _, kwrgs = build_image_mock.call_args
+        self.assertEqual(kwrgs['export_image_tar'], False)
+        self.assertEqual(kwrgs['cache_params'], BuildImageCacheParams(
+            auth_method=AuthorizationType.VAULT,
+            vault_endpoint='my-vault-endpoint',
+            vault_secret='secrett',
+            cache_from_image=None,
+            cache_from_version=['bar', 'baz'],
+        ))
 
     @mock.patch('bigflow.build.operate.build_project')
     @mock.patch('bigflow.build.spec.read_project_spec')
@@ -639,6 +760,8 @@ deployment_config = Config(name='dev',
             read_project_spec.return_value,
             start_time="2001-02-03 15:00:00",
             workflow_id=None,
+            cache_params=None,
+            export_image_tar=None,
         )
 
     @mock.patch('bigflow.cli._cli_build_package')
@@ -653,22 +776,38 @@ deployment_config = Config(name='dev',
     def test_should_call_cli_build_command(self, _cli_build_mock):
         # when
         cli(['build'])
+        args = Namespace(
+            auth_method=AuthorizationType.LOCAL_ACCOUNT,
+            cache_from_image=None,
+            cache_from_version=None,
+            deployment_config_path=None,
+            export_image_tar=None,
+            operation='build',
+            start_time=None,
+            vault_endpoint=None,
+            vault_secret=None,
+            verbose=False,
+            workflow=None,
+            config=None,
+        )
 
         # then
-        _cli_build_mock.assert_called_with(Namespace(operation='build', start_time=None, workflow=None, verbose=False))
+        _cli_build_mock.assert_called_with(args)
 
         # when
         cli(['build', '--start-time', '2020-01-01 00:00:00'])
 
         # then
-
-        _cli_build_mock.assert_called_with(Namespace(operation='build', start_time='2020-01-01 00:00:00', workflow=None, verbose=False))
+        args.start_time = '2020-01-01 00:00:00'
+        _cli_build_mock.assert_called_with(args)
 
         # when
         cli(['build', '--start-time', '2020-01-01 00:00:00', '--workflow', 'some_workflow'])
 
         # then
-        _cli_build_mock.assert_called_with(Namespace(operation='build', start_time='2020-01-01 00:00:00', workflow='some_workflow', verbose=False))
+        args.start_time = '2020-01-01 00:00:00'
+        args.workflow = 'some_workflow'
+        _cli_build_mock.assert_called_with(args)
 
     @mock.patch('bigflow.build.operate.build_package')
     @mock.patch('bigflow.build.spec.read_project_spec')
@@ -697,7 +836,7 @@ deployment_config = Config(name='dev',
 
         # then
         read_project_mock.assert_called_once()
-        build_image_mock.assert_any_call(read_project_mock.return_value)
+        build_image_mock.assert_called_once()
 
     @mock.patch('bigflow.build.operate.build_dags')
     @mock.patch('bigflow.build.spec.read_project_spec')
@@ -718,7 +857,7 @@ deployment_config = Config(name='dev',
             workflow_id=None,
         )
 
-    @mock.patch('bigflow.cli.get_version')
+    @mock.patch('bigflow.version.get_version')
     def test_should_call_cli_project_version_command(self, get_version):
         # when
         cli(['project-version'])
@@ -726,7 +865,7 @@ deployment_config = Config(name='dev',
         # then
         get_version.assert_called_once()
 
-    @mock.patch('bigflow.cli.get_version')
+    @mock.patch('bigflow.version.get_version')
     def test_should_call_cli_project_version_command_by_alias(self, get_version):
         # when
         cli(['pv'])
@@ -734,7 +873,7 @@ deployment_config = Config(name='dev',
         # then
         get_version.assert_called_once()
 
-    @mock.patch('bigflow.cli.release')
+    @mock.patch('bigflow.version.release')
     def test_should_call_cli_release_command_with_no_args(self, release):
         # when
         cli(['release'])
@@ -742,7 +881,7 @@ deployment_config = Config(name='dev',
         # then
         release.assert_called_once_with(None)
 
-    @mock.patch('bigflow.cli.release')
+    @mock.patch('bigflow.version.release')
     def test_should_call_cli_release_command_with_identity_file(self, release):
         # when
         cli(['release', '--ssh-identity-file', 'path/to/identity_file'])
@@ -750,7 +889,7 @@ deployment_config = Config(name='dev',
         # then
         release.assert_called_once_with('path/to/identity_file')
 
-    @mock.patch('bigflow.cli.release')
+    @mock.patch('bigflow.version.release')
     def test_should_call_cli_release_command_with_identity_file_parameter_shortcut(self, release):
         # when
         cli(['release', '-i', 'path/to/identity_file'])
