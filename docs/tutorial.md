@@ -1,23 +1,22 @@
 # BigFlow tutorial
 
-In this tutorial, we show the complete "Hello, World!" example.
-You will learn how to run the simplest BigFlow [workflow](workflow-and-job.md) on a local machine
+From this tutorial, you will learn how to run a simple BigFlow [workflow](workflow-and-job.md) on your local machine
 and how to [deploy](deployment.md) it on Cloud Composer.    
 
 ## Setup
 
-This tutorial is based on the [Docs](https://github.com/allegro/bigflow/tree/master/docs) project
+This tutorial is based on [examples](../examples)
 located in the BigFlow repository.
 
-Start from cloning this repository:
+Start from cloning the BigFlow repository:
 
 ```bash
 git clone https://github.com/allegro/bigflow.git
-cd bigflow/docs
+cd bigflow/examples_project
 ```
 
 Then, [install the BigFlow](../README.md#installing-bigflow) PIP package
-in a fresh virtual environment in the `docs` project directory.
+in a new virtual environment in the `examples_project` directory.
 
 Since you have installed the BigFlow PIP package, you can use [BigFlow CLI](cli.md). Test it:
 
@@ -25,15 +24,15 @@ Since you have installed the BigFlow PIP package, you can use [BigFlow CLI](cli.
 bigflow -h
 ```
 
-## Run the workflow on a local machine
+## Running workflows on your local machine
 
 In BigFlow, your project consists of [workflows](workflow-and-job.md).
-You can run them directly from your local machine or deploy them to Cloud Composer as Airflow DAGs.
+You can run them directly on your local machine or deploy them to Cloud Composer, automatically compiled to Airflow DAGs.
 
-Our "Hello, World!" workflow is the simple Python code. It consists of two jobs.
-The first one says Hello, and the second one says Goodbye:
+The "Hello World" workflow below consists of two jobs.
+The first one says "Hello", and the second one says Goodbye:
 
-[hello_world_workflow.py](/examples/cli/hello_world_workflow.py):
+[hello_world_workflow.py](../examples_project/examples/cli/hello_world_workflow.py):
 
 ```python
 import bigflow
@@ -66,7 +65,7 @@ from sources on your local machine (without building and deploying it to Compose
 
 ### Examples
 
-Run the whole workflow:
+Run a whole workflow:
 
 ```shell
 bigflow run --workflow hello_world_workflow
@@ -79,7 +78,7 @@ Hello world on 2020-09-10 12:17:52!
 Goodbye!
 ```
 
-Run the single job:
+Run a single job:
 
 ```shell
 bigflow run --job hello_world_workflow.say_goodbye
@@ -91,7 +90,7 @@ Output:
 Goodbye!
 ```
 
-Run the workflow with concrete [runtime](workflow-and-job.md#the-runtime-parameter):
+Run a workflow with a concrete [runtime](workflow-and-job.md#the-runtime-parameter):
 
 ```shell
 bigflow run --workflow hello_world_workflow --runtime '2020-08-01 10:00:00'
@@ -103,12 +102,49 @@ Hello world on 2020-08-01 10:00:00!
 Goodbye!
 ```
 
-## Deploy the workflow on Cloud Composer
+## Building artifacts
 
 Executing workflows locally is great for development, but finally
-you want them to be executed periodically by Google Cloud Composer.
+you want them to be executed periodically by Cloud Composer.
 
-One of the key features of BigFlow is the full automation of the build and deployment process.
+One of the key features of BigFlow is the full automation of the build and deployment process. First, let us talk about
+the build process and artifacts.
+
+There are two deployment artifacts, which are being [built](project_structure_and_build.md) from your BigFlow
+project:
+
+1. Airflow [DAG](project_structure_and_build.md#dag) files with workflows definitions,
+1. Docker [image](project_structure_and_build.md#docker-image) with workflows processing logic.
+
+Build both artifacts with the single command
+(we recommend to focus one the single workflow here, you can build all workflows in your project
+by skipping the `workflow` parameter):
+
+```shell
+bigflow build --workflow hello_world_workflow
+```
+
+List newly generated deployment artifacts:
+
+```bash
+ls .dags .image
+```
+
+Output:
+
+```text
+dags:
+hello_world_workflow__v0_1_0SNAPSHOT341dbf7c__2020_09_21_10_00_00_dag.py
+
+image:
+deployment_config.py    image-0.1.0.tar
+```
+
+Read more about the [`bigflow build`](cli.md#building-airflow-dags) command.
+
+## Deploying workflows to Cloud Composer
+
+Now it's time to make use of your artifacts.
 
 Before you start, you have to [set up](deployment.md#gcp-runtime-environment)
 a GCP environment, which consist of two services:
@@ -116,7 +152,7 @@ a GCP environment, which consist of two services:
 * a [Cloud Composer](deployment.md#cloud-composer) instance
 * a [Docker Registry](deployment.md#docker-registry)
  
-Then, add the configuration of your environment to the [deployment_config.py](/examples/deployment_config.py) file.
+Then, add the deployment configuration of your environment to the [deployment_config.py](../examples/deployment_config.py) file.
 For the purpose of this example, it's enough to set these two properties:
 `gcp_project_id` and `dags_bucket`:
 
@@ -133,46 +169,9 @@ deployment_config = Config(
 )
 ```  
 
-[Read more](deployment.md#managing-configuration-in-deployment_configpy) about `deployment_config.py`.
+You can [read more here](deployment.md#managing-configuration-in-deployment_configpy) about the `deployment_config.py`.
 
-### Build the deployment artifacts
-
-There are two deployment artifacts, which are being [built](project_structure_and_build.md) from your BigFlow
-project:
-
-1. Airflow [DAG](project_structure_and_build.md#dag) files with workflows definitions,
-1. Docker [image](project_structure_and_build.md#docker-image) with workflows computation code.
-
-Build both artifacts with the single command
-(we recommend to focus one the single workflow here, you can build all workflows in your project
-by skipping the `workflow` parameter):
-
-```shell
-bigflow build --workflow hello_world_workflow
-```
-
-List the freshly generated deployment artifacts:
-
-```bash
-ls .dags .image
-```
-
-Output:
-
-```text
-dags:
-hello_world_workflow__v0_1_0SNAPSHOT341dbf7c__2020_09_21_10_00_00_dag.py
-
-image:
-deployment_config.py    image-0.1.0.tar
-
-```
-
-Read more about the [`bigflow build`](cli.md#building-airflow-dags) command.
- 
-### Deploy to GCP
-
-Your final task is to [deploy](deployment.md) the artifacts on Cloud Composer.
+Now, it's time to [deploy](deployment.md) artifacts on Cloud Composer.
  
 When deploying from a local machine, we recommend using the local [authentication method](deployment.md#authentication-methods).
 It relies on your personal GCP account, through `gcloud` tool.
