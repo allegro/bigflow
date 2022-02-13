@@ -5,7 +5,7 @@ and how to [deploy](deployment.md) it on Cloud Composer.
 
 ## Setup
 
-This tutorial is based on [examples](../examples)
+This tutorial is based on [examples](../examples_project/examples)
 located in the BigFlow repository.
 
 Start from cloning the BigFlow repository:
@@ -17,6 +17,13 @@ cd bigflow/examples_project
 
 Then, [install the BigFlow](../README.md#installing-bigflow) PIP package
 in a new virtual environment in the `examples_project` directory.
+
+Next, compile project dependencies and install them:
+
+```bash
+bigflow build-requirements
+pip install -r resources/requirements.txt
+```
 
 Since you have installed the BigFlow PIP package, you can use [BigFlow CLI](cli.md). Test it:
 
@@ -130,7 +137,7 @@ List newly generated deployment artifacts:
 ls .dags .image
 ```
 
-Output:
+Output (versions may vary):
 
 ```text
 dags:
@@ -152,7 +159,7 @@ a GCP environment, which consist of two services:
 * a [Cloud Composer](deployment.md#cloud-composer) instance
 * a [Docker Registry](deployment.md#docker-registry)
  
-Then, add the deployment configuration of your environment to the [deployment_config.py](../examples/deployment_config.py) file.
+Then, add the deployment configuration of your environment to the [deployment_config.py](../examples_project/deployment_config.py) file.
 For the purpose of this example, it's enough to set these two properties:
 `gcp_project_id` and `dags_bucket`:
 
@@ -213,7 +220,7 @@ In BigFlow, project environments are configured by
 [`bigflow.Config`](configuration.md) objects.
 Here we show how to create the workflow which prints different messaged for each environment.
 
-[`hello_config_workflow.py`](/examples/cli/hello_config_workflow.py):
+[`hello_config_workflow.py`](../examples_project/examples/cli/hello_config_workflow.py):
 
 ```python
 import bigflow

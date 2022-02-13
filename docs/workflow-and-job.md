@@ -10,7 +10,7 @@ It can execute anything that can be executed from Python code, for example:
 
 The simplest workflow you can create looks like this:
 
-[`simple_workflow_and_job.py`](examples/workflow_and_job/simple_workflow_and_job.py)
+[`simple_workflow_and_job.py`](../examples_project/examples/workflow_and_job/simple_workflow_and_job.py)
 ```python
 import bigflow
 
@@ -28,7 +28,7 @@ simple_workflow = bigflow.Workflow(
 
 You can run this workflow within a Python module:
 
-[`run_in_module.py`](examples/workflow_and_job/run_in_module.py)
+[`run_in_module.py`](../examples_project/examples/workflow_and_job/run_in_module.py)
 ```python
 simple_workflow.run()
 simple_workflow.run_job('simple_job')
@@ -59,7 +59,7 @@ determines how many times a job will be retried (in case of a failure). The `ret
 The `execution_timeout` says how long Airflow should wait for job to finish. The default value for the `execution_timeout` parameter
 is 3 hours.
 
-[`retriable_job.py`](examples/workflow_and_job/retriable_job.py)
+[`retriable_job.py`](../examples_project/examples/workflow_and_job/retriable_job.py)
 ```python
 import bigflow
 
@@ -84,7 +84,7 @@ The `workflow_id` parameter is a string that should be a valid Python variable n
 The `Workflow` class arranges jobs into a [DAG](https://en.wikipedia.org/wiki/Directed_acyclic_graph), through the `definition` parameter. 
 There are two ways of specifying the job arrangement. When your jobs are executed sequentially, simply pass them in a list of jobs:
 
-[`sequential_workflow.py`](examples/workflow_and_job/sequential_workflow.py)
+[`sequential_workflow.py`](../examples_project/examples/workflow_and_job/sequential_workflow.py)
 ```python
 import bigflow
 
@@ -123,7 +123,7 @@ job1-->          -->job4
 
 The implementation:
 
-[`graph_workflow.py`](examples/workflow_and_job/graph_workflow.py)
+[`graph_workflow.py`](../examples_project/examples/workflow_and_job/graph_workflow.py)
 ```python
 from bigflow import Workflow, Job, Definition
 job1, job2, job3, job4 = Job('1'), Job('2'), Job('3'), Job('4')
@@ -151,7 +151,7 @@ Running job 4 at 2020-01-01 00:00:00
 The `Workflow` class provides the `run` and `run_job` methods. When you run a single job through the `Workflow.run_job` method, 
 without providing the `runtime` parameter, the `Workflow` class passes the current date-time (local time) as default.
 
-[`run_workflow_and_job.py`](examples/workflow_and_job/run_workflow_and_job.py)
+[`run_workflow_and_job.py`](../examples_project/examples/workflow_and_job/run_workflow_and_job.py)
 ```python
 import datetime
 from bigflow import Workflow, Job
@@ -229,7 +229,7 @@ parameter as `2020-01-02 00:00:00`. Then, the final `start-time` is `2020-01-01 
 When you run a workflow **daily**, `runtime` means all data with timestamps within a given day.
 For example:
 
-[`daily_workflow.py`](examples/workflow_and_job/daily_workflow.py):
+[`daily_workflow.py`](../examples_project/examples/workflow_and_job/daily_workflow.py):
 ```python
 import bigflow
 from bigflow import Workflow
@@ -264,7 +264,7 @@ I should process data with timestamps from 2020-01-01 00:00 to 2020-01-01 23:59:
 When you run a workflow **hourly**, `runtime` means all data with timestamps within a given hour.
 For example:
 
-[`hourly_workflow.py`](examples/workflow_and_job/hourly_workflow.py):
+[`hourly_workflow.py`](../examples_project/examples/workflow_and_job/hourly_workflow.py):
 ```python
 import datetime
 import bigflow

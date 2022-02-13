@@ -68,7 +68,7 @@ It's not recommended to be used on production, because:
 bigflow run -h
 ```
 
-**Run the [`hello_world_workflow.py`](examples/cli/hello_world_workflow.py) workflow:**
+**Run the [`hello_world_workflow.py`](../examples_project/examples/cli/hello_world_workflow.py) workflow:**
 
 ```shell
 bigflow run --workflow hello_world_workflow
@@ -146,7 +146,7 @@ The `build-dags` command takes two optional parameters:
 bigflow build-dags
 ```
 
-**Build the DAG file for the [`hello_config_workflow.py`](examples/cli/hello_config_workflow.py) workflow
+**Build the DAG file for the [`hello_config_workflow.py`](../examples_project/examples/cli/hello_config_workflow.py) workflow
   with given `start-time`:**
 
 ```shell
@@ -319,7 +319,7 @@ The `bigflow logs` command lets you generate a link leading to your project/work
 link for every workflow that has [logging configuration](logging.md).
 The output of `bigflow logs` command consists of two parts, an infrastructure link, and a workflow link.
 Workflow link contains logs from user code, Dataflow jobs, Dataproc jobs, and exceptions that may occur during executing the workflow.
-The links will be created for every workflow found by Bigflow in the project directory.
+The links will be created for every workflow found by BigFlow in the project directory.
 The infrastructure link contains logs from Kubernetes pods/containers and Dataflow workers. The links will be created
 for every unique project id found in workflows.
 

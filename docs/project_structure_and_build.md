@@ -82,7 +82,7 @@ inside the `project_directory` won't be available in the `project_package`. `res
 
 The `get_resource_absolute_path` function allows you to access files from the `resources` directory.
 
-[**`resources.py`**](examples/project_structure_and_build/resources_workflow.py)
+[**`resources.py`**](../examples_project/examples/project_structure_and_build/resources_workflow.py)
 ```python
 with open(get_resource_absolute_path('example_resource.txt', Path(__file__))) as f:
     print(f.read())
@@ -230,7 +230,7 @@ Every generated DAG utilizes only [`KubernetesPodOperator`](https://airflow.apac
 
 To see how it works, go to the [`docs`](../docs) project and run the `bigflow build-dags` command.
 
-One of the generated DAGs, for the [`resources.py`](examples/project_structure_and_build/resources_workflow.py) workflow, looks like this:
+One of the generated DAGs, for the [`resources.py`](../examples_project/examples/project_structure_and_build/resources_workflow.py) workflow, looks like this:
 
 ```python
 import datetime
