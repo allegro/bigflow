@@ -1,28 +1,26 @@
 # Technologies
 
-BigFlow provides support for the main big data processing technologies on GCP:
+BigFlow provides support for the following data processing technologies on GCP:
 
 * [Dataflow](#dataflow-apache-beam) (Apache Beam)
 * [BigQuery](#bigquery)
-* [Dataproc](#dataproc) (Apache Spark)
 
-However, **you are not limited** to these technologies. The only limitation is the Python language. What is more, you can
-mix all technologies in a single workflow.
+However, **you are not limited** to these technologies. The only limitation is the Python language.
 
 The utils provided by BigFlow solve problems that must have been solved anyway.
 They make your job easier. Example use cases:
 
 * Configuring a Beam pipeline.
-* Configuring, staging, submitting a Spark job.
 * Creating a BigQuery table.
 * Performing read/write operation on a BigQuery table.
+* Building Python package from your project for a Beam pipeline.
 
 The BigFlow [project starter](./scaffold.md) provides examples each technology. Before you dive into the next chapters,
 [create an example project](./scaffold.md#start-project) using the starter.
 
 ## Dataflow (Apache Beam)
 
-The standard BigFlow project is a Python package.
+A standard BigFlow project is a Python package.
 It happens, that Apache Beam supports [running jobs as a Python package](https://beam.apache.org/documentation/sdks/python-pipeline-dependencies/#multiple-file-dependencies).
 Thanks to that, running Beam jobs requires almost no support.
 
@@ -113,9 +111,11 @@ is to allow providing `TestPipeline` in testing. One of the parameters, `pipelin
 
 ### Custom docker image
 
-When Dataflow launches worker VMs, it uses Docker container images. You can specify a custom container image instead of using the default one.  It gives ability to install any non-python software, preinstall python dependencies, install GPU drivers etc, customize execution environment.
+When Dataflow launches worker VMs, it uses Docker container images. You can specify a custom container image instead of
+using the default one.  It gives ability to install any non-python software, preinstall python dependencies, install GPU 
+drivers etc., customize execution environment.
 
-The simplest way to create custom image is to use deafult beam SDK image as a base.  Your `Dockerfile` migh look like:
+The simplest way to create custom image is to use default beam SDK image as a base.  Your `Dockerfile` might look like:
 
 ```dockerfile
 # Inherit from default image.
@@ -138,11 +138,13 @@ Then you need to enable custom image by passing `use_docker_image=True` to insta
 Value `True` means that the same docker image need to be used to run project workflows and
 run beam pipelines.  You migh also specify different image by passing its full id instead of `True`.
 
-Please refer to [Dataflow documentation](https://cloud.google.com/dataflow/docs/guides/using-custom-containers) for more details about how to build a custom image.
+Please refer to [Dataflow documentation](https://cloud.google.com/dataflow/docs/guides/using-custom-containers) for more
+details about how to build a custom image.
 
 ### Resolving dependency clashes [DEPRECATED]
 
-Dependency clashes in an Apache Beam job running on Dataflow result in a "hanging" (not making any progress but also not failing instantly) job. It's a common issue so we have created a tool that helps avoid such cases.
+Dependency clashes in an Apache Beam job running on Dataflow result in a "hanging" (not making any progress but also not 
+failing instantly) job. It's a common issue so we have created a tool that helps avoid such cases.
 
 The tool is an automatic dependency clash resolver. To use the resolver in your project, run the following command:
 
@@ -511,105 +513,4 @@ dataset_config = DatasetConfig(
 
 ```
 
-You can us it as a ad-hoc tool or put a labeling job to a workflow as well.
-
-## Dataproc
-
-Bigflow provides integration with Pyspark running on Dataproc.
-It allows you to easily build, run, configure, and schedule a Dataproc job.
-At this time only 'PySpark' jobs are supported.
-
-### Installation
-
-```shell
-pip install bigflow[dataproc]
-```
-
-### Define basic job
-
-Each PySpark job must have an entry point: python callable (for example, a function), passed as `driver` parameter.
-Also some additional deployment options must be specified: GCP project name, GCP region name, GCS bucket/path to store deployments artifacts.
-
-```python
-import bigflow
-import bigflow.dataproc
-
-import operator
-import pyspark
-
-def do_pyspark_pipeline(context: bigflow.JobContext):
-    sc = pyspark.SparkContext()
-    # Any PySpark code....
-    print(sc.range(100).reduce(operator.add))
-
-pyspark_job = bigflow.dataproc.PySparkJob(
-    id='pyspark_job',
-    driver=do_pyspark_pipeline,
-    bucket_id="gcs-bucket-name",
-    gcp_project_id="my-project",
-    gcp_region="us-west-1",
-    # ... other pyspark job options
-)
-```
-
-Value of `driver` argument must be `pickle`able function: it may be global function, an object with `__call__` method,
-a bounded object method, instance of [`functools.partial`](https://docs.python.org/3/library/functools.html#functools.partial).
-
-It is convinient to use `functools.partial` to pass additional options to driver:
-
-```python
-import functools
-
-def do_pyspark_pipeline(context, extra_arg):
-    ...
-
-pyspark_job = bigflow.dataproc.PySparkJob(
-    id='pyspark_job',
-    driver=functools.partial(
-        do_pyspark_pipeline,
-        extra_arg="any-extra_value",
-    ),
-    ...
-)
-```
-
-### Cluster management
-
-At this time `PySparkJob` creates a separate dataproc cluster for each job instance.
-It allows to install any custom 'python' requirements during cluster initialization.
-
-There are also other options to customize created cluster:
-* `worker_num_instances` - size of created cluster (number of worker machines);
-* `worker_machine_type` - VM size for worker machines.
-
-```python
-pyspark_job = bigflow.dataproc.PySparkJob(
-    id='pyspark_job',
-    driver=do_pyspark_job,
-    pip_requirements=[
-        # Any python libraries might be added here
-        "pandas>=1.1",
-    ],
-    worker_num_instances=10,
-    worker_machine_type="n1-standard-1",
-    ...
-)
-```
-
-NOTE: Future version of `bigflow` might allow to run jobs on PySpark via GKE clusters.
-Main advantage of this is the ability to fully customize job environment, including
-installation of python C-extensions and libraries.  However this feature is not awailable yet.
-
-### Submit / execute
-
-PySpark jobs might be executed in the same way as any other `bigflow` jobs:
-they might be packed into a workflow and sheduled for execution via Airflow:
-
-```python
-pyspark_workflow = bigflow.Workflow(
-    workflow_id="pyspark_workflow",
-    definition=[
-        pyspark_job,
-    ],
-)
-```
+You can us it as an ad-hoc tool or put a labeling job to a workflow as well.

@@ -32,7 +32,7 @@ Read more about deployment artifacts in [Project setup and build](project_struct
 
 ## Cloud Composer
 
-Shortly speaking, a Cloud Composer is Airflow-as-a-Service.
+Shortly speaking, a Cloud Composer is a managed Airflow.
 
 Unfortunately for Python users, Python libraries required by DAGs have to be
 [installed manually](https://cloud.google.com/composer/docs/how-to/using/installing-python-dependencies) on Composer.
@@ -68,7 +68,7 @@ PROJECT_NUMBER-compute@developer.gserviceaccount.com
 a new Composer instance. Set only these properties (the others leave blank or default):
 
 * **Location** &mdash; close to you,
-* **Machine type** &mdash; `n1-standard-2` or higher (we recommend to stay with `n1-standard-2`),
+* **Machine type** &mdash; `n1-standard-2` or higher (we recommend using `n1-standard-2`),
 * **Disk size (GB)** &mdash; 50 is enough.
   
 That's it, wait until the new Composer Instance is ready.
