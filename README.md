@@ -14,7 +14,6 @@
 1. [Workflow & Job](./docs/workflow-and-job.md)
 1. [Starter](./docs/scaffold.md)
 1. [Technologies](./docs/technologies.md)
-1. [Logging](./docs/logging.md)
 1. [Development](./docs/development.md)
 
 ## Cookbook
@@ -35,8 +34,7 @@ The main features are:
 * [Automated build](./docs/project_structure_and_build.md#overview), [deployment](./docs/deployment.md),
 [versioning](./docs/project_structure_and_build.md#project-versioning) and [configuration](./docs/configuration.md)
 * [Unified project structure](./docs/project_structure_and_build.md#project-structure)
-* [Support for the major data processing technologies](./docs/technologies.md) — [Dataproc](https://cloud.google.com/dataproc) (Apache Spark),
-[Dataflow](https://beam.apache.org/) (Apache Beam) and [BigQuery](https://cloud.google.com/bigquery)
+* [Support for GCP data processing technologies](./docs/technologies.md) — [Dataflow](https://beam.apache.org/) (Apache Beam) and [BigQuery](https://cloud.google.com/bigquery)
 * [Project starter](./docs/scaffold.md)
 
 ## Getting started
@@ -52,8 +50,8 @@ Next, go through the BigFlow [tutorial](./docs/tutorial.md).
 2. [Google Cloud SDK](https://cloud.google.com/sdk/docs/downloads-interactive)
 3. [Docker Engine](https://docs.docker.com/engine/install/)
 
-You can install the `bigflow` package globally but we recommend to
-install it locally with `venv`, in your project's folder:
+You can install the `bigflow` package globally, but we recommend
+installing it locally with `venv`, in your project's folder:
 
 ```bash
 python -m venv .bigflow_env
@@ -63,7 +61,7 @@ source .bigflow_env/bin/activate
 Install the `bigflow` PIP package:
 
 ```bash
-pip install bigflow[bigquery,dataflow,dataproc,log]
+pip install bigflow[bigquery,dataflow]
 ```
 
 Test it:

@@ -313,16 +313,6 @@ You can change this location by setting the `deployment-config-path` parameter:
 bigflow deploy --deployment-config-path '/tmp/my_deployment_config.py'
 ```
 
-### Accessing logs
-
-The `bigflow logs` command lets you generate a link leading to your project/workflow logs in GCP Logging. It will generate
-link for every workflow that has [logging configuration](logging.md).
-The output of `bigflow logs` command consists of two parts, an infrastructure link, and a workflow link.
-Workflow link contains logs from user code, Dataflow jobs, Dataproc jobs, and exceptions that may occur during executing the workflow.
-The links will be created for every workflow found by BigFlow in the project directory.
-The infrastructure link contains logs from Kubernetes pods/containers and Dataflow workers. The links will be created
-for every unique project id found in workflows.
-
 ## Project scaffold
 
 Use the `bigflow start-project` command to create a [sample project](scaffold.md) and try all of the above commands yourself.
