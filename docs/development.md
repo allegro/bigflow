@@ -39,6 +39,16 @@ Type hints are optional for:
   * `@public`-decorated functions;
   * cross-module public functions.
 
+### Pinning base requirements
+
+When you change a base requirement, remember to update `base_frozen` extras.
+To generate `base_frozen` extras requirements, run the following commands:
+
+```shell script
+cd requirements
+pip-tools base_frozen.in
+```
+
 ## Development process
 
 TODO
