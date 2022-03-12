@@ -112,7 +112,13 @@ class PartitionedDatasetManagerPropertiesTestCase(DatasetManagerBaseTestCase):
 
     def test_should_expose_internal_tables_as_property(self):
         # expect
-        self.assertEqual(self.dataset_manager.internal_tables, self.internal_tables)
+        self.assertEqual(
+            self.dataset_manager.internal_tables,
+            {
+                table_name: f'{self.dataset_manager.project_id}.{self.dataset_manager.dataset_name}.{table_name}'
+                for table_name in self.internal_tables
+            }
+        )
 
     def test_should_expose_external_tables_as_property(self):
         # expect
