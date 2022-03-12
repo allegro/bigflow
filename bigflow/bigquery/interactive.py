@@ -207,7 +207,7 @@ def generate_component_name(method, table_name, sql):
 
 
 class InteractiveComponent(object):
-    """Let's you run the component for the specific runtime
+    """Lets you run the component for the specific runtime
      and peek the operation results as the pandas.DataFrame."""
 
     def __init__(self, standard_component, dependency_config):

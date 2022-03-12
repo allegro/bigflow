@@ -343,16 +343,14 @@ class DatasetManager(object):
         return self.bigquery_client.load_table_from_dataframe(df, table_id).result()
 
     def table_exists(self, table_name: str) -> bool:
-        return self.bigquery_client.query('''
+        return list(self.bigquery_client.query('''
             SELECT count(*) as table_exists
             FROM `{dataset_id}.__TABLES__`
             WHERE table_id='{table_name}'
             '''.format(
                 dataset_id=self.dataset_id,
-                table_name=table_name)) \
-            .result() \
-            .to_dataframe()['table_exists'] \
-            .iloc[0] > 0
+                table_name=table_name))
+            .result())[0][0]
 
     def create_table_from_schema(
             self,
