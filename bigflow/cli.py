@@ -283,7 +283,7 @@ def _parse_args(project_name: Optional[str], args) -> Namespace:
 
     _create_codegen_parser(subparsers)
 
-    return parser.parse_args(args)
+    return parser.parse_known_args(args)[0]
 
 
 def _create_logs_parser(subparsers):
