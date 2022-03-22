@@ -2,8 +2,14 @@
 
 ## Version 1.4.2
 
+### Added
+* The `base_frozen` extras with frozen base requirements
+* More type hints
+* Making exporting image to tar as optional
+
 ### Fixed
- * FST-250: `bf build` arguments validation
+ * `bf build` arguments validation
+ * fixed broken MarkupSafe package version
 
 ## Version 1.4.1
 
