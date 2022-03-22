@@ -298,3 +298,10 @@ BigFlow uses that file to describe requirements needed to build the project. Tha
 
 * Building the project using systems like Bamboo, Jenkins, Travis, etc.
 * Running Apache Beam jobs (go to the [chapter about Beam inside BigFlow](technologies.md#dataflow-apache-beam) to understand why).
+
+Because the `build-requirements` command does not affect dependencies in `pyproject.toml`, BigFlow offers a special
+extras with pre-pinned dependencies to be used in `pyproject.toml`:
+
+`bigflow[base_frozen]`
+
+The `base_frozen` extras is available for `bigflow>=1.4.2`.
