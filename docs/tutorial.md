@@ -3,6 +3,15 @@
 From this tutorial, you will learn how to run a simple BigFlow [workflow](workflow-and-job.md) on your local machine
 and how to [deploy](deployment.md) it on Cloud Composer.    
 
+## Before you start
+
+You might want to familiarize yourself with BigFlow core concepts before getting through this tutorial.
+
+* [Workflow](workflow-and-job.md#workflow)
+* [Job](workflow-and-job.md#job)
+* [Artifact](project_structure_and_build.md#deployment-artifacts)
+* [Runtime](workflow-and-job.md#the-runtime-parameter)
+
 ## Setup
 
 This tutorial is based on [examples](../examples_project/examples)

@@ -33,7 +33,7 @@ project. Go to the [`docs`](../docs) directory and run the `bigflow build` comma
 The `bigflow build` command should produce:
 
 * The `dist` directory with a **Python package** (intermediate artifact)
-* The `build` directory with **JUnit test results** (intermediate artifact)
+* The `build` directory with **test results in JUnit XML format** (intermediate artifact)
 * The `.image` directory with a **deployment configuration** and **Docker image** as `.tar` (deployment artifact)
 * The `.dags` directory with Airflow **DAGs**, generated from workflows (deployment artifact)
 
@@ -66,8 +66,10 @@ project_dir/
     pyproject.toml
 ```
 
-Let us start with the `project_package`. It's the Python package which contains the processing logic of your workflows.
-It also contains `Workflow` objects, which arranges parts of your processing logic into
+Let us start with the `project_package`. It's the Python package which contains the processing logic of your workflows. BigFlow looks up for project root package in the relative path equal to `project_setup.PROJECT_NAME` or `--project-package` option value (`run` command only). Within the root package, it automatically discovers packages, excluding modules and directories with names having `test` prefix (i.e. test packages). Within the root package BigFlow acquires workflows by importing all modules and looking up for `bigflow.Workflow` instances.
+
+
+The `project_package` also contains `Workflow` objects, which arranges parts of your processing logic into
 a [DAG](https://en.wikipedia.org/wiki/Directed_acyclic_graph) (read the [Workflow & Job chapter](./workflow-and-job.md) to learn more about workflows and jobs).
 The `project_package` is used to create a standard Python package, which can be installed using `pip`.
 
@@ -82,7 +84,7 @@ inside the `project_directory` won't be available in the `project_package`. `res
 
 The `get_resource_absolute_path` function allows you to access files from the `resources` directory.
 
-[**`resources.py`**](../examples_project/examples/project_structure_and_build/resources_workflow.py)
+[**`resources_workflow.py`**](../examples_project/examples/project_structure_and_build/resources_workflow.py)
 ```python
 with open(get_resource_absolute_path('example_resource.txt', Path(__file__))) as f:
     print(f.read())
@@ -176,7 +178,7 @@ bigflow release -i keys.pem
 
 Bigflow automatically runs tests via [`unittest`](https://docs.python.org/3/library/unittest.html) or [`pytest`](https://docs.pytest.org/) framework:
 
-* `unittest` - deafult testing framework for Python, has similar api to Java JUnit.
+* `unittest` - default testing framework for Python, has similar api to Java JUnit.
 * `pytest` - "pythonic" framework with lighter API, can also run tests written for `unittest` .
 
 By deafult `unittest` is used, no extra configuration is needed.  Switching to `pytest` may be done by adding  `pytest` into `requirements.in` and specifying `test_framework` option in `setup.py`:
@@ -195,7 +197,7 @@ To run a job in a desired environment, BigFlow makes use of Docker. Each job is 
 which runs a Docker image built from your project. The default [`Dockerfile`](https://docs.docker.com/engine/reference/builder/)
 generated from the scaffolding tool looks like this:
 
-[**`Dockerfile`**](Dockerfile)
+[**`Dockerfile`**](../examples_project/Dockerfile)
 
 ```dockerfile
 FROM python:3.7
@@ -230,7 +232,7 @@ Every generated DAG utilizes only [`KubernetesPodOperator`](https://airflow.apac
 
 To see how it works, go to the [`docs`](../docs) project and run the `bigflow build-dags` command.
 
-One of the generated DAGs, for the [`resources.py`](../examples_project/examples/project_structure_and_build/resources_workflow.py) workflow, looks like this:
+One of the generated DAGs, for the [`resources_workflow.py`](../examples_project/examples/project_structure_and_build/resources_workflow.py) workflow, looks like this:
 
 ```python
 import datetime
