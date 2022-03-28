@@ -66,7 +66,7 @@ project_dir/
     pyproject.toml
 ```
 
-Let us start with the `project_package`. It's the Python package which contains the processing logic of your workflows. BigFlow looks up for project root package in the relative path equal to `project_setup.PROJECT_NAME` or `--project-package` option value (`run` command only). Within the root package, it automatically discovers packages excluding directories starting with `test` prefix. Within the root package BigFlow acquires workflows by importing all modules and looking up for `bigflow.Workflow` instances.
+Let us start with the `project_package`. It's the Python package which contains the processing logic of your workflows. BigFlow looks up for project root package in the relative path equal to `project_setup.PROJECT_NAME` or `--project-package` option value (`run` command only). Within the root package, it automatically discovers packages, excluding modules and directories with names having `test` prefix (i.e. test packages). Within the root package BigFlow acquires workflows by importing all modules and looking up for `bigflow.Workflow` instances.
 
 
 The `project_package` also contains `Workflow` objects, which arranges parts of your processing logic into
