@@ -46,7 +46,7 @@ Next, go through the BigFlow [tutorial](./docs/tutorial.md).
 
 **Prerequisites**. Before you start, make sure you have the following software installed:
 
-1. [Python](https://www.python.org/downloads/) == 3.7
+1. [Python](https://www.python.org/downloads/) >= 3.7
 2. [Google Cloud SDK](https://cloud.google.com/sdk/docs/downloads-interactive)
 3. [Docker Engine](https://docs.docker.com/engine/install/)
 
