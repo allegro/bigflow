@@ -46,7 +46,7 @@ jinja2==2.11.3
     # via -r base_frozen.in
 lazy-object-proxy==1.7.1
     # via -r base_frozen.in
-lxml==4.8.0
+lxml==4.9.1
     # via unittest-xml-reporting
 markupsafe==2.0.1
     # via
