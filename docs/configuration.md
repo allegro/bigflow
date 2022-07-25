@@ -557,7 +557,7 @@ or a terminal on your local machine:
 ```shell script
 gcloud composer environments describe YOUR-COMPOSER-NAME --location <YOUR COMPOSER REGION> --format="value(config.gkeCluster)"
 gcloud container clusters get-credentials <COMPOSER GKE CLUSTER NAME> --zone <GKE ZONE> --project <GKE PROJECT ID>
-kubectl create secret generic <SECRET NAME> --from-literal <SECRET ENVIRONMENT KEY>=<SECRET ENVIRONMENT VALUE>
+kubectl create secret generic <SECRET NAME> --from-literal '<SECRET ENVIRONMENT KEY>=<SECRET ENVIRONMENT VALUE>'
 ```
 
 ### Private cluster
@@ -570,7 +570,7 @@ and run the following commands. Remember to use the `--internal-ip` flag when ge
 ```shell script
 gcloud composer environments describe YOUR-COMPOSER-NAME --location <YOUR COMPOSER REGION> --format="value(config.gkeCluster)"
 gcloud container clusters get-credentials --internal-ip <COMPOSER GKE CLUSTER NAME> --zone <GKE ZONE> --project <GKE PROJECT ID>
-kubectl create secret generic <SECRET NAME> --from-literal <SECRET ENVIRONMENT KEY>=<SECRET ENVIRONMENT VALUE>
+kubectl create secret generic <SECRET NAME> --from-literal '<SECRET ENVIRONMENT KEY>=<SECRET ENVIRONMENT VALUE>'
 ```
 
 ### Example
