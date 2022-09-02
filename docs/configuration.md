@@ -550,7 +550,7 @@ print(config2.two) # => 102
 To define a secret for your BigFlow workflow, you need to use [Kubernetes Secrets](https://cloud.google.com/composer/docs/how-to/using/using-kubernetes-pod-operator#secret-config)
 mechanism (Cloud Composer is a GKE cluster under the hood).
 
-**Secrets management based on Kubernetes Secrets works only if a job is scheduled in Composer. When you want to run the job from a local machine secrets should be provided as environment variables.**
+**Secrets management based on Kubernetes Secrets works only if a job is scheduled in Composer. When you want to run the job from a local machine secrets should be provided as environment variables on your computer.**
 
 ### Public cluster
 Run the following commands in the [Cloud Shell](https://cloud.google.com/shell/docs/launching-cloud-shell#launching_from_the_console)
