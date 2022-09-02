@@ -23,15 +23,6 @@ jobs:
       with:
         python-version: 3.7
 
-    - name: Print pip version
-      run:
-        pip --version
-
-    - name: Print pip3 version
-      run:
-        pip3 --version
-
-
     - name: Setup github username
       run: |
         git config --global user.email "fake@example.com"
@@ -48,7 +39,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        pip install --default-timeout 100 -r requirements.txt
+        pip install --use-deprecated=legacy-resolver -r requirements.txt
 
     - name: Run unit tests
       run: |
