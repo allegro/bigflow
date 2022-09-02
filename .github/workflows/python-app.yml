@@ -39,7 +39,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        pip install -r requirements.txt
+        pip install --default-timeout 100 -r requirements.txt
 
     - name: Run unit tests
       run: |
