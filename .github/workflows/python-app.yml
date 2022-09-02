@@ -26,6 +26,9 @@ jobs:
     - name: Print pip version
       run:
         pip --version
+
+    - name: Print pip3 version
+      run:
         pip3 --version
 
     - name: Setup github username
