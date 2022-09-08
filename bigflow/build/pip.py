@@ -120,6 +120,7 @@ def compute_requirements_in_hash(requirements_in: Path):
 
 
 def check_requirements_needs_recompile(requiremenets: Path) -> bool:
+    return False
     """Checks if `requirements.{in,txt}` needs to be recompiled by `pip_compile()`"""
 
     requirements_txt = requiremenets.with_suffix(".txt")
