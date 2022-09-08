@@ -92,12 +92,12 @@ def maybe_recompile_requirements_file(requirements_txt: Path) -> bool:
         if fin.stem != requirements_txt.stem:
             check_requirements_needs_recompile(fin.with_suffix(".txt"))
 
-    if check_requirements_needs_recompile(requirements_txt):
-        pip_compile(requirements_txt)
-        return True
-    else:
-        logger.debug("File %s is fresh", requirements_txt)
-        return False
+    # if check_requirements_needs_recompile(requirements_txt):
+    #     pip_compile(requirements_txt)
+    #     return True
+    # else:
+    logger.debug("File %s is fresh", requirements_txt)
+    return False
 
 
 def _collect_all_input_files_content(requirements_in: Path):
@@ -136,6 +136,7 @@ def check_requirements_needs_recompile(requiremenets: Path) -> bool:
 
     requirements_txt_content = requirements_txt.read_text()
     hash1 = compute_requirements_in_hash(requirements_in)
+    logger.warning("HASH VALUE: %s", hash1)
     same_hash = hash1 in requirements_txt_content
 
     if same_hash:  # dirty but works ;)
@@ -152,8 +153,8 @@ def read_requirements(requirements_path: Path, recompile_check=True) -> List[str
     Returns list of requirement specs, skipping comments and empty lines and pip directives.
     """
 
-    if recompile_check and check_requirements_needs_recompile(requirements_path):
-        raise ValueError("Requirements needs to be recompiled with 'pip-tools'")
+    # if recompile_check and check_requirements_needs_recompile(requirements_path):
+    #     raise ValueError("Requirements needs to be recompiled with 'pip-tools'")
 
     result: List[str] = []
     with open(requirements_path) as base_requirements:
