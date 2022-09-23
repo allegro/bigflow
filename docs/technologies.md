@@ -136,7 +136,7 @@ RUN pip install dist/*.whl
 
 Then you need to enable custom image by passing `use_docker_image=True` to instance of `BeamJob`.
 Value `True` means that the same docker image need to be used to run project workflows and
-run beam pipelines.  You migh also specify different image by passing its full id instead of `True`.
+run beam pipelines.  You might also specify different image by passing its full id instead of `True`.
 
 Please refer to [Dataflow documentation](https://cloud.google.com/dataflow/docs/guides/using-custom-containers) for more
 details about how to build a custom image.
@@ -144,7 +144,7 @@ details about how to build a custom image.
 ### Resolving dependency clashes [DEPRECATED]
 
 Dependency clashes in an Apache Beam job running on Dataflow result in a "hanging" (not making any progress but also not 
-failing instantly) job. It's a common issue so we have created a tool that helps avoid such cases.
+failing instantly) job. It's a common issue, so we have created a tool that helps avoid such cases.
 
 The tool is an automatic dependency clash resolver. To use the resolver in your project, run the following command:
 
@@ -160,6 +160,23 @@ To rebuild your requirements with pins included, run the `build-requirements` co
 ```shell
 bf build-requirements
 ```
+
+#### [DEPRECATION NOTE]
+
+The mechanism is deprecated because it was hard to use and maintain. You should delete the `resouces/dataflow_pins.in`
+file and remove the link from the `requirements.in` file, and rebuild the `requirements.txt` file by running the 
+`bf build-requirements` command.
+
+To avoid dependency clashes in the runtime, we suggest [running Dataflow jobs in a dockerized environment](#custom-docker-image), with
+dependencies resolved during docker image build. To disable the mechanism responsible for fetching
+dependencies on a job start up, and rely only on the dependencies inside the docker image, add the following
+lines to your docker file:
+
+```dockerfile
+# Prevents dependency fetching on a Dataflow job start-up
+ENV PIP_NO_BUILD_ISOLATION=off
+```
+
 
 ## BigQuery
 
