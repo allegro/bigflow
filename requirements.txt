@@ -3,6 +3,7 @@
 -r requirements/log_extras.txt
 -r requirements/dataproc_extras.txt
 -r requirements/dataflow_extras.txt
+pip<22
 twine
 freezegun
 pexpect
