@@ -44,6 +44,7 @@ def pip_compile(
         bf_commons.run_process([
             "pip-compile",
             "--no-header",
+            "--resolver=backtracking",
             *(["-o", txt_path] if not dry_run else []),
             *(["--dry-run"] if dry_run else []),
             *(["--rebuild"] if rebuild else []),
