@@ -7,9 +7,8 @@ services:
   - docker
 
 install:
-  - pip install pip==19.3.1
-  - pip install -r requirements.txt
-  - pip install -r test/requirements.txt
+  - pip install --use-deprecated=legacy-resolver -r requirements.txt
+  - pip install --use-deprecated=legacy-resolver -r test/requirements.txt
 
 script:
   - python -m unittest discover -s bigflow -t . -p '*.py'
