@@ -1,4 +1,3 @@
-pip<22
 -r requirements/base.txt
 -r requirements/bigquery_extras.txt
 -r requirements/log_extras.txt
