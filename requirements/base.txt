@@ -1,3 +1,4 @@
+grpcio-status<=1.48.2
 google-cloud-storage>=1.30,<2
 # Maintainers, please do not require google-api-core>=2.x.x
 # Until this issue is closed
