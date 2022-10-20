@@ -414,18 +414,22 @@ class DatasetManager(object):
                 'cost': cost}
 
 
-def create_dataset(
+def get_or_create_dataset(
         dataset_name: str,
         bigquery_client: 'google.cloud.bigquery.Client',
         location: str = DEFAULT_LOCATION,
         dataset_new_labels: Dict[str, str] | None = None
 ) -> 'google.cloud.bigquery.Dataset':
     from google.cloud import bigquery
+    from google.cloud.exceptions import NotFound
     dataset = bigquery.Dataset('{project_id}.{dataset_name}'.format(
         project_id=bigquery_client.project,
         dataset_name=dataset_name))
     dataset.location = location
-    bigquery_dataset = bigquery_client.create_dataset(dataset, exists_ok=True)
+    try:
+        bigquery_dataset = bigquery_client.get_dataset(dataset.dataset_id)
+    except NotFound:
+        bigquery_dataset = bigquery_client.create_dataset(dataset, exists_ok=True)
     if dataset_new_labels:
         logger.info(f'ADDING LABELS FOR DATASET: ${dataset_name}')
         bigquery_dataset.labels = _prepare_labels(bigquery_dataset.labels, dataset_new_labels)
@@ -512,7 +516,7 @@ def create_dataset_manager(
         logger = logging.getLogger(__name__)
 
     client = create_bigquery_client(project_id, credentials, location)
-    dataset = create_dataset(dataset_name, client, location, dataset_labels)
+    dataset = get_or_create_dataset(dataset_name, client, location, dataset_labels)
 
     upsert_tables_labels(dataset_name, tables_labels, client)
 
