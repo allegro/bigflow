@@ -1,3 +1,4 @@
+grpcio-status<=1.48.2 # to avoid protobuf package clash
 google-cloud-storage>=1.30,<2
 # Maintainers, please do not require google-api-core>=2.x.x
 # Until this issue is closed
@@ -11,7 +12,7 @@ deprecated>=1.2.10,<2
 toml>=0.10
 tblib>=1.7,<2
 
-typing-extensions~=3.7;python_version<="3.7"
+typing-extensions>=3.7
 backports.cached-property;python_version<="3.8"
 lazy-object-proxy>=1,<2
 

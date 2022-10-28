@@ -168,7 +168,6 @@ class Workflow(object):
         definition: Union['Definition', List['Job']],
         schedule_interval: str = DEFAULT_SCHEDULE_INTERVAL,
         start_time_factory: Callable[[dt.datetime], dt.datetime] = daily_start_time,
-        log_config: Optional['bigflow.log.LogConfigDict'] = None,
         depends_on_past: bool = True,
         secrets: Iterable[str] = ()
     ):
@@ -176,7 +175,6 @@ class Workflow(object):
         self.schedule_interval = schedule_interval
         self.workflow_id = workflow_id
         self.start_time_factory = start_time_factory
-        self.log_config = log_config
         self.depends_on_past = depends_on_past
         self.secrets = secrets
 

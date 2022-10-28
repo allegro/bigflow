@@ -127,6 +127,7 @@ def find_workflow(root_package: Path, workflow_id: str) -> bf.Workflow:
             return workflow
     raise ValueError('Workflow with id {} not found in package {}'.format(workflow_id, root_package))
 
+
 def set_configuration_env(env):
     """
     Sets 'bf_env' env variable
@@ -136,19 +137,6 @@ def set_configuration_env(env):
         print(f"bf_env is : {os.environ.get('bf_env', None)}")
 
 
-def _init_workflow_log(workflow: bf.Workflow):
-    if not workflow.log_config:
-        return
-
-    try:
-        import bigflow.log
-    except ImportError:
-        # `log` extras is not installed?
-        pass
-    else:
-        bigflow.log.init_workflow_logging(workflow)
-
-
 def execute_job(root_package: Path, workflow_id: str, job_id: str, runtime=None):
     """
     Executes the job with the `workflow_id`, with job id `job_id`
@@ -156,7 +144,6 @@ def execute_job(root_package: Path, workflow_id: str, job_id: str, runtime=None)
     @param runtime: str determine partition that will be used for write operations.
     """
     w = find_workflow(root_package, workflow_id)
-    _init_workflow_log(w)
     w.run_job(job_id, runtime)
 
 
@@ -167,7 +154,6 @@ def execute_workflow(root_package: Path, workflow_id: str, runtime=None):
     @param runtime: str determine partition that will be used for write operations.
     """
     w = find_workflow(root_package, workflow_id)
-    _init_workflow_log(w)
     w.run(runtime)
 
 
@@ -898,10 +884,6 @@ def cli(raw_args) -> None:
         _cli_project_version(parsed_args)
     elif operation == 'release':
         _cli_release(parsed_args)
-    elif operation == 'logs':
-        _is_log_module_installed()
-        root_package = find_root_package(project_name, None)
-        cli_logs(root_package)
     elif operation == 'build-requirements':
         _cli_build_requirements(parsed_args)
     elif operation == 'codegen':

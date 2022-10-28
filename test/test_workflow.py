@@ -5,8 +5,6 @@ import freezegun
 from collections import OrderedDict
 from unittest import TestCase, mock
 
-from google.cloud import logging_v2
-
 from bigflow.workflow import JobContext, Workflow, Definition, InvalidJobGraph, WorkflowJob
 
 
