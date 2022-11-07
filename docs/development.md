@@ -6,6 +6,13 @@ We use the [GitFlow](https://datasift.github.io/gitflow/IntroducingGitFlow.html)
 
 ## Releases
 
+Versioning is driven by the [_version module](../bigflow/_version.py) inside the source code. To change the version
+simply modify the variable inside the module and push changes.
+
+Releases are done through [the release workflow](../.github/workflows/release.yml). Release plan can be run manually, 
+for example, to release a dev version from branch. Release plan is also run automatically when there is a successful
+CI plan run on master (typically after merge).
+
 We use 3 kinds of releases:
 
 * `major.minor.devX` – development releases, for testing purposes

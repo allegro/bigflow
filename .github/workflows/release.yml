@@ -1,0 +1,34 @@
+name: BigFlow release
+on:
+  workflow_run:
+    workflows: ["BigFlow CI"]
+    branches: [master]
+    types:
+      - completed
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "The tag, or commit SHA to checkout. Manual run is typically used for releasing dev versions."
+        default: ""
+        required: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        ref: ${{ github.event.inputs.ref }}
+        fetch-depth: 0
+    - name: Setup Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.7
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+        pip install --upgrade pip wheel setuptools
+    - name: Build package & upload to pypi
+      run: |
+        python3 setup.py sdist bdist_wheel
+        python3 -m twine upload dist/* -u __token__ -p ${{secrets.PYPI_TOKEN}}
