@@ -32,13 +32,3 @@ class Workflow(bigflow.workflow.Workflow): ...
 
 @public(class_alias=True)
 class Config(bigflow.configuration.Config): ...
-
-# proactively try to initialize bigflow-specific logging
-# it is used to configure logging on pyspark/beam/etc workers
-try:
-    from bigflow.log import maybe_init_logging_from_env
-except ImportError:
-    pass  # logging is not installed?
-else:
-    maybe_init_logging_from_env()
-    del maybe_init_logging_from_env

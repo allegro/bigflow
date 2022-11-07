@@ -37,8 +37,6 @@ setuptools.setup(
     install_requires=read_requirements("base.txt"),
     extras_require={
         'bigquery': read_requirements("bigquery_extras.txt"),
-        'log': read_requirements("log_extras.txt"),
-        'dataproc': read_requirements("dataproc_extras.txt"),
         'dataflow': read_requirements("dataflow_extras.txt"),
         'base_frozen': read_requirements("base_frozen.txt"),
     },
