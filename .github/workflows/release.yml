@@ -5,12 +5,21 @@ on:
     branches: [master]
     types:
       - completed
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "The tag, or commit SHA to checkout. Manual run is typically used for releasing dev versions."
+        default: ""
+        required: false
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
       uses: actions/checkout@v2
+      with:
+        ref: ${{ github.event.inputs.ref }}
+        fetch-depth: 0
     - name: Setup Python
       uses: actions/setup-python@v2
       with:
