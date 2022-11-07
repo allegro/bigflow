@@ -31,4 +31,4 @@ jobs:
     - name: Build package & upload to pypi
       run: |
         python3 setup.py sdist bdist_wheel
-        python3 -m twine upload dist/* -u ${{secrets.BIGFLOW_TWINE_USERNAME}} -p ${{secrets.BIGFLOW_TWINE_PASSWORD}}
+        python3 -m twine upload dist/* -u __token__ -p ${{secrets.PYPI_TOKEN}}
