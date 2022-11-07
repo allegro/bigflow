@@ -43,7 +43,7 @@ class BuildDockerImageTestCase(
         self.remove_docker_image_mock.assert_called_once_with("docker-repo:1.2")
 
         self.run_process_mock.assert_has_calls([
-            call(['docker', 'build', PurePosixPath('.'), '--tag', 'docker-repo:1.2', '--build-arg', 'BUILDKIT_INLINE_CACHE=1']),
+            call(['docker', 'build', PurePosixPath('.'), '--tag', 'docker-repo:1.2']),
             call(['docker', 'image', 'save', '-o', PurePosixPath('.image/image-1.2.tar'), '12345']),
         ])
 
@@ -88,7 +88,7 @@ class BuildDockerImageTestCase(
         self.remove_docker_image_mock.assert_not_called()
 
         self.run_process_mock.assert_has_calls([
-            call(['docker', 'build', PurePosixPath('.'), '--tag', 'docker-repo:1.2', '--build-arg', 'BUILDKIT_INLINE_CACHE=1']),
+            call(['docker', 'build', PurePosixPath('.'), '--tag', 'docker-repo:1.2']),
         ])
 
     def test_build_image_cache_image(self):

@@ -106,9 +106,9 @@ def _build_docker_image(
             logger.debug("Add --cache-from=%s to `docker build`", image)
             cmd.extend(["--cache-from", image])
 
-    # noop when building backend is not a buildkit
-    logger.debug("Enable buildkit inline cache")
-    cmd.extend(["--build-arg", "BUILDKIT_INLINE_CACHE=1"])
+        # noop when building backend is not a buildkit
+        logger.debug("Enable buildkit inline cache")
+        cmd.extend(["--build-arg", "BUILDKIT_INLINE_CACHE=1"])
 
     return bf_commons.run_process(cmd)
 

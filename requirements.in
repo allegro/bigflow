@@ -1,0 +1,15 @@
+-r requirements/base.txt
+-r requirements/bigquery_extras.txt
+-r requirements/dataflow_extras.txt
+pip>=22
+pip-tools>=6.9.0
+twine
+freezegun
+pexpect
+responses
+bs4
+
+pytest
+pytest-html
+pytest-cov
+pytest-github-actions-annotate-failures
