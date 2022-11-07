@@ -1,0 +1,25 @@
+name: BigFlow release
+on:
+  workflow_run:
+    workflows: ["BigFlow CI"]
+    branches: [master]
+    types:
+      - completed
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Setup Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.7
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+        pip install --upgrade pip wheel setuptools
+    - name: Build package & upload to pypi
+      run: |
+        python3 setup.py sdist bdist_wheel
+        python3 -m twine upload dist/* -u ${{secrets.BIGFLOW_TWINE_USERNAME}} -p ${{secrets.BIGFLOW_TWINE_PASSWORD}}
