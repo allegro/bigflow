@@ -1,8 +1,8 @@
 name: BigFlow release
 on:
   workflow_run:
-    workflows: ["BigFlow CI"]
-    branches: [master]
+    workflows: [ "BigFlow CI" ]
+    branches: [ master ]
     types:
       - completed
 jobs:
@@ -11,41 +11,43 @@ jobs:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     outputs:
       version_changed: ${{ steps.check_file_changed.outputs.version_changed }}
-      steps:
-        - uses: actions/checkout@v2
-          with:
-            fetch-depth: 2
-        - shell: pwsh
-          id: check_file_changed
-          run: |
-            # Diff HEAD with the previous commit
-            $diff = git diff --name-only HEAD^ HEAD
-
-            # Check if the bigflow/_version.py has changed (added, modified, deleted)
-            $SourceDiff = $diff | Where-Object { $_ -match 'bigflow/_version.py$' }
-            $HasDiff = $SourceDiff.Length -gt 0
-
-            # Set the output named "version_changed"
-            Write-Host "::set-output name=version_changed::$HasDiff"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
+      - name: Version file check
+        shell: pwsh
+        id: check_file_changed
+        run: |
+          # Diff HEAD with the previous commit
+          $diff = git diff --name-only HEAD^ HEAD
+          
+          # Check if the bigflow/_version.py has changed (added, modified, deleted)
+          $SourceDiff = $diff | Where-Object { $_ -match 'bigflow/_version.py$' }
+          $HasDiff = $SourceDiff.Length -gt 0
+          
+          # Set the output named "version_changed"
+          Write-Host "::set-output name=version_changed::$HasDiff"
   release:
     runs-on: ubuntu-latest
     needs: [ check_if_version_file_was_changed ]
     if: needs.check_if_version_file_was_changed.outputs.version_changed == 'True'
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
-      with:
-        ref: ${{ github.event.inputs.ref }}
-        fetch-depth: 0
-    - name: Setup Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: 3.7
-    - name: Install dependencies
-      run: |
-        pip install -r requirements.txt
-        pip install --upgrade pip wheel setuptools
-    - name: Build package & upload to pypi
-      run: |
-        python3 setup.py sdist bdist_wheel
-        python3 -m twine upload dist/* -u __token__ -p ${{secrets.PYPI_TOKEN}}
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.inputs.ref }}
+          fetch-depth: 0
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install --upgrade pip wheel setuptools
+      - name: Build package & upload to pypi
+        run: |
+          python3 setup.py sdist bdist_wheel
+          python3 -m twine upload dist/* -u __token__ -p ${{secrets.PYPI_TOKEN}}
