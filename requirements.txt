@@ -172,7 +172,7 @@ iniconfig==1.1.1
     # via pytest
 jaraco-classes==3.2.3
     # via keyring
-jinja2==2.11.3
+jinja2==3.1.2
     # via -r requirements/base.txt
 keyring==23.9.3
     # via twine
