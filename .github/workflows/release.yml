@@ -21,8 +21,8 @@ jobs:
             # Diff HEAD with the previous commit
             $diff = git diff --name-only HEAD^ HEAD
 
-            # Check if a file under docs/ or with the .md extension has changed (added, modified, deleted)
-            $SourceDiff = $diff | Where-Object { $_ -match '^bigflow/' -or $_ -match '_version.py$' }
+            # Check if the bigflow/_version.py has changed (added, modified, deleted)
+            $SourceDiff = $diff | Where-Object { $_ -match 'bigflow/_version.py$' }
             $HasDiff = $SourceDiff.Length -gt 0
 
             # Set the output named "version_changed"
