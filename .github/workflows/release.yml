@@ -5,15 +5,32 @@ on:
     branches: [master]
     types:
       - completed
-  workflow_dispatch:
-    inputs:
-      ref:
-        description: "The tag, or commit SHA to checkout. Manual run is typically used for releasing dev versions."
-        default: ""
-        required: false
 jobs:
-  build:
+  check_if_version_file_was_changed:
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    outputs:
+      version_changed: ${{ steps.check_file_changed.outputs.version_changed }}
+      steps:
+        - uses: actions/checkout@v2
+          with:
+            fetch-depth: 2
+        - shell: pwsh
+          id: check_file_changed
+          run: |
+            # Diff HEAD with the previous commit
+            $diff = git diff --name-only HEAD^ HEAD
+
+            # Check if the bigflow/_version.py has changed (added, modified, deleted)
+            $SourceDiff = $diff | Where-Object { $_ -match 'bigflow/_version.py$' }
+            $HasDiff = $SourceDiff.Length -gt 0
+
+            # Set the output named "version_changed"
+            Write-Host "::set-output name=version_changed::$HasDiff"
+  release:
+    runs-on: ubuntu-latest
+    needs: [ check_if_version_file_was_changed ]
+    if: needs.check_if_version_file_was_changed.outputs.version_changed == 'True'
     steps:
     - name: Checkout
       uses: actions/checkout@v2
