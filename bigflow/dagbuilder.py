@@ -56,16 +56,18 @@ def generate_dag_file(
 
         import datetime
         from airflow import DAG
-
+        
         try:
-            # For Airflow 2.x
+            # For Airflow 2.x + Composer 2.x
             from airflow.kubernetes.secret import Secret
             from airflow.providers.cncf.kubernetes.operators.kubernetes_pod import KubernetesPodOperator
+            IS_COMPOSER_2_X = True
         except ImportError:
-            # Fallback to Airflow 1.x
+            # Fallback to Airflow 1.x + Composer 1.x
             from airflow.contrib.kubernetes.secret import Secret
             from airflow.contrib.operators.kubernetes_pod_operator import KubernetesPodOperator
-
+            IS_COMPOSER_2_X = False
+            
         default_args = dict(
             owner='airflow',
             depends_on_past={workflow.depends_on_past!r},
@@ -122,7 +124,7 @@ def generate_dag_file(
                     '--project-package', {root_package_name!r},
                     '--config', '{{{{var.value.env}}}}',
                 ],
-                namespace='default',
+                namespace='composer-user-workloads' if IS_COMPOSER_2_X else 'default',
                 image={image_version!r},
                 is_delete_operator_pod=True,
                 retries={retries!r},

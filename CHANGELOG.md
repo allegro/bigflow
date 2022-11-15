@@ -1,28 +1,51 @@
 # BigFlow changelog
 
+## Version 1.5.1
+
+### Fixed
+
+* Composer 2.0 support – using `composer-user-workloads` namespace inside generated DAGs if running on Composer 2.X, to fix the problem with inheriting the Composer SA
+
+## Version 1.5.0
+
+### Fixed
+
+* Setting grpcio-status as <=1.48.2 to avoid problems with pip-compile on protobuf package
+* changing docker image caching implementation – using BUILDKIT_INLINE_CACHE=1 only if cache properties are set
+* always installing typing-extensions>=3.7 to avoid clashes
+
+### Removed
+
+* Deprecated `log` and `dataproc` extras
+
 ## Version 1.4.2
 
 ### Added
+
 * The `base_frozen` extras with frozen base requirements
 * More type hints
 * Making exporting image to tar as optional
 
 ### Fixed
+
  * `bf build` arguments validation
  * fixed broken MarkupSafe package version
 
 ## Version 1.4.1
 
 ### Added
+
  * Optional support for 'pytest' as testing framework
  * Labels support for datasets and tables in DatasetConfig and DatasetManager
 
 ## Version 1.4
 
 ### Added
+
  * Check if docker image was pushed before deploying airflow dags
 
 ### Fixed
+
  * Propagate 'env' to bigflow jobs
  * Automatically create and push `:latest` docker tag
 
