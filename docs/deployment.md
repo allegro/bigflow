@@ -71,7 +71,7 @@ a new Composer instance. Set only these properties (the others leave blank or de
 * **Machine type** &mdash; `n1-standard-2` or higher (we recommend using `n1-standard-2`),
 * **Disk size (GB)** &mdash; 50 is enough.
 
-BigFlow generated DAGs are compatible with Composer 1.X + Airflow 1.X or Composer 2.X + Airflow 2.X.
+BigFlow generated DAGs are compatible with Composer 1.X + Airflow 1.X and Composer 2.X + Airflow 2.X.
   
 That's it, wait until the new Composer Instance is ready.
 It should look like this:
