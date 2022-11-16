@@ -56,17 +56,19 @@ def generate_dag_file(
 
         import datetime
         from airflow import DAG
+        from airflow import version
         
         try:
-            # For Airflow 2.x + Composer 2.x
             from airflow.kubernetes.secret import Secret
             from airflow.providers.cncf.kubernetes.operators.kubernetes_pod import KubernetesPodOperator
-            IS_COMPOSER_2_X = True
         except ImportError:
-            # Fallback to Airflow 1.x + Composer 1.x
+            # Fallback to older Airflow
             from airflow.contrib.kubernetes.secret import Secret
             from airflow.contrib.operators.kubernetes_pod_operator import KubernetesPodOperator
-            IS_COMPOSER_2_X = False
+            
+        # BigFlow assume that you use (airflow 1.x + composer 1.x) or (airflow 2.x + composer 2.x)
+        IS_COMPOSER_2_X = version.version >= '2.0.0'
+        namespace = 'composer-user-workloads' if IS_COMPOSER_2_X else 'default'
             
         default_args = dict(
             owner='airflow',
@@ -124,7 +126,7 @@ def generate_dag_file(
                     '--project-package', {root_package_name!r},
                     '--config', '{{{{var.value.env}}}}',
                 ],
-                namespace='composer-user-workloads' if IS_COMPOSER_2_X else 'default',
+                namespace=namespace,
                 image={image_version!r},
                 is_delete_operator_pod=True,
                 retries={retries!r},

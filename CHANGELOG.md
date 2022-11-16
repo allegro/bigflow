@@ -1,6 +1,18 @@
 # BigFlow changelog
 
+## Version 1.5.2
+
+### Changed
+
+* Jinja version bumped to >=3<4
+
+### Fixed
+
+* Fixing the issue with producing composer 1.x compatible DAGs (introduced in 1.5.1)
+
 ## Version 1.5.1
+
+*Broken!* – DAG builder produces DAGs incompatible with composer 1.x. Fixed in 1.5.2.
 
 ### Fixed
 
