@@ -8,11 +8,11 @@
 
 ### Fixed
 
-* Fixing the issue with producing composer 1.x compatible DAGs (introduced in 1.5.1)
+* Fixing the DAG builder issue introduced in 1.5.1 – now it produces DAGs compatible with (airflow 1.x + composer 1.x) or (airflow 2.x + composer 2.x)
 
 ## Version 1.5.1
 
-*Broken!* – DAG builder produces DAGs incompatible with composer 1.x. Fixed in 1.5.2.
+*Broken!* – DAG builder produces DAGs incompatible with (airflow 1.x + composer 1.x). Fixed in 1.5.2.
 
 ### Fixed
 
