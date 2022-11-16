@@ -1,6 +1,18 @@
 # BigFlow changelog
 
+## Version 1.5.2
+
+### Changed
+
+* Jinja version bumped to >=3<4
+
+### Fixed
+
+* Fixing the DAG builder issue introduced in 1.5.1 – now it produces DAGs compatible with (airflow 1.x + composer 1.x) or (airflow 2.x + composer 2.x)
+
 ## Version 1.5.1
+
+*Broken!* – DAG builder produces DAGs incompatible with (airflow 1.x + composer 1.x). Fixed in 1.5.2.
 
 ### Fixed
 
