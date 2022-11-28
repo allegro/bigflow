@@ -1,5 +1,11 @@
 # BigFlow changelog
 
+## Version 1.5.3
+
+### Changed
+
+* MarkupSafe bumped to >2.1.0 (avoiding the broken 2.1.0 version)
+
 ## Version 1.5.2
 
 ### Changed
