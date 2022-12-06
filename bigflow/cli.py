@@ -642,9 +642,6 @@ def _create_codegen_parser(subparsers: argparse._SubParsersAction):
     parser = subparsers.add_parser('codegen', description="Various codegeneration tools")
     ss = parser.add_subparsers()
 
-    p = ss.add_parser('pin-dataflow-requirements')
-    p.set_defaults(func=_cli_codegen_pin_dataflow_requirements)
-
 
 def _cli_build_requirements(args):
     in_file = pathlib.Path(args.in_file)
@@ -653,11 +650,6 @@ def _cli_build_requirements(args):
 
 def _cli_codegen(args):
     args.func(args)
-
-
-def _cli_codegen_pin_dataflow_requirements(args):
-    import bigflow.build.dataflow.dependency_checker as dc
-    dc.sync_requirements_with_dataflow_workers()
 
 
 def _is_workflow_selected(args):
