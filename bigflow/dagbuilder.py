@@ -152,11 +152,13 @@ def generate_dag_file(
 
 
 def get_dag_deployment_id(
-    workflow_name: str,
-    start_from: datetime,
-    build_ver: str,
+        workflow_name: str,
+        start_from: datetime,
+        build_ver: str,
+        project_name: str = "test_123"
 ) -> str:
-    return '{workflow_name}__v{ver}__{start_from}'.format(
+    return '{project_name}_{workflow_name}__v{ver}__{start_from}'.format(
+        project_name=project_name,
         workflow_name=workflow_name,
         ver=build_ver.translate(str.maketrans(".-+", "___")),
         start_from=_str_to_datetime(start_from).strftime('%Y_%m_%d_%H_%M_%S')
