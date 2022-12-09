@@ -94,7 +94,8 @@ class DagBuilderTestCase(mixins.TempCwdMixin, TestCase):
         dag_file_path = generate_dag_file(workdir, image, workflow, '2020-07-02 10:00:00', version, 'ca')
 
         # then
-        self.assertEqual(dag_file_path, str(workdir / '.dags' / 'my_workflow__v0_3_0__2020_07_02_10_00_00_dag.py'))
+        self.assertEqual(
+            dag_file_path, str(workdir / '.dags' / 'test_123_my_workflow__v0_3_0__2020_07_02_10_00_00_dag.py'))
 
         dag_file_content = Path(dag_file_path).read_text()
         expected_dag_content = (Path(__file__).parent / "my_workflow__dag.py.txt").read_text()
@@ -129,7 +130,8 @@ class DagBuilderTestCase(mixins.TempCwdMixin, TestCase):
         dag_file_path = generate_dag_file(workdir, image, workflow, '2020-07-02', version, 'ca')
 
         # then passes the depends_on_past parameter value
-        self.assertEqual(dag_file_path, str(workdir / '.dags/my_parametrized_workflow__v0_3_0__2020_07_02_00_00_00_dag.py'))
+        self.assertEqual(
+            dag_file_path, str(workdir / '.dags/test_123_my_parametrized_workflow__v0_3_0__2020_07_02_00_00_00_dag.py'))
 
         dag_file_content = Path(dag_file_path).read_text()
         expected_dag_content = (Path(__file__).parent / "my_parametrized_workflow__dag.py.txt").read_text()
@@ -162,7 +164,8 @@ class DagBuilderTestCase(mixins.TempCwdMixin, TestCase):
         dag_file_path = generate_dag_file(workdir, image, workflow, '2020-07-02', version, 'ca')
 
         # then
-        self.assertEqual(dag_file_path, str(workdir / '.dags/my_daily_workflow__v0_3_0__2020_07_02_00_00_00_dag.py'))
+        self.assertEqual(
+            dag_file_path, str(workdir / '.dags/test_123_my_daily_workflow__v0_3_0__2020_07_02_00_00_00_dag.py'))
 
         dag_file_content = Path(dag_file_path).read_text()
         expected_dag_content = (Path(__file__).parent / "my_daily_workflow__dag.py.txt").read_text()
