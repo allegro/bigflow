@@ -168,7 +168,7 @@ class DagBuilderTestCase(mixins.TempCwdMixin, TestCase):
             dag_file_path, str(workdir / '.dags/test_123_my_daily_workflow__v0_3_0__2020_07_02_00_00_00_dag.py'))
 
         dag_file_content = Path(dag_file_path).read_text()
-        expected_dag_content = (Path(__file__).parent / "my_daily_workflow__dag.py.txt").read_text()
+        expected_dag_content = (Path(__file__).parent / "test_123_my_daily_workflow__dag.py.txt").read_text()
         self.assert_files_are_equal(expected_dag_content, dag_file_content)
 
     def assert_files_are_equal(self, expected_dag_content, dag_file_content):
