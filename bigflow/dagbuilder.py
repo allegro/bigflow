@@ -160,7 +160,6 @@ def get_dag_deployment_id(
         workflow_name=workflow_name,
         ver=build_ver.translate(str.maketrans(".-+", "___")),
         start_from=_str_to_datetime(start_from).strftime('%Y_%m_%d_%H_%M_%S')
-
     )
 
 
