@@ -30,7 +30,7 @@ default_args = dict(
 )
 
 dag = DAG(
-    'my_daily_workflow__v0_3_0__2020_07_02_00_00_00',
+    'test_123_my_daily_workflow__v0_3_0__2020_07_02_00_00_00',
     default_args=default_args,
     max_active_runs=1,
     schedule_interval='@daily',
