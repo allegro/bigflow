@@ -487,6 +487,10 @@ def _add_deploy_dags_parser_arguments(parser):
                         help="Name of the target Google Cloud Storage bucket which underlies DAGs folder of your Composer."
                              " If not set, will be read from deployment_config.py")
 
+    parser.add_argument('-g', '--group',
+                        help="Alias of a group of dags included in a given bigflow project"
+                             " If not set, will be read from deployment_config.py")
+
 
 def read_project_package(args):
     return args.project_package if hasattr(args, 'project_package') else None
@@ -534,7 +538,8 @@ def _cli_deploy_dags(args):
                        auth_method=args.auth_method,
                        vault_endpoint=_resolve_vault_endpoint(args),
                        vault_secret=vault_secret,
-                       project_id=_resolve_property(args, 'gcp_project_id')
+                       project_id=_resolve_property(args, 'gcp_project_id'),
+                       dag_group=_resolve_property(args, 'group') #TODO
                        )
 
 

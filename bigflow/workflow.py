@@ -169,7 +169,9 @@ class Workflow(object):
         schedule_interval: str = DEFAULT_SCHEDULE_INTERVAL,
         start_time_factory: Callable[[dt.datetime], dt.datetime] = daily_start_time,
         depends_on_past: bool = True,
-        secrets: Iterable[str] = ()
+        secrets: Iterable[str] = (),
+        environments: List[str] = None, #TODO
+        dag_group: str = None #TODO
     ):
         self.definition = self._parse_definition(definition)
         self.schedule_interval = schedule_interval
@@ -177,6 +179,8 @@ class Workflow(object):
         self.start_time_factory = start_time_factory
         self.depends_on_past = depends_on_past
         self.secrets = secrets
+        self.environments = environments
+        self.dag_group = dag_group
 
     @staticmethod
     def _execute_job(job: Job, context: JobContext) -> None:

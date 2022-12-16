@@ -191,6 +191,7 @@ def deploy_dags_folder(
         vault_endpoint: T.Optional[str] = None,
         vault_secret: T.Optional[str] = None,
         gs_client: T.Optional[storage.Client] = None,
+        dag_group: T.Optional[str] = None
 ) -> str:
     images = get_image_tags_from_image_version_file(dags_dir)
     if images:
@@ -207,7 +208,7 @@ def deploy_dags_folder(
     if clear_dags_folder:
         clear_remote_dags_bucket(bucket)
 
-    upload_dags_folder(dags_dir, bucket)
+    upload_dags_folder(dags_dir, bucket, dag_group)
     return dags_bucket
 
 
@@ -226,7 +227,7 @@ def _blob_uri(blob: storage.Blob) -> str:
     return f"gs://{blob.bucket.name}/{blob.name}"
 
 
-def upload_dags_folder(dags_dir: str, bucket: Bucket) -> None:
+def upload_dags_folder(dags_dir: str, bucket: Bucket, dag_group: str) -> None:
     dags_dir_path = Path(dags_dir)
 
     def upload_file(local_file_path, target_file_name):
@@ -236,7 +237,11 @@ def upload_dags_folder(dags_dir: str, bucket: Bucket) -> None:
 
     files = list(filter(Path.is_file, dags_dir_path.iterdir()))
     for f in files:
-        upload_file(f.as_posix(), 'dags/' + f.name)
+        if dag_group:
+            f_name = "{dag_group}_{f_name}".format(dag_group=dag_group, f_name=f.name)
+        else:
+            f_name = f.name
+        upload_file(f.as_posix(), 'dags/' + f_name)
 
     logger.info("%s files uploaded", len(files))
 

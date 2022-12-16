@@ -40,7 +40,7 @@ def generate_dag_file(
     logger.info("build_ver: %s", build_ver)
     logger.info("image version: %s", image_version)
 
-    dag_deployment_id = get_dag_deployment_id(workflow.workflow_id, start_from, build_ver)
+    dag_deployment_id = get_dag_deployment_id(workflow.workflow_id, start_from, build_ver, workflow.dag_group)
     dag_file_path = get_dags_output_dir(workdir) / (dag_deployment_id + '_dag.py')
     workflow_start_date = workflow.start_time_factory(start_from)
 
@@ -155,15 +155,18 @@ def get_dag_deployment_id(
         workflow_name: str,
         start_from: datetime,
         build_ver: str,
-        project_name: str = "test_123"
+        dag_group: str
 ) -> str:
-    return '{project_name}_{workflow_name}__v{ver}__{start_from}'.format(
-        project_name=project_name,
+    dag_deployment_id = ""
+    if dag_group:
+        dag_deployment_id += f'{dag_group}__'.format(dag_group=dag_group)
+
+    dag_deployment_id += '{workflow_name}__v{ver}__{start_from}'.format(
         workflow_name=workflow_name,
         ver=build_ver.translate(str.maketrans(".-+", "___")),
         start_from=_str_to_datetime(start_from).strftime('%Y_%m_%d_%H_%M_%S')
     )
-
+    return dag_deployment_id
 
 def get_dags_output_dir(workdir: str) -> Path:
     dags_dir_path = Path(workdir) / '.dags'
