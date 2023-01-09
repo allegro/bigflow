@@ -115,14 +115,25 @@ When Dataflow launches worker VMs, it uses Docker container images. You can spec
 using the default one.  It gives ability to install any non-python software, preinstall python dependencies, install GPU 
 drivers etc., customize execution environment.
 
-The simplest way to create custom image is to use default beam SDK image as a base.  Your `Dockerfile` might look like:
+The simplest way to create custom image is to use default beam SDK image as a base, e.g. `beam_python3.8_sdk:2.36.0`.
+Please keep the image version consistent with the version of the `apache-beam` from `resources/requirements.txt`.
+
+To avoid dependency clashes at runtime, we suggest running Dataflow jobs in a dockerized environment, with dependencies
+resolved during building a Docker image. This way downloading dependencies at job startup wouldn't be required. To
+disable it and rely only on the dependencies inside the Docker image you should add `ENV PIP_NO_BUILD_ISOLATION=off` to
+your Dockerfile.
+
+Your `Dockerfile` might look like:
 
 ```dockerfile
 # Inherit from default image.
-FROM apache/beam_python3.8_sdk:2.28.0
+FROM apache/beam_python3.8_sdk:2.36.0
 
 # Put all custom files to `/app`
 WORKDIR /app
+
+# Prevents dependency fetching on a Dataflow job start-up
+ENV PIP_NO_BUILD_ISOLATION=off
 
 # Preinstall python packages (improve docker layer caching).
 # This step is optional, but may improve docker image building time.
@@ -166,17 +177,6 @@ bf build-requirements
 The mechanism is deprecated because it was hard to use and maintain. You should delete the `resouces/dataflow_pins.in`
 file and remove the link from the `requirements.in` file, and rebuild the `requirements.txt` file by running the 
 `bf build-requirements` command.
-
-To avoid dependency clashes in the runtime, we suggest [running Dataflow jobs in a dockerized environment](#custom-docker-image), with
-dependencies resolved during docker image build. To disable the mechanism responsible for fetching
-dependencies on a job start up, and rely only on the dependencies inside the docker image, add the following
-lines to your docker file:
-
-```dockerfile
-# Prevents dependency fetching on a Dataflow job start-up
-ENV PIP_NO_BUILD_ISOLATION=off
-```
-
 
 ## BigQuery
 
