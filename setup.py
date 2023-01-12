@@ -22,8 +22,8 @@ with open(os.path.join('bigflow', '_version.py'), 'r') as version_file:
 setuptools.setup(
     name="bigflow",
     version=version,
-    author=u"Chi",
-    author_email="chibox-team@allegrogroup.com",
+    author=u"Pogranicze",
+    author_email="pogranicze-team@allegro.pl",
     description="BigQuery client wrapper with clean API",
     long_description=long_description,
     long_description_content_type="text/markdown",
