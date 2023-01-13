@@ -433,16 +433,16 @@ import bigflow.konfig
 from bigflow.konfig import fromenv
 
 import os
-os.environ['bf_my_secret'] = '123456'
+os.environ['bf_my_variable'] = '123456'
 
 class MyConfig(bigflow.konfig.Konfig):
 
-    # full variable name "bf_my_secret" is used!
-    my_secret = fromenv('bf_my_secret')
+    # full variable name "bf_my_variable" is used!
+    my_variable = fromenv('bf_my_variable')
 
 
 config = MyConfig()
-print('my_secret:', config.my_secret)
+print('my_variable:', config.my_variable)
 ```
 
 ### Inheritance
@@ -559,7 +559,7 @@ or a terminal on your local machine:
 ```shell script
 gcloud composer environments describe YOUR-COMPOSER-NAME --location <YOUR COMPOSER REGION> --format="value(config.gkeCluster)"
 gcloud container clusters get-credentials <COMPOSER GKE CLUSTER NAME> --zone <GKE ZONE> --project <GKE PROJECT ID>
-kubectl create secret generic <SECRET NAME> --from-literal '<SECRET ENVIRONMENT KEY>=<SECRET ENVIRONMENT VALUE>'
+kubectl create secret generic <SECRET NAME> --from-literal '<SECRET_ENVIRONMENT_KEY>=<SECRET ENVIRONMENT VALUE>'
 ```
 
 ### Private cluster
@@ -572,8 +572,12 @@ and run the following commands. Remember to use the `--internal-ip` flag when ge
 ```shell script
 gcloud composer environments describe YOUR-COMPOSER-NAME --location <YOUR COMPOSER REGION> --format="value(config.gkeCluster)"
 gcloud container clusters get-credentials --internal-ip <COMPOSER GKE CLUSTER NAME> --zone <GKE ZONE> --project <GKE PROJECT ID>
-kubectl create secret generic <SECRET NAME> --from-literal '<SECRET ENVIRONMENT KEY>=<SECRET ENVIRONMENT VALUE>'
+kubectl create secret generic <SECRET NAME> --from-literal '<SECRET_ENVIRONMENT_KEY>=<SECRET ENVIRONMENT VALUE>'
 ```
+
+> :warning: Note that even if you use a lowercase variable name for `<SECRET_ENVIRONMENT_KEY>`, e.g. `bf_my_var`, it
+will be exposed as uppercase - `BF_MY_VAR`. See the issue in
+[GitHub](https://github.com/kubernetes/website/issues/31489).
 
 ### Example
 Let us go through an example. First, you need to get the Composer GKE cluster name:
@@ -617,7 +621,7 @@ class ExampleJob(bigflow.Job):
     id = 'example_job'
 
     def execute(self, context: bigflow.JobContext):
-        os.environ['BF_MY_SUPER_SECRET']
+        os.environ['BF_MY_SUPER_SECRET'] # secrets are exposed as uppercase environment variables
 
 workflow = bigflow.Workflow(
     workflow_id='example',
@@ -630,5 +634,5 @@ the `bigflow.konfig.Konfig` configuration class (it makes sure that you can't ju
 
 ```python
 class DevConfig(Konfig):
-    my_super_secret = fromenv('BF_MY_SUPER_SECRET', 'None')
+    my_super_secret = fromenv('BF_MY_SUPER_SECRET', 'None') # secrets are exposed as uppercase environment variables
 ```
