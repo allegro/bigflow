@@ -556,10 +556,19 @@ mechanism (Cloud Composer is a GKE cluster under the hood).
 Run the following commands in the [Cloud Shell](https://cloud.google.com/shell/docs/launching-cloud-shell#launching_from_the_console)
 or a terminal on your local machine:
 
+
+_for Composer 1.x:_
 ```shell script
 gcloud composer environments describe YOUR-COMPOSER-NAME --location <YOUR COMPOSER REGION> --format="value(config.gkeCluster)"
 gcloud container clusters get-credentials <COMPOSER GKE CLUSTER NAME> --zone <GKE ZONE> --project <GKE PROJECT ID>
 kubectl create secret generic <SECRET NAME> --from-literal '<SECRET_ENVIRONMENT_KEY>=<SECRET ENVIRONMENT VALUE>'
+```
+
+_for Composer 2.x:_
+```shell script
+gcloud composer environments describe YOUR-COMPOSER-NAME --location <YOUR COMPOSER REGION> --format="value(config.gkeCluster)"
+gcloud container clusters get-credentials <COMPOSER GKE CLUSTER NAME> --region <YOUR COMPOSER REGION> --project <GKE PROJECT ID>
+kubectl create secret generic <SECRET NAME> --namespace composer-user-workloads --from-literal '<SECRET_ENVIRONMENT_KEY>=<SECRET ENVIRONMENT VALUE>'
 ```
 
 ### Private cluster
@@ -569,17 +578,25 @@ in your project using the same VPC and subnet as your cluster.
 Then, [connect to your VM](https://cloud.google.com/compute/docs/instances/connecting-to-instance)
 and run the following commands. Remember to use the `--internal-ip` flag when getting credentials:
 
+_for Composer 1.x:_
 ```shell script
 gcloud composer environments describe YOUR-COMPOSER-NAME --location <YOUR COMPOSER REGION> --format="value(config.gkeCluster)"
 gcloud container clusters get-credentials --internal-ip <COMPOSER GKE CLUSTER NAME> --zone <GKE ZONE> --project <GKE PROJECT ID>
 kubectl create secret generic <SECRET NAME> --from-literal '<SECRET_ENVIRONMENT_KEY>=<SECRET ENVIRONMENT VALUE>'
 ```
 
+_for Composer 2.x:_
+```shell script
+gcloud composer environments describe YOUR-COMPOSER-NAME --location <YOUR COMPOSER REGION> --format="value(config.gkeCluster)"
+gcloud container clusters get-credentials --internal-ip <COMPOSER GKE CLUSTER NAME> --region <YOUR COMPOSER REGION> --project <GKE PROJECT ID>
+kubectl create secret generic <SECRET NAME> --namespace composer-user-workloads --from-literal '<SECRET_ENVIRONMENT_KEY>=<SECRET ENVIRONMENT VALUE>'
+```
+
 > :warning: Note that even if you use a lowercase variable name for `<SECRET_ENVIRONMENT_KEY>`, e.g. `bf_my_var`, it
 will be exposed as uppercase - `BF_MY_VAR`. See the issue in
 [GitHub](https://github.com/kubernetes/website/issues/31489).
 
-### Example
+### Example (assuming Composer 1.x)
 Let us go through an example. First, you need to get the Composer GKE cluster name:
 
 ```shell script

@@ -1,5 +1,11 @@
 # BigFlow changelog
 
+## Version 1.5.4
+
+### Changed
+
+* Added two more parameters in KubernetesPodOperator required since Composer 2.1.0
+
 ## Version 1.5.3
 
 ### Changed
