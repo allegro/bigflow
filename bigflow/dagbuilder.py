@@ -94,6 +94,7 @@ def generate_dag_file(
 
         job = workflow_job.job
         job_var = f"t{job.id}"
+        pod_operator_params_var = f"{job_var}_pod_operator_params"
         task_id = job.id.replace("_", "-")
         retries = getattr(job, 'retry_count', 3)
         bf_job = workflow.workflow_id + "." + job.id
@@ -115,25 +116,30 @@ def generate_dag_file(
         retry_delay = commons.as_timedelta(getattr(job, 'retry_pause_sec', 60))
 
         dag_chunks.append(dedent(f"""\
-            {job_var} = KubernetesPodOperator(
-                dag=dag,
-                task_id={task_id!r},
-                name={task_id!r},
-                cmds=['python', '-m', 'bigflow', 'run'],
-                arguments=[
+            {pod_operator_params_var} = {{
+                'dag': dag,
+                'task_id': {task_id!r},
+                'name': {task_id!r},
+                'cmds': ['python', '-m', 'bigflow', 'run'],
+                'arguments': [
                     '--job', {bf_job!r},
                     '--runtime', '{{{{ execution_date.strftime("%Y-%m-%d %H:%M:%S") }}}}',
                     '--project-package', {root_package_name!r},
                     '--config', '{{{{var.value.env}}}}',
                 ],
-                namespace=namespace,
-                image={image_version!r},
-                is_delete_operator_pod=True,
-                retries={retries!r},
-                retry_delay={retry_delay!r},
-                secrets={secrets_definition_list},
-                execution_timeout={execution_timeout!r},
-            )
+                'namespace': namespace,
+                'image': {image_version!r},
+                'is_delete_operator_pod': True,
+                'retries': {retries!r},
+                'retry_delay': {retry_delay!r},
+                'secrets': {secrets_definition_list},
+                'execution_timeout': {execution_timeout!r},
+            }}
+            if IS_COMPOSER_2_X:
+                {pod_operator_params_var}['config_file'] = "/home/airflow/composer_kube_config"
+                {pod_operator_params_var}['kubernetes_conn_id'] = "kubernetes_default"
+
+            {job_var} = KubernetesPodOperator(**{pod_operator_params_var})
             """))
 
         for d in dependencies:

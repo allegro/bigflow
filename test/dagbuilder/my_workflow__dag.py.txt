@@ -36,68 +36,83 @@ dag = DAG(
     schedule_interval='@hourly',
 )
 
-tjob1 = KubernetesPodOperator(
-    dag=dag,
-    task_id='job1',
-    name='job1',
-    cmds=['python', '-m', 'bigflow', 'run'],
-    arguments=[
+tjob1_pod_operator_params = {
+    'dag': dag,
+    'task_id': 'job1',
+    'name': 'job1',
+    'cmds': ['python', '-m', 'bigflow', 'run'],
+    'arguments': [
         '--job', 'my_workflow.job1',
         '--runtime', '{{ execution_date.strftime("%Y-%m-%d %H:%M:%S") }}',
         '--project-package', 'ca',
         '--config', '{{var.value.env}}',
     ],
-    namespace=namespace,
-    image='eu.gcr.io/my_docker_repository_project/my-project:0.3.0',
-    is_delete_operator_pod=True,
-    retries=10,
-    retry_delay=datetime.timedelta(seconds=20),
-    secrets=[],
-    execution_timeout=datetime.timedelta(seconds=10800),
-)
+    'namespace': namespace,
+    'image': 'eu.gcr.io/my_docker_repository_project/my-project:0.3.0',
+    'is_delete_operator_pod': True,
+    'retries': 10,
+    'retry_delay': datetime.timedelta(seconds=20),
+    'secrets': [],
+    'execution_timeout': datetime.timedelta(seconds=10800),
+}
+if IS_COMPOSER_2_X:
+    tjob1_pod_operator_params['config_file'] = "/home/airflow/composer_kube_config"
+    tjob1_pod_operator_params['kubernetes_conn_id'] = "kubernetes_default"
+
+tjob1 = KubernetesPodOperator(**tjob1_pod_operator_params)
 
 
-tjob2 = KubernetesPodOperator(
-    dag=dag,
-    task_id='job2',
-    name='job2',
-    cmds=['python', '-m', 'bigflow', 'run'],
-    arguments=[
+tjob2_pod_operator_params = {
+    'dag': dag,
+    'task_id': 'job2',
+    'name': 'job2',
+    'cmds': ['python', '-m', 'bigflow', 'run'],
+    'arguments': [
         '--job', 'my_workflow.job2',
         '--runtime', '{{ execution_date.strftime("%Y-%m-%d %H:%M:%S") }}',
         '--project-package', 'ca',
         '--config', '{{var.value.env}}',
     ],
-    namespace=namespace,
-    image='eu.gcr.io/my_docker_repository_project/my-project:0.3.0',
-    is_delete_operator_pod=True,
-    retries=100,
-    retry_delay=datetime.timedelta(seconds=200),
-    secrets=[],
-    execution_timeout=datetime.timedelta(seconds=10800),
-)
+    'namespace': namespace,
+    'image': 'eu.gcr.io/my_docker_repository_project/my-project:0.3.0',
+    'is_delete_operator_pod': True,
+    'retries': 100,
+    'retry_delay': datetime.timedelta(seconds=200),
+    'secrets': [],
+    'execution_timeout': datetime.timedelta(seconds=10800),
+}
+if IS_COMPOSER_2_X:
+    tjob2_pod_operator_params['config_file'] = "/home/airflow/composer_kube_config"
+    tjob2_pod_operator_params['kubernetes_conn_id'] = "kubernetes_default"
+
+tjob2 = KubernetesPodOperator(**tjob2_pod_operator_params)
 
 tjob2.set_upstream(tjob1)
 
-tjob3 = KubernetesPodOperator(
-    dag=dag,
-    task_id='job3',
-    name='job3',
-    cmds=['python', '-m', 'bigflow', 'run'],
-    arguments=[
+tjob3_pod_operator_params = {
+    'dag': dag,
+    'task_id': 'job3',
+    'name': 'job3',
+    'cmds': ['python', '-m', 'bigflow', 'run'],
+    'arguments': [
         '--job', 'my_workflow.job3',
         '--runtime', '{{ execution_date.strftime("%Y-%m-%d %H:%M:%S") }}',
         '--project-package', 'ca',
         '--config', '{{var.value.env}}',
     ],
-    namespace=namespace,
-    image='eu.gcr.io/my_docker_repository_project/my-project:0.3.0',
-    is_delete_operator_pod=True,
-    retries=100,
-    retry_delay=datetime.timedelta(seconds=200),
-    secrets=[],
-    execution_timeout=datetime.timedelta(seconds=10800),
-)
+    'namespace': namespace,
+    'image': 'eu.gcr.io/my_docker_repository_project/my-project:0.3.0',
+    'is_delete_operator_pod': True,
+    'retries': 100,
+    'retry_delay': datetime.timedelta(seconds=200),
+    'secrets': [],
+    'execution_timeout': datetime.timedelta(seconds=10800),
+}
+if IS_COMPOSER_2_X:
+    tjob3_pod_operator_params['config_file'] = "/home/airflow/composer_kube_config"
+    tjob3_pod_operator_params['kubernetes_conn_id'] = "kubernetes_default"
+
+tjob3 = KubernetesPodOperator(**tjob3_pod_operator_params)
 
 tjob3.set_upstream(tjob2)
 tjob3.set_upstream(tjob1)
