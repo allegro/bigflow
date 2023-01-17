@@ -2,7 +2,7 @@ name: BigFlow release
 on:
   workflow_run:
     workflows: [ "BigFlow CI" ]
-    branches: '*'
+    branches: [ master ]
     types:
       - completed
 jobs:
