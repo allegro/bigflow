@@ -2,7 +2,7 @@ name: BigFlow release
 on:
   workflow_run:
     workflows: [ "BigFlow CI" ]
-    branches: '*'
+    branches: [ master ]
     types:
       - completed
 jobs:
@@ -42,7 +42,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v2
         with:
-          python-version: 3.7
+          python-version: 3.8
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
