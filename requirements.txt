@@ -36,6 +36,8 @@ coverage[toml]==6.5.0
     # via pytest-cov
 crcmod==1.7
     # via apache-beam
+db-dtypes==1.0.5
+    # via -r requirements/bigquery_extras.txt
 deprecated==1.2.13
     # via -r requirements/base.txt
 dill==0.3.1.1
@@ -185,6 +187,7 @@ more-itertools==9.0.0
 numpy==1.21.6
     # via
     #   apache-beam
+    #   db-dtypes
     #   pandas
     #   pyarrow
 oauth2client==4.1.3
@@ -198,10 +201,13 @@ overrides==6.5.0
 packaging==21.3
     # via
     #   build
+    #   db-dtypes
     #   google-cloud-spanner
     #   pytest
 pandas==1.3.5
-    # via -r requirements/bigquery_extras.txt
+    # via
+    #   -r requirements/bigquery_extras.txt
+    #   db-dtypes
 pep517==0.13.0
     # via build
 pexpect==4.8.0
@@ -246,7 +252,9 @@ ptyprocess==0.7.0
 py==1.11.0
     # via pytest-html
 pyarrow==9.0.0
-    # via apache-beam
+    # via
+    #   apache-beam
+    #   db-dtypes
 pyasn1==0.4.8
     # via
     #   oauth2client
