@@ -95,6 +95,7 @@ def _build_docker_image(
             auth_method=cache_params.auth_method or bigflow.deploy.AuthorizationType.LOCAL_ACCOUNT,
             vault_endpoint=cache_params.vault_endpoint,
             vault_secret=cache_params.vault_secret,
+            vault_endpoint_verify=cache_params.vault_endpoint_verify
         )
 
         for image in (cache_params.cache_from_image or []):
@@ -120,6 +121,7 @@ class BuildImageCacheParams:
     vault_secret: str | None = None
     cache_from_version: list[str] | None = None
     cache_from_image: list[str] | None = None
+    vault_endpoint_verify: str | bool | None = None
 
 
 def build_image(

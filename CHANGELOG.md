@@ -1,5 +1,15 @@
 # BigFlow changelog
 
+## Version 1.6.0
+
+### Fixed
+
+* Enabled vault endpoint TLS certificate verification by default for `bf build` and `bf deploy` commands. This fixes the MITM attack vulnerability. Kudos to Konstantin Weddige for reporting.
+
+### Breaking changes
+
+* Default vault endpoint TLS certificate verification for `bf build` and `bf deploy` may fail in some environments. Use `-vev`/`--vault-endpoint-verify` option to disable or provide path to custom trusted certificates or CA certificates. Disabling makes execution vulnerable for MITM attacks and is discouraged - do it only when justified and in trusted environments. See [https://requests.readthedocs.io/en/latest/user/advanced/#ssl-cert-verification](https://requests.readthedocs.io/en/latest/user/advanced/#ssl-cert-verification) for details.
+
 ## Version 1.5.4
 
 ### Changed
