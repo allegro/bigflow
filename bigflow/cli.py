@@ -408,7 +408,8 @@ def _add_auth_parsers_arguments(parser):
     parser.add_argument('-vev', '--vault-endpoint-verify',
                         type=str,
                         action=VaultEndpointVerifyAction,
-                        help='Can be "true", "false", a path to certificate PEM file or a path to directory with PEM files. '
+                        help='Can be "true", "false", a path to certificate PEM file or a path to '
+                             'directory with PEM files (see the link for details). '
                              'Enables/disables vault endpoint TLS certificate verification. Enabled by default. '
                              'Disabling makes execution vulnerable for MITM attacks - do it only when justified and in trusted environments. '
                              'For details see: https://requests.readthedocs.io/en/latest/user/advanced/#ssl-cert-verification',
