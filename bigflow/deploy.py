@@ -277,11 +277,11 @@ def get_vault_token(vault_endpoint: str, vault_secret: str, vault_endpoint_verif
     headers = {'X-Vault-Token': vault_secret}
     response = requests.get(vault_endpoint, headers=headers, verify=vault_endpoint_verify)
 
+    logger.info("get oauth token from %s status_code=%s", vault_endpoint, response.status_code)
     if response.status_code != 200:
         logger.info(response.text)
         raise ValueError(
             'Could not get vault token, response code: {}'.format(
                 response.status_code))
 
-    logger.info("get oauth token from %s status_code=%s", vault_endpoint, response.status_code)
     return response.json()['data']['token']
