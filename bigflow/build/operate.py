@@ -23,7 +23,6 @@ import bigflow.version
 import bigflow.build.pip
 import bigflow.build.dev
 import bigflow.build.dist
-import bigflow.build.dataflow.dependency_checker
 import bigflow.commons as bf_commons
 
 from bigflow.build.spec import BigflowProjectSpec
@@ -265,8 +264,6 @@ def build_package(project_spec: BigflowProjectSpec):
             pip install -r {req_txt}
         """))
         project_spec.requries = bigflow.build.pip.read_requirements(req_in)
-
-    bigflow.build.dataflow.dependency_checker.check_beam_worker_dependencies_conflict(req_in)
 
     clear_package_leftovers(project_spec)
     run_tests(project_spec)
