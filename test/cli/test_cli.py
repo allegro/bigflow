@@ -1,6 +1,7 @@
 from unittest import mock
 import shutil
 import freezegun
+from parameterized import parameterized
 
 from bigflow.build.operate import BuildImageCacheParams
 from bigflow.deploy import AuthorizationType
@@ -291,13 +292,16 @@ deployment_config = Config(name='dev',
         cli(['deploy-dags'])
 
         # then
-        deploy_dags_folder_mock.assert_called_with(auth_method=AuthorizationType.LOCAL_ACCOUNT,
-                                                   clear_dags_folder=False,
-                                                   dags_bucket='my-dags-bucket',
-                                                   dags_dir=self._expected_default_dags_dir(),
-                                                   project_id='my-gcp-project-id',
-                                                   vault_endpoint=None,
-                                                   vault_secret='secret')
+        deploy_dags_folder_mock.assert_called_with(
+            auth_method=AuthorizationType.LOCAL_ACCOUNT,
+            clear_dags_folder=False,
+            dags_bucket='my-dags-bucket',
+            dags_dir=self._expected_default_dags_dir(),
+            project_id='my-gcp-project-id',
+            vault_endpoint=None,
+            vault_secret='secret',
+            vault_endpoint_verify=True
+        )
 
     @mock.patch('bigflow.deploy.deploy_dags_folder')
     def test_should_call_cli_deploy_dags_command_for_different_environments(self, deploy_dags_folder_mock):
@@ -325,37 +329,46 @@ deployment_config = Config(name='dev',
         cli(['deploy-dags'])
 
         # then
-        deploy_dags_folder_mock.assert_called_with(auth_method=AuthorizationType.LOCAL_ACCOUNT,
-                                                   clear_dags_folder=False,
-                                                   dags_bucket='my-dags-dev-bucket',
-                                                   dags_dir=self._expected_default_dags_dir(),
-                                                   project_id='my-gcp-dev-project-id',
-                                                   vault_endpoint=None,
-                                                   vault_secret='secret-dev')
+        deploy_dags_folder_mock.assert_called_with(
+            auth_method=AuthorizationType.LOCAL_ACCOUNT,
+            clear_dags_folder=False,
+            dags_bucket='my-dags-dev-bucket',
+            dags_dir=self._expected_default_dags_dir(),
+            project_id='my-gcp-dev-project-id',
+            vault_endpoint=None,
+            vault_secret='secret-dev',
+            vault_endpoint_verify=True
+        )
 
         # when
         cli(['deploy-dags', '--config', 'dev'])
 
         # then
-        deploy_dags_folder_mock.assert_called_with(auth_method=AuthorizationType.LOCAL_ACCOUNT,
-                                                   clear_dags_folder=False,
-                                                   dags_bucket='my-dags-dev-bucket',
-                                                   dags_dir=self._expected_default_dags_dir(),
-                                                   project_id='my-gcp-dev-project-id',
-                                                   vault_endpoint=None,
-                                                   vault_secret='secret-dev')
+        deploy_dags_folder_mock.assert_called_with(
+            auth_method=AuthorizationType.LOCAL_ACCOUNT,
+            clear_dags_folder=False,
+            dags_bucket='my-dags-dev-bucket',
+            dags_dir=self._expected_default_dags_dir(),
+            project_id='my-gcp-dev-project-id',
+            vault_endpoint=None,
+            vault_secret='secret-dev',
+            vault_endpoint_verify=True
+        )
 
         # when
         cli(['deploy-dags', '--config', 'prod'])
 
         # then
-        deploy_dags_folder_mock.assert_called_with(auth_method=AuthorizationType.LOCAL_ACCOUNT,
-                                                   clear_dags_folder=False,
-                                                   dags_bucket='my-dags-prod-bucket',
-                                                   dags_dir=self._expected_default_dags_dir(),
-                                                   project_id='my-gcp-prod-project-id',
-                                                   vault_endpoint=None,
-                                                   vault_secret='secret-prod')
+        deploy_dags_folder_mock.assert_called_with(
+            auth_method=AuthorizationType.LOCAL_ACCOUNT,
+            clear_dags_folder=False,
+            dags_bucket='my-dags-prod-bucket',
+            dags_dir=self._expected_default_dags_dir(),
+            project_id='my-gcp-prod-project-id',
+            vault_endpoint=None,
+            vault_secret='secret-prod',
+            vault_endpoint_verify=True
+        )
 
     @mock.patch('bigflow.deploy.deploy_dags_folder')
     def test_should_call_cli_deploy_dags_command__when_parameters_are_given_by_explicit_deployment_config_file(self,
@@ -382,13 +395,16 @@ deployment_config = Config(name='dev',
              ])
 
         # then
-        deploy_dags_folder_mock.assert_called_with(auth_method=AuthorizationType.VAULT,
-                                                   clear_dags_folder=False,
-                                                   dags_bucket='my-another-dags-bucket',
-                                                   dags_dir='/tmp/my-dags-dir',
-                                                   project_id='my-another-gcp-project-id',
-                                                   vault_endpoint='my-another-vault-endpoint',
-                                                   vault_secret='secrett')
+        deploy_dags_folder_mock.assert_called_with(
+            auth_method=AuthorizationType.VAULT,
+            clear_dags_folder=False,
+            dags_bucket='my-another-dags-bucket',
+            dags_dir='/tmp/my-dags-dir',
+            project_id='my-another-gcp-project-id',
+            vault_endpoint='my-another-vault-endpoint',
+            vault_secret='secrett',
+            vault_endpoint_verify=True
+        )
 
     @mock.patch('bigflow.deploy.deploy_dags_folder')
     def test_should_call_cli_deploy_dags_command__when_all_parameters_are_given_by_cli_arguments(self,
@@ -405,13 +421,16 @@ deployment_config = Config(name='dev',
              ])
 
         # then
-        deploy_dags_folder_mock.assert_called_with(auth_method=AuthorizationType.VAULT,
-                                                   clear_dags_folder=True,
-                                                   dags_bucket='my-dags-bucket',
-                                                   dags_dir='/tmp/my-dags-dir',
-                                                   project_id='my-gcp-project-id',
-                                                   vault_endpoint='my-vault-endpoint',
-                                                   vault_secret='secrett')
+        deploy_dags_folder_mock.assert_called_with(
+            auth_method=AuthorizationType.VAULT,
+            clear_dags_folder=True,
+            dags_bucket='my-dags-bucket',
+            dags_dir='/tmp/my-dags-dir',
+            project_id='my-gcp-project-id',
+            vault_endpoint='my-vault-endpoint',
+            vault_secret='secrett',
+            vault_endpoint_verify=True
+        )
 
     @mock.patch('bigflow.deploy.deploy_docker_image')
     def test_should_call_cli_deploy_image_command__with_defaults_and_with_implicit_deployment_config_file(self,
@@ -431,11 +450,14 @@ deployment_config = Config(name='dev',
         cli(['deploy-image', '--image-tar-path', 'image-0.0.2.tar'])
 
         # then
-        deploy_docker_image_mock.assert_called_with(auth_method=AuthorizationType.LOCAL_ACCOUNT,
-                                                    docker_repository='my-docker--repository',
-                                                    image_tar_path='image-0.0.2.tar',
-                                                    vault_endpoint=None,
-                                                    vault_secret=None)
+        deploy_docker_image_mock.assert_called_with(
+            auth_method=AuthorizationType.LOCAL_ACCOUNT,
+            docker_repository='my-docker--repository',
+            image_tar_path='image-0.0.2.tar',
+            vault_endpoint=None,
+            vault_secret=None,
+            vault_endpoint_verify=True
+        )
 
     @mock.patch('bigflow.deploy.deploy_docker_image')
     def test_should_call_cli_deploy_image_command__with_explicit_deployment_config_file(self, deploy_docker_image_mock):
@@ -460,11 +482,14 @@ deployment_config = Config(name='dev',
              ])
 
         # then
-        deploy_docker_image_mock.assert_called_with(auth_method=AuthorizationType.VAULT,
-                                                    docker_repository='my-another-docker-repository',
-                                                    image_tar_path='image-0.0.3.tar',
-                                                    vault_endpoint='my-another-vault-endpoint',
-                                                    vault_secret='secrett')
+        deploy_docker_image_mock.assert_called_with(
+            auth_method=AuthorizationType.VAULT,
+            docker_repository='my-another-docker-repository',
+            image_tar_path='image-0.0.3.tar',
+            vault_endpoint='my-another-vault-endpoint',
+            vault_secret='secrett',
+            vault_endpoint_verify=True
+        )
 
     @mock.patch('bigflow.deploy.deploy_docker_image')
     def test_should_call_cli_deploy_image_command__when_all_parameters_are_given_by_cli_arguments_and_image_is_loaded_from_tar(
@@ -479,11 +504,14 @@ deployment_config = Config(name='dev',
              ])
 
         # then
-        deploy_docker_image_mock.assert_called_with(auth_method=AuthorizationType.VAULT,
-                                                    docker_repository='my-docker-repository',
-                                                    image_tar_path='image-0.0.1.tar',
-                                                    vault_endpoint='my-vault-endpoint',
-                                                    vault_secret='secrett')
+        deploy_docker_image_mock.assert_called_with(
+            auth_method=AuthorizationType.VAULT,
+            docker_repository='my-docker-repository',
+            image_tar_path='image-0.0.1.tar',
+            vault_endpoint='my-vault-endpoint',
+            vault_secret='secrett',
+            vault_endpoint_verify=True
+        )
 
     @mock.patch('bigflow.deploy.deploy_docker_image')
     def test_should_find_tar_in_image_directory(self, deploy_docker_image_mock):
@@ -501,11 +529,14 @@ deployment_config = Config(name='dev',
              ])
 
         # then
-        deploy_docker_image_mock.assert_called_with(auth_method=AuthorizationType.VAULT,
-                                                    docker_repository='my-docker-repository',
-                                                    image_tar_path='.image/image-123.tar',
-                                                    vault_endpoint='my-vault-endpoint',
-                                                    vault_secret='secrett')
+        deploy_docker_image_mock.assert_called_with(
+            auth_method=AuthorizationType.VAULT,
+            docker_repository='my-docker-repository',
+            image_tar_path='.image/image-123.tar',
+            vault_endpoint='my-vault-endpoint',
+            vault_secret='secrett',
+            vault_endpoint_verify=True
+        )
 
     @mock.patch('bigflow.deploy.deploy_docker_image')
     def test_should_find_toml_ref_in_image_directory(self, deploy_docker_image_mock):
@@ -529,6 +560,7 @@ deployment_config = Config(name='dev',
             image_tar_path='.image/imageinfo-123.toml',
             vault_endpoint='my-vault-endpoint',
             vault_secret='secrett',
+            vault_endpoint_verify=True,
         )
 
     @mock.patch('bigflow.deploy.deploy_dags_folder')
@@ -552,19 +584,72 @@ deployment_config = Config(name='dev',
         cli(['deploy', '-i', 'my-images/image-version'])
 
         # then
-        deploy_dags_folder_mock.assert_called_with(auth_method=AuthorizationType.LOCAL_ACCOUNT,
-                                                   clear_dags_folder=False,
-                                                   dags_bucket='my-dags-bucket',
-                                                   dags_dir=self._expected_default_dags_dir(),
-                                                   project_id='my-gcp-project-id',
-                                                   vault_endpoint=None,
-                                                   vault_secret=None)
+        deploy_dags_folder_mock.assert_called_with(
+            auth_method=AuthorizationType.LOCAL_ACCOUNT,
+            clear_dags_folder=False,
+            dags_bucket='my-dags-bucket',
+            dags_dir=self._expected_default_dags_dir(),
+            project_id='my-gcp-project-id',
+            vault_endpoint=None,
+            vault_secret=None,
+            vault_endpoint_verify=True
+        )
 
-        deploy_docker_image_mock.assert_called_with(auth_method=AuthorizationType.LOCAL_ACCOUNT,
-                                                    docker_repository='my-docker--repository',
-                                                    image_tar_path='my-images/image-version',
-                                                    vault_endpoint=None,
-                                                    vault_secret=None)
+        deploy_docker_image_mock.assert_called_with(
+            auth_method=AuthorizationType.LOCAL_ACCOUNT,
+            docker_repository='my-docker--repository',
+            image_tar_path='my-images/image-version',
+            vault_endpoint=None,
+            vault_secret=None,
+            vault_endpoint_verify=True
+        )
+
+    @parameterized.expand([
+        ['true', True],
+        ['false', False],
+        ['certificate/path', 'certificate/path'],
+    ])
+    @mock.patch('bigflow.deploy.deploy_dags_folder')
+    @mock.patch('bigflow.deploy.deploy_docker_image')
+    def test_should_use_provided_vault_endpoint_verify_value_when_deploy(
+            self, verify, expected_verify, deploy_docker_image_mock, deploy_dags_folder_mock):
+        # given
+        shutil.rmtree(Path.cwd() / ".image", ignore_errors=True)
+        self._touch_file('imageinfo-123.toml', '', '.image')
+
+        # when
+        cli(['deploy',
+             '--docker-repository', 'my-docker-repository',
+             '--vault-endpoint', 'my-vault-endpoint',
+             '--auth-method', 'vault',
+             '--vault-secret', 'secrett',
+             '--dags-bucket', 'my-dags-bucket',
+             '--dags-dir', '/tmp/my-dags-dir',
+             '--gcp-project-id', 'my-gcp-project-id',
+             '--clear-dags-folder',
+             '--vault-endpoint-verify', verify
+             ])
+
+        # then
+        deploy_dags_folder_mock.assert_called_with(
+            auth_method=AuthorizationType.VAULT,
+            clear_dags_folder=True,
+            dags_bucket='my-dags-bucket',
+            dags_dir='/tmp/my-dags-dir',
+            project_id='my-gcp-project-id',
+            vault_endpoint='my-vault-endpoint',
+            vault_secret='secrett',
+            vault_endpoint_verify=expected_verify
+        )
+
+        deploy_docker_image_mock.assert_called_with(
+            auth_method=AuthorizationType.VAULT,
+            docker_repository='my-docker-repository',
+            image_tar_path='.image/imageinfo-123.toml',
+            vault_endpoint='my-vault-endpoint',
+            vault_secret='secrett',
+            vault_endpoint_verify=expected_verify,
+        )
 
     @mock.patch('bigflow.cli._cli_build_dags')
     def test_should_call_cli_build_dags_command(self, _cli_build_dags_mock):
@@ -664,27 +749,6 @@ deployment_config = Config(name='dev',
         cli_build_mock.assert_called_once()
         self.assertEqual(cli_build_mock.call_args[0][0].export_image_tar, True)
 
-    @mock.patch('bigflow.cli._cli_build_image')
-    def test_should_call_cli_build_image_command_without_tar(self, _cli_build_image_mock):
-        # when
-        cli(['build-image', '--no-export-image-tar'])
-
-        # then
-        _cli_build_image_mock.assert_called_with(
-            Namespace(
-                auth_method=AuthorizationType.LOCAL_ACCOUNT,
-                cache_from_image=None,
-                cache_from_version=None,
-                config=None,
-                deployment_config_path=None,
-                export_image_tar=False,
-                operation='build-image',
-                vault_endpoint=None,
-                vault_secret=None,
-                verbose=False,
-            )
-        )
-
     def test_should_call_cli_build_image_with_cached_from_image(self):
 
         # given
@@ -712,6 +776,7 @@ deployment_config = Config(name='dev',
             vault_secret='secrett',
             cache_from_image=['xyz.org/foo:bar', 'xyz.org/foo:baz'],
             cache_from_version=None,
+            vault_endpoint_verify=True,
         ))
 
     def test_should_call_cli_build_image_with_cached_from_version(self):
@@ -741,6 +806,63 @@ deployment_config = Config(name='dev',
             vault_secret='secrett',
             cache_from_image=None,
             cache_from_version=['bar', 'baz'],
+            vault_endpoint_verify=True,
+        ))
+
+    def test_should_call_cli_build_image_from_cache_with_vault_endpoint_verify_by_default(self):
+        # given
+        self.addMock(mock.patch('bigflow.build.spec.read_project_spec'))
+        build_image_mock = self.addMock(mock.patch('bigflow.build.operate.build_image'))
+
+        # when
+        cli([
+            'build-image',
+            '--vault-endpoint', 'my-vault-endpoint',
+            '--auth-method', 'vault',
+            '--vault-secret', 'secrett',
+            '--cache-from-image', 'xyz.org/foo:bar',
+        ])
+
+        # then
+        build_image_mock.assert_called_once()
+        _, kwrgs = build_image_mock.call_args
+        self.assertEqual(kwrgs['cache_params'], BuildImageCacheParams(
+            auth_method=AuthorizationType.VAULT,
+            vault_endpoint='my-vault-endpoint',
+            vault_secret='secrett',
+            vault_endpoint_verify=True,
+            cache_from_image=['xyz.org/foo:bar'],
+        ))
+
+    @parameterized.expand([
+        ['true', True],
+        ['false', False],
+        ['certificate/path', 'certificate/path'],
+    ])
+    def test_should_call_cli_build_image_from_cache_with_vault_endpoint_verify(self, verify, expected_verify):
+        # given
+        self.addMock(mock.patch('bigflow.build.spec.read_project_spec'))
+        build_image_mock = self.addMock(mock.patch('bigflow.build.operate.build_image'))
+
+        # when
+        cli([
+            'build-image',
+            '--vault-endpoint', 'my-vault-endpoint',
+            '--auth-method', 'vault',
+            '--vault-secret', 'secrett',
+            '--cache-from-image', 'xyz.org/foo:bar',
+            '--vault-endpoint-verify', verify,
+        ])
+
+        # then
+        build_image_mock.assert_called_once()
+        _, kwrgs = build_image_mock.call_args
+        self.assertEqual(kwrgs['cache_params'], BuildImageCacheParams(
+            auth_method=AuthorizationType.VAULT,
+            vault_endpoint='my-vault-endpoint',
+            vault_secret='secrett',
+            vault_endpoint_verify=expected_verify,
+            cache_from_image=['xyz.org/foo:bar'],
         ))
 
     @mock.patch('bigflow.build.operate.build_project')
@@ -789,6 +911,7 @@ deployment_config = Config(name='dev',
             verbose=False,
             workflow=None,
             config=None,
+            vault_endpoint_verify=True,
         )
 
         # then
