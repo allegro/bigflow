@@ -14,7 +14,7 @@ on:
 jobs:
   check_if_version_file_was_changed:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event.action == 'workflow_dispatch' }}
     outputs:
       version_changed: ${{ steps.check_file_changed.outputs.version_changed }}
     steps:
