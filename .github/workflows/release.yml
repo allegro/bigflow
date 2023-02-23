@@ -5,6 +5,12 @@ on:
     branches: [ "**" ]
     types:
       - completed
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "The tag, or commit SHA to checkout. Manual run is typically used for releasing dev versions."
+        default: ""
+        required: false
 jobs:
   check_if_version_file_was_changed:
     runs-on: ubuntu-latest
@@ -15,6 +21,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         with:
+          ref: ${{ github.event.inputs.ref }}
           fetch-depth: 2
       - name: Version file check
         shell: pwsh
