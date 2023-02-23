@@ -42,6 +42,7 @@ def deploy_docker_image(
     docker_repository: str,
     auth_method: AuthorizationType = AuthorizationType.LOCAL_ACCOUNT,
     vault_endpoint: T.Optional[str] = None,
+    vault_endpoint_verify: str | bool | None = None,
     vault_secret: T.Optional[str] = None,
 ) -> str:
     if image_tar_path.endswith(".toml"):
@@ -53,6 +54,7 @@ def deploy_docker_image(
         docker_repository,
         auth_method,
         vault_endpoint,
+        vault_endpoint_verify,
         vault_secret,
     )
 
@@ -62,6 +64,7 @@ def _deploy_docker_image_from_local_repo(
     docker_repository: str,
     auth_method: AuthorizationType = AuthorizationType.LOCAL_ACCOUNT,
     vault_endpoint: str | None = None,
+    vault_endpoint_verify: str | bool | None = None,
     vault_secret: str | None = None,
 ) -> str:
 
@@ -81,6 +84,7 @@ def _deploy_docker_image_from_local_repo(
         docker_repository=docker_repository,
         auth_method=auth_method,
         vault_endpoint=vault_endpoint,
+        vault_endpoint_verify=vault_endpoint_verify,
         vault_secret=vault_secret,
         image_id=image_id,
         build_ver=build_ver,
@@ -92,6 +96,7 @@ def _deploy_docker_image_from_fs(
     docker_repository: str,
     auth_method: AuthorizationType = AuthorizationType.LOCAL_ACCOUNT,
     vault_endpoint: str | None = None,
+    vault_endpoint_verify: str | bool | None = None,
     vault_secret: str | None = None,
 ) -> str:
     build_ver = bf_commons.decode_version_number_from_file_name(Path(image_tar_path))
@@ -105,6 +110,7 @@ def _deploy_docker_image_from_fs(
             image_id=image_id,
             auth_method=auth_method,
             vault_endpoint=vault_endpoint,
+            vault_endpoint_verify=vault_endpoint_verify,
             vault_secret=vault_secret,
         )
     finally:
@@ -118,6 +124,7 @@ def _deploy_image_loaded_to_local_registry(
     image_id: str,
     auth_method: AuthorizationType,
     vault_endpoint: str | None = None,
+    vault_endpoint_verify: str | bool | None = None,
     vault_secret: str | None = None,
 ) -> str:
     docker_image = docker_repository + ":" + build_ver
@@ -125,7 +132,7 @@ def _deploy_image_loaded_to_local_registry(
     tag_image(image_id, docker_repository, "latest")
 
     logger.info("Deploying docker image tag=%s auth_method=%s", docker_image, auth_method)
-    authenticate_to_registry(auth_method, vault_endpoint, vault_secret)
+    authenticate_to_registry(auth_method, vault_endpoint, vault_secret, vault_endpoint_verify)
     bf_commons.run_process(['docker', 'push', docker_image])
     bf_commons.run_process(['docker', 'push', docker_image_latest])
 
@@ -136,13 +143,14 @@ def authenticate_to_registry(
         auth_method: AuthorizationType,
         vault_endpoint: T.Optional[str] = None,
         vault_secret: T.Optional[str] = None,
+        vault_endpoint_verify: str | bool | None = None,
 ):
     logger.info("Authenticating to registry with auth_method=%s", auth_method)
 
     if auth_method == AuthorizationType.LOCAL_ACCOUNT:
         bf_commons.run_process(['gcloud', 'auth', 'configure-docker'])
     elif auth_method == AuthorizationType.VAULT:
-        oauthtoken = get_vault_token(vault_endpoint, vault_secret)
+        oauthtoken = get_vault_token(vault_endpoint, vault_secret, vault_endpoint_verify)
         bf_commons.run_process(
             ['docker', 'login', '-u', 'oauth2accesstoken', '--password-stdin', 'https://eu.gcr.io'],
             input=oauthtoken,
@@ -156,9 +164,10 @@ def check_images_exist(
         auth_method: AuthorizationType,
         vault_endpoint: T.Optional[str] = None,
         vault_secret: T.Optional[str] = None,
+        vault_endpoint_verify: str | bool | None = None
 ):
     logger.info("Checking if images used in DAGs exist in the registry")
-    authenticate_to_registry(auth_method, vault_endpoint, vault_secret)
+    authenticate_to_registry(auth_method, vault_endpoint, vault_secret, vault_endpoint_verify)
     missing_images = set()
     for image in images:
         found_images = bf_commons.run_process(['docker', 'manifest', 'inspect', image], check=False, verbose=False)
@@ -189,6 +198,7 @@ def deploy_dags_folder(
         clear_dags_folder: bool = False,
         auth_method: AuthorizationType = AuthorizationType.LOCAL_ACCOUNT,
         vault_endpoint: T.Optional[str] = None,
+        vault_endpoint_verify: str | bool | None = None,
         vault_secret: T.Optional[str] = None,
         gs_client: T.Optional[storage.Client] = None,
 ) -> str:
@@ -196,12 +206,13 @@ def deploy_dags_folder(
     if images:
         check_images_exist(auth_method=auth_method,
                            vault_endpoint=vault_endpoint,
+                           vault_endpoint_verify=vault_endpoint_verify,
                            vault_secret=vault_secret,
                            images=images)
 
     logger.info("Deploying DAGs folder, auth_method=%s, clear_dags_folder=%s, dags_dir=%s", auth_method, clear_dags_folder, dags_dir)
 
-    client = gs_client or create_storage_client(auth_method, project_id, vault_endpoint, vault_secret)
+    client = gs_client or create_storage_client(auth_method, project_id, vault_endpoint, vault_secret, vault_endpoint_verify)
     bucket = client.bucket(dags_bucket)
 
     if clear_dags_folder:
@@ -246,30 +257,31 @@ def create_storage_client(
         project_id: str,
         vault_endpoint: str,
         vault_secret: str,
+        vault_endpoint_verify: str | bool | None = None
 ) -> storage.Client:
     if auth_method == AuthorizationType.LOCAL_ACCOUNT:
         return storage.Client(project=project_id)
     elif auth_method == AuthorizationType.VAULT:
-        oauthtoken = get_vault_token(vault_endpoint, vault_secret)
+        oauthtoken = get_vault_token(vault_endpoint, vault_secret, vault_endpoint_verify)
         return storage.Client(project=project_id, credentials=credentials.Credentials(oauthtoken))
     else:
         raise ValueError(f"unsupported auth_method: {auth_method!r}")
 
 
-def get_vault_token(vault_endpoint: str, vault_secret: str) -> str:
+def get_vault_token(vault_endpoint: str, vault_secret: str, vault_endpoint_verify: str | bool | None = True) -> str:
     if not vault_endpoint:
         raise ValueError('vault_endpoint is required')
     if not vault_secret:
         raise ValueError('vault_secret is required')
 
     headers = {'X-Vault-Token': vault_secret}
-    response = requests.get(vault_endpoint, headers=headers, verify=False)
+    response = requests.get(vault_endpoint, headers=headers, verify=vault_endpoint_verify)
 
+    logger.info("get oauth token from %s status_code=%s", vault_endpoint, response.status_code)
     if response.status_code != 200:
         logger.info(response.text)
         raise ValueError(
             'Could not get vault token, response code: {}'.format(
                 response.status_code))
 
-    logger.info("get oauth token from %s status_code=%s", vault_endpoint, response.status_code)
     return response.json()['data']['token']

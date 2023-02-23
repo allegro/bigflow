@@ -13,8 +13,7 @@ from datetime import datetime
 from importlib import import_module
 from pathlib import Path
 from types import ModuleType
-from typing import Tuple, Iterator
-from typing import Optional
+from typing import Tuple, Iterator, Optional
 import fnmatch
 
 import bigflow as bf
@@ -384,6 +383,13 @@ def _add_parsers_common_arguments(parser):
 
 
 def _add_auth_parsers_arguments(parser):
+    class VaultEndpointVerifyAction(argparse.Action):
+        def __call__(self, parser, args, values, option_string=None):
+            if values in ['true', 'false']:
+                setattr(args, self.dest, values == 'true')
+            else:
+                setattr(args, self.dest, str(values))
+
     parser.add_argument('-a', '--auth-method',
                         type=bigflow.deploy.AuthorizationType,
                         default='local_account',
@@ -398,6 +404,17 @@ def _add_auth_parsers_arguments(parser):
                         help='URL of a Vault endpoint to get OAuth token for service account. '
                              'Required if auth-method is vault. '
                              'If not set, will be read from deployment_config.py.'
+                        )
+    parser.add_argument('-vev', '--vault-endpoint-verify',
+                        type=str,
+                        action=VaultEndpointVerifyAction,
+                        help='Can be "true", "false", a path to certificate PEM file or a path to '
+                             'directory with PEM files (see the link for details). '
+                             'Enables/disables vault endpoint TLS certificate verification. Enabled by default. '
+                             'Disabling makes execution vulnerable for MITM attacks - do it only when justified and in trusted environments. '
+                             'For details see: https://requests.readthedocs.io/en/latest/user/advanced/#ssl-cert-verification',
+                        dest='vault_endpoint_verify',
+                        default=True
                         )
     parser.add_argument('-vs', '--vault-secret',
                         type=str,
@@ -514,7 +531,7 @@ def _resolve_vault_endpoint(args):
 def _resolve_property(args, property_name, ignore_value_error=False):
     try:
         cli_atr = getattr(args, property_name)
-        if cli_atr:
+        if cli_atr or cli_atr is False:
             return cli_atr
         else:
             config = import_deployment_config(_resolve_deployment_config_path(args), property_name)
@@ -533,6 +550,7 @@ def _cli_deploy_dags(args):
                        clear_dags_folder=args.clear_dags_folder,
                        auth_method=args.auth_method,
                        vault_endpoint=_resolve_vault_endpoint(args),
+                       vault_endpoint_verify=_resolve_property(args, 'vault_endpoint_verify', ignore_value_error=True),
                        vault_secret=vault_secret,
                        project_id=_resolve_property(args, 'gcp_project_id')
                        )
@@ -543,6 +561,7 @@ def _cli_deploy_image(args):
     docker_repository = _resolve_property(args, 'docker_repository')
     vault_secret = _resolve_property(args, 'vault_secret', ignore_value_error=True)
     vault_endpoint = _resolve_vault_endpoint(args)
+    vault_endpoint_verify = _resolve_property(args, 'vault_endpoint_verify', ignore_value_error=True)
     image_tar_path = args.image_tar_path if args.image_tar_path else find_image_file()
 
     bigflow.deploy.deploy_docker_image(
@@ -550,6 +569,7 @@ def _cli_deploy_image(args):
         auth_method=args.auth_method,
         docker_repository=docker_repository,
         vault_endpoint=vault_endpoint,
+        vault_endpoint_verify=vault_endpoint_verify,
         vault_secret=vault_secret,
     )
 
@@ -579,12 +599,14 @@ def _grab_image_cache_params(args):
         logger.debug("Image caching is requested - create build image cache params obj")
         vault_secret = _resolve_property(args, 'vault_secret', ignore_value_error=True)
         vault_endpoint = _resolve_vault_endpoint(args)
+        vault_endpoint_verify = _resolve_property(args, 'vault_endpoint_verify', ignore_value_error=True)
         return bigflow.build.operate.BuildImageCacheParams(
             auth_method=args.auth_method,
             vault_endpoint=vault_endpoint,
             vault_secret=vault_secret,
             cache_from_version=args.cache_from_version,
             cache_from_image=args.cache_from_image,
+            vault_endpoint_verify=vault_endpoint_verify
         )
     else:
         logger.debug("No caching is requested - so just disable it completly")
