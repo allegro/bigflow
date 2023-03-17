@@ -1,5 +1,12 @@
 # BigFlow changelog
 
+## Version 1.7.0
+
+### Changed
+
+* Bumped dependencies of main libraries (eg. Apache Beam to version 2.45 or BigQuery to version 3.6.0). It enabled compatibility with MacBooks with M1 processor. 
+* Requires Python version >= 3.8
+
 ## Version 1.6.0
 
 ### Fixed
