@@ -660,6 +660,12 @@ deployment_config = Config(name='dev',
         _cli_build_dags_mock.assert_called_with(Namespace(operation='build-dags', start_time=None, workflow=None, verbose=False))
 
         # when
+        cli(['build-dags', '--additional-param', 'param'])
+
+        # then ignore additional params
+        _cli_build_dags_mock.assert_called_with(Namespace(operation='build-dags', start_time=None, workflow=None, verbose=False))
+
+        # when
         cli(['build-dags', '-t', '2020-01-01 00:00:00'])
 
         # then
@@ -915,6 +921,12 @@ deployment_config = Config(name='dev',
         )
 
         # then
+        _cli_build_mock.assert_called_with(args)
+
+        # when
+        cli(['build', '--additional-param', 'param'])
+
+        # then ignore unknown params
         _cli_build_mock.assert_called_with(args)
 
         # when
