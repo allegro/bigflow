@@ -54,7 +54,6 @@ def generate_dag_file(
         # bigflow-startdate: \t{start_from.isoformat()}
         # biglfow-imageid:   \t{image_version}
 
-        # IMPORTANT DAG
         import datetime
         from airflow import DAG
         from airflow import version
