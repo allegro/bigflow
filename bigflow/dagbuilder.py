@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import shutil
 import logging
+import typing
 
 from textwrap import dedent, indent
 from pathlib import Path
@@ -32,6 +33,7 @@ def generate_dag_file(
     start_from: datetime | str,
     build_ver: str,
     root_package_name: str,
+    env: str
 ) -> str:
 
     start_from = _str_to_datetime(start_from)
@@ -41,10 +43,8 @@ def generate_dag_file(
     logger.info("image version: %s", image_version)
 
     dag_deployment_id = get_dag_deployment_id(workflow.workflow_id, start_from, build_ver)
-    print("dag_deployment_id", dag_deployment_id)
 
     dag_file_path = get_dags_output_dir(workdir) / (dag_deployment_id + '_dag.py')
-    print("dag_file_path", dag_file_path)
     workflow_start_date = workflow.start_time_factory(start_from)
 
     logger.info("dag_file_path: %s", dag_file_path)
@@ -56,6 +56,8 @@ def generate_dag_file(
         # bigflow-build-ver: \t{build_ver}
         # bigflow-startdate: \t{start_from.isoformat()}
         # biglfow-imageid:   \t{image_version}
+        {_check_env_parameter_existance(env)}
+        
 
         import datetime
         from airflow import DAG
@@ -103,7 +105,7 @@ def generate_dag_file(
         bf_job = workflow.workflow_id + "." + job.id
 
         if workflow.secrets:
-            indent_prefix =  """\
+            indent_prefix = """\
                 """
             secrets_definitions = "".join(
                 f"{indent_prefix}    {secret_template(s)},\n"
@@ -164,7 +166,16 @@ def get_dag_deployment_id(
     workflow_name: str,
     start_from: datetime,
     build_ver: str,
+    env: str
 ) -> str:
+
+    if env:
+        return '{workflow_name}__v{ver}__{start_from}__{env}'.format(
+            workflow_name=workflow_name,
+            ver=build_ver.translate(str.maketrans(".-+", "___")),
+            start_from=_str_to_datetime(start_from).strftime('%Y_%m_%d_%H_%M_%S'),
+            env=env
+        )
     return '{workflow_name}__v{ver}__{start_from}'.format(
         workflow_name=workflow_name,
         ver=build_ver.translate(str.maketrans(".-+", "___")),
@@ -176,6 +187,12 @@ def get_dags_output_dir(workdir: str) -> Path:
     dags_dir_path = Path(workdir) / '.dags'
     dags_dir_path.mkdir(parents=True, exist_ok=True)
     return dags_dir_path
+
+
+def _check_env_parameter_existance(env: str) -> str:
+    if env:
+        return "# bigflow-environment: \t{env}"
+    return ""
 
 
 def _str_to_datetime(dt: str | datetime) -> datetime:

@@ -303,6 +303,9 @@ def _add_build_dags_parser_arguments(parser):
                              'For workflows triggered daily -- date in format: Y-m-d, for example 2020-01-01. '
                              'If empty or set as NOW, current hour is used.',
                         type=bf_commons.valid_datetime)
+    parser.add_argument('-e', '--env',
+                        help='TODO to think')
+    #TODO ala help
 
 
 def _add_build_image_parser_arguments(parser: argparse.ArgumentParser):
@@ -633,6 +636,7 @@ def _cli_build_dags(args):
         prj,
         start_time=args.start_time if _is_starttime_selected(args) else datetime.now().strftime("%Y-%m-%d %H:00:00"),
         workflow_id=args.workflow if _is_workflow_selected(args) else None,
+        enviroment=args.env if _is_environment_selected(args) else None
     )
 
 
@@ -680,6 +684,10 @@ def _is_workflow_selected(args):
 
 def _is_starttime_selected(args):
     return args.start_time and args.start_time != 'NOW'
+
+
+def _is_environment_selected(args):
+    return args.env and args.env != 'CURRENT'
 
 
 def project_type_input():
