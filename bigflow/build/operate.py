@@ -198,7 +198,6 @@ def build_dags(
     workflow_id: typing.Optional[str] = None,
     env: str = None
 ):
-    print("operate/build_dags env===", env)
     # TODO: Move common functions from bigflow.cli to bigflow.commons (or other shared module)
     from bigflow.cli import walk_workflows
 
