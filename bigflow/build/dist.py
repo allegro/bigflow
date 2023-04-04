@@ -147,6 +147,7 @@ class build_project(distutils.cmd.Command):
         ('build-image', None, 'Builds the Docker image.'),
         ('start-time=', None, 'DAGs start time -- given in local timezone, for example: 2020-06-27 15:00:00'),
         ('workflow=', None, 'The workflow that you want to build DAG for.'),
+        ('env=', None, 'Env'), #TODO ala
         ('validate-project-setup', None, 'If used, echoes a message that can be used by the CLI to determine if the setup is working.'),
     ]
 
@@ -157,6 +158,7 @@ class build_project(distutils.cmd.Command):
         self.build_image = False
         self.workflow = None
         self.validate_project_setup = False
+        self.env = None
 
     def finalize_options(self) -> None:
         pass
@@ -170,7 +172,7 @@ class build_project(distutils.cmd.Command):
         if self.build_package:
             bigflow.build.operate.build_package(prj)
         elif self.build_dags:
-            bigflow.build.operate.build_dags(prj, self.start_time, self.workflow)
+            bigflow.build.operate.build_dags(prj, self.start_time, self.workflow, self.env)
         elif self.build_image:
             bigflow.build.operate.build_image(prj)
         else:
