@@ -42,7 +42,7 @@ def generate_dag_file(
     logger.info("build_ver: %s", build_ver)
     logger.info("image version: %s", image_version)
 
-    dag_deployment_id = get_dag_deployment_id(workflow.workflow_id, start_from, build_ver)
+    dag_deployment_id = get_dag_deployment_id(workflow.workflow_id, start_from, build_ver, env)
 
     dag_file_path = get_dags_output_dir(workdir) / (dag_deployment_id + '_dag.py')
     workflow_start_date = workflow.start_time_factory(start_from)
