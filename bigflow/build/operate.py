@@ -197,12 +197,15 @@ def build_dags(
     start_time: str,
     workflow_id: typing.Optional[str] = None,
 ):
+    print("project_spec", project_spec)
     # TODO: Move common functions from bigflow.cli to bigflow.commons (or other shared module)
     from bigflow.cli import walk_workflows
 
     logger.debug('Loading workflow(s)...')
     workflows = []
     for root_package in project_spec.packages:
+        print("root_package", root_package)
+
         if "." in root_package:
             # leaf package
             continue
