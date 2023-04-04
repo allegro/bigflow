@@ -636,7 +636,7 @@ def _cli_build_dags(args):
         prj,
         start_time=args.start_time if _is_starttime_selected(args) else datetime.now().strftime("%Y-%m-%d %H:00:00"),
         workflow_id=args.workflow if _is_workflow_selected(args) else None,
-        enviroment=args.env if _is_environment_selected(args) else None
+        env=args.env if _is_environment_selected(args) else None
     )
 
 
@@ -646,6 +646,7 @@ def _cli_build(args):
         prj,
         start_time=args.start_time if _is_starttime_selected(args) else datetime.now().strftime("%Y-%m-%d %H:00:00"),
         workflow_id=args.workflow if _is_workflow_selected(args) else None,
+        env=args.env if _is_environment_selected(args) else None,
         export_image_tar=args.export_image_tar,
         cache_params=_grab_image_cache_params(args),
     )

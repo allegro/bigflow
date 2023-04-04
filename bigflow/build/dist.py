@@ -176,7 +176,7 @@ class build_project(distutils.cmd.Command):
         elif self.build_image:
             bigflow.build.operate.build_image(prj)
         else:
-            bigflow.build.operate.build_project(prj, self.start_time, self.workflow)
+            bigflow.build.operate.build_project(prj, self.start_time, self.workflow, self.env)
 
 
 def projectspec_to_setuppy_kwargs(p: spec.BigflowProjectSpec):

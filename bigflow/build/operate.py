@@ -198,6 +198,7 @@ def build_dags(
     workflow_id: typing.Optional[str] = None,
     env: str = None
 ):
+    print("operate/build_dags env===", env)
     # TODO: Move common functions from bigflow.cli to bigflow.commons (or other shared module)
     from bigflow.cli import walk_workflows
 
@@ -284,11 +285,12 @@ def build_project(
     project_spec: BigflowProjectSpec,
     start_time: str,
     workflow_id: str | None = None,
+    env: str | None = None,
     export_image_tar: bool | None = None,
     cache_params: BuildImageCacheParams | None = None,
 ):
     logger.info("Build the project")
-    build_dags(project_spec, start_time, workflow_id=workflow_id)
+    build_dags(project_spec, start_time, workflow_id=workflow_id, env=env)
     build_package(project_spec)
     build_image(
         project_spec,
