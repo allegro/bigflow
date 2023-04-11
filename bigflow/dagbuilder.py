@@ -95,6 +95,7 @@ def generate_dag_file(
     def build_dag_operator(
         workflow_job: WorkflowJob,
         dependencies: list[WorkflowJob],
+        env: str
     ) -> None:
 
         job = workflow_job.job
@@ -130,7 +131,7 @@ def generate_dag_file(
                     '--job', {bf_job!r},
                     '--runtime', '{{{{ execution_date.strftime("%Y-%m-%d %H:%M:%S") }}}}',
                     '--project-package', {root_package_name!r},
-                    '--config', '{{{{var.value.env}}}}',
+                    '--config', {_replace_env_value_in_config_argument(env)},
                 ],
                 'namespace': namespace,
                 'image': {image_version!r},
@@ -194,6 +195,11 @@ def _check_env_parameter_existance(env: str) -> str:
         return f"# bigflow-environment: \t{env}"
     return ""
 
+
+def _replace_env_value_in_config_argument(env: str):
+    if env:
+        return env
+    return '{{{{var.value.env}}}}'
 
 def _str_to_datetime(dt: str | datetime) -> datetime:
     if isinstance(dt, datetime):
