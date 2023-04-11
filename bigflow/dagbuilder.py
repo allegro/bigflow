@@ -197,7 +197,7 @@ def _check_env_parameter_existance(env: str) -> str:
 
 def _replace_env_value_in_config_argument(env: str):
     if env:
-        return env
+        return f"'{env}'"
     return "'{{var.value.env}}'"
 
 
