@@ -198,7 +198,8 @@ def _check_env_parameter_existance(env: str) -> str:
 def _replace_env_value_in_config_argument(env: str):
     if env:
         return env
-    return '{{{{var.value.env}}}}'
+    return '{{var.value.env}}'
+
 
 def _str_to_datetime(dt: str | datetime) -> datetime:
     if isinstance(dt, datetime):
