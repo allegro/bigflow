@@ -94,8 +94,7 @@ def generate_dag_file(
 
     def build_dag_operator(
         workflow_job: WorkflowJob,
-        dependencies: list[WorkflowJob],
-        env: str
+        dependencies: list[WorkflowJob]
     ) -> None:
 
         job = workflow_job.job
