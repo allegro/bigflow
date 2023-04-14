@@ -126,7 +126,7 @@ def generate_dag_file(
                     '--job', {bf_job!r},
                     '--runtime', '{{{{ execution_date.strftime("%Y-%m-%d %H:%M:%S") }}}}',
                     '--project-package', {root_package_name!r},
-                    '--config', '{{{{var.value.{env_var_name} }}}}',
+                    '--config', '{{{{var.value.{env_var_name}}}}}',
                 ],
                 'namespace': namespace,
                 'image': {image_version!r},
