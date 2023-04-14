@@ -98,6 +98,7 @@ def generate_dag_file(
         task_id = job.id.replace("_", "-")
         retries = getattr(job, 'retry_count', 3)
         bf_job = workflow.workflow_id + "." + job.id
+        env_var_name = workflow.env_variable
 
         if workflow.secrets:
             indent_prefix =  """\
@@ -125,7 +126,7 @@ def generate_dag_file(
                     '--job', {bf_job!r},
                     '--runtime', '{{{{ execution_date.strftime("%Y-%m-%d %H:%M:%S") }}}}',
                     '--project-package', {root_package_name!r},
-                    '--config', '{{{{var.value.env}}}}',
+                    '--config', '{{{{var.value.{env_var_name} }}}}',
                 ],
                 'namespace': namespace,
                 'image': {image_version!r},
