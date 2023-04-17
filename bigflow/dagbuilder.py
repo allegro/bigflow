@@ -43,6 +43,8 @@ def generate_dag_files(
     logger.info("build_ver: %s", build_ver)
     logger.info("image version: %s", image_version)
 
+    print("AAAAAA", environments_to_deploy_on, workflow.environments_to_deploy_on)
+
     if environments_to_deploy_on is None and workflow.environments_to_deploy_on is not None:
         if isinstance(environments_to_deploy_on, str):
             environments_to_deploy_on = [workflow.environments_to_deploy_on]
