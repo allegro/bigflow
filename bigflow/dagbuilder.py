@@ -51,6 +51,9 @@ def generate_dag_files(
         else:
             environments_to_deploy_on = workflow.environments_to_deploy_on
 
+    if environments_to_deploy_on is None and workflow.environments_to_deploy_on is None:
+        environments_to_deploy_on = [environments_to_deploy_on]
+
     for env in environments_to_deploy_on:
         generate_single_environment_dag(
             workdir,
