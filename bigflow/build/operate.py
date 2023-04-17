@@ -204,7 +204,6 @@ def build_dags(
     logger.debug('Loading workflow(s)...')
     workflows = []
     for root_package in project_spec.packages:
-
         if "." in root_package:
             # leaf package
             continue
@@ -228,7 +227,7 @@ def build_dags(
 
     for (workflow, package) in workflows:
         logger.info("Generating DAG file for %s", workflow.workflow_id)
-        bigflow.dagbuilder.generate_dag_file(
+        bigflow.dagbuilder.generate_dag_files(
             str(project_spec.project_dir),
             image_version,
             workflow,

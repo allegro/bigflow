@@ -6,7 +6,7 @@ from unittest import TestCase
 
 from bigflow.bigquery.job import Job
 from bigflow.build.operate import create_image_version_file
-from bigflow.dagbuilder import get_dags_output_dir, clear_dags_output_dir, generate_dag_file
+from bigflow.dagbuilder import get_dags_output_dir, clear_dags_output_dir, generate_dag_files
 from bigflow.workflow import WorkflowJob, Workflow, Definition, get_timezone_offset_seconds, hourly_start_time
 
 from test import mixins
@@ -91,7 +91,7 @@ class DagBuilderTestCase(mixins.TempCwdMixin, TestCase):
             schedule_interval='@hourly')
 
         # when
-        dag_file_path = generate_dag_file(workdir, image, workflow, '2020-07-02 10:00:00', version, 'ca')
+        dag_file_path = generate_dag_files(workdir, image, workflow, '2020-07-02 10:00:00', version, 'ca')
 
         # then
         self.assertEqual(dag_file_path, str(workdir / '.dags' / 'my_workflow__v0_3_0__2020_07_02_10_00_00_dag.py'))
@@ -126,7 +126,7 @@ class DagBuilderTestCase(mixins.TempCwdMixin, TestCase):
             secrets=['bf_secret_password', 'bf_secret_token'])
 
         # when
-        dag_file_path = generate_dag_file(workdir, image, workflow, '2020-07-02', version, 'ca')
+        dag_file_path = generate_dag_files(workdir, image, workflow, '2020-07-02', version, 'ca')
 
         # then passes the depends_on_past parameter value
         self.assertEqual(dag_file_path, str(workdir / '.dags/my_parametrized_workflow__v0_3_0__2020_07_02_00_00_00_dag.py'))
@@ -159,7 +159,7 @@ class DagBuilderTestCase(mixins.TempCwdMixin, TestCase):
             schedule_interval='@daily')
 
         # when
-        dag_file_path = generate_dag_file(workdir, image, workflow, '2020-07-02', version, 'ca')
+        dag_file_path = generate_dag_files(workdir, image, workflow, '2020-07-02', version, 'ca')
 
         # then
         self.assertEqual(dag_file_path, str(workdir / '.dags/my_daily_workflow__v0_3_0__2020_07_02_00_00_00_dag.py'))

@@ -26,21 +26,50 @@ def secret_template(secret: str) -> str:
     return f"Secret(deploy_type='env', deploy_target={secret!r}, secret={secret_clean!r}, key={secret!r})"
 
 
-def generate_dag_file(
+def generate_dag_files(
     workdir: str,
     image_version: str,
     workflow: Workflow,
     start_from: datetime | str,
     build_ver: str,
     root_package_name: str,
-    env: str
-) -> str:
+    main_composer_environment: str = None, # TODO czy potrzeba?
+    environments_to_deploy_on: typing.Union[str, typing.List[str]] = None
+) -> None:
 
     start_from = _str_to_datetime(start_from)
 
     logger.info("start_from %s:", start_from)
     logger.info("build_ver: %s", build_ver)
     logger.info("image version: %s", image_version)
+
+    if environments_to_deploy_on is None and workflow.environments_to_deploy_on is not None:
+        if isinstance(environments_to_deploy_on, str):
+            environments_to_deploy_on = [workflow.environments_to_deploy_on]
+        else:
+            environments_to_deploy_on = workflow.environments_to_deploy_on
+
+    for env in environments_to_deploy_on:
+        generate_single_environment_dag(
+            workdir,
+            image_version,
+            workflow,
+            start_from,
+            build_ver,
+            root_package_name,
+            env
+        )
+
+
+def generate_single_environment_dag(
+    workdir: str,
+    image_version: str,
+    workflow: Workflow,
+    start_from: datetime | str,
+    build_ver: str,
+    root_package_name: str,
+    env: str,
+) -> str:
 
     dag_deployment_id = get_dag_deployment_id(workflow.workflow_id, start_from, build_ver, env)
 
@@ -57,12 +86,12 @@ def generate_dag_file(
         # bigflow-startdate: \t{start_from.isoformat()}
         # biglfow-imageid:   \t{image_version}
         {_check_env_parameter_existance(env)}
-        
+
 
         import datetime
         from airflow import DAG
         from airflow import version
-        
+
         try:
             from airflow.kubernetes.secret import Secret
             from airflow.providers.cncf.kubernetes.operators.kubernetes_pod import KubernetesPodOperator
@@ -70,11 +99,11 @@ def generate_dag_file(
             # Fallback to older Airflow
             from airflow.contrib.kubernetes.secret import Secret
             from airflow.contrib.operators.kubernetes_pod_operator import KubernetesPodOperator
-            
+
         # BigFlow assumes that you use (airflow 1.x + composer 1.x) or (airflow 2.x + composer 2.x)
         IS_COMPOSER_2_X = version.version >= '2.0.0'
         namespace = 'composer-user-workloads' if IS_COMPOSER_2_X else 'default'
-            
+
         default_args = dict(
             owner='airflow',
             depends_on_past={workflow.depends_on_past!r},
@@ -93,8 +122,8 @@ def generate_dag_file(
     """))
 
     def build_dag_operator(
-        workflow_job: WorkflowJob,
-        dependencies: list[WorkflowJob]
+            workflow_job: WorkflowJob,
+            dependencies: list[WorkflowJob]
     ) -> None:
 
         job = workflow_job.job
