@@ -33,7 +33,6 @@ def generate_dag_files(
     start_from: datetime | str,
     build_ver: str,
     root_package_name: str,
-    main_composer_environment: str = None, # TODO czy potrzeba?
     environments_to_deploy_on: typing.Union[str, typing.List[str]] = None
 ) -> None:
 
