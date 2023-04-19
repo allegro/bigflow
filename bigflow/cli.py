@@ -631,7 +631,6 @@ def _cli_build_package():
 
 
 def _cli_build_dags(args):
-    print("BBBBB", args.env)
     prj = bigflow.build.spec.get_project_spec()
     bigflow.build.operate.build_dags(
         prj,
