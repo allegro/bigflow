@@ -136,8 +136,9 @@ def generate_dag_file(
                 'secrets': {secrets_definition_list},
                 'execution_timeout': {execution_timeout!r},
             }}
-            if IS_AIRFLOW_2_3_X:
+            if IS_COMPOSER_2_X:
                 {pod_operator_params_var}['config_file'] = "/home/airflow/composer_kube_config"
+            if IS_AIRFLOW_2_3_X:
                 {pod_operator_params_var}['kubernetes_conn_id'] = "kubernetes_default"
 
             {job_var} = KubernetesPodOperator(**{pod_operator_params_var})
