@@ -69,7 +69,7 @@ def generate_dag_file(
         # BigFlow assumes that we use (airflow 1.x + composer 1.x) or (airflow 2.x + composer 2.x)
         IS_COMPOSER_2_X = version.version >= '2.0.0'
         IS_AIRFLOW_2_3_X = version.version >= '2.3.0'
-        namespace = 'composer-user-workloads' if IS_COMPOSER_2_X else 'default'
+        namespace = 'composer-user-workloads' if IS_AIRFLOW_2_3_X else 'default'
             
         default_args = dict(
             owner='airflow',
@@ -136,9 +136,8 @@ def generate_dag_file(
                 'secrets': {secrets_definition_list},
                 'execution_timeout': {execution_timeout!r},
             }}
-            if IS_COMPOSER_2_X:
-                {pod_operator_params_var}['config_file'] = "/home/airflow/composer_kube_config"
             if IS_AIRFLOW_2_3_X:
+                {pod_operator_params_var}['config_file'] = "/home/airflow/composer_kube_config"
                 {pod_operator_params_var}['kubernetes_conn_id'] = "kubernetes_default"
 
             {job_var} = KubernetesPodOperator(**{pod_operator_params_var})
