@@ -58,7 +58,27 @@ pip-compile base_frozen.in
 
 ## Development process
 
-TODO
+At the beginning set up infrastructure for your test project. You can find description 
+for it in [here](https://wiki.allegrogroup.com/display/POGRANICZE/Terraform+in+BigFlow+Projects+Guideline).
+
+Then implement your changes for bigflow and push changes on your newly created specific branch.
+
+After that, on test project set in `requirements.in` bigflow version from your branch. 
+to do that you just need to set bigflow in `requirements.in` file like that:
+
+```shell script
+# bigflow[bigquery]==1.5.0  <- oryginalna instalacja
+git+https://github.com/allegro/bigflow@name-of-your-brancg#egg=bigflow[your-dependencies]
+```
+and add in your `Dockerfile` following command
+```shell script
+apt-get install -y git
+```
+
+Then remove your `requirements.txt` file,
+build dependencies once again (using `pip-compile` or `bf build-requirements` command), then uninstall bigflow locally
+and run `pip install -r resources/requirements.txt`. After that, you can simply run `bf build` and `bf deploy` commands 
+and finally check created DAGs on Airflow website which you can access from composer who were initialized in infrastructure project.
 
 ## Backward compatibility
 
