@@ -23,7 +23,6 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: 3.8
-        pip-version: 21.2.2
 
     - name: Setup github username
       run: |
@@ -41,6 +40,7 @@ jobs:
 
     - name: Install dependencies
       run: |
+        pip install pip==21.2.2
         pip install -r requirements.txt
 
     - name: Run unit tests
