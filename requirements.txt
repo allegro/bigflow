@@ -16,8 +16,6 @@ bleach==6.0.0
     # via readme-renderer
 bs4==0.0.1
     # via -r requirements.in
-build==0.10.0
-    # via pip-tools
 cachetools==4.2.4
     # via
     #   apache-beam
@@ -188,7 +186,7 @@ markupsafe==2.1.2
 mdurl==0.1.2
     # via markdown-it-py
 more-itertools==9.1.0
-    # via jaraco-classes
+    # via jaraco.classes
 numpy==1.22.4
     # via
     #   apache-beam
@@ -205,7 +203,6 @@ overrides==6.5.0
     # via google-cloud-pubsublite
 packaging==23.0
     # via
-    #   build
     #   db-dtypes
     #   google-cloud-bigquery
     #   pytest
@@ -215,9 +212,11 @@ pandas==1.5.3
     #   db-dtypes
 parameterized==0.8.1
     # via -r requirements.in
+pep517==0.13.0
+    # via pip-tools
 pexpect==4.8.0
     # via -r requirements.in
-pip-tools==6.12.3
+pip-tools==6.5
     # via
     #   -r requirements.in
     #   -r requirements/base.txt
@@ -284,8 +283,6 @@ pyparsing==3.0.9
     # via
     #   httplib2
     #   pydot
-pyproject-hooks==1.0.0
-    # via build
 pytest==7.2.1
     # via
     #   -r requirements.in
@@ -360,9 +357,8 @@ toml==0.10.2
     #   responses
 tomli==2.0.1
     # via
-    #   build
     #   coverage
-    #   pyproject-hooks
+    #   pep517
     #   pytest
 twine==4.0.2
     # via -r requirements.in
