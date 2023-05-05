@@ -2,7 +2,7 @@
 -r requirements/bigquery_extras.txt
 -r requirements/dataflow_extras.txt
 pip>=22.0.0,<22.1.0
-pip-tools>=6.5.0, <6.10.0
+pip-tools>=6.9.0, <6.10.0
 twine
 freezegun
 pexpect
