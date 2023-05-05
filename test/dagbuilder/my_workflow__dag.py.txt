@@ -82,7 +82,7 @@ tjob2_pod_operator_params = {
     'secrets': [],
     'execution_timeout': datetime.timedelta(seconds=10800),
 }
-if IS_COMPOSER_2_X:
+if IS_AIRFLOW_2_3_X:
     tjob2_pod_operator_params['config_file'] = "/home/airflow/composer_kube_config"
     tjob2_pod_operator_params['kubernetes_conn_id'] = "kubernetes_default"
 
@@ -109,7 +109,7 @@ tjob3_pod_operator_params = {
     'secrets': [],
     'execution_timeout': datetime.timedelta(seconds=10800),
 }
-if IS_COMPOSER_2_X:
+if IS_AIRFLOW_2_3_X:
     tjob3_pod_operator_params['config_file'] = "/home/airflow/composer_kube_config"
     tjob3_pod_operator_params['kubernetes_conn_id'] = "kubernetes_default"
 
