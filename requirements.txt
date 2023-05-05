@@ -215,7 +215,7 @@ parameterized==0.9.0
     # via -r requirements.in
 pexpect==4.8.0
     # via -r requirements.in
-pip-tools==6.13.0
+pip-tools==6.9.0
     # via
     #   -r requirements.in
     #   -r requirements/base.txt
