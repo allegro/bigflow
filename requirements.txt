@@ -188,7 +188,7 @@ markupsafe==2.1.2
 mdurl==0.1.2
     # via markdown-it-py
 more-itertools==9.1.0
-    # via jaraco-classes
+    # via jaraco.classes
 numpy==1.22.4
     # via
     #   apache-beam
@@ -217,7 +217,7 @@ parameterized==0.8.1
     # via -r requirements.in
 pexpect==4.8.0
     # via -r requirements.in
-pip-tools==6.12.3
+pip-tools==6.9.0
     # via
     #   -r requirements.in
     #   -r requirements/base.txt
