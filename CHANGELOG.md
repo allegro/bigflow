@@ -1,5 +1,11 @@
 # BigFlow changelog
 
+## Version 1.7.1
+
+### Changed
+
+* Bigflow CLI commands won't fail on additional unknown parameters. This allows to pass additional parameters to BigFlow Jobs. 
+
 ## Version 1.7.0
 
 ### Changed
