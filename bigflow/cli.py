@@ -268,7 +268,8 @@ def _parse_args(project_name: Optional[str], args) -> Namespace:
 
     _create_codegen_parser(subparsers)
 
-    return parser.parse_args(args)
+    bigflow_only_args = parser.parse_known_args(args)[0]
+    return bigflow_only_args
 
 
 def _create_logs_parser(subparsers):
