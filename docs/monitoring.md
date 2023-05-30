@@ -113,6 +113,8 @@ We can also specify what kind of log message we want to filter. We can do that b
 
 ![Log Explorer filter](./images/log_explorer_pick_severity.png)
 
+### Retrieving logs for Kubernetes Operator
+
 When we use Kubernetes operator, we can check also details of k8s workers details and retrieve information from Log Explorer.
 To get Kubernetes pod name we need to search for it in Airflow logs. We can see example in here.
 
@@ -122,6 +124,9 @@ Then to check K8s worker information, we can similarly filter out in search bar 
 even specify resource type and check details of Kubernetes pod, cluster or node.
 
 ![Log Explorer filter](./images/k8s_worker_details_log_explorer.png)
+
+
+### Getting logs in Dataflow for Beam jobs
 
 When we want to check logs of failed Apache Beam job, we need to go to Dataflow service on our GCP project. Then find our job run
 and click on it. After that we can see graph of Beam pipeline with status for each of the steps. In order to check log of every job 
