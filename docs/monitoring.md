@@ -134,7 +134,7 @@ we need to click arrow on the bottom of the site like in here
 
 ![Dataflow filter](./images/Beam_select_logs.png)
 
-Then we can filter out proper information similarly like in Log Explorer. We can filter out severity of messaegs and type
+Then we can filter out proper information similarly like in Log Explorer. We can filter out severity of messages and type
 whether we want job logs or workers logs.
 
 ![Dataflow logs details](./images/Beam_filter_logs.png)
