@@ -139,6 +139,11 @@ whether we want job logs or workers logs.
 
 ![Dataflow logs details](./images/Beam_filter_logs.png)
 
+However, very often worker logs doesn't show all the details. Very useful is opening them via Log Explorer and then delete 
+filter there and add only job id. After that we can find all possible information which we want.
+
+![Dataflow logs details](./images/Dataflow_open_in_log_explorer.png)
+
 ### Monitoring "data quality"
 
 TODO
