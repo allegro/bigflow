@@ -450,12 +450,12 @@ def create_bigquery_client(
 ) -> 'google.cloud.bigquery.Client':
     from google.cloud import bigquery
     logger.info("Credentials logs - create_bigquery_client", bigquery.Client(
-        project="sc-14793-bigflow-prod",
+        project=project_id,
         credentials=credentials,
         location=location).__dict__)
 
     return bigquery.Client(
-        project="sc-14793-bigflow-prod",
+        project=project_id,
         credentials=credentials,
         location=location)
 
