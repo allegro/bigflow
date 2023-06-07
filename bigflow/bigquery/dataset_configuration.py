@@ -60,7 +60,8 @@ class DatasetConfig:
         self.delegate.add_configuration(env, all_properties, is_default=is_default)
         return self
 
-    def create_dataset_manager(self, env: str = None) -> Dataset:
+    def create_dataset_manager(self, env: str = None,
+                               credentials: 'google.auth.credentials.Credentials' | None = None) -> Dataset:
         return InteractiveDatasetManager(
             project_id=self.resolve_project_id(env),
             dataset_name=self.resolve_dataset_name(env),
@@ -68,7 +69,8 @@ class DatasetConfig:
             external_tables=self.resolve_external_tables(env),
             extras=self.resolve_extra_properties(env),
             tables_labels=self.resolve_tables_labels(env),
-            dataset_labels=self.resolve_dataset_labels(env))
+            dataset_labels=self.resolve_dataset_labels(env),
+            credentials=credentials)
 
     def resolve_extra_properties(self, env: str = None):
         return {k: v for (k, v) in self.resolve(env).items() if self._is_extra_property(k)}
