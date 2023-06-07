@@ -449,20 +449,6 @@ def create_bigquery_client(
         location: str
 ) -> 'google.cloud.bigquery.Client':
     from google.cloud import bigquery
-    import google.auth.impersonated_credentials
-    import os
-
-    target_scopes = [
-        "https://www.googleapis.com/auth/bigquery",
-        "https://www.googleapis.com/auth/bigquery.insertdata"
-    ]
-
-    creds, pid = google.auth.default()
-    tcreds = google.auth.impersonated_credentials.Credentials(
-        source_credentials=creds,
-        target_principal=os.environ['COMPUTE_ACC'],
-        target_scopes=target_scopes,
-    )
 
     logger.info("Credentials logs - create_bigquery_client", bigquery.Client(
         project=project_id,
@@ -471,7 +457,7 @@ def create_bigquery_client(
 
     return bigquery.Client(
         project=project_id,
-        credentials=tcreds,
+        credentials=credentials,
         location=location)
 
 
