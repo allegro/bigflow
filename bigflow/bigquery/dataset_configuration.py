@@ -1,5 +1,5 @@
 from typing import Dict, List
-import google.auth
+import google.auth as auth
 
 from ..configuration import Config
 from .interface import Dataset
@@ -17,16 +17,19 @@ class DatasetConfig:
                  is_master: bool = True,
                  is_default: bool = True,
                  tables_labels: Dict[str, Dict[str, str]] = None,
-                 dataset_labels: Dict[str, str] = None):
-       all_properties = (properties or {}).copy()
-       all_properties['project_id'] = project_id
-       all_properties['dataset_name'] = dataset_name
-       all_properties['internal_tables'] = internal_tables or []
-       all_properties['external_tables'] = external_tables or {}
-       all_properties['tables_labels'] = tables_labels or []
-       all_properties['dataset_labels'] = dataset_labels or []
+                 dataset_labels: Dict[str, str] = None,
+                 credentials=None):
 
-       self.delegate = Config(name=env, properties=all_properties, is_master=is_master, is_default=is_default)
+        self.credentials = credentials
+        all_properties = (properties or {}).copy()
+        all_properties['project_id'] = project_id
+        all_properties['dataset_name'] = dataset_name
+        all_properties['internal_tables'] = internal_tables or []
+        all_properties['external_tables'] = external_tables or {}
+        all_properties['tables_labels'] = tables_labels or []
+        all_properties['dataset_labels'] = dataset_labels or []
+
+        self.delegate = Config(name=env, properties=all_properties, is_master=is_master, is_default=is_default)
 
     def add_configuration(self,
                           env: str,
@@ -62,7 +65,11 @@ class DatasetConfig:
         return self
 
     def create_dataset_manager(self, env: str = None,
-                               credentials: google.auth.credentials.Credentials | None = None) -> Dataset:
+                               passed_credentials=None) -> Dataset:
+        if passed_credentials is None:
+            creds = self.credentials
+        else:
+            creds = passed_credentials
         return InteractiveDatasetManager(
             project_id=self.resolve_project_id(env),
             dataset_name=self.resolve_dataset_name(env),
@@ -71,7 +78,7 @@ class DatasetConfig:
             extras=self.resolve_extra_properties(env),
             tables_labels=self.resolve_tables_labels(env),
             dataset_labels=self.resolve_dataset_labels(env),
-            credentials=credentials)
+            credentials=creds)
 
     def resolve_extra_properties(self, env: str = None):
         return {k: v for (k, v) in self.resolve(env).items() if self._is_extra_property(k)}
