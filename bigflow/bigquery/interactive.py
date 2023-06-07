@@ -229,7 +229,6 @@ class InteractiveComponent(object):
         dependency_config = self._dependency_config.copy()
         dependency_config.update({dataset_alias: dataset.config for dataset_alias, dataset in dependencies_override.items()})
 
-        logger.info("Credentials logs - InteractiveComponent to_job dependency_config", dependency_config['ds'].__dict__)
         logger.info("Convert interactive component to job, id=%s, component %s, dependencies %s", id, component_callable, dependency_config)
         return Job(
             component=component_callable,
