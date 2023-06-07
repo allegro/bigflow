@@ -1,4 +1,5 @@
 from typing import Dict, List
+import google.auth
 
 from ..configuration import Config
 from .interface import Dataset
@@ -61,7 +62,7 @@ class DatasetConfig:
         return self
 
     def create_dataset_manager(self, env: str = None,
-                               credentials: 'google.auth.credentials.Credentials' | None = None) -> Dataset:
+                               credentials: google.auth.credentials.Credentials | None = None) -> Dataset:
         return InteractiveDatasetManager(
             project_id=self.resolve_project_id(env),
             dataset_name=self.resolve_dataset_name(env),
