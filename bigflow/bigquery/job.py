@@ -59,8 +59,6 @@ class Job(bigflow.Job):
 
     def _find_config(self, target_dependency_name):
         logger.info("Credentials logs - Job _find_config dependency_configuration", self.dependency_configuration.items())
-        logger.info("Credentials logs - Job _find_config dependency_configuration.ds", self.dependency_configuration['ds'].__dict__)
-
 
         for dependency_name, config in self.dependency_configuration.items():
             if dependency_name == target_dependency_name:
