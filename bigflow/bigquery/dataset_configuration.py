@@ -1,5 +1,5 @@
 from typing import Dict, List
-import google.auth as auth
+import google.auth.impersonated_credentials
 
 from ..configuration import Config
 from .interface import Dataset
@@ -18,9 +18,8 @@ class DatasetConfig:
                  is_default: bool = True,
                  tables_labels: Dict[str, Dict[str, str]] = None,
                  dataset_labels: Dict[str, str] = None,
-                 credentials=None):
+                 impersonate_service_account=None):
 
-        self.credentials = credentials
         all_properties = (properties or {}).copy()
         all_properties['project_id'] = project_id
         all_properties['dataset_name'] = dataset_name
@@ -28,6 +27,7 @@ class DatasetConfig:
         all_properties['external_tables'] = external_tables or {}
         all_properties['tables_labels'] = tables_labels or []
         all_properties['dataset_labels'] = dataset_labels or []
+        all_properties['impersonate_service_account'] = impersonate_service_account or None
 
         self.delegate = Config(name=env, properties=all_properties, is_master=is_master, is_default=is_default)
 
@@ -40,7 +40,8 @@ class DatasetConfig:
                           properties: dict = None,
                           is_default: bool = False,
                           tables_labels: Dict[str, Dict[str, str]] = None,
-                          dataset_labels: Dict[str, str] = None):
+                          dataset_labels: Dict[str, str] = None,
+                          impersonate_service_account: str = None):
 
         all_properties = (properties or {}).copy()
 
@@ -61,6 +62,10 @@ class DatasetConfig:
         if dataset_labels:
             all_properties['dataset_labels'] = dataset_labels
 
+        if impersonate_service_account:
+            all_properties['credentials'] = self._credentials_for_impersonate_service_account(
+                impersonate_service_account)
+
         self.delegate.add_configuration(env, all_properties, is_default=is_default)
         return self
 
@@ -73,7 +78,7 @@ class DatasetConfig:
             extras=self.resolve_extra_properties(env),
             tables_labels=self.resolve_tables_labels(env),
             dataset_labels=self.resolve_dataset_labels(env),
-            credentials=self.credentials)
+            credentials=self.resolve_credentials(env))
 
     def resolve_extra_properties(self, env: str = None):
         return {k: v for (k, v) in self.resolve(env).items() if self._is_extra_property(k)}
@@ -108,5 +113,24 @@ class DatasetConfig:
     def resolve_dataset_labels(self, env: str = None) -> Dict[str, str]:
         return self.resolve_property('dataset_labels', env)
 
+    def resolve_credentials(self, env: str = None) -> Dict[str, str]:
+        return self.resolve_property('credentials', env)
+
     def _is_extra_property(self, property_name) -> bool:
         return property_name not in ['project_id','dataset_name','internal_tables','external_tables', 'env', 'dataset_labels', 'tables_labels']
+
+    @staticmethod
+    def _credentials_for_impersonate_service_account(
+            service_account: str) -> google.auth.impersonated_credentials.Credentials:
+        target_scopes = [
+            "https://www.googleapis.com/auth/bigquery",
+            "https://www.googleapis.com/auth/bigquery.insertdata"
+        ]
+
+        creds, pid = google.auth.default()
+        credentials = google.auth.impersonated_credentials.Credentials(
+            source_credentials=creds,
+            target_principal=service_account,
+            target_scopes=target_scopes,
+        )
+        return credentials
