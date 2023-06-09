@@ -18,7 +18,7 @@ class DatasetConfig:
                  is_default: bool = True,
                  tables_labels: Dict[str, Dict[str, str]] = None,
                  dataset_labels: Dict[str, str] = None,
-                 credentials: str = None):
+                 credentials = None):
 
         all_properties = (properties or {}).copy()
         all_properties['project_id'] = project_id
