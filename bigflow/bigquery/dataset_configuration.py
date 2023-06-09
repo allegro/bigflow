@@ -78,7 +78,7 @@ class DatasetConfig:
             extras=self.resolve_extra_properties(env),
             tables_labels=self.resolve_tables_labels(env),
             dataset_labels=self.resolve_dataset_labels(env),
-            credentials=self.resolve_credentials(env))
+            credentials=self.resolve_impersonate_service_account(env))
 
     def resolve_extra_properties(self, env: str = None):
         return {k: v for (k, v) in self.resolve(env).items() if self._is_extra_property(k)}
@@ -113,9 +113,8 @@ class DatasetConfig:
     def resolve_dataset_labels(self, env: str = None) -> Dict[str, str]:
         return self.resolve_property('dataset_labels', env)
 
-    def resolve_credentials(self, env: str = None) -> Dict[str, str]:
-        print("AAA credentials AAA")
-        return self.resolve_property('credentials', env)
+    def resolve_impersonate_service_account(self, env: str = None) -> Dict[str, str]:
+        return self.resolve_property('impersonate_service_account', env)
 
     def _is_extra_property(self, property_name) -> bool:
         return property_name not in ['project_id','dataset_name','internal_tables','external_tables', 'env', 'dataset_labels', 'tables_labels']
