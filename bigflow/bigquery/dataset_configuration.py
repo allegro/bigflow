@@ -114,6 +114,7 @@ class DatasetConfig:
         return self.resolve_property('dataset_labels', env)
 
     def resolve_credentials(self, env: str = None) -> Dict[str, str]:
+        print("AAA credentials AAA")
         return self.resolve_property('credentials', env)
 
     def _is_extra_property(self, property_name) -> bool:
