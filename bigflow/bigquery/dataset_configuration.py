@@ -65,11 +65,11 @@ class DatasetConfig:
         return self
 
     def create_dataset_manager(self, env: str = None,
-                               passed_credentials=None) -> Dataset:
-        if passed_credentials is None:
+                               custom_credentials=None) -> Dataset:
+        if custom_credentials is None:
             creds = self.credentials
         else:
-            creds = passed_credentials
+            creds = custom_credentials
         return InteractiveDatasetManager(
             project_id=self.resolve_project_id(env),
             dataset_name=self.resolve_dataset_name(env),
