@@ -41,7 +41,7 @@ class DatasetConfig:
                           is_default: bool = False,
                           tables_labels: Dict[str, Dict[str, str]] = None,
                           dataset_labels: Dict[str, str] = None,
-                          credentials: str = None):
+                          credentials = None):
 
         all_properties = (properties or {}).copy()
 
