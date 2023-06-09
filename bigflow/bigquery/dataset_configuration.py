@@ -18,7 +18,7 @@ class DatasetConfig:
                  is_default: bool = True,
                  tables_labels: Dict[str, Dict[str, str]] = None,
                  dataset_labels: Dict[str, str] = None,
-                 impersonate_service_account=None):
+                 impersonate_service_account: str = None):
 
         all_properties = (properties or {}).copy()
         all_properties['project_id'] = project_id
@@ -63,8 +63,9 @@ class DatasetConfig:
             all_properties['dataset_labels'] = dataset_labels
 
         if impersonate_service_account:
-            all_properties['impersonate_service_account'] = self._credentials_for_impersonate_service_account(
-                impersonate_service_account)
+            # all_properties['impersonate_service_account'] = self._credentials_for_impersonate_service_account(
+            #     impersonate_service_account)
+            all_properties['impersonate_service_account'] = impersonate_service_account
 
         self.delegate.add_configuration(env, all_properties, is_default=is_default)
         return self
