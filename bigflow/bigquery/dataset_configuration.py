@@ -5,6 +5,9 @@ from ..configuration import Config
 from .interface import Dataset
 from .interactive import InteractiveDatasetManager
 
+import logging
+logger = logging.getLogger(__name__)
+
 
 class DatasetConfig:
     def __init__(self,
@@ -71,6 +74,7 @@ class DatasetConfig:
         return self
 
     def create_dataset_manager(self, env: str = None) -> Dataset:
+        logger.info('My_precious_debugging - create_dataset_manager')
         return InteractiveDatasetManager(
             project_id=self.resolve_project_id(env),
             dataset_name=self.resolve_dataset_name(env),
@@ -115,6 +119,7 @@ class DatasetConfig:
         return self.resolve_property('dataset_labels', env)
 
     def resolve_credentials(self, env: str = None) -> Dict[str, str]:
+        logger.info('My_precious_debugging - resolve_credentials')
         return self.resolve_property('credentials', env)
 
     def _is_extra_property(self, property_name) -> bool:
