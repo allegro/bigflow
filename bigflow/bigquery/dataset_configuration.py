@@ -63,7 +63,7 @@ class DatasetConfig:
             all_properties['dataset_labels'] = dataset_labels
 
         if impersonate_service_account:
-            all_properties['credentials'] = self._credentials_for_impersonate_service_account(
+            all_properties['impersonate_service_account'] = self._credentials_for_impersonate_service_account(
                 impersonate_service_account)
 
         self.delegate.add_configuration(env, all_properties, is_default=is_default)
