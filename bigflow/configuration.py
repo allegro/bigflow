@@ -69,8 +69,6 @@ class Config:
 
         properties_with_placeholders = dict(env_config)
 
-        logger.info("0o0o0o0o0o0o0o0o0o0o0o0o0o0 properties_with_placeholders", properties_with_placeholders)
-
         for k, v in self._capture_osenv_properties().items():
             if properties_with_placeholders.get(k, None) is None:
                 properties_with_placeholders[k] = v
@@ -80,9 +78,6 @@ class Config:
                 raise ValueError(
                     f"Failed to load property '{k}' from OS environment, "
                     f"no such env variable: '{self.environment_variables_prefix}{k}'.")
-
-        logger.info("0o0o0o0o0o0o0o0o0o0o0o0o0o0 properties_with_placeholders", properties_with_placeholders)
-
 
         return {
             key: self._resolve_placeholders(value, properties_with_placeholders)
@@ -125,12 +120,15 @@ class Config:
 
     def _resolve_placeholders(self, value, variables: dict):
         if isinstance(value, str):
+            logger.info("99999999 _resolve_placeholders in str", value)
+
             modified_value = value
             for k, v in variables.items():
                 if isinstance(v, str) and v != value:
                     modified_value = modified_value.replace("{%s}" % k, v)
             return modified_value
         else:
+            logger.info("99999999 _resolve_placeholders", value)
             return value
 
 
