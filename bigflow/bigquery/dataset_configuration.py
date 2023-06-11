@@ -150,7 +150,8 @@ class DatasetConfig:
         return self.resolve_property('credentials', env)
 
     def _is_extra_property(self, property_name) -> bool:
-        return property_name not in ['project_id','dataset_name','internal_tables','external_tables', 'env', 'dataset_labels', 'tables_labels']
+        return property_name not in ['project_id','dataset_name','internal_tables','external_tables', 'env',
+                                     'dataset_labels', 'tables_labels', 'credentials']
 
     # @staticmethod
     # def _credentials_for_impersonate_service_account(
