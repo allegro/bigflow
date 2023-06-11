@@ -68,6 +68,9 @@ class Config:
         env_config, env_name = self._get_env_config(env_name)
 
         properties_with_placeholders = dict(env_config)
+
+        logger.info("0o0o0o0o0o0o0o0o0o0o0o0o0o0 properties_with_placeholders", properties_with_placeholders)
+
         for k, v in self._capture_osenv_properties().items():
             if properties_with_placeholders.get(k, None) is None:
                 properties_with_placeholders[k] = v
@@ -78,15 +81,21 @@ class Config:
                     f"Failed to load property '{k}' from OS environment, "
                     f"no such env variable: '{self.environment_variables_prefix}{k}'.")
 
+        logger.info("0o0o0o0o0o0o0o0o0o0o0o0o0o0 properties_with_placeholders", properties_with_placeholders)
+
+
         return {
             key: self._resolve_placeholders(value, properties_with_placeholders)
             for key, value in properties_with_placeholders.items()
         }
 
     def add_configuration(self, name: str, properties: dict, is_default: bool = False):
+        logger.info("0o0o0o0o0o0o0o0o0o0o0o0o0o0 properties", properties)
         props = {}
         props.update(self.master_properties)
         props.update(properties)
+
+        logger.info("0o0o0o0o0o0o0o0o0o0o0o0o0o0 props", props)
 
         assert 'env' not in properties or properties['env'] == name
         props['env'] = name

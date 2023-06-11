@@ -70,13 +70,30 @@ class DatasetConfig:
         if credentials:
             # all_properties['impersonate_service_account'] = self._credentials_for_impersonate_service_account(
             #     impersonate_service_account)
+
             all_properties['credentials'] = credentials
+
+        logger.info("0o0o0o0o0o0o0o0o0o0o0o0o0o0 all_properties", all_properties)
+        logger.info("0o0o0o0o0o0o0o0o0o0o0o0o0o0 env", env)
+
 
         self.delegate.add_configuration(env, all_properties, is_default=is_default)
         return self
 
     def create_dataset_manager(self, env: str = None) -> Dataset:
-        logger.info('My_precious_debugging - create_dataset_manager')
+        logger.info("0o0o0o0o0o0o0o0o0o0o0o0o0o0 InteractiveDatasetManager in create_dataset_manager",
+                    InteractiveDatasetManager(
+                        project_id=self.resolve_project_id(env),
+                        dataset_name=self.resolve_dataset_name(env),
+                        internal_tables=self.resolve_internal_tables(env),
+                        external_tables=self.resolve_external_tables(env),
+                        extras=self.resolve_extra_properties(env),
+                        tables_labels=self.resolve_tables_labels(env),
+                        dataset_labels=self.resolve_dataset_labels(env),
+                        # credentials=self.credentials
+                        credentials=self.resolve_credentials(env)
+                    ).__dict__
+                    )
 
         # if passed_credentials is None:
         #     creds = self.credentials
