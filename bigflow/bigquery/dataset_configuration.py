@@ -21,7 +21,7 @@ class DatasetConfig:
                  is_default: bool = True,
                  tables_labels: Dict[str, Dict[str, str]] = None,
                  dataset_labels: Dict[str, str] = None,
-                 credentials = None, *args, **kwargs):
+                 credentials = None):
 
         all_properties = (properties or {}).copy()
         all_properties['project_id'] = project_id
@@ -30,7 +30,7 @@ class DatasetConfig:
         all_properties['external_tables'] = external_tables or {}
         all_properties['tables_labels'] = tables_labels or []
         all_properties['dataset_labels'] = dataset_labels or []
-        all_properties['credentials'] = credentials or None
+        # all_properties['credentials'] = credentials or None
 
         self.delegate = Config(name=env, properties=all_properties, is_master=is_master, is_default=is_default)
 
@@ -68,13 +68,19 @@ class DatasetConfig:
         # if credentials:
             # all_properties['impersonate_service_account'] = self._credentials_for_impersonate_service_account(
             #     impersonate_service_account)
-        all_properties['credentials'] = credentials
+        # all_properties['credentials'] = credentials
 
         self.delegate.add_configuration(env, all_properties, is_default=is_default)
         return self
 
-    def create_dataset_manager(self, env: str = None) -> Dataset:
+    def create_dataset_manager(self, env: str = None, passed_credentials=None) -> Dataset:
         logger.info('My_precious_debugging - create_dataset_manager')
+
+        if passed_credentials is None:
+            creds = self.credentials
+        else:
+            creds = passed_credentials
+
         return InteractiveDatasetManager(
             project_id=self.resolve_project_id(env),
             dataset_name=self.resolve_dataset_name(env),
@@ -83,7 +89,9 @@ class DatasetConfig:
             extras=self.resolve_extra_properties(env),
             tables_labels=self.resolve_tables_labels(env),
             dataset_labels=self.resolve_dataset_labels(env),
-            credentials=self.resolve_credentials(env))
+            credentials=creds
+            # credentials=self.resolve_credentials(env)
+        )
 
     def resolve_extra_properties(self, env: str = None):
         return {k: v for (k, v) in self.resolve(env).items() if self._is_extra_property(k)}
@@ -118,9 +126,9 @@ class DatasetConfig:
     def resolve_dataset_labels(self, env: str = None) -> Dict[str, str]:
         return self.resolve_property('dataset_labels', env)
 
-    def resolve_credentials(self, env: str = None) -> Dict[str, str]:
-        logger.info('My_precious_debugging - resolve_credentials')
-        return self.resolve_property('credentials', env)
+    # def resolve_credentials(self, env: str = None) -> Dict[str, str]:
+    #     logger.info('My_precious_debugging - resolve_credentials')
+    #     return self.resolve_property('credentials', env)
 
     def _is_extra_property(self, property_name) -> bool:
         return property_name not in ['project_id','dataset_name','internal_tables','external_tables', 'env', 'dataset_labels', 'tables_labels']
