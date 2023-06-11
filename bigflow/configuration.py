@@ -85,12 +85,9 @@ class Config:
         }
 
     def add_configuration(self, name: str, properties: dict, is_default: bool = False):
-        logger.info("0o0o0o0o0o0o0o0o0o0o0o0o0o0 properties", properties)
         props = {}
         props.update(self.master_properties)
         props.update(properties)
-
-        logger.info("0o0o0o0o0o0o0o0o0o0o0o0o0o0 props", props)
 
         assert 'env' not in properties or properties['env'] == name
         props['env'] = name
