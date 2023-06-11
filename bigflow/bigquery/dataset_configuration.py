@@ -31,7 +31,7 @@ class DatasetConfig:
         all_properties['tables_labels'] = tables_labels or []
         all_properties['dataset_labels'] = dataset_labels or []
         # all_properties['credentials'] = credentials or None
-        self.credentials = credentials
+        all_properties['credentials'] = dataset_labels or None
 
         self.delegate = Config(name=env, properties=all_properties, is_master=is_master, is_default=is_default)
 
@@ -90,8 +90,8 @@ class DatasetConfig:
             extras=self.resolve_extra_properties(env),
             tables_labels=self.resolve_tables_labels(env),
             dataset_labels=self.resolve_dataset_labels(env),
-            credentials=self.credentials
-            # credentials=self.resolve_credentials(env)
+            # credentials=self.credentials
+            credentials=self.resolve_credentials(env)
         )
 
     def resolve_extra_properties(self, env: str = None):
@@ -127,9 +127,9 @@ class DatasetConfig:
     def resolve_dataset_labels(self, env: str = None) -> Dict[str, str]:
         return self.resolve_property('dataset_labels', env)
 
-    # def resolve_credentials(self, env: str = None) -> Dict[str, str]:
-    #     logger.info('My_precious_debugging - resolve_credentials')
-    #     return self.resolve_property('credentials', env)
+    def resolve_credentials(self, env: str = None) -> Dict[str, str]:
+        logger.info('My_precious_debugging - resolve_credentials')
+        return self.resolve_property('credentials', env)
 
     def _is_extra_property(self, property_name) -> bool:
         return property_name not in ['project_id','dataset_name','internal_tables','external_tables', 'env', 'dataset_labels', 'tables_labels']
