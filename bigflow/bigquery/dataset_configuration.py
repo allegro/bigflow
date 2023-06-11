@@ -31,7 +31,7 @@ class DatasetConfig:
         all_properties['tables_labels'] = tables_labels or []
         all_properties['dataset_labels'] = dataset_labels or []
         # all_properties['credentials'] = credentials or None
-        all_properties['credentials'] = dataset_labels or None
+        all_properties['credentials'] = credentials or None
 
         self.delegate = Config(name=env, properties=all_properties, is_master=is_master, is_default=is_default)
 
