@@ -1,5 +1,6 @@
 from typing import Dict, List
 import google.auth.impersonated_credentials
+import google.auth.credentials
 
 from ..configuration import Config
 from .interface import Dataset
@@ -21,7 +22,7 @@ class DatasetConfig:
                  is_default: bool = True,
                  tables_labels: Dict[str, Dict[str, str]] = None,
                  dataset_labels: Dict[str, str] = None,
-                 credentials = None):
+                 credentials: google.auth.credentials.Credentials = None):
 
         all_properties = (properties or {}).copy()
         all_properties['project_id'] = project_id
@@ -45,7 +46,7 @@ class DatasetConfig:
                           is_default: bool = False,
                           tables_labels: Dict[str, Dict[str, str]] = None,
                           dataset_labels: Dict[str, str] = None,
-                          credentials = None):
+                          credentials: google.auth.credentials.Credentials = None):
 
         all_properties = (properties or {}).copy()
 
