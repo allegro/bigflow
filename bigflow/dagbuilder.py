@@ -64,7 +64,7 @@ def generate_single_environment_dag(
 ) -> str:
 
     dag_deployment_id = get_dag_deployment_id(workflow.workflow_id, start_from, build_ver, env)
-    logger.info("remove envs - dag_deployment_id", dag_deployment_id)
+    logger.info("77777777777777 remove envs - dag_deployment_id", dag_deployment_id)
 
     dag_file_path = get_dags_output_dir(workdir) / (dag_deployment_id + '_dag.py')
     workflow_start_date = workflow.start_time_factory(start_from)
@@ -190,6 +190,8 @@ def get_dag_deployment_id(
     build_ver: str,
     env: str
 ) -> str:
+
+    logger.info("77777777777777 remove envs - env", env)
 
     if env:
         return '{workflow_name}__v{ver}__{start_from}__{env}'.format(
