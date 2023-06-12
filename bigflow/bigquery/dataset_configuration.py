@@ -22,7 +22,8 @@ class DatasetConfig:
                  is_default: bool = True,
                  tables_labels: Dict[str, Dict[str, str]] = None,
                  dataset_labels: Dict[str, str] = None,
-                 credentials: google.auth.credentials.Credentials = None):
+                 # credentials: google.auth.credentials.Credentials = None
+                 impersonate_service_account: str = None):
 
         all_properties = (properties or {}).copy()
         all_properties['project_id'] = project_id
@@ -32,7 +33,8 @@ class DatasetConfig:
         all_properties['tables_labels'] = tables_labels or []
         all_properties['dataset_labels'] = dataset_labels or []
         # all_properties['credentials'] = credentials or None
-        all_properties['credentials'] = credentials or None
+        # all_properties['credentials'] = credentials or None
+        all_properties['impersonate_service_account'] = impersonate_service_account or None
 
         self.delegate = Config(name=env, properties=all_properties, is_master=is_master, is_default=is_default)
 
@@ -46,7 +48,9 @@ class DatasetConfig:
                           is_default: bool = False,
                           tables_labels: Dict[str, Dict[str, str]] = None,
                           dataset_labels: Dict[str, str] = None,
-                          credentials: google.auth.credentials.Credentials = None):
+                          # credentials: google.auth.credentials.Credentials = None
+                          impersonate_service_account: str = None
+                          ):
 
         all_properties = (properties or {}).copy()
 
@@ -67,38 +71,19 @@ class DatasetConfig:
         if dataset_labels:
             all_properties['dataset_labels'] = dataset_labels
 
-        if credentials:
-            # all_properties['impersonate_service_account'] = self._credentials_for_impersonate_service_account(
-            #     impersonate_service_account)
+        # if credentials:
+        #     all_properties['credentials'] = credentials
 
-            all_properties['credentials'] = credentials
-
-        logger.info("0o0o0o0o0o0o0o0o0o0o0o0o0o0 all_properties", all_properties)
-        logger.info("0o0o0o0o0o0o0o0o0o0o0o0o0o0 env", env)
-
+        if impersonate_service_account:
+            all_properties['impersonate_service_account'] = impersonate_service_account
 
         self.delegate.add_configuration(env, all_properties, is_default=is_default)
         return self
 
     def create_dataset_manager(self, env: str = None) -> Dataset:
-        logger.info("0o0o0o0o0o0o0o0o0o0o0o0o0o0 InteractiveDatasetManager in create_dataset_manager",
-                    InteractiveDatasetManager(
-                        project_id=self.resolve_project_id(env),
-                        dataset_name=self.resolve_dataset_name(env),
-                        internal_tables=self.resolve_internal_tables(env),
-                        external_tables=self.resolve_external_tables(env),
-                        extras=self.resolve_extra_properties(env),
-                        tables_labels=self.resolve_tables_labels(env),
-                        dataset_labels=self.resolve_dataset_labels(env),
-                        # credentials=self.credentials
-                        credentials=self.resolve_credentials(env)
-                    ).__dict__
-                    )
 
-        # if passed_credentials is None:
-        #     creds = self.credentials
-        # else:
-        #     creds = passed_credentials
+        resolved_impersonate_service_account = self.resolve_impersonate_service_account(env)
+        resolved_credentials = self._credentials_for_impersonate_service_account(resolved_impersonate_service_account)
 
         return InteractiveDatasetManager(
             project_id=self.resolve_project_id(env),
@@ -109,7 +94,8 @@ class DatasetConfig:
             tables_labels=self.resolve_tables_labels(env),
             dataset_labels=self.resolve_dataset_labels(env),
             # credentials=self.credentials
-            credentials=self.resolve_credentials(env)
+            # credentials=self.resolve_credentials(env)
+            credentials=resolved_credentials
         )
 
     def resolve_extra_properties(self, env: str = None):
@@ -145,26 +131,29 @@ class DatasetConfig:
     def resolve_dataset_labels(self, env: str = None) -> Dict[str, str]:
         return self.resolve_property('dataset_labels', env)
 
-    def resolve_credentials(self, env: str = None) -> Dict[str, str]:
-        logger.info('My_precious_debugging - resolve_credentials')
-        return self.resolve_property('credentials', env)
+    # def resolve_credentials(self, env: str = None) -> Dict[str, str]:
+    #     logger.info('My_precious_debugging - resolve_credentials')
+    #     return self.resolve_property('credentials', env)
+
+    def resolve_impersonate_service_account(self, env: str = None) -> Dict[str, str]:
+        return self.resolve_property('impersonate_service_account', env)
 
     def _is_extra_property(self, property_name) -> bool:
         return property_name not in ['project_id','dataset_name','internal_tables','external_tables', 'env',
                                      'dataset_labels', 'tables_labels', 'credentials']
 
-    # @staticmethod
-    # def _credentials_for_impersonate_service_account(
-    #         service_account: str) -> google.auth.impersonated_credentials.Credentials:
-    #     target_scopes = [
-    #         "https://www.googleapis.com/auth/bigquery",
-    #         "https://www.googleapis.com/auth/bigquery.insertdata"
-    #     ]
-    #
-    #     creds, pid = google.auth.default()
-    #     credentials = google.auth.impersonated_credentials.Credentials(
-    #         source_credentials=creds,
-    #         target_principal=service_account,
-    #         target_scopes=target_scopes,
-    #     )
-    #     return credentials
+    @staticmethod
+    def _credentials_for_impersonate_service_account(
+            service_account: str) -> google.auth.impersonated_credentials.Credentials:
+        target_scopes = [
+            "https://www.googleapis.com/auth/bigquery",
+            "https://www.googleapis.com/auth/bigquery.insertdata"
+        ]
+
+        creds, pid = google.auth.default()
+        credentials = google.auth.impersonated_credentials.Credentials(
+            source_credentials=creds,
+            target_principal=service_account,
+            target_scopes=target_scopes,
+        )
+        return credentials
