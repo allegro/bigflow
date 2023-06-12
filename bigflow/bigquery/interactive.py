@@ -44,10 +44,8 @@ def log_syntax_error(method):
 
 
 def interactive_component(**dependencies):
-    logger.info("Credentials logs - interactive_component")
     def decorator(standard_component):
         logger.debug("Wrap %s with @interactive_component, deps %s", standard_component, dependencies)
-        logger.info("Credentials logs - interactive_component wrapped")
         return InteractiveComponent(standard_component,
                                     {dep_name: dep.config for dep_name, dep in dependencies.items()})
     return decorator
@@ -224,7 +222,6 @@ class InteractiveComponent(object):
         _, component_callable = decorate_component_dependencies_with_operation_level_dataset_manager(self._standard_component)
 
         dependencies_override = dependencies_override or {}
-        logger.info("Credentials logs - InteractiveComponent to_job")
 
         dependency_config = self._dependency_config.copy()
         dependency_config.update({dataset_alias: dataset.config for dataset_alias, dataset in dependencies_override.items()})
@@ -241,7 +238,6 @@ class InteractiveComponent(object):
     def run(self, runtime=DEFAULT_RUNTIME, operation_name=None):
         _, component_callable = decorate_component_dependencies_with_operation_level_dataset_manager(
             self._standard_component, operation_name=operation_name)
-        logger.info("Credentials logs - InteractiveComponent run")
 
         job = Job(component_callable, **self._dependency_config)
         logger.info("Run interactive component, id=%s, component %s", job.id, job.component)

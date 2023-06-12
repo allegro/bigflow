@@ -450,11 +450,6 @@ def create_bigquery_client(
 ) -> 'google.cloud.bigquery.Client':
     from google.cloud import bigquery
 
-    logger.info("Credentials logs - create_bigquery_client", bigquery.Client(
-        project=project_id,
-        credentials=credentials,
-        location=location).__dict__)
-
     return bigquery.Client(
         project=project_id,
         credentials=credentials,
@@ -522,7 +517,6 @@ def create_dataset_manager(
 
     upsert_tables_labels(dataset_name, tables_labels, client)
 
-    logger.info("Credentials logs - create_dataset_manager")
     core_dataset_manager = DatasetManager(client, dataset, logger)
     templated_dataset_manager = TemplatedDatasetManager(core_dataset_manager, internal_tables, external_tables, extras, runtime)
     return dataset.full_dataset_id.replace(':', '.'), PartitionedDatasetManager(templated_dataset_manager, get_partition_from_run_datetime_or_none(runtime))
