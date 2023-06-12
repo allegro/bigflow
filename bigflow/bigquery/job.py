@@ -58,8 +58,6 @@ class Job(bigflow.Job):
         return self.component
 
     def _find_config(self, target_dependency_name):
-        logger.info("Credentials logs - Job _find_config dependency_configuration", self.dependency_configuration.items())
-
         for dependency_name, config in self.dependency_configuration.items():
             if dependency_name == target_dependency_name:
                 logger.debug("Found config for dependency %s: %s", target_dependency_name, config)
@@ -68,10 +66,8 @@ class Job(bigflow.Job):
 
     def _build_dependency(self, dependency_config, runtime):
         logger.debug("Build dataset manager for config %s", dependency_config)
-        logger.info("Credentials logs - Job _build_dependency")
         _, dataset_manager = create_dataset_manager(
             runtime=runtime,
             **dependency_config._as_dict())
-        logger.info("Credentials logs - Job _build_dependency dataset_manager", dataset_manager.__dict__)
 
         return dataset_manager

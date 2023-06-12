@@ -22,7 +22,6 @@ class DatasetConfig:
                  is_default: bool = True,
                  tables_labels: Dict[str, Dict[str, str]] = None,
                  dataset_labels: Dict[str, str] = None,
-                 # credentials: google.auth.credentials.Credentials = None
                  impersonate_service_account: str = None):
 
         all_properties = (properties or {}).copy()
@@ -32,8 +31,6 @@ class DatasetConfig:
         all_properties['external_tables'] = external_tables or {}
         all_properties['tables_labels'] = tables_labels or []
         all_properties['dataset_labels'] = dataset_labels or []
-        # all_properties['credentials'] = credentials or None
-        # all_properties['credentials'] = credentials or None
         all_properties['impersonate_service_account'] = impersonate_service_account or None
 
         self.delegate = Config(name=env, properties=all_properties, is_master=is_master, is_default=is_default)
@@ -48,9 +45,7 @@ class DatasetConfig:
                           is_default: bool = False,
                           tables_labels: Dict[str, Dict[str, str]] = None,
                           dataset_labels: Dict[str, str] = None,
-                          # credentials: google.auth.credentials.Credentials = None
-                          impersonate_service_account: str = None
-                          ):
+                          impersonate_service_account: str = None):
 
         all_properties = (properties or {}).copy()
 
@@ -71,9 +66,6 @@ class DatasetConfig:
         if dataset_labels:
             all_properties['dataset_labels'] = dataset_labels
 
-        # if credentials:
-        #     all_properties['credentials'] = credentials
-
         if impersonate_service_account:
             all_properties['impersonate_service_account'] = impersonate_service_account
 
@@ -93,7 +85,6 @@ class DatasetConfig:
             extras=self.resolve_extra_properties(env),
             tables_labels=self.resolve_tables_labels(env),
             dataset_labels=self.resolve_dataset_labels(env),
-            # credentials=self.resolve_credentials(env)
             credentials=resolved_credentials
         )
 
@@ -129,10 +120,6 @@ class DatasetConfig:
 
     def resolve_dataset_labels(self, env: str = None) -> Dict[str, str]:
         return self.resolve_property('dataset_labels', env)
-
-    # def resolve_credentials(self, env: str = None) -> Dict[str, str]:
-    #     logger.info('My_precious_debugging - resolve_credentials')
-    #     return self.resolve_property('credentials', env)
 
     def resolve_impersonate_service_account(self, env: str = None) -> Dict[str, str]:
         return self.resolve_property('impersonate_service_account', env)
