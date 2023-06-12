@@ -93,7 +93,6 @@ class DatasetConfig:
             extras=self.resolve_extra_properties(env),
             tables_labels=self.resolve_tables_labels(env),
             dataset_labels=self.resolve_dataset_labels(env),
-            # credentials=self.credentials
             # credentials=self.resolve_credentials(env)
             credentials=resolved_credentials
         )
