@@ -117,16 +117,12 @@ class Config:
 
     def _resolve_placeholders(self, value, variables: dict):
         if isinstance(value, str):
-            if value == 'credentials':
-                logger.info("99999999 _resolve_placeholders in str", value)
-
             modified_value = value
             for k, v in variables.items():
                 if isinstance(v, str) and v != value:
                     modified_value = modified_value.replace("{%s}" % k, v)
             return modified_value
         else:
-            logger.info("99999999 _resolve_placeholders", value)
             return value
 
 
