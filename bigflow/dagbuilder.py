@@ -33,7 +33,7 @@ def generate_dag_files(
     start_from: datetime | str,
     build_ver: str,
     root_package_name: str,
-    environments_to_deploy_on: typing.Union[str, typing.List[str]] = None
+    environment_to_deploy_on: str = None
 ) -> None:
 
     start_from = _str_to_datetime(start_from)
@@ -42,32 +42,15 @@ def generate_dag_files(
     logger.info("build_ver: %s", build_ver)
     logger.info("image version: %s", image_version)
 
-    print("AAAAAA", environments_to_deploy_on, workflow.environments_to_deploy_on)
-
-    if environments_to_deploy_on is None and workflow.environments_to_deploy_on is not None:
-        if isinstance(environments_to_deploy_on, str):
-            environments_to_deploy_on = [workflow.environments_to_deploy_on]
-        else:
-            environments_to_deploy_on = workflow.environments_to_deploy_on
-
-    elif environments_to_deploy_on is not None and isinstance(environments_to_deploy_on, str):
-        environments_to_deploy_on = [environments_to_deploy_on]
-
-    elif (environments_to_deploy_on is None and workflow.environments_to_deploy_on is None) or (
-            environments_to_deploy_on is not None and workflow.environments_to_deploy_on is None and
-            isinstance(environments_to_deploy_on, str)):
-        environments_to_deploy_on = [environments_to_deploy_on]
-
-    for env in environments_to_deploy_on:
-        generate_single_environment_dag(
-            workdir,
-            image_version,
-            workflow,
-            start_from,
-            build_ver,
-            root_package_name,
-            env
-        )
+    generate_single_environment_dag(
+        workdir,
+        image_version,
+        workflow,
+        start_from,
+        build_ver,
+        root_package_name,
+        environment_to_deploy_on
+    )
 
 
 def generate_single_environment_dag(

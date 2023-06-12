@@ -171,8 +171,6 @@ class Workflow(object):
         depends_on_past: bool = True,
         secrets: Iterable[str] = (),
         main_composer_environment: str = None,
-        environments_to_deploy_on: Union[str, List[str]] = None
-
     ):
         self.definition = self._parse_definition(definition)
         self.schedule_interval = schedule_interval
@@ -181,7 +179,6 @@ class Workflow(object):
         self.depends_on_past = depends_on_past
         self.secrets = secrets
         self.main_composer_environment = main_composer_environment
-        self.environments_to_deploy_on = environments_to_deploy_on
 
     @staticmethod
     def _execute_job(job: Job, context: JobContext) -> None:
