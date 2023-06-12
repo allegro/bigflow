@@ -75,7 +75,7 @@ class DatasetConfig:
     def create_dataset_manager(self, env: str = None) -> Dataset:
 
         resolved_impersonate_service_account = self.resolve_impersonate_service_account(env)
-        resolved_credentials = self._credentials_for_impersonate_service_account(resolved_impersonate_service_account)
+        resolved_credentials = self.credentials_for_impersonate_service_account(resolved_impersonate_service_account)
 
         return InteractiveDatasetManager(
             project_id=self.resolve_project_id(env),
@@ -129,7 +129,7 @@ class DatasetConfig:
                                      'dataset_labels', 'tables_labels', 'credentials']
 
     @staticmethod
-    def _credentials_for_impersonate_service_account(
+    def credentials_for_impersonate_service_account(
             service_account: str) -> google.auth.impersonated_credentials.Credentials:
         target_scopes = [
             "https://www.googleapis.com/auth/bigquery",
