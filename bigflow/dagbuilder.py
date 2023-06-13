@@ -36,6 +36,9 @@ def generate_dag_files(
     environment_to_deploy_on: str = None
 ) -> None:
 
+    logger.info("77777777777777 generate_dag_files - environment_to_deploy_on", environment_to_deploy_on)
+
+
     start_from = _str_to_datetime(start_from)
 
     logger.info("start_from %s:", start_from)
