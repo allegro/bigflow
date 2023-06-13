@@ -303,7 +303,7 @@ def _add_build_dags_parser_arguments(parser):
                              'For workflows triggered daily -- date in format: Y-m-d, for example 2020-01-01. '
                              'If empty or set as NOW, current hour is used.',
                         type=bf_commons.valid_datetime)
-    parser.add_argument('-e', '--env', nargs="*",
+    parser.add_argument('-e', '--env', type=str,
                         help='TODO to think')
     #TODO ala help
 
