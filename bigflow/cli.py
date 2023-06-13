@@ -303,7 +303,7 @@ def _add_build_dags_parser_arguments(parser):
                              'For workflows triggered daily -- date in format: Y-m-d, for example 2020-01-01. '
                              'If empty or set as NOW, current hour is used.',
                         type=bf_commons.valid_datetime)
-    parser.add_argument('-e', '--env', nargs="*", type=str,
+    parser.add_argument('-e', '--env', type=str,
                         help='TODO to think')
     #TODO ala help
 
@@ -641,7 +641,6 @@ def _cli_build_dags(args):
 
 
 def _cli_build(args):
-    logger.info("777777 args.env", args.env)
     prj = bigflow.build.spec.get_project_spec()
     bigflow.build.operate.build_project(
         prj,
