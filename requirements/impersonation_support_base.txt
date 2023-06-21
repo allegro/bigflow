@@ -1,0 +1,15 @@
+setuptools
+six
+wheel>=0.36.0
+
+grpcio-tools==1.37.0
+# grpcio==1.49.1;sys_platform=="darwin"
+mypy-protobuf==1.18
+protobuf==3.19.4;python_version=="3.10" and sys_platform=="darwin"
+
+distlib==0.3.1
+
+numpy>=1.14.3,<1.23.0
+
+scikit-learn==1.2.1
+responses==0.22.0
