@@ -11,6 +11,7 @@ from bigflow.cli import *
 from bigflow.cli import _ConsoleStreamLogHandler
 
 from test import mixins
+from test.cli.test_module.Unused1 import PARAM_REQUIRED_BY_JOB
 
 TESTS_DIR = Path(__file__).parent
 
@@ -111,7 +112,7 @@ class CliTestCase(
         # then
         res = sorted(res, key=lambda r: r.workflow_id)
 
-        self.assertEqual(5, len(res))
+        self.assertEqual(6, len(res))
         self.assertEqual('ID_1', res[0].workflow_id)
         self.assertEqual('@once', res[0].schedule_interval)
         self.assertEqual('ID_2', res[1].workflow_id)
@@ -241,6 +242,20 @@ class CliTestCase(
 
         # then
         self.assert_started_jobs(['J_ID_3', 'J_ID_3'])
+
+    @mock.patch('bigflow.cli.find_root_package')
+    def test_should_run_workflow_with_additional_args(self, find_package_mock):
+        # given
+        root_package = TESTS_DIR / "test_module"
+        find_package_mock.return_value = root_package
+        command = ["run", "--workflow", "ID_6", "--project-package", str(root_package), PARAM_REQUIRED_BY_JOB, "param"]
+        sys.argv = command  # simulates running from command line
+
+        # when
+        cli(command)
+
+        # then the additional args should be passed to the job
+        self.assert_started_jobs(['J_ID_7'])
 
     def test_should_read_project_package_if_set(self):
         # given
@@ -660,6 +675,12 @@ deployment_config = Config(name='dev',
         _cli_build_dags_mock.assert_called_with(Namespace(operation='build-dags', start_time=None, workflow=None, verbose=False))
 
         # when
+        cli(['build-dags', '--additional-param', 'param'])
+
+        # then ignore additional params
+        _cli_build_dags_mock.assert_called_with(Namespace(operation='build-dags', start_time=None, workflow=None, verbose=False))
+
+        # when
         cli(['build-dags', '-t', '2020-01-01 00:00:00'])
 
         # then
@@ -915,6 +936,12 @@ deployment_config = Config(name='dev',
         )
 
         # then
+        _cli_build_mock.assert_called_with(args)
+
+        # when
+        cli(['build', '--additional-param', 'param'])
+
+        # then ignore unknown params
         _cli_build_mock.assert_called_with(args)
 
         # when

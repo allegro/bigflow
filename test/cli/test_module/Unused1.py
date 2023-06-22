@@ -1,7 +1,10 @@
+import sys
+
 import bigflow as bf
 from bigflow.bigquery.interactive import InteractiveDatasetManager as Dataset
 
 PROJECT_ID = 'put-you-project-id-here'
+PARAM_REQUIRED_BY_JOB = '--param-required-by-job'
 
 dataset = Dataset(
     project_id=PROJECT_ID,
@@ -25,9 +28,16 @@ class ExampleJob:
     def execute(self, context):
         started_jobs.append(self.id)
 
+class ExampleJobWithParams:
+    def __init__(self, id):
+        self.id = id
+
+    def execute(self, context):
+        sys.argv.index('--param-required-by-job')
+        started_jobs.append(self.id)
+
 workflow_1 = bf.Workflow(workflow_id="ID_1", definition=[wait_for_requests.to_job(), wait_for_requests.to_job()], schedule_interval="@once")
 workflow_2 = bf.Workflow(workflow_id="ID_2", definition=[wait_for_requests.to_job()])
 workflow_3 = bf.Workflow(workflow_id="ID_3", definition=[ExampleJob("J_ID_3"), ExampleJob("J_ID_4")])
 workflow_4 = bf.Workflow(workflow_id="ID_4", definition=[ExampleJob("J_ID_5")])
-
-print("AAA")
+workflow_5 = bf.Workflow(workflow_id="ID_6", definition=[ExampleJobWithParams("J_ID_7")])

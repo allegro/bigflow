@@ -35,11 +35,12 @@ jobs:
         curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
         sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic test"
         sudo apt update
-        sudo apt install docker-ce
+        sudo apt install docker-ce containerd.io
         docker -v
 
     - name: Install dependencies
       run: |
+        pip install pip==22.0.3
         pip install -r requirements.txt
 
     - name: Run unit tests

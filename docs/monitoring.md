@@ -96,6 +96,54 @@ workflow = bigflow.Workflow(
 )
 ```
 
+### Retrieving logs from Log Explorer
+
+When our DAG is failing, we want to get information about the task instance run. We can do that using Log Explorer.
+Initially, we need to check failed task details. We can do that like in here.
+
+![Airflow task details](./images/failed_job_pick_task_details_airflow.png)
+
+Then we need to go into Logs Explorer on the GCP project on which our project is set up. We can filter out logs using job id
+or dag id or any other detail by which we want to filter our workflow. We can add details to the search field and click run query.
+In this example, we can see that it narrowed down a number of log messages.
+
+![Log Explorer filter](./images/log_explorer_search_field.png)
+
+We can also specify what kind of log message we want to filter. We can do that by specifying it on the left pane.
+
+![Log Explorer filter](./images/log_explorer_pick_severity.png)
+
+### Retrieving logs for Kubernetes Operator
+
+When we use the Kubernetes operator, we can check also the details of k8s workers details and retrieve information from Log Explorer.
+To get the Kubernetes pod name we need to search for it in Airflow logs. We can see an example here.
+
+![Airflow filter](./images/k8s-worker-details-airflow.png)
+
+Then to check K8s worker information, we can similarly filter out in the search bar pod name and check information of worker and 
+even specify resource type and check details of Kubernetes pod, cluster, or node.
+
+![Log Explorer filter](./images/k8s_worker_details_log_explorer.png)
+
+
+### Getting logs in Dataflow for Beam jobs
+
+When we want to check logs of failed Apache Beam jobs, we need to go to the Dataflow service on our GCP project. Then find our job run
+and click on it. After that, we can see a graph of the Beam pipeline with the status for each of the steps. To check logs of every job 
+we need to click the arrow on the bottom of the site like here.
+
+![Dataflow filter](./images/Beam_select_logs.png)
+
+Then we can filter out proper information similarly to Log Explorer. We can filter out the severity of messages and type
+whether we want job logs or workers' logs.
+
+![Dataflow logs details](./images/Beam_filter_logs.png)
+
+However, very often worker logs don't show all the details. Very useful is to open them via Log Explorer and then deleting
+all the filters and adding only the job id. After that, we can find all the possible information which we want.
+
+![Dataflow logs details](./images/Dataflow_open_in_log_explorer.png)
+
 ### Monitoring "data quality"
 
 TODO
