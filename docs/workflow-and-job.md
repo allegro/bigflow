@@ -224,6 +224,22 @@ def daily_start_time(start_time: dt.datetime) -> dt.datetime:
 This factory sets a processing start point as the day before a provided `start-time`. Let us say that you set the `start-time`
 parameter as `2020-01-02 00:00:00`. Then, the final `start-time` is `2020-01-01 00:00:00`.
 
+### Using different `env` variable in Composer
+
+You can specify a different variable from which DAGs read config name. By default, that variable
+is set to `env` and this can be overridden with `env_variable` option:
+
+```python
+example_workflow = Workflow(
+    workflow_id='example_workflow',
+    env_variable='prod_env',
+    definition=[
+        SomeJob(),
+    ],
+)
+```
+
+
 ### Daily scheduling example
 
 When you run a workflow **daily**, `runtime` means all data with timestamps within a given day.

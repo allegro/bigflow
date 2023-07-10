@@ -135,6 +135,43 @@ class DagBuilderTestCase(mixins.TempCwdMixin, TestCase):
         expected_dag_content = (Path(__file__).parent / "my_parametrized_workflow__dag.py.txt").read_text()
         self.assert_files_are_equal(expected_dag_content, dag_file_content)
 
+    def test_should_set_different_env_variable_name_for_dag(self):
+        # given
+        workdir = self.cwd
+        docker_repository = 'eu.gcr.io/my_docker_repository_project/my-project'
+        version = '0.3.0'
+        image = f'{docker_repository}:{version}'
+
+        # given
+        job1 = Job(
+            id='job1',
+            component=mock.Mock(),
+            retry_count=10,
+            retry_pause_sec=20
+        )
+        w_job1 = WorkflowJob(job1, 1)
+        graph = {
+            w_job1: ()
+        }
+        workflow = Workflow(
+            workflow_id='my_parametrized_env_workflow',
+            definition=Definition(graph),
+            depends_on_past=False,
+            schedule_interval='@daily',
+            secrets=['bf_secret_password', 'bf_secret_token'],
+            env_variable='prod_env',
+        )
+
+        # when
+        dag_file_path = generate_dag_file(workdir, image, workflow, '2020-07-02', version, 'ca')
+
+        # then passes the depends_on_past parameter value
+        self.assertEqual(dag_file_path, str(workdir / '.dags/my_parametrized_env_workflow__v0_3_0__2020_07_02_00_00_00_dag.py'))
+
+        dag_file_content = Path(dag_file_path).read_text()
+        expected_dag_content = (Path(__file__).parent / "my_parametrized_env_workflow__dag.py.txt").read_text()
+        self.assert_files_are_equal(expected_dag_content, dag_file_content)
+
     def test_should_generate_DAG_file_from_workflow_with_daily_scheduling(self):
         # given
         workdir = self.cwd
