@@ -1,5 +1,22 @@
 # BigFlow changelog
 
+## Version 1.8.0
+
+### Changes
+
+* Bumped basic dependencies: Apache Beam 2.48.0, google-cloud-bigtable 2.17.0, google-cloud-language 2.10.0, google-cloud-storage 2.11.2, among others (#374).
+* Added the `env_variable` argument to `bigflow.Workflow` which enables to change a name of the variable used to obtain environment name (#365).
+
+## Version 1.7.2
+
+### Fixed
+
+* Fixed compatibility issues with Cloud Composer 2.x and Airflow 2.x
+
+### Breaking changes
+
+* Cloud Composer 2.0.x is not supported properly, please use either 1.x or 2.1+
+
 ## Version 1.7.1
 
 ### Changed
@@ -10,7 +27,7 @@
 
 ### Changed
 
-* Bumped dependencies of main libraries (eg. Apache Beam to version 2.45 or BigQuery to version 3.6.0). It enabled compatibility with MacBooks with M1 processor. 
+* Bumped dependencies of main libraries (e.g. Apache Beam to version 2.45 or BigQuery to version 3.6.0). It enabled compatibility with MacBooks with M1 processor.
 * Requires Python version = 3.8
 
 ## Version 1.6.0
