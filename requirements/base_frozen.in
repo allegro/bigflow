@@ -1,5 +1,5 @@
 grpcio-status<=1.48.2 # to avoid protobuf package clash
-google-cloud-storage>=1.30,<2
+google-cloud-storage>=2,<3
 # Maintainers, please do not require google-api-core>=2.x.x
 # Until this issue is closed
 # https://github.com/googleapis/google-cloud-python/issues/10566
