@@ -259,6 +259,12 @@ If you want to run a Dataflow process, you need to prepare a Cloud Storage bucke
 To create a bucket, go to the [Cloud Storage browser](https://console.cloud.google.com/storage/browser) and choose 
 the project where you run your Dataflow pipeline. Next, create the "Create Bucket" button to open the bucket creator form.
 
+**The created bucket isn't automatically cleaned. 
+Therefore, it may cause a huge cost. 
+To avoid it you can use [Object Lifecycle Management](https://cloud.google.com/storage/docs/lifecycle) to 
+automatically remove data after some time or to move it to cheaper storage class. 
+You can also set it up [using terraform](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_bucket#nested_action).**
+
 ![Dataflow bucket](./images/brand_new_bucket.png)
 
 Provide a unique id for the bucket and choose the location which is closest to you. 
