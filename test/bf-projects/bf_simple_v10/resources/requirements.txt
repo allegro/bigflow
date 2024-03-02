@@ -4,9 +4,7 @@
 #
 # run 'bigflow build-requirements resources/requirements.in' to update this file
 
---index-url https://artifactory.allegrogroup.com/artifactory/api/pypi/pypi.python.org/simple
-
-datetime_truncate==1.1.0
+datetime-truncate==1.1.0
     # via -r resources/requirements.in
 six==1.15.0
     # via datetime-truncate
