@@ -64,7 +64,7 @@ class _BaseRealProjectTest(
     expected_metainfo: Dict[str, Any]
 
     expected_requires: List[str] = [
-        "datetime_truncate==1.1.0",
+        "datetime-truncate==1.1.0",
         "six==1.15.0",
         "typing==3.7.4.3",
     ]
