@@ -52,7 +52,7 @@ def interactive_component(**dependencies):
 
 
 class InteractiveDatasetManager(Dataset):
-    """Let's you run operations on a dataset, without the need of creating a component."""
+    """Lets you run operations on a dataset, without the need of creating a component."""
 
     def __init__(self,
                  project_id: str,
@@ -63,7 +63,8 @@ class InteractiveDatasetManager(Dataset):
                  extras: Dict = None,
                  location: str = DEFAULT_LOCATION,
                  tables_labels: Dict[str, Dict[str, str]] = None,
-                 dataset_labels: Dict[str, str] = None):
+                 dataset_labels: Dict[str, str] = None,
+                 job_labels: Dict[str, str] = None):
         self.config = DatasetConfigInternal(
             project_id=project_id,
             dataset_name=dataset_name,
@@ -73,7 +74,8 @@ class InteractiveDatasetManager(Dataset):
             extras=extras,
             location=location,
             tables_labels=tables_labels,
-            dataset_labels=dataset_labels)
+            dataset_labels=dataset_labels,
+            job_labels=job_labels)
         logger.debug("Create InteractiveDatasetManager, config %s", self.config._as_dict())
 
     def write_truncate(self, table_name, sql, partitioned=True):
@@ -488,7 +490,8 @@ class DatasetConfigInternal(object):
                  extras=None,
                  location=DEFAULT_LOCATION,
                  tables_labels: Dict[str, Dict[str, str]] = None,
-                 dataset_labels: Dict[str, str] = None
+                 dataset_labels: Dict[str, str] = None,
+                 job_labels: Dict[str, str] = None
                  ):
         self.project_id = project_id
         self.dataset_name = dataset_name
@@ -499,6 +502,7 @@ class DatasetConfigInternal(object):
         self.location = location
         self.tables_labels = tables_labels or {}
         self.dataset_labels = dataset_labels or {}
+        self.job_labels = job_labels or {}
 
     def _as_dict(self):
         return {
@@ -510,7 +514,8 @@ class DatasetConfigInternal(object):
             'extras': self.extras,
             'location': self.location,
             'tables_labels': self.tables_labels,
-            'dataset_labels': self.dataset_labels
+            'dataset_labels': self.dataset_labels,
+            'job_labels': self.job_labels
         }
 
 

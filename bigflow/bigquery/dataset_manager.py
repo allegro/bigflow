@@ -265,12 +265,14 @@ class DatasetManager(object):
     def __init__(self,
                  bigquery_client: 'google.cloud.bigquery.Client',
                  dataset: 'google.cloud.bigquery.Dataset',
-                 logger: logging.Logger):
+                 logger: logging.Logger,
+                 job_labels: Dict[str, str] | None = None):
         from google.cloud import bigquery
         self.bigquery_client: bigquery.Client = bigquery_client
         self.dataset = dataset
         self.dataset_id = dataset.full_dataset_id.replace(':', '.')
         self.logger = logger
+        self.job_labels = job_labels
 
     def write_tmp(self, table_id: str, sql: str) -> 'google.cloud.bigquery.table.RowIterator':
         return self.write(table_id, sql, 'WRITE_TRUNCATE')
@@ -284,6 +286,9 @@ class DatasetManager(object):
 
         job_config.destination = table_id
         job_config.write_disposition = mode
+
+        if self.job_labels:
+            job_config.job_labels = self.job_labels
 
         job = self.bigquery_client.query(sql, job_config=job_config)
         return job.result()
@@ -314,7 +319,13 @@ class DatasetManager(object):
         return job.result()
 
     def collect(self, sql: str) -> 'pandas.DataFrame':
-        return self._query(sql).to_dataframe()
+        from google.cloud import bigquery
+        job_config = bigquery.QueryJobConfig()
+
+        if self.job_labels:
+            job_config.job_labels = self.job_labels
+
+        return self._query(sql, job_config=job_config).to_dataframe()
 
     def collect_list(
             self,
@@ -482,7 +493,8 @@ def create_dataset_manager(
         location: str = DEFAULT_LOCATION,
         logger: Logger | None = None,
         tables_labels: Dict[str, Dict[str, str]] | None = None,
-        dataset_labels: Dict[str, str] | None = None
+        dataset_labels: Dict[str, str] | None = None,
+        job_labels: Dict[str, str] | None = None
 ) -> tp.Tuple[str, PartitionedDatasetManager]:
     """
     Dataset manager factory.
@@ -501,6 +513,7 @@ def create_dataset_manager(
     :param logger: custom logger.
     :param tables_labels: Dict with key as table_name and value as list of key/valued labels.
     :param dataset_labels: Dict with key/valued labels.
+    :param job_labels: Dict with key/valued labels.
     :return: tuple (full dataset ID, dataset manager).
     """
     dataset_name = dataset_name or random_uuid(suffix='_test_case')
@@ -516,6 +529,6 @@ def create_dataset_manager(
 
     upsert_tables_labels(dataset_name, tables_labels, client)
 
-    core_dataset_manager = DatasetManager(client, dataset, logger)
+    core_dataset_manager = DatasetManager(client, dataset, logger, job_labels)
     templated_dataset_manager = TemplatedDatasetManager(core_dataset_manager, internal_tables, external_tables, extras, runtime)
     return dataset.full_dataset_id.replace(':', '.'), PartitionedDatasetManager(templated_dataset_manager, get_partition_from_run_datetime_or_none(runtime))
