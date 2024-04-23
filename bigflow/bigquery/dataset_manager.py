@@ -288,7 +288,7 @@ class DatasetManager(object):
         job_config.write_disposition = mode
 
         if self.job_labels:
-            job_config.job_labels = self.job_labels
+            job_config.labels = self.job_labels
 
         job = self.bigquery_client.query(sql, job_config=job_config)
         return job.result()
@@ -323,7 +323,7 @@ class DatasetManager(object):
         job_config = bigquery.QueryJobConfig()
 
         if self.job_labels:
-            job_config.job_labels = self.job_labels
+            job_config.labels = self.job_labels
 
         return self._query(sql, job_config=job_config).to_dataframe()
 
