@@ -262,7 +262,7 @@ print_resource_job = kubernetes_pod_operator.KubernetesPodOperator(
     cmds=['bf'],
     arguments=['run', '--job', 'resources_workflow.print_resource_job', '--runtime', '{{ execution_date.strftime("%Y-%m-%d %H:%M:%S") }}', '--project-package', 'examples', '--config', '{{var.value.env}}'],
     namespace='default',
-    image='eu.gcr.io/docker_repository_project/my-project:0.1.0',
+    image='europe-west1-docker.pkg.dev/docker_repository_project/my-project:0.1.0',
     is_delete_operator_pod=True,
     retries=3,
     retry_delay=timedelta(seconds=60),

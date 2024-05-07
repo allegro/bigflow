@@ -131,8 +131,10 @@ def _deploy_image_loaded_to_local_registry(
     docker_image_latest = docker_repository + ":latest"
     tag_image(image_id, docker_repository, "latest")
 
-    logger.info("Deploying docker image tag=%s auth_method=%s", docker_image, auth_method)
-    authenticate_to_registry(auth_method, vault_endpoint, vault_secret, vault_endpoint_verify)
+    logger.info(
+        "Deploying docker image tag=%s auth_method=%s docker_repository=%s",
+        docker_image, auth_method, docker_repository)
+    authenticate_to_registry(auth_method, docker_repository, vault_endpoint, vault_secret, vault_endpoint_verify)
     bf_commons.run_process(['docker', 'push', docker_image])
     bf_commons.run_process(['docker', 'push', docker_image_latest])
 
@@ -141,6 +143,7 @@ def _deploy_image_loaded_to_local_registry(
 
 def authenticate_to_registry(
         auth_method: AuthorizationType,
+        docker_repository: str,
         vault_endpoint: T.Optional[str] = None,
         vault_secret: T.Optional[str] = None,
         vault_endpoint_verify: str | bool | None = None,
@@ -152,7 +155,7 @@ def authenticate_to_registry(
     elif auth_method == AuthorizationType.VAULT:
         oauthtoken = get_vault_token(vault_endpoint, vault_secret, vault_endpoint_verify)
         bf_commons.run_process(
-            ['docker', 'login', '-u', 'oauth2accesstoken', '--password-stdin', 'https://eu.gcr.io'],
+            ['docker', 'login', '-u', 'oauth2accesstoken', '--password-stdin', f"https://{docker_repository.split('/', 1)[0]}"],
             input=oauthtoken,
         )
     else:
@@ -162,12 +165,13 @@ def authenticate_to_registry(
 def check_images_exist(
         images: T.Set[str],
         auth_method: AuthorizationType,
+        docker_repository: str,
         vault_endpoint: T.Optional[str] = None,
         vault_secret: T.Optional[str] = None,
         vault_endpoint_verify: str | bool | None = None
 ):
     logger.info("Checking if images used in DAGs exist in the registry")
-    authenticate_to_registry(auth_method, vault_endpoint, vault_secret, vault_endpoint_verify)
+    authenticate_to_registry(auth_method, docker_repository, vault_endpoint, vault_secret, vault_endpoint_verify)
     missing_images = set()
     for image in images:
         found_images = bf_commons.run_process(['docker', 'manifest', 'inspect', image], check=False, verbose=False)
@@ -195,6 +199,7 @@ def deploy_dags_folder(
         dags_dir: str,
         dags_bucket: str,
         project_id: str,
+        docker_repository: str,
         clear_dags_folder: bool = False,
         auth_method: AuthorizationType = AuthorizationType.LOCAL_ACCOUNT,
         vault_endpoint: T.Optional[str] = None,
@@ -208,7 +213,8 @@ def deploy_dags_folder(
                            vault_endpoint=vault_endpoint,
                            vault_endpoint_verify=vault_endpoint_verify,
                            vault_secret=vault_secret,
-                           images=images)
+                           images=images,
+                           docker_repository=docker_repository,)
 
     logger.info("Deploying DAGs folder, auth_method=%s, clear_dags_folder=%s, dags_dir=%s", auth_method, clear_dags_folder, dags_dir)
 

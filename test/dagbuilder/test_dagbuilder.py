@@ -11,6 +11,10 @@ from bigflow.workflow import WorkflowJob, Workflow, Definition, get_timezone_off
 
 from test import mixins
 
+TEST_IMAGE_VERSION = '0.3.0'
+TEST_DOCKER_REPOSITORY = 'europe-west1-docker.pkg.dev/myproject/myrepository'
+TEST_DOCKER_IMAGE = f'{TEST_DOCKER_REPOSITORY}:{TEST_IMAGE_VERSION}'
+
 
 class DagBuilderTestCase(mixins.TempCwdMixin, TestCase):
 
@@ -40,13 +44,12 @@ class DagBuilderTestCase(mixins.TempCwdMixin, TestCase):
     def test_should_generate_image_version_file(self):
         # given
         workdir = self.cwd
-        image = 'repository:version'
 
         # when
-        create_image_version_file(workdir, image)
+        create_image_version_file(workdir, TEST_DOCKER_IMAGE)
 
         # then
-        self.assertEqual((workdir / '.dags' / 'image_version.txt').read_text(), image)
+        self.assertEqual((workdir / '.dags' / 'image_version.txt').read_text(), TEST_DOCKER_IMAGE)
 
     @mock.patch('bigflow.workflow.get_timezone_offset_seconds')
     def test_should_generate_DAG_file_from_workflow_with_hourly_scheduling(self, get_timezone_offset_seconds_mock):
@@ -54,9 +57,6 @@ class DagBuilderTestCase(mixins.TempCwdMixin, TestCase):
         # given
         workdir = self.cwd
         get_timezone_offset_seconds_mock.return_value = 2 * 3600
-        docker_repository = 'eu.gcr.io/my_docker_repository_project/my-project'
-        version = '0.3.0'
-        image = f'{docker_repository}:{version}'
 
         # given
         job1 = Job(
@@ -91,7 +91,7 @@ class DagBuilderTestCase(mixins.TempCwdMixin, TestCase):
             schedule_interval='@hourly')
 
         # when
-        dag_file_path = generate_dag_file(workdir, image, workflow, '2020-07-02 10:00:00', version, 'ca')
+        dag_file_path = generate_dag_file(workdir, TEST_DOCKER_IMAGE, workflow, '2020-07-02 10:00:00', TEST_IMAGE_VERSION, 'ca')
 
         # then
         self.assertEqual(dag_file_path, str(workdir / '.dags' / 'my_workflow__v0_3_0__2020_07_02_10_00_00_dag.py'))
@@ -103,9 +103,6 @@ class DagBuilderTestCase(mixins.TempCwdMixin, TestCase):
     def test_should_pass_workflow_properties_to_airflow_dag(self):
         # given
         workdir = self.cwd
-        docker_repository = 'eu.gcr.io/my_docker_repository_project/my-project'
-        version = '0.3.0'
-        image = f'{docker_repository}:{version}'
 
         # given
         job1 = Job(
@@ -126,7 +123,7 @@ class DagBuilderTestCase(mixins.TempCwdMixin, TestCase):
             secrets=['bf_secret_password', 'bf_secret_token'])
 
         # when
-        dag_file_path = generate_dag_file(workdir, image, workflow, '2020-07-02', version, 'ca')
+        dag_file_path = generate_dag_file(workdir, TEST_DOCKER_IMAGE, workflow, '2020-07-02', TEST_IMAGE_VERSION, 'ca')
 
         # then passes the depends_on_past parameter value
         self.assertEqual(dag_file_path, str(workdir / '.dags/my_parametrized_workflow__v0_3_0__2020_07_02_00_00_00_dag.py'))
@@ -138,9 +135,6 @@ class DagBuilderTestCase(mixins.TempCwdMixin, TestCase):
     def test_should_set_different_env_variable_name_for_dag(self):
         # given
         workdir = self.cwd
-        docker_repository = 'eu.gcr.io/my_docker_repository_project/my-project'
-        version = '0.3.0'
-        image = f'{docker_repository}:{version}'
 
         # given
         job1 = Job(
@@ -163,7 +157,7 @@ class DagBuilderTestCase(mixins.TempCwdMixin, TestCase):
         )
 
         # when
-        dag_file_path = generate_dag_file(workdir, image, workflow, '2020-07-02', version, 'ca')
+        dag_file_path = generate_dag_file(workdir, TEST_DOCKER_IMAGE, workflow, '2020-07-02', TEST_IMAGE_VERSION, 'ca')
 
         # then passes the depends_on_past parameter value
         self.assertEqual(dag_file_path, str(workdir / '.dags/my_parametrized_env_workflow__v0_3_0__2020_07_02_00_00_00_dag.py'))
@@ -175,9 +169,6 @@ class DagBuilderTestCase(mixins.TempCwdMixin, TestCase):
     def test_should_generate_DAG_file_from_workflow_with_daily_scheduling(self):
         # given
         workdir = self.cwd
-        docker_repository = 'eu.gcr.io/my_docker_repository_project/my-project'
-        version = '0.3.0'
-        image = f'{docker_repository}:{version}'
 
         # given
         job1 = Job(
@@ -196,7 +187,7 @@ class DagBuilderTestCase(mixins.TempCwdMixin, TestCase):
             schedule_interval='@daily')
 
         # when
-        dag_file_path = generate_dag_file(workdir, image, workflow, '2020-07-02', version, 'ca')
+        dag_file_path = generate_dag_file(workdir, TEST_DOCKER_IMAGE, workflow, '2020-07-02', TEST_IMAGE_VERSION, 'ca')
 
         # then
         self.assertEqual(dag_file_path, str(workdir / '.dags/my_daily_workflow__v0_3_0__2020_07_02_00_00_00_dag.py'))

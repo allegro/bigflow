@@ -2,7 +2,7 @@
 # bigflow-workflow:  	my_daily_workflow
 # bigflow-build-ver: 	0.3.0
 # bigflow-startdate: 	2020-07-02T00:00:00
-# biglfow-imageid:   	eu.gcr.io/my_docker_repository_project/my-project:0.3.0
+# biglfow-imageid:   	europe-west1-docker.pkg.dev/myproject/myrepository:0.3.0
 
 import datetime
 from airflow import DAG

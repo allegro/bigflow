@@ -436,7 +436,7 @@ def _add_deploy_parsers_common_arguments(parser):
 def _create_deploy_parser(subparsers):
     parser = subparsers.add_parser('deploy',
                                    description='Performs complete deployment. Uploads DAG files from local DAGs folder '
-                                               'to Composer and uploads Docker image to Container Registry.')
+                                               'to Composer and uploads Docker image to Artifact Registry.')
 
     _add_deploy_dags_parser_arguments(parser)
     _add_deploy_image_parser_arguments(parser)
@@ -445,7 +445,7 @@ def _create_deploy_parser(subparsers):
 
 def _create_deploy_image_parser(subparsers):
     parser = subparsers.add_parser('deploy-image',
-                                   description='Uploads Docker image to Container Registry.'
+                                   description='Uploads Docker image to Artifact Registry.'
                                    )
 
     _add_deploy_image_parser_arguments(parser)
@@ -483,7 +483,7 @@ def _add_deploy_image_parser_arguments(parser):
                         help='Path to a Docker image file. The file name must contain version number with the following naming schema: image-{version}.tar')
     parser.add_argument('-r', '--docker-repository',
                         type=str,
-                        help='Name of a local and target Docker repository. Typically, a target repository is hosted by Google Cloud Container Registry.'
+                        help='Name of a local and target Docker repository. Typically, a target repository is hosted by Google Cloud Artifact Registry.'
                              ' If so, with the following naming schema: {HOSTNAME}/{PROJECT-ID}/{IMAGE}.'
                         )
 
@@ -553,7 +553,8 @@ def _cli_deploy_dags(args):
                        vault_endpoint=_resolve_vault_endpoint(args),
                        vault_endpoint_verify=_resolve_property(args, 'vault_endpoint_verify', ignore_value_error=True),
                        vault_secret=vault_secret,
-                       project_id=_resolve_property(args, 'gcp_project_id')
+                       project_id=_resolve_property(args, 'gcp_project_id'),
+                       docker_repository=_resolve_property(args, 'docker_repository')
                        )
 
 

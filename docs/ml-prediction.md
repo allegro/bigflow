@@ -235,7 +235,7 @@ There is also a handy method for downloading models to the local file system fro
 
 ## Running the prediction process
 
-To run the process, you first need to build the image and deploy it to Google Container Registry, so Dataflow can
+To run the process, you first need to build the image and deploy it to Google Artifact Registry, so Dataflow can
 use it to run a job.
 
 ```shell script
