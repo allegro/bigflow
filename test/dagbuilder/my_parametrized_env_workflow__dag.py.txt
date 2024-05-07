@@ -2,7 +2,7 @@
 # bigflow-workflow:  	my_parametrized_env_workflow
 # bigflow-build-ver: 	0.3.0
 # bigflow-startdate: 	2020-07-02T00:00:00
-# biglfow-imageid:   	eu.gcr.io/my_docker_repository_project/my-project:0.3.0
+# bigflow-imageid:   	europe-west1-docker.pkg.dev/my_docker_repository_project/my-project:0.3.0
 
 import datetime
 from airflow import DAG
@@ -49,7 +49,7 @@ tjob1_pod_operator_params = {
         '--config', '{{var.value.prod_env}}',
     ],
     'namespace': namespace,
-    'image': 'eu.gcr.io/my_docker_repository_project/my-project:0.3.0',
+    'image': 'europe-west1-docker.pkg.dev/my_docker_repository_project/my-project:0.3.0',
     'is_delete_operator_pod': True,
     'retries': 10,
     'retry_delay': datetime.timedelta(seconds=20),

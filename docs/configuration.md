@@ -333,7 +333,7 @@ deployment_config = DeploymentConfig(
 
 Bigflow 1.3 introduces a new class-based approach for keeping configurations.
 New API is optional and there is no need to migrate existing code from
-`biglfow.Configuration`. However, it allows you to use type hints, which enables
+`bigflow.Configuration`. However, it allows you to use type hints, which enables
 autocompletion in IDEs and gives you more flexibility.
 
 Each configuration is declared as a subclass of `bigflow.konfig.Konfig`.

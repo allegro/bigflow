@@ -12,7 +12,7 @@ from bigflow.workflow import WorkflowJob, Workflow, Definition, get_timezone_off
 from test import mixins
 
 TEST_IMAGE_VERSION = '0.3.0'
-TEST_DOCKER_REPOSITORY = 'europe-west1-docker.pkg.dev/myproject/myrepository'
+TEST_DOCKER_REPOSITORY = 'europe-west1-docker.pkg.dev/my_docker_repository_project/my-project'
 TEST_DOCKER_IMAGE = f'{TEST_DOCKER_REPOSITORY}:{TEST_IMAGE_VERSION}'
 
 

@@ -432,6 +432,12 @@ def _add_deploy_parsers_common_arguments(parser):
     _add_auth_parsers_arguments(parser)
     _add_parsers_common_arguments(parser)
 
+    parser.add_argument('-r', '--docker-repository',
+                        type=str,
+                        help='Name of a local and target Docker repository. Typically, a target repository is hosted by Google Cloud Artifact Registry.'
+                             ' If so, with the following naming schema: {HOSTNAME}/{PROJECT-ID}/{IMAGE}.'
+                        )
+
 
 def _create_deploy_parser(subparsers):
     parser = subparsers.add_parser('deploy',
@@ -481,11 +487,6 @@ def _add_deploy_image_parser_arguments(parser):
     parser.add_argument('-i', '--image-tar-path',
                         type=str,
                         help='Path to a Docker image file. The file name must contain version number with the following naming schema: image-{version}.tar')
-    parser.add_argument('-r', '--docker-repository',
-                        type=str,
-                        help='Name of a local and target Docker repository. Typically, a target repository is hosted by Google Cloud Artifact Registry.'
-                             ' If so, with the following naming schema: {HOSTNAME}/{PROJECT-ID}/{IMAGE}.'
-                        )
 
 def _add_deploy_dags_parser_arguments(parser):
     parser.add_argument('-dd', '--dags-dir',

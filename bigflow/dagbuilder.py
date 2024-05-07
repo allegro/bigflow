@@ -52,7 +52,7 @@ def generate_dag_file(
         # bigflow-workflow:  \t{workflow.workflow_id}
         # bigflow-build-ver: \t{build_ver}
         # bigflow-startdate: \t{start_from.isoformat()}
-        # biglfow-imageid:   \t{image_version}
+        # bigflow-imageid:   \t{image_version}
 
         import datetime
         from airflow import DAG
