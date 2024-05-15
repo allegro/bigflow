@@ -154,8 +154,9 @@ def authenticate_to_registry(
         bf_commons.run_process(['gcloud', 'auth', 'configure-docker'])
     elif auth_method == AuthorizationType.VAULT:
         oauthtoken = get_vault_token(vault_endpoint, vault_secret, vault_endpoint_verify)
+        docker_repository_host = docker_repository.split('/', 1)[0]
         bf_commons.run_process(
-            ['docker', 'login', '-u', 'oauth2accesstoken', '--password-stdin', f"https://{docker_repository.split('/', 1)[0]}"],
+            ['docker', 'login', '-u', 'oauth2accesstoken', '--password-stdin', f"https://{docker_repository_host}"],
             input=oauthtoken,
         )
     else:
