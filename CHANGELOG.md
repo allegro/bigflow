@@ -1,5 +1,11 @@
 # BigFlow changelog
 
+## Version 1.9.0
+
+### Changes
+
+* Switched from Google Container Registry to Artifact Registry. Made `-r`/`--docker-repository` common for all deploy commands. Build and deploy commands authenticate to the Docker repository taken from `deployment_config.py` or CLI arguments, instead of hardcoded `https://eu.gcr.io`.
+
 ## Version 1.8.0
 
 ### Changes
