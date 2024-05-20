@@ -92,6 +92,7 @@ def _build_docker_image(
         logger.debug("Authenticate to docker registry")
         bigflow.deploy.authenticate_to_registry(
             auth_method=cache_params.auth_method or bigflow.deploy.AuthorizationType.LOCAL_ACCOUNT,
+            docker_repository=project_spec.docker_repository,
             vault_endpoint=cache_params.vault_endpoint,
             vault_secret=cache_params.vault_secret,
             vault_endpoint_verify=cache_params.vault_endpoint_verify

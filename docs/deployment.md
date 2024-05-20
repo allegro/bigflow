@@ -108,12 +108,12 @@ It is used by BigFlow to select the proper configuration from [Config](configura
 
 [Docker Registry](https://docs.docker.com/registry/) is a repository where Docker images are stored.
 
-We recommend using Google Cloud [Container Registry](https://cloud.google.com/container-registry)
+We recommend using Google Cloud [Artifact Registry](https://cloud.google.com/artifact-registry)
 because it integrates seamlessly with Composer.
 
 ### Docker repository name
 
-One Container Registry can hosts many image repositories.
+One Artifact Registry can host many image repositories.
 We recommend having one image repository per one BigFlow project.
 
 You don't need to create repositories explicitly, they are barely namespaces.
@@ -121,7 +121,7 @@ All you need is to put the full repository name into the `docker_repository` pro
 [`deployment_config.py`](#managing-configuration-in-deployment_configpy). For example:
 
 ```python
-'docker_repository': 'eu.gcr.io/my_gcp_dev_project/my-bigflow-project'
+'docker_repository': 'europe-west1-docker.pkg.dev/my_gcp_dev_project/my-repo-name/my-bigflow-project'
 ```
 
 ### Docker Registry permissions
@@ -130,21 +130,21 @@ Ensure that your Composers have permission to pull images from a Registry.
 
 If a Composer's service account is a  
 [default service account](https://cloud.google.com/compute/docs/access/service-accounts#default_service_account)
-and if it wants to pull from a Container Registry located in the same GCP project &mdash;
+and if it wants to pull from an Artifact Registry located in the same GCP project &mdash;
 it has the pull permission by default.
 
 Otherwise, you have to grant read permission to a [bucket](https://cloud.google.com/storage/docs/json_api/v1/buckets),
 which underlies your Registry (**Storage Object Viewer** is enough).
 
-Read more about Container Registry [access control](https://cloud.google.com/container-registry/docs/access-control).
+Read more about Artifact Registry [access control](https://cloud.google.com/artifact-registry/docs/protect-artifacts).
 
-### How to find a bucket behind your Container Registry
+#### Container Registry deprecation
 
-Finding a bucket behind your Container Registry is not straightforward, because it's not linked anywhere.
-Moreover, its naming policy is somehow confusing ([read more](https://cloud.google.com/container-registry/docs/access-control#grant-bucket) about this policy).
-
-In the GCP project which hosts your Container Registry, go to [Storage](https://cloud.google.com/storage)
-browser. There should be a bucket with the `artifacts` phrase in its name
+Since BigFlow 1.9.0, the Artifact Registry is used instead of Container Registry due to the latter one's deprecation.
+Please consult Google Cloud docs for more information:
+* [Container Registry deprecation](https://cloud.google.com/container-registry/docs/deprecations/container-registry-deprecation)
+* [Prepare for Container Registry shutdown](https://cloud.google.com/artifact-registry/docs/transition/prepare-gcr-shutdown)
+* [Transition from Container Registry](https://cloud.google.com/artifact-registry/docs/transition/transition-from-gcr)
 
 ## Managing configuration in deployment_config.py
 
@@ -172,7 +172,7 @@ deployment_config = Config(name='dev',
                            properties={
                                'gcp_project_id': 'my_gcp_dev_project',
                                'docker_repository_project': '{gcp_project_id}',
-                               'docker_repository': 'eu.gcr.io/{docker_repository_project}/my-bigflow-project',
+                               'docker_repository': 'europe-west1-docker.pkg.dev/{docker_repository_project}/my-repository-name/my-bigflow-project',
                                'vault_endpoint': 'https://example.com/vault',
                                'dags_bucket': 'europe-west1-my-first-compo-ba6e3418-bucket'
                            })\
@@ -236,9 +236,8 @@ on your CI/CD server.
 Deployment means uploading various files to Cloud Storage 
 [buckets](https://cloud.google.com/storage/docs/json_api/v1/buckets):
 
-1. Docker images are uploaded to a
-   [bucket behind Container Registry](#how-to-find-a-bucket-behind-your-container-registry).
-   write access to this bucket is required.
+1. Docker images are pushed to Artifact Registry which requires a 
+   [predefined writer role](https://cloud.google.com/artifact-registry/docs/access-control#roles)
 1. DAG files are uploaded to a bucket behind [Composer's DAGs Folder](#composers-dags-folder),
    write and delete access to this bucket is required.
    

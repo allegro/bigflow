@@ -299,7 +299,8 @@ deployment_config = Config(name='dev',
                            properties={
                                'gcp_project_id': 'my-gcp-project-id',
                                'dags_bucket': 'my-dags-bucket',
-                               'vault_secret': 'secret'
+                               'vault_secret': 'secret',
+                               'docker_repository': 'my-docker--repository'
                            })
         ''')
 
@@ -315,7 +316,8 @@ deployment_config = Config(name='dev',
             project_id='my-gcp-project-id',
             vault_endpoint=None,
             vault_secret='secret',
-            vault_endpoint_verify=True
+            vault_endpoint_verify=True,
+            docker_repository='my-docker--repository'
         )
 
     @mock.patch('bigflow.deploy.deploy_dags_folder')
@@ -329,7 +331,8 @@ deployment_config = Config(name='dev',
                           properties={
                               'gcp_project_id': 'my-gcp-dev-project-id',
                               'dags_bucket': 'my-dags-dev-bucket',
-                              'vault_secret': 'secret-dev'
+                              'vault_secret': 'secret-dev',
+                              'docker_repository': 'my-docker--repository'
                           })\
     .add_configuration(name='prod',
                           properties={
@@ -352,7 +355,8 @@ deployment_config = Config(name='dev',
             project_id='my-gcp-dev-project-id',
             vault_endpoint=None,
             vault_secret='secret-dev',
-            vault_endpoint_verify=True
+            vault_endpoint_verify=True,
+            docker_repository='my-docker--repository'
         )
 
         # when
@@ -367,7 +371,8 @@ deployment_config = Config(name='dev',
             project_id='my-gcp-dev-project-id',
             vault_endpoint=None,
             vault_secret='secret-dev',
-            vault_endpoint_verify=True
+            vault_endpoint_verify=True,
+            docker_repository='my-docker--repository'
         )
 
         # when
@@ -382,7 +387,8 @@ deployment_config = Config(name='dev',
             project_id='my-gcp-prod-project-id',
             vault_endpoint=None,
             vault_secret='secret-prod',
-            vault_endpoint_verify=True
+            vault_endpoint_verify=True,
+            docker_repository='my-docker--repository'
         )
 
     @mock.patch('bigflow.deploy.deploy_dags_folder')
@@ -398,7 +404,8 @@ deployment_config = Config(name='dev',
                                'gcp_project_id': 'my-another-gcp-project-id',
                                'vault_endpoint': 'my-another-vault-endpoint',
                                'dags_bucket': 'my-another-dags-bucket',
-                               'vault_secret': 'secrett'
+                               'vault_secret': 'secrett',
+                               'docker_repository': 'my-docker--repository'
                         })
         ''')
 
@@ -418,7 +425,8 @@ deployment_config = Config(name='dev',
             project_id='my-another-gcp-project-id',
             vault_endpoint='my-another-vault-endpoint',
             vault_secret='secrett',
-            vault_endpoint_verify=True
+            vault_endpoint_verify=True,
+            docker_repository='my-docker--repository'
         )
 
     @mock.patch('bigflow.deploy.deploy_dags_folder')
@@ -432,7 +440,8 @@ deployment_config = Config(name='dev',
              '--gcp-project-id', 'my-gcp-project-id',
              '--auth-method', 'vault',
              '--clear-dags-folder',
-             '--vault-secret', 'secrett'
+             '--vault-secret', 'secrett',
+             '--docker-repository', 'my-docker--repository'
              ])
 
         # then
@@ -444,7 +453,8 @@ deployment_config = Config(name='dev',
             project_id='my-gcp-project-id',
             vault_endpoint='my-vault-endpoint',
             vault_secret='secrett',
-            vault_endpoint_verify=True
+            vault_endpoint_verify=True,
+            docker_repository='my-docker--repository'
         )
 
     @mock.patch('bigflow.deploy.deploy_docker_image')
@@ -607,7 +617,8 @@ deployment_config = Config(name='dev',
             project_id='my-gcp-project-id',
             vault_endpoint=None,
             vault_secret=None,
-            vault_endpoint_verify=True
+            vault_endpoint_verify=True,
+            docker_repository='my-docker--repository'
         )
 
         deploy_docker_image_mock.assert_called_with(
@@ -654,7 +665,8 @@ deployment_config = Config(name='dev',
             project_id='my-gcp-project-id',
             vault_endpoint='my-vault-endpoint',
             vault_secret='secrett',
-            vault_endpoint_verify=expected_verify
+            vault_endpoint_verify=expected_verify,
+            docker_repository='my-docker-repository'
         )
 
         deploy_docker_image_mock.assert_called_with(

@@ -263,7 +263,7 @@ Configuration is passed via command line arguments.
 ```shell
 bigflow deploy-image \
 --image-tar-path '/tmp/image-0.1.0-tar' \
---docker-repository 'eu.gcr.io/my_gcp_dev_project/my_project' \
+--docker-repository 'europe-west1-docker.pkg.dev/my_gcp_dev_project/my_project' \
 --auth-method=vault \
 --vault-secret ***** \
 --vault-endpoint 'https://example.com/vault'
@@ -293,7 +293,7 @@ Configuration is passed via command line arguments.
 bigflow deploy \
 --image-tar-path '/tmp/image-0.1.0-tar' \
 --dags-dir '/tmp/my_dags' \
---docker-repository 'eu.gcr.io/my_gcp_dev_project/my_project' \
+--docker-repository 'europe-west1-docker.pkg.dev/my_gcp_dev_project/my_project' \
 --auth-method=vault \
 --vault-secret ***** \
 --vault-endpoint 'https://example.com/vault' \

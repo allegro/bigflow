@@ -18,7 +18,7 @@ deployment_config = Config(
    properties={
        'gcp_project_id': '{env}-project-id',
        'docker_repository_project':  'my-shared-docker-project-id',
-       'docker_repository': 'eu.gcr.io/{docker_repository_project}/my-analytics',
+       'docker_repository': 'europe-west1-docker.pkg.dev/{docker_repository_project}/my-analytics',
        'vault_endpoint': 'https://example.com/vault',
        'dags_bucket': 'europe-west1-my-1234-bucket',
    },
@@ -54,13 +54,13 @@ final properties:
 ```text
 dev config:
 {   'dags_bucket': 'europe-west1-my-1234-bucket',
-    'docker_repository': 'eu.gcr.io/my-shared-docker-project-id/my-analytics',
+    'docker_repository': 'europe-west1-docker.pkg.dev/my-shared-docker-project-id/my-analytics',
     'docker_repository_project': 'my-shared-docker-project-id',
     'gcp_project_id': 'dev-project-id',
     'vault_endpoint': 'https://example.com/vault'}
 prod config:
 {   'dags_bucket': 'europe-west1-my-4321-bucket',
-    'docker_repository': 'eu.gcr.io/my-shared-docker-project-id/my-analytics',
+    'docker_repository': 'europe-west1-docker.pkg.dev/my-shared-docker-project-id/my-analytics',
     'docker_repository_project': 'my-shared-docker-project-id',
     'gcp_project_id': 'prod-project-id',
     'vault_endpoint': 'https://example.com/vault'}
@@ -85,13 +85,13 @@ For example, the `docker_repository` property is resolved from:
 
 ```python
 'docker_repository_project':  'my-shared-docker-project-id',
-'docker_repository': 'eu.gcr.io/{docker_repository_project}/my-analytics'
+'docker_repository': 'europe-west1-docker.pkg.dev/{docker_repository_project}/my-analytics'
 ```
 
 to
 
 ```text
-'docker_repository': 'eu.gcr.io/my-shared-docker-project-id/my-analytics'
+'docker_repository': 'europe-west1-docker.pkg.dev/my-shared-docker-project-id/my-analytics'
 ```
 
 
@@ -333,7 +333,7 @@ deployment_config = DeploymentConfig(
 
 Bigflow 1.3 introduces a new class-based approach for keeping configurations.
 New API is optional and there is no need to migrate existing code from
-`biglfow.Configuration`. However, it allows you to use type hints, which enables
+`bigflow.Configuration`. However, it allows you to use type hints, which enables
 autocompletion in IDEs and gives you more flexibility.
 
 Each configuration is declared as a subclass of `bigflow.konfig.Konfig`.
@@ -411,15 +411,15 @@ class MyConfig(bigflow.konfig.Konfig):
     docker_repository_project = "my-shared-docker-project-id"
 
     # no 'expand()' function - string is *not* interpolated
-    docker_repository_raw = "eu.gcr.io/{docker_repository_project}/my-analytics"
+    docker_repository_raw = "europe-west1-docker.pkg.dev/{docker_repository_project}/my-analytics"
 
     # interpolation is enabled
-    docker_repository = expand("eu.gcr.io/{docker_repository_project}/my-analytics")
+    docker_repository = expand("europe-west1-docker.pkg.dev/{docker_repository_project}/my-analytics")
 
 
 config = MyConfig()
-print(config.docker_repository_raw)  # => eu.gcr.io/{docker_repository_project}/my-analytics
-print(config.docker_repository)      # => eu.gcr.io/my-shared-docker-project-id/my-analytics
+print(config.docker_repository_raw)  # => europe-west1-docker.pkg.dev/{docker_repository_project}/my-analytics
+print(config.docker_repository)      # => europe-west1-docker.pkg.dev/my-shared-docker-project-id/my-analytics
 ```
 
 ### Reading from environment variables
