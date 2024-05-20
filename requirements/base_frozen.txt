@@ -8,7 +8,7 @@ backports-cached-property==1.0.1 ; python_version <= "3.8"
     # via -r base_frozen.in
 cachetools==5.0.0
     # via google-auth
-certifi==2021.10.8
+certifi==2023.7.22
     # via requests
 charset-normalizer==2.0.12
     # via requests
