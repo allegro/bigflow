@@ -1,14 +1,20 @@
 # BigFlow changelog
 
+## Version 1.10.0
+
+### Added
+
+* BigQuery query job labeling for collect and write operations. Labels are passed via `job_labels` dict argument in `DatasetConfiguration` and `DatasetManager`.
+
 ## Version 1.9.0
 
-### Changes
+### Changed
 
 * Switched from Google Container Registry to Artifact Registry. Made `-r`/`--docker-repository` common for all deploy commands. Build and deploy commands authenticate to the Docker repository taken from `deployment_config.py` or CLI arguments, instead of hardcoded `https://eu.gcr.io`.
 
 ## Version 1.8.0
 
-### Changes
+### Changed
 
 * Bumped basic dependencies: Apache Beam 2.48.0, google-cloud-bigtable 2.17.0, google-cloud-language 2.10.0, google-cloud-storage 2.11.2, among others (#374).
 * Added the `env_variable` argument to `bigflow.Workflow` which enables to change a name of the variable used to obtain environment name (#365).

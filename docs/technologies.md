@@ -309,6 +309,7 @@ to call BigQuery SQL.
   Fully qualified names of internal tables are resolved to `{project_id}.{dataset_name}.{table_name}`.
 * `external_tables` &mdash; Dict that defines aliases for external table names.
   Fully qualified names of those tables have to be declared explicitly.
+* `job_labels` &mdash; Dict of labels that will be set on BigQuery jobs.
 
 The distinction between internal and external tables shouldn't be treated too seriously.
 Internal means `mine`. External means any other. It's just a naming convention.
@@ -511,7 +512,7 @@ The `table_labels` and `dataset_labels` parameters allow your workflow to create
 On the first run, tables are not created yet, so we can not create labels then. Labels are added on second and later run when tables are already created.
 
 ```python
-from bigflow.bigquery import DatasetConfig 
+from bigflow.bigquery import DatasetConfig
 
 dataset_config = DatasetConfig(
     env='dev',
@@ -526,8 +527,19 @@ dataset_config = DatasetConfig(
       }
     },
     dataset_labels={"dataset_label_1": "value_1", "dataset_label_2": "value_2"}).create_dataset_manager()
-
-
 ```
 
-You can us it as an ad-hoc tool or put a labeling job to a workflow as well.
+The `job_labels` argument allows to label BigQuery job. It is passed to [`QueryJobConfig.labels`](https://cloud.google.com/python/docs/reference/bigquery/latest/google.cloud.bigquery.job.QueryJobConfig#google_cloud_bigquery_job_QueryJobConfig_labels)
+in `write` and `collect` methods of `DatasetManager`.
+
+```python
+from bigflow.bigquery import DatasetConfig
+
+dataset_config = DatasetConfig(
+    env='dev',
+    project_id='your-project-id',
+    dataset_name='example_dataset',
+    internal_tables=['example_table'],
+    external_tables={},
+    job_labels={"owner": "John Doe"}).create_dataset_manager()
+```

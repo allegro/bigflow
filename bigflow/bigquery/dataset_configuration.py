@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict
 
 from ..configuration import Config
 from .interface import Dataset
@@ -16,7 +16,8 @@ class DatasetConfig:
                  is_master: bool = True,
                  is_default: bool = True,
                  tables_labels: Dict[str, Dict[str, str]] = None,
-                 dataset_labels: Dict[str, str] = None):
+                 dataset_labels: Dict[str, str] = None,
+                 job_labels: Dict[str, str] = None):
        all_properties = (properties or {}).copy()
        all_properties['project_id'] = project_id
        all_properties['dataset_name'] = dataset_name
@@ -24,6 +25,7 @@ class DatasetConfig:
        all_properties['external_tables'] = external_tables or {}
        all_properties['tables_labels'] = tables_labels or []
        all_properties['dataset_labels'] = dataset_labels or []
+       all_properties['job_labels'] = job_labels or []
 
        self.delegate = Config(name=env, properties=all_properties, is_master=is_master, is_default=is_default)
 
@@ -36,7 +38,8 @@ class DatasetConfig:
                           properties: dict = None,
                           is_default: bool = False,
                           tables_labels: Dict[str, Dict[str, str]] = None,
-                          dataset_labels: Dict[str, str] = None):
+                          dataset_labels: Dict[str, str] = None,
+                          job_labels: Dict[str, str] = None):
 
         all_properties = (properties or {}).copy()
 
@@ -57,6 +60,9 @@ class DatasetConfig:
         if dataset_labels:
             all_properties['dataset_labels'] = dataset_labels
 
+        if job_labels:
+            all_properties['job_labels'] = job_labels
+
         self.delegate.add_configuration(env, all_properties, is_default=is_default)
         return self
 
@@ -68,7 +74,8 @@ class DatasetConfig:
             external_tables=self.resolve_external_tables(env),
             extras=self.resolve_extra_properties(env),
             tables_labels=self.resolve_tables_labels(env),
-            dataset_labels=self.resolve_dataset_labels(env))
+            dataset_labels=self.resolve_dataset_labels(env),
+            job_labels=self.resolve_job_labels(env))
 
     def resolve_extra_properties(self, env: str = None):
         return {k: v for (k, v) in self.resolve(env).items() if self._is_extra_property(k)}
@@ -103,5 +110,8 @@ class DatasetConfig:
     def resolve_dataset_labels(self, env: str = None) -> Dict[str, str]:
         return self.resolve_property('dataset_labels', env)
 
+    def resolve_job_labels(self, env: str = None) -> Dict[str, str]:
+        return self.resolve_property('job_labels', env)
+
     def _is_extra_property(self, property_name) -> bool:
-        return property_name not in ['project_id','dataset_name','internal_tables','external_tables', 'env', 'dataset_labels', 'tables_labels']
+        return property_name not in ['project_id','dataset_name','internal_tables','external_tables', 'env', 'dataset_labels', 'tables_labels', 'job_labels']

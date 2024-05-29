@@ -28,6 +28,7 @@ class JobTestCase(TestCase):
                 'location': 'EU',
                 'tables_labels': {},
                 'dataset_labels': {},
+                'job_labels': {},
             })
 
             # and
@@ -42,6 +43,7 @@ class JobTestCase(TestCase):
                 'location': 'EU',
                 'tables_labels': {},
                 'dataset_labels': {},
+                'job_labels': {},
             })
 
         job = Job(component=test_component,
