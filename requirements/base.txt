@@ -1,13 +1,8 @@
-grpcio-status<=1.48.2 # to avoid protobuf package clash
 google-cloud-storage>=2,<3
-# Maintainers, please do not require google-api-core>=2.x.x
-# Until this issue is closed
-# https://github.com/googleapis/google-cloud-python/issues/10566
 MarkupSafe>2.1.0 # version 2.1.0 is broken
 google-auth>=1.20,<3
 unittest-xml-reporting>=3.0.2,<4
 jinja2>=3,<4
-pip-tools>=5.3,<7
 deprecated>=1.2.10,<2
 toml>=0.10
 tblib>=1.7,<2
@@ -17,4 +12,4 @@ backports.cached-property;python_version<="3.8"
 lazy-object-proxy>=1,<2
 
 wheel>=0.35
-setuptools>=45
+setuptools>=75.8.0

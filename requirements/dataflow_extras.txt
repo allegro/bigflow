@@ -1,1 +1,1 @@
-apache-beam[gcp]>=2.24,<=2.48
+apache-beam[gcp]>=2.24,<=2.62.0  # Blocks us from using python >3.12
