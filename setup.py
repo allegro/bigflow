@@ -31,8 +31,10 @@ setuptools.setup(
     packages=setuptools.find_packages(exclude=('test', 'e2e')),
     include_package_data=True,
     classifiers=[
-        "Programming Language :: Python :: 3",
-        "Operating System :: OS Independent",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Operating System :: OS Independent"
     ],
     install_requires=read_requirements("base.txt"),
     extras_require={

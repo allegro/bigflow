@@ -129,3 +129,4 @@ dmypy.json
 
 test/local_config.py
 e2e/local_config.py
+.DS_Store

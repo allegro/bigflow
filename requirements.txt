@@ -4,58 +4,74 @@
 #
 #    pip-compile requirements.in
 #
-apache-beam[gcp]==2.48.0
+
+annotated-types==0.7.0
+    # via pydantic
+apache-beam[gcp]==2.60.0
     # via -r requirements/dataflow_extras.txt
+async-timeout==5.0.1
+    # via redis
+attrs==25.1.0
+    # via
+    #   jsonschema
+    #   referencing
 backports-cached-property==1.0.2 ; python_version <= "3.8"
     # via -r requirements/base.txt
-beautifulsoup4==4.12.2
+backports-tarfile==1.2.0
+    # via jaraco-context
+beautifulsoup4==4.13.3
     # via bs4
-bleach==6.0.0
-    # via readme-renderer
-bs4==0.0.1
+bs4==0.0.2
     # via -r requirements.in
-build==0.10.0
+build==1.2.2.post1
     # via pip-tools
-cachetools==5.3.1
+cachetools==5.5.2
     # via
     #   apache-beam
     #   google-auth
-certifi==2023.5.7
+certifi==2025.1.31
     # via requests
-charset-normalizer==3.1.0
+charset-normalizer==3.4.1
     # via requests
-click==8.1.3
+click==8.1.8
     # via pip-tools
 cloudpickle==2.2.1
     # via apache-beam
-coverage[toml]==7.2.7
+coverage[toml]==7.6.1
     # via pytest-cov
 crcmod==1.7
     # via apache-beam
-db-dtypes==1.1.1
+db-dtypes==1.4.2
     # via -r requirements/bigquery_extras.txt
-deprecated==1.2.14
-    # via -r requirements/base.txt
+deprecated==1.2.18
+    # via
+    #   -r requirements/base.txt
+    #   opentelemetry-api
+    #   opentelemetry-semantic-conventions
 dill==0.3.1.1
     # via apache-beam
-dnspython==2.3.0
+dnspython==2.6.1
     # via pymongo
 docopt==0.6.2
     # via hdfs
+docstring-parser==0.16
+    # via google-cloud-aiplatform
 docutils==0.20.1
     # via readme-renderer
-exceptiongroup==1.1.1
+exceptiongroup==1.2.2
     # via pytest
-fastavro==1.7.4
+fastavro==1.9.7
     # via apache-beam
-fasteners==0.18
+fasteners==0.19
     # via
     #   apache-beam
     #   google-apitools
-freezegun==1.2.2
+freezegun==1.5.1
     # via -r requirements.in
-google-api-core[grpc]==2.11.1
+google-api-core[grpc]==2.24.1
     # via
+    #   apache-beam
+    #   google-cloud-aiplatform
     #   google-cloud-bigquery
     #   google-cloud-bigquery-storage
     #   google-cloud-bigtable
@@ -66,31 +82,48 @@ google-api-core[grpc]==2.11.1
     #   google-cloud-pubsub
     #   google-cloud-pubsublite
     #   google-cloud-recommendations-ai
+    #   google-cloud-resource-manager
     #   google-cloud-spanner
     #   google-cloud-storage
     #   google-cloud-videointelligence
     #   google-cloud-vision
 google-apitools==0.5.31
     # via apache-beam
-google-auth==2.20.0
+google-auth==2.38.0
     # via
     #   -r requirements/base.txt
     #   apache-beam
     #   google-api-core
     #   google-auth-httplib2
+    #   google-cloud-aiplatform
+    #   google-cloud-bigquery
+    #   google-cloud-bigquery-storage
+    #   google-cloud-bigtable
     #   google-cloud-core
+    #   google-cloud-datastore
+    #   google-cloud-dlp
+    #   google-cloud-language
+    #   google-cloud-pubsub
+    #   google-cloud-recommendations-ai
+    #   google-cloud-resource-manager
     #   google-cloud-storage
-google-auth-httplib2==0.1.0
+    #   google-cloud-videointelligence
+    #   google-cloud-vision
+    #   keyrings-google-artifactregistry-auth
+google-auth-httplib2==0.2.0
     # via apache-beam
-google-cloud-bigquery==3.11.1
+google-cloud-aiplatform==1.83.0
+    # via apache-beam
+google-cloud-bigquery==3.30.0
     # via
     #   -r requirements/bigquery_extras.txt
     #   apache-beam
-google-cloud-bigquery-storage==2.20.0
+    #   google-cloud-aiplatform
+google-cloud-bigquery-storage==2.28.0
     # via apache-beam
-google-cloud-bigtable==2.17.0
+google-cloud-bigtable==2.29.0
     # via apache-beam
-google-cloud-core==2.3.2
+google-cloud-core==2.4.2
     # via
     #   apache-beam
     #   google-cloud-bigquery
@@ -98,52 +131,63 @@ google-cloud-core==2.3.2
     #   google-cloud-datastore
     #   google-cloud-spanner
     #   google-cloud-storage
-google-cloud-datastore==2.15.2
+google-cloud-datastore==2.20.2
     # via apache-beam
-google-cloud-dlp==3.12.1
+google-cloud-dlp==3.28.0
     # via apache-beam
-google-cloud-language==2.10.0
+google-cloud-language==2.17.0
     # via apache-beam
-google-cloud-pubsub==2.17.1
+google-cloud-pubsub==2.28.0
     # via
     #   apache-beam
     #   google-cloud-pubsublite
-google-cloud-pubsublite==1.7.0
+google-cloud-pubsublite==1.12.0
     # via apache-beam
-google-cloud-recommendations-ai==0.10.3
+google-cloud-recommendations-ai==0.10.16
     # via apache-beam
-google-cloud-spanner==3.36.0
+google-cloud-resource-manager==1.14.1
+    # via google-cloud-aiplatform
+google-cloud-spanner==3.52.0
     # via apache-beam
-google-cloud-storage==2.9.0
-    # via -r requirements/base.txt
-google-cloud-videointelligence==2.11.2
+google-cloud-storage==2.19.0
+    # via
+    #   -r requirements/base.txt
+    #   apache-beam
+    #   google-cloud-aiplatform
+google-cloud-videointelligence==2.16.0
     # via apache-beam
-google-cloud-vision==3.4.3
+google-cloud-vision==3.10.0
     # via apache-beam
 google-crc32c==1.5.0
-    # via google-resumable-media
-google-resumable-media==2.5.0
+    # via
+    #   google-cloud-storage
+    #   google-resumable-media
+google-resumable-media==2.7.2
     # via
     #   google-cloud-bigquery
     #   google-cloud-storage
-googleapis-common-protos[grpc]==1.59.1
+googleapis-common-protos[grpc]==1.69.0
     # via
     #   google-api-core
     #   grpc-google-iam-v1
     #   grpcio-status
-grpc-google-iam-v1==0.12.6
+grpc-google-iam-v1==0.14.1
     # via
     #   google-cloud-bigtable
     #   google-cloud-pubsub
+    #   google-cloud-resource-manager
     #   google-cloud-spanner
-grpcio==1.54.2
+grpc-interceptor==0.15.4
+    # via google-cloud-spanner
+grpcio==1.65.5
     # via
     #   apache-beam
     #   google-api-core
-    #   google-cloud-bigquery
     #   google-cloud-pubsub
     #   google-cloud-pubsublite
+    #   googleapis-common-protos
     #   grpc-google-iam-v1
+    #   grpc-interceptor
     #   grpcio-status
 grpcio-status==1.48.2
     # via
@@ -151,7 +195,7 @@ grpcio-status==1.48.2
     #   google-api-core
     #   google-cloud-pubsub
     #   google-cloud-pubsublite
-hdfs==2.7.0
+hdfs==2.7.3
     # via apache-beam
 httplib2==0.22.0
     # via
@@ -159,91 +203,135 @@ httplib2==0.22.0
     #   google-apitools
     #   google-auth-httplib2
     #   oauth2client
-idna==3.4
+id==1.5.0
+    # via twine
+idna==3.10
     # via requests
-importlib-metadata==6.7.0
+importlib-metadata==8.5.0
     # via
+    #   build
     #   keyring
+    #   opentelemetry-api
     #   twine
-importlib-resources==5.12.0
-    # via keyring
+importlib-resources==6.4.5
+    # via
+    #   jsonschema
+    #   jsonschema-specifications
+    #   keyring
 iniconfig==2.0.0
     # via pytest
-jaraco-classes==3.2.3
+jaraco-classes==3.4.0
     # via keyring
-jinja2==3.1.2
+jaraco-context==6.0.1
+    # via keyring
+jaraco-functools==4.1.0
+    # via keyring
+jinja2==3.1.6
+    # via
+    #   -r requirements/base.txt
+    #   pytest-html
+jsonpickle==3.4.2
+    # via apache-beam
+jsonschema==4.23.0
+    # via apache-beam
+jsonschema-specifications==2023.12.1
+    # via jsonschema
+keyring==25.5.0
+    # via
+    #   keyrings-google-artifactregistry-auth
+    #   twine
+keyrings-google-artifactregistry-auth==1.1.2
+    # via apache-beam
+lazy-object-proxy==1.10.0
     # via -r requirements/base.txt
-keyring==24.0.0
-    # via twine
-lazy-object-proxy==1.9.0
-    # via -r requirements/base.txt
-lxml==4.9.2
+lxml==5.3.1
     # via unittest-xml-reporting
-markdown-it-py==2.2.0
+markdown-it-py==3.0.0
     # via rich
-markupsafe==2.1.3
+markupsafe==2.1.5
     # via
     #   -r requirements/base.txt
     #   jinja2
 mdurl==0.1.2
     # via markdown-it-py
-more-itertools==9.1.0
-    # via jaraco-classes
-numpy==1.21.6
+more-itertools==10.5.0
     # via
+    #   jaraco-classes
+    #   jaraco-functools
+nh3==0.2.21
+    # via readme-renderer
+numpy==1.24.4
+    # via
+    #   -r requirements/base.txt
     #   apache-beam
     #   db-dtypes
     #   pandas
     #   pyarrow
+    #   shapely
 oauth2client==4.1.3
     # via google-apitools
-objsize==0.6.1
+objsize==0.7.1
     # via apache-beam
-orjson==3.9.1
-    # via apache-beam
-overrides==6.5.0
-    # via google-cloud-pubsublite
-packaging==23.1
+opentelemetry-api==1.30.0
     # via
+    #   google-cloud-pubsub
+    #   opentelemetry-sdk
+    #   opentelemetry-semantic-conventions
+opentelemetry-sdk==1.30.0
+    # via google-cloud-pubsub
+opentelemetry-semantic-conventions==0.51b0
+    # via opentelemetry-sdk
+orjson==3.10.15
+    # via apache-beam
+overrides==7.7.0
+    # via google-cloud-pubsublite
+packaging==24.2
+    # via
+    #   apache-beam
     #   build
     #   db-dtypes
+    #   google-cloud-aiplatform
     #   google-cloud-bigquery
     #   pytest
-pandas==1.3.5
+    #   twine
+pandas==1.5.3
     # via
     #   -r requirements/bigquery_extras.txt
     #   db-dtypes
 parameterized==0.9.0
     # via -r requirements.in
-pexpect==4.8.0
+pexpect==4.9.0
     # via -r requirements.in
-pip-tools==6.9.0
+pip-tools==7.4.1
+    # via -r requirements.in
+pkgutil-resolve-name==1.3.10
+    # via jsonschema
+pluggy==1.5.0
     # via
-    #   -r requirements.in
-    #   -r requirements/base.txt
-pkginfo==1.9.6
-    # via twine
-pluggy==1.0.0
-    # via pytest
-proto-plus==1.22.2
-    # via
-    #   apache-beam
-    #   google-cloud-bigquery
-    #   google-cloud-bigquery-storage
-    #   google-cloud-bigtable
-    #   google-cloud-datastore
-    #   google-cloud-dlp
-    #   google-cloud-language
-    #   google-cloud-pubsub
-    #   google-cloud-recommendations-ai
-    #   google-cloud-spanner
-    #   google-cloud-videointelligence
-    #   google-cloud-vision
-protobuf==4.23.3
+    #   keyrings-google-artifactregistry-auth
+    #   pytest
+proto-plus==1.26.0
     # via
     #   apache-beam
     #   google-api-core
-    #   google-cloud-bigquery
+    #   google-cloud-aiplatform
+    #   google-cloud-bigquery-storage
+    #   google-cloud-bigtable
+    #   google-cloud-datastore
+    #   google-cloud-dlp
+    #   google-cloud-language
+    #   google-cloud-pubsub
+    #   google-cloud-pubsublite
+    #   google-cloud-recommendations-ai
+    #   google-cloud-resource-manager
+    #   google-cloud-spanner
+    #   google-cloud-videointelligence
+    #   google-cloud-vision
+protobuf==4.25.6
+    # via
+    #   apache-beam
+    #   google-api-core
+    #   google-cloud-aiplatform
     #   google-cloud-bigquery-storage
     #   google-cloud-bigtable
     #   google-cloud-datastore
@@ -251,6 +339,7 @@ protobuf==4.23.3
     #   google-cloud-language
     #   google-cloud-pubsub
     #   google-cloud-recommendations-ai
+    #   google-cloud-resource-manager
     #   google-cloud-spanner
     #   google-cloud-videointelligence
     #   google-cloud-vision
@@ -260,142 +349,160 @@ protobuf==4.23.3
     #   proto-plus
 ptyprocess==0.7.0
     # via pexpect
-py==1.11.0
-    # via pytest-html
-pyarrow==11.0.0
+pyarrow==16.1.0
     # via
     #   apache-beam
     #   db-dtypes
-pyasn1==0.5.0
+pyarrow-hotfix==0.6
+    # via apache-beam
+pyasn1==0.6.1
     # via
     #   oauth2client
     #   pyasn1-modules
     #   rsa
-pyasn1-modules==0.3.0
+pyasn1-modules==0.4.1
     # via
     #   google-auth
     #   oauth2client
+pydantic==2.10.6
+    # via google-cloud-aiplatform
+pydantic-core==2.27.2
+    # via pydantic
 pydot==1.4.2
     # via apache-beam
-pygments==2.15.1
+pygments==2.19.1
     # via
     #   readme-renderer
     #   rich
-pymongo==4.3.3
+pymongo==4.10.1
     # via apache-beam
-pyparsing==3.1.0
+pyparsing==3.1.4
     # via
     #   httplib2
     #   pydot
-pyproject-hooks==1.0.0
-    # via build
-pytest==7.3.2
+pyproject-hooks==1.2.0
+    # via
+    #   build
+    #   pip-tools
+pytest==8.3.5
     # via
     #   -r requirements.in
     #   pytest-cov
     #   pytest-github-actions-annotate-failures
     #   pytest-html
     #   pytest-metadata
-pytest-cov==4.1.0
+pytest-cov==5.0.0
     # via -r requirements.in
-pytest-github-actions-annotate-failures==0.2.0
+pytest-github-actions-annotate-failures==0.3.0
     # via -r requirements.in
-pytest-html==3.2.0
+pytest-html==4.1.1
     # via -r requirements.in
-pytest-metadata==3.0.0
+pytest-metadata==3.1.1
     # via pytest-html
-python-dateutil==2.8.2
+python-dateutil==2.9.0.post0
     # via
     #   apache-beam
     #   freezegun
     #   google-cloud-bigquery
     #   pandas
-pytz==2023.3
+pytz==2025.1
     # via
     #   apache-beam
     #   pandas
-pyyaml==6.0
+pyyaml==6.0.2
     # via responses
-readme-renderer==37.3
+readme-renderer==43.0
     # via twine
-regex==2023.6.3
+redis==5.2.1
     # via apache-beam
-requests==2.31.0
+referencing==0.35.1
+    # via
+    #   jsonschema
+    #   jsonschema-specifications
+regex==2024.11.6
+    # via apache-beam
+requests==2.32.3
     # via
     #   apache-beam
     #   google-api-core
     #   google-cloud-bigquery
     #   google-cloud-storage
     #   hdfs
+    #   id
+    #   keyrings-google-artifactregistry-auth
     #   requests-toolbelt
     #   responses
     #   twine
 requests-toolbelt==1.0.0
     # via twine
-responses==0.23.1
+responses==0.25.6
     # via -r requirements.in
 rfc3986==2.0.0
     # via twine
-rich==13.4.2
+rich==13.9.4
     # via twine
+rpds-py==0.20.1
+    # via
+    #   jsonschema
+    #   referencing
 rsa==4.9
     # via
     #   google-auth
     #   oauth2client
-six==1.16.0
+shapely==2.0.7
+    # via google-cloud-aiplatform
+six==1.17.0
     # via
     #   -r requirements/bigquery_extras.txt
-    #   bleach
     #   google-apitools
-    #   google-auth
-    #   google-auth-httplib2
     #   hdfs
     #   oauth2client
     #   python-dateutil
-soupsieve==2.4.1
+soupsieve==2.6
     # via beautifulsoup4
-sqlparse==0.4.4
+sqlparse==0.5.3
     # via google-cloud-spanner
 tblib==1.7.0
     # via -r requirements/base.txt
 toml==0.10.2
     # via -r requirements/base.txt
-tomli==2.0.1
+tomli==2.2.1
     # via
     #   build
     #   coverage
-    #   pyproject-hooks
+    #   pip-tools
     #   pytest
-twine==4.0.2
+twine==6.1.0
     # via -r requirements.in
-types-pyyaml==6.0.12.10
-    # via responses
-typing-extensions==4.6.3
+typing-extensions==4.12.2
     # via
     #   -r requirements/base.txt
+    #   annotated-types
     #   apache-beam
+    #   beautifulsoup4
+    #   google-cloud-aiplatform
+    #   opentelemetry-sdk
+    #   pydantic
+    #   pydantic-core
     #   rich
 unittest-xml-reporting==3.2.0
     # via -r requirements/base.txt
-urllib3==1.26.16
+urllib3==2.2.3
     # via
-    #   google-auth
     #   requests
     #   responses
     #   twine
-webencodings==0.5.1
-    # via bleach
-wheel==0.40.0
+wheel==0.45.1
     # via
     #   -r requirements/base.txt
     #   pip-tools
-wrapt==1.15.0
+wrapt==1.17.2
     # via deprecated
-zipp==3.15.0
+zipp==3.20.2
     # via
     #   importlib-metadata
     #   importlib-resources
-zstandard==0.21.0
+zstandard==0.23.0
     # via apache-beam
 
 # The following packages are considered to be unsafe in a requirements file:

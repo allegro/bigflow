@@ -1,5 +1,13 @@
 # BigFlow changelog
 
+## Version 1.11.0
+
+### Added
+
+* Support composer-2.10.1-airflow-2.9.3
+* Support for development on Apple M3 processors
+* Support for Python 3.10
+
 ## Version 1.10.0
 
 ### Added

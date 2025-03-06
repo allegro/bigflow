@@ -14,6 +14,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        python-version: [ '3.8', '3.9', '3.10' ]
+
     steps:
 
     - name: Checkout
@@ -22,12 +26,17 @@ jobs:
     - name: Setup Python
       uses: actions/setup-python@v5
       with:
-        python-version: 3.8
+        python-version: ${{ matrix.python-version }}
 
     - name: Setup github username
       run: |
         git config --global user.email "fake@example.com"
         git config --global user.name "fake name"
+
+    - name: Install dependencies
+      run: |
+        pip install pip==25.0.1
+        pip install -r requirements.txt
 
     - name: Setup docker
       run: |
@@ -38,11 +47,6 @@ jobs:
         sudo apt install docker-ce containerd.io
         docker -v
 
-    - name: Install dependencies
-      run: |
-        pip install pip==22.0.3
-        pip install -r requirements.txt
-
     - name: Run unit tests
       run: |
         pytest --html=build/test-report.html --self-contained-html
@@ -51,5 +55,5 @@ jobs:
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: test-report
+        name: test-report-${{ matrix.python-version }}
         path: build/test-report.html

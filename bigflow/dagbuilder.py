@@ -64,7 +64,10 @@ def generate_dag_file(
         except ImportError:
             # Fallback to older Airflow
             from airflow.contrib.kubernetes.secret import Secret
-            from airflow.contrib.operators.kubernetes_pod_operator import KubernetesPodOperator
+            try:
+                from airflow.contrib.operators.kubernetes_pod_operator import KubernetesPodOperator
+            except ImportError:
+                from airflow.providers.cncf.kubernetes.operators.pod import KubernetesPodOperator
             
         # To deploy BigFlow project, following requirements options are needed: (airflow 1.x + composer 1.x) or (airflow 2.x + composer >= 2.1.0)
         IS_COMPOSER_2_X = version.version >= '2.0.0'

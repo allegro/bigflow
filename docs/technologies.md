@@ -115,7 +115,7 @@ When Dataflow launches worker VMs, it uses Docker container images. You can spec
 using the default one.  It gives ability to install any non-python software, preinstall python dependencies, install GPU 
 drivers etc., customize execution environment.
 
-The simplest way to create custom image is to use default beam SDK image as a base, e.g. `beam_python3.8_sdk:2.36.0`.
+The simplest way to create custom image is to use default beam SDK image as a base, e.g. `beam_python3.8_sdk:2.60.0`.
 Please keep the image version consistent with the version of the `apache-beam` from `resources/requirements.txt`.
 
 To avoid dependency clashes at runtime, we suggest running Dataflow jobs in a dockerized environment, with dependencies
@@ -127,7 +127,7 @@ Your `Dockerfile` might look like:
 
 ```dockerfile
 # Inherit from default image.
-FROM apache/beam_python3.8_sdk:2.36.0
+FROM apache/beam_python3.8_sdk:2.60.0
 
 # Put all custom files to `/app`
 WORKDIR /app
