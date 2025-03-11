@@ -1,5 +1,11 @@
 # BigFlow changelog
 
+## Version 1.11.1
+
+### Changed
+
+* Made DAG failed import fallbacks more robust.
+
 ## Version 1.11.0
 
 ### Added
