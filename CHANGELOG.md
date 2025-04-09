@@ -4,6 +4,10 @@
 
 ### Changed
 
+* Fixed CI/CD release workflow.
+
+### Changed
+
 * Restored `pip-tools` dependency in `requirements/base.txt`,
 because it is required for `bf build` command to work properly.
 * Limited `wheel` version, as 0.46.1 is broken.
