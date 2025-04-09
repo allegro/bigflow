@@ -1,5 +1,12 @@
 # BigFlow changelog
 
+## Version 1.11.2
+
+### Changed
+
+* Restored `pip-tools` dependency in `requirements/base.txt`,
+because it is required for `bf build` command to work properly.
+
 ## Version 1.11.1
 
 ### Changed
