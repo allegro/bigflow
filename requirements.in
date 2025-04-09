@@ -11,6 +11,6 @@ bs4
 
 pytest
 pytest-html
-pytest-cov
+pytest-cov==5.0.0
 pytest-github-actions-annotate-failures
 parameterized

@@ -16,5 +16,5 @@ typing-extensions>=3.7
 backports.cached-property;python_version<="3.8"
 lazy-object-proxy>=1,<2
 
-wheel>=0.35
+wheel>=0.35,<=0.45.1
 setuptools>=45
