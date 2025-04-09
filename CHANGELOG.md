@@ -6,6 +6,8 @@
 
 * Restored `pip-tools` dependency in `requirements/base.txt`,
 because it is required for `bf build` command to work properly.
+* Limited `wheel` version, as 0.46.1 is broken.
+* Upgraded test dockerfiles to python 3.8.
 
 ## Version 1.11.1
 
